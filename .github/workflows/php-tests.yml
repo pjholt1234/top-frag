@@ -1,39 +1,18 @@
-name: Tests
+name: PHP Tests
 
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'backend/**'
   pull_request:
     branches: [ main, master ]
+    paths:
+      - 'backend/**'
 
 jobs:
-  go-tests:
-    runs-on: ubuntu-latest
-    name: Go Tests
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-
-    - name: Install dependencies
-      run: cd parser-service && go mod download
-
-    - name: Run tests
-      run: cd parser-service && go test -v -cover
-
-    - name: Run tests with coverage report
-      run: cd parser-service && go test -coverprofile=coverage.out
-
-    - name: Display coverage
-      run: cd parser-service && go tool cover -func=coverage.out
-
   php-tests:
     runs-on: ubuntu-latest
-    name: PHP Tests
 
     services:
       mysql:
