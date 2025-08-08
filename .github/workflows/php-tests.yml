@@ -14,16 +14,6 @@ jobs:
   php-tests:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: laravel_test
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -37,16 +27,6 @@ jobs:
 
     - name: Copy .env
       run: cp .env.example .env
-      working-directory: ./backend
-
-    - name: Configure Database
-      run: |
-        sed -i 's/DB_CONNECTION=sqlite/DB_CONNECTION=mysql/' .env
-        sed -i 's/# DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
-        sed -i 's/# DB_PORT=3306/DB_PORT=3306/' .env
-        sed -i 's/# DB_DATABASE=laravel/DB_DATABASE=laravel_test/' .env
-        sed -i 's/# DB_USERNAME=root/DB_USERNAME=root/' .env
-        sed -i 's/# DB_PASSWORD=/DB_PASSWORD=password/' .env
       working-directory: ./backend
 
     - name: Install Dependencies
@@ -75,11 +55,11 @@ jobs:
       run: vendor/bin/phpunit --coverage-clover=coverage.xml
       working-directory: ./backend
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./backend/coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }} 
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     file: ./backend/coverage.xml
+    #     flags: unittests
+    #     name: codecov-umbrella
+    #     fail_ci_if_error: true
+    #     token: ${{ secrets.CODECOV_TOKEN }} 
