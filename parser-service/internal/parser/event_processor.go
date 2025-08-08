@@ -7,6 +7,8 @@ import (
 	"parser-service/internal/types"
 )
 
+// Struct for managing match events
+
 type EventProcessor struct {
 	matchState *types.MatchState
 	logger     *logrus.Logger

@@ -26,6 +26,10 @@ func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
 	}
 }
 
+// Parses the demo file and sends the data to the batch sender
+// Sends progress updates via the progress callback function
+// Handles errors and sends error messages to the callback URLs
+
 func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	dp.logger.WithField("demo_path", demoPath).Info("Starting demo parsing")
 
@@ -50,6 +54,7 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCa
 	})
 
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
+		// Register event handlers for the demo parser
 		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
 		return nil
 	})
@@ -93,6 +98,7 @@ func (dp *DemoParser) validateDemoFile(demoPath string) error {
 	return nil
 }
 
+// Registers event handlers for the demo parser
 func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProcessor *EventProcessor, progressCallback func(types.ProgressUpdate)) {
 	parser.RegisterEventHandler(func(e events.RoundStart) {
 		eventProcessor.HandleRoundStart(e)
