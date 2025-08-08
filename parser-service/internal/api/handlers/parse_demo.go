@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"bytes"
+	"mime/multipart"
+	"os"
+	"path/filepath"
+	"strings"
+	"io"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -37,27 +42,28 @@ func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *
 
 //POST /api/parse-demo
 // What this does:
-// Receives demo parsing request with demo path and callback URLs
-// Validates the request (required fields, file existence)
+// Receives demo file upload with callback URLs
+// Validates the uploaded file
 // Creates a job with unique ID
+// Saves file to temporary location
 // Starts processing in background using goroutine
 // Returns immediately with job ID (non-blocking)
 
 // gin.Context: Represents the HTTP request and response
 func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	var req types.ParseDemoRequest
-	//c.ShouldBindJSON(): Binds JSON request body to struct
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.WithError(err).Error("Failed to bind request")
+	if err := c.ShouldBind(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to bind file upload request")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"error":   "Invalid request format",
+			"error":   "Invalid file upload request format",
 		})
 		return
 	}
 
-	if err := h.validateRequest(&req); err != nil {
-		h.logger.WithError(err).Error("Request validation failed")
+	// Validate file
+	if err := h.validateUploadedFile(req.DemoFile); err != nil {
+		h.logger.WithError(err).Error("File validation failed")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   err.Error(),
@@ -78,9 +84,20 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 		return
 	}
 
+	// Save uploaded file to temporary location
+	tempFilePath, err := h.saveUploadedFile(req.DemoFile)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to save uploaded file")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to save uploaded file",
+		})
+		return
+	}
+
 	job := &types.ProcessingJob{
 		JobID:               req.JobID,
-		DemoPath:            req.DemoPath,
+		TempFilePath:        tempFilePath,
 		ProgressCallbackURL: req.ProgressCallbackURL,
 		CompletionCallbackURL: req.CompletionCallbackURL,
 		Status:              types.StatusPending,
@@ -91,7 +108,7 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 
 	h.jobs[req.JobID] = job
     
-	// go h.processDemo(): Starts background processing
+	// Start background processing
 	go h.processDemo(context.Background(), job)
 
 	c.JSON(http.StatusAccepted, types.ParseDemoResponse{
@@ -101,28 +118,82 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	})
 }
 
-func (h *ParseDemoHandler) validateRequest(req *types.ParseDemoRequest) error {
-	if req.DemoPath == "" {
-		return fmt.Errorf("demo_path is required")
+// validateUploadedFile validates the uploaded demo file
+func (h *ParseDemoHandler) validateUploadedFile(file *multipart.FileHeader) error {
+	if file == nil {
+		return fmt.Errorf("demo file is required")
 	}
 
-	if req.ProgressCallbackURL == "" {
-		return fmt.Errorf("progress_callback_url is required")
+	// Check file extension
+	if !strings.HasSuffix(strings.ToLower(file.Filename), ".dem") {
+		return fmt.Errorf("invalid file extension, expected .dem file")
 	}
 
-	if req.CompletionCallbackURL == "" {
-		return fmt.Errorf("completion_callback_url is required")
+	// Check file size
+	if file.Size > h.config.Parser.MaxDemoSize {
+		return fmt.Errorf("demo file too large: %d bytes (max: %d)", file.Size, h.config.Parser.MaxDemoSize)
 	}
 
 	return nil
+}
+
+// cleanupTempFile safely removes a temporary file
+func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
+	if filePath == "" {
+		return
+	}
+	
+	if err := os.Remove(filePath); err != nil {
+		h.logger.WithError(err).WithField("temp_file", filePath).Error("Failed to clean up temporary file")
+	} else {
+		h.logger.WithField("temp_file", filePath).Info("Cleaned up temporary file")
+	}
+}
+
+// saveUploadedFile saves the uploaded file to a temporary location
+func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string, error) {
+	// Create temp directory if it doesn't exist
+	if err := os.MkdirAll(h.config.Parser.TempDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
+	// Generate unique filename
+	filename := fmt.Sprintf("demo_%s_%s", uuid.New().String(), file.Filename)
+	tempFilePath := filepath.Join(h.config.Parser.TempDir, filename)
+
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return "", fmt.Errorf("failed to open uploaded file: %w", err)
+	}
+	defer src.Close()
+
+	// Create the destination file
+	dst, err := os.Create(tempFilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer dst.Close()
+
+	// Copy the file content
+	if _, err = io.Copy(dst, src); err != nil {
+		return "", fmt.Errorf("failed to copy file content: %w", err)
+	}
+
+	h.logger.WithField("temp_file", tempFilePath).Info("Saved uploaded demo file")
+	return tempFilePath, nil
 }
 
 // Handles the main demo parsing logic
 // Parses the demo file and sends the data to the batch sender
 // Sends progress updates to the callback URLs
 // Handles errors and sends error messages to the callback URLs
+// Ensures temporary files are cleaned up in all scenarios
 func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.ProcessingJob) {
 	defer func() {
+		// Clean up temporary file if it exists
+		h.cleanupTempFile(job.TempFilePath)
+
 		if r := recover(); r != nil {
 			h.logger.WithFields(logrus.Fields{
 				"job_id": job.JobID,
@@ -147,7 +218,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		h.logger.WithError(err).Error("Failed to send initial progress update")
 	}
 
-	parsedData, err := h.demoParser.ParseDemo(ctx, job.DemoPath, func(update types.ProgressUpdate) {
+	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
 		job.Progress = update.Progress
 		job.CurrentStep = update.CurrentStep
 

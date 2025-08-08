@@ -3,16 +3,16 @@
 ## Parser Service API
 
 ### POST /parse-demo
-Initiates demo parsing with progress tracking.
+Initiates demo parsing with progress tracking. Accepts demo files via multipart form data.
 
 **Request:**
-```json
-{
-  "demo_path": "/path/to/demo.dem",
-  "job_id": "uuid-string",
-  "progress_callback_url": "https://laravel-app.com/api/progress/{job_id}",
-  "completion_callback_url": "https://laravel-app.com/api/demo-complete/{job_id}"
-}
+```
+Content-Type: multipart/form-data
+
+demo_file: [binary file]
+job_id: "uuid-string" (optional)
+progress_callback_url: "https://laravel-app.com/api/progress/{job_id}"
+completion_callback_url: "https://laravel-app.com/api/demo-complete/{job_id}"
 ```
 
 **Response:**
@@ -28,7 +28,7 @@ Initiates demo parsing with progress tracking.
 ```json
 {
   "success": false,
-  "error": "Invalid demo file path",
+  "error": "Invalid demo file",
   "job_id": "uuid-string"
 }
 ```

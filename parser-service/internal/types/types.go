@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"math"
+	"mime/multipart"
 	"time"
 )
 
@@ -127,11 +128,12 @@ type ParsedDemoData struct {
 	DamageEvents    []DamageEvent   `json:"damage_events"`
 }
 
+// ParseDemoRequest represents a request with an uploaded demo file
 type ParseDemoRequest struct {
-	DemoPath            string `json:"demo_path"`
-	JobID               string `json:"job_id"`
-	ProgressCallbackURL string `json:"progress_callback_url"`
-	CompletionCallbackURL string `json:"completion_callback_url"`
+	JobID               string `form:"job_id"`
+	ProgressCallbackURL string `form:"progress_callback_url" binding:"required"`
+	CompletionCallbackURL string `form:"completion_callback_url" binding:"required"`
+	DemoFile            *multipart.FileHeader `form:"demo_file" binding:"required"`
 }
 
 type ParseDemoResponse struct {
@@ -160,7 +162,7 @@ type CompletionData struct {
 
 type ProcessingJob struct {
 	JobID               string
-	DemoPath            string
+	TempFilePath        string // Path to temporary uploaded file
 	ProgressCallbackURL string
 	CompletionCallbackURL string
 	Status              string

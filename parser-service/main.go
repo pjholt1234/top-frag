@@ -114,7 +114,7 @@ func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *han
 	api := router.Group("/api")
 	api.Use(middleware.APIKeyAuth(cfg.Server.APIKey))
 	{
-		api.POST("/parse-demo", parseDemoHandler.HandleParseDemo)
+		api.POST("/parse-demo", parseDemoHandler.HandleParseDemo) // File upload endpoint
 		api.GET("/job/:job_id", parseDemoHandler.GetJobStatus)
 	}
 

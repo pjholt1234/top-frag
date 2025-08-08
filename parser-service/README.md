@@ -23,14 +23,17 @@ This service is built using Go's concurrency primitives and follows a clean arch
 ## 🚀 How It Works
 
 ### 1. **Request Processing**
-- Client sends demo file path via HTTP POST
-- Service validates request and creates a unique job ID
+- Client uploads demo file via HTTP POST with multipart form data
+- Service validates the uploaded file
+- Creates a job with unique ID
+- Saves file to temporary location
 - Processing starts immediately in a background goroutine
 - Client receives job ID immediately (non-blocking)
 
 ### 2. **Demo Parsing**
 - Uses `demoinfocs-golang` library to parse CS:GO demo files
 - Processes events in real-time as they occur in the demo
+- Temporary files are automatically cleaned up after processing (success, error, or panic)
 - Maintains game state throughout the parsing process
 - Extracts detailed information about:
   - **Gunfights**: Player engagements with health, armor, weapons, positions
@@ -111,16 +114,16 @@ batch:
 ## 🌐 API Endpoints
 
 ### POST /api/parse-demo
-Submit a demo file for parsing.
+Submit a demo file for parsing via multipart form data.
 
-**Request Body:**
-```json
-{
-  "demo_path": "/path/to/demo.dem",
-  "progress_callback_url": "http://your-app.com/progress",
-  "completion_callback_url": "http://your-app.com/complete",
-  "job_id": "optional-custom-job-id"
-}
+**Request:**
+```
+Content-Type: multipart/form-data
+
+demo_file: [binary file]
+job_id: "optional-custom-job-id"
+progress_callback_url: "http://your-app.com/progress"
+completion_callback_url: "http://your-app.com/complete"
 ```
 
 **Response:**

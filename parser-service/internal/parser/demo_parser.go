@@ -31,6 +31,11 @@ func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
 // Handles errors and sends error messages to the callback URLs
 
 func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
+	return dp.ParseDemoFromFile(ctx, demoPath, progressCallback)
+}
+
+// ParseDemoFromFile parses a demo file from a file path
+func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	dp.logger.WithField("demo_path", demoPath).Info("Starting demo parsing")
 
 	if err := dp.validateDemoFile(demoPath); err != nil {
