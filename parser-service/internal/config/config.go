@@ -26,6 +26,7 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
+	APIKey       string        `mapstructure:"api_key"`
 }
 
 type ParserConfig struct {
@@ -91,6 +92,7 @@ func setDefaults() {
 	viper.SetDefault("server.read_timeout", "30s")
 	viper.SetDefault("server.write_timeout", "30s")
 	viper.SetDefault("server.idle_timeout", "60s")
+	viper.SetDefault("server.api_key", "top-frag-parser-api-key-2024")
 
 	viper.SetDefault("parser.max_concurrent_jobs", 3)
 	viper.SetDefault("parser.progress_interval", "5s")

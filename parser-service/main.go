@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"parser-service/internal/api/handlers"
+	"parser-service/internal/api/middleware"
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
 )
@@ -32,7 +33,7 @@ func main() {
 	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender)
 	healthHandler := handlers.NewHealthHandler(logger)
 
-	router := setupRouter(parseDemoHandler, healthHandler)
+	router := setupRouter(parseDemoHandler, healthHandler, cfg)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -97,7 +98,7 @@ func setupLogger(cfg *config.Config) *logrus.Logger {
 	return logger
 }
 
-func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *handlers.HealthHandler) *gin.Engine {
+func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *handlers.HealthHandler, cfg *config.Config) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -105,10 +106,13 @@ func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *han
 	router.Use(gin.Recovery())
 	router.Use(loggingMiddleware())
 
+	// Health endpoints (public)
 	router.GET("/health", healthHandler.HandleHealth)
 	router.GET("/ready", healthHandler.HandleReadiness)
 
+	// API endpoints (require authentication)
 	api := router.Group("/api")
+	api.Use(middleware.APIKeyAuth(cfg.Server.APIKey))
 	{
 		api.POST("/parse-demo", parseDemoHandler.HandleParseDemo)
 		api.GET("/job/:job_id", parseDemoHandler.GetJobStatus)
