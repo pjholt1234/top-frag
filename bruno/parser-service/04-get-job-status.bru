@@ -1,0 +1,20 @@
+meta {
+  name: 04 - Get Job Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/job/{{job_id}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  summary: Get parsing job status
+  description: |
+    Retrieves the current status of a demo parsing job.
+    Returns progress, current step, and any error messages.
+} 

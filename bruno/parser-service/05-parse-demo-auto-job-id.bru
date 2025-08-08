@@ -1,0 +1,30 @@
+meta {
+  name: 05 - Parse Demo (Auto Job ID)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/api/parse-demo
+  body: json
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "demo_path": "{{demo_path}}",
+    "progress_callback_url": "{{progress_callback_url}}",
+    "completion_callback_url": "{{completion_callback_url}}"
+  }
+}
+
+docs {
+  summary: Start demo parsing with auto-generated job ID
+  description: |
+    Initiates parsing of a CS:GO demo file without specifying a job_id.
+    The service will auto-generate a job ID and return it in the response.
+} 

@@ -1,0 +1,114 @@
+package config
+
+import (
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+// Think of this file as the app.php file in laravel
+// It holds the configuration for the application and the default values
+
+// The following structs are used to parse the config file
+// The tags mapstructure are used to map the struct fields to the config file keys
+// This is using a library called viper to parse the config file
+
+type Config struct {
+	Server   ServerConfig   `mapstructure:"server"`
+	Parser   ParserConfig   `mapstructure:"parser"`
+	Batch    BatchConfig    `mapstructure:"batch"`
+	Logging  LoggingConfig  `mapstructure:"logging"`
+	Database DatabaseConfig `mapstructure:"database"`
+}
+
+type ServerConfig struct {
+	Port         string        `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
+}
+
+type ParserConfig struct {
+	MaxConcurrentJobs int           `mapstructure:"max_concurrent_jobs"`
+	ProgressInterval  time.Duration `mapstructure:"progress_interval"`
+	MaxDemoSize       int64         `mapstructure:"max_demo_size"`
+	TempDir           string        `mapstructure:"temp_dir"`
+}
+
+type BatchConfig struct {
+	GunfightEventsSize int           `mapstructure:"gunfight_events_size"`
+	GrenadeEventsSize  int           `mapstructure:"grenade_events_size"`
+	DamageEventsSize   int           `mapstructure:"damage_events_size"`
+	RoundEventsSize    int           `mapstructure:"round_events_size"`
+	RetryAttempts      int           `mapstructure:"retry_attempts"`
+	RetryDelay         time.Duration `mapstructure:"retry_delay"`
+	HTTPTimeout        time.Duration `mapstructure:"http_timeout"`
+}
+
+type LoggingConfig struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
+}
+
+type DatabaseConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Database string `mapstructure:"database"`
+}
+
+func Load() (*Config, error) {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath("/etc/parser-service")
+
+	viper.SetEnvPrefix("PARSER")
+	viper.AutomaticEnv()
+
+	setDefaults()
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, err
+		}
+	}
+
+	var config Config
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+// This is used to set the default values for the config file
+// If the config file doesn't have a value for a field, it will use the default value
+func setDefaults() {
+	viper.SetDefault("server.port", "8080")
+	viper.SetDefault("server.read_timeout", "30s")
+	viper.SetDefault("server.write_timeout", "30s")
+	viper.SetDefault("server.idle_timeout", "60s")
+
+	viper.SetDefault("parser.max_concurrent_jobs", 3)
+	viper.SetDefault("parser.progress_interval", "5s")
+	viper.SetDefault("parser.max_demo_size", 500*1024*1024)
+	viper.SetDefault("parser.temp_dir", "/tmp/parser-service")
+
+	viper.SetDefault("batch.gunfight_events_size", 100)
+	viper.SetDefault("batch.grenade_events_size", 50)
+	viper.SetDefault("batch.damage_events_size", 200)
+	viper.SetDefault("batch.round_events_size", 100)
+	viper.SetDefault("batch.retry_attempts", 3)
+	viper.SetDefault("batch.retry_delay", "1s")
+	viper.SetDefault("batch.http_timeout", "30s")
+
+	viper.SetDefault("logging.level", "info")
+	viper.SetDefault("logging.format", "json")
+
+	viper.SetDefault("database.host", "localhost")
+	viper.SetDefault("database.port", 3306)
+	viper.SetDefault("database.database", "cs_stats")
+} 
