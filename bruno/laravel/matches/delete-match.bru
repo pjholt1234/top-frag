@@ -1,0 +1,23 @@
+meta {
+  name: Delete Match
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{laravel_base_url}}/api/matches/1
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+docs {
+  summary: Delete match
+  description: |
+    Delete a match record.
+    Requires API key authentication.
+}

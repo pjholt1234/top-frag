@@ -1,0 +1,21 @@
+meta {
+  name: Get Player Statistics
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{laravel_base_url}}/api/stats/players
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+docs {
+  summary: Get player statistics
+  description: |
+    Retrieve overall player statistics.
+    Requires API key authentication.
+} 

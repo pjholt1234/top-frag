@@ -1,0 +1,31 @@
+meta {
+  name: Create Match
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{laravel_base_url}}/api/matches
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "map": "de_dust2",
+    "date": "2024-01-15T10:00:00Z",
+    "demo_file": "demo.dem",
+    "status": "completed"
+  }
+}
+
+docs {
+  summary: Create new match
+  description: |
+    Create a new match record.
+    Requires API key authentication.
+} 

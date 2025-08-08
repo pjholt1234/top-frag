@@ -1,0 +1,33 @@
+meta {
+  name: Update Match
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{laravel_base_url}}/api/matches/1
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "map": "de_mirage",
+    "date": "2024-01-15T10:00:00Z",
+    "demo_file": "updated_demo.dem",
+    "status": "completed"
+  }
+}
+
+docs {
+  summary: Update match
+  description: |
+    Update an existing match record.
+    Requires API key authentication.
+}

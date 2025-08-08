@@ -1,0 +1,21 @@
+meta {
+  name: Get Leaderboards
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{laravel_base_url}}/api/stats/leaderboards
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+docs {
+  summary: Get leaderboards
+  description: |
+    Retrieve leaderboard data.
+    Requires API key authentication.
+} 

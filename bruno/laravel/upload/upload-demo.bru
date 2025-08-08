@@ -1,0 +1,25 @@
+meta {
+  name: Upload Demo
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{laravel_base_url}}/api/upload/demo
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:multipart-form-data {
+  demo_file: {{demo_path}}
+}
+
+docs {
+  summary: Upload demo file
+  description: |
+    Upload a demo file for processing.
+    Requires API key authentication.
+} 
