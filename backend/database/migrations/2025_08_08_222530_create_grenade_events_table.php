@@ -1,0 +1,65 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('grenade_events', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('match_id')->constrained('matches')->onDelete('cascade');
+            $table->integer('round_number');
+            $table->integer('round_time'); // Seconds into the round
+            $table->bigInteger('tick_timestamp');
+
+            $table->foreignId('player_id')->constrained('players')->onDelete('cascade');
+            $table->string('grenade_type', 20); // 'hegrenade', 'flashbang', 'smokegrenade', 'molotov', 'incendiary', 'decoy'
+
+            // Player position when throwing
+            $table->float('player_x');
+            $table->float('player_y');
+            $table->float('player_z');
+
+            // Player aim direction (normalized vector)
+            $table->float('player_aim_x');
+            $table->float('player_aim_y');
+            $table->float('player_aim_z');
+
+            // Grenade final position
+            $table->float('grenade_final_x')->nullable();
+            $table->float('grenade_final_y')->nullable();
+            $table->float('grenade_final_z')->nullable();
+
+            // Effects
+            $table->integer('damage_dealt')->default(0);
+            $table->float('flash_duration')->nullable(); // Seconds of flash
+            $table->json('affected_players')->nullable(); // Array of affected player IDs and their effects
+
+            $table->string('throw_type', 20)->default('utility'); // 'lineup', 'reaction', 'pre_aim', 'utility'
+            $table->integer('effectiveness_rating')->nullable(); // 1-10 scale, calculated later
+
+            $table->timestamps();
+
+            // Indexes
+            $table->index(['match_id', 'round_number']);
+            $table->index(['match_id', 'tick_timestamp']);
+            $table->index('player_id');
+            $table->index('grenade_type');
+            $table->index(['round_number', 'round_time']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('grenade_events');
+    }
+};
