@@ -1,12 +1,11 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Tests\Unit\Models;
 
 use App\Models\MatchPlayer;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Enums\Team;
-use App\Enums\Side;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;

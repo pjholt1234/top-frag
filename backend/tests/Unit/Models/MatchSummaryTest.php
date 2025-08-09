@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Tests\Unit\Models;
 
 use App\Models\MatchSummary;
 use App\Models\GameMatch;
@@ -107,11 +107,11 @@ class MatchSummaryTest extends TestCase
             'total_assists' => 50,
             'total_headshots' => 30,
             'total_wallbangs' => 8,
-            'total_damage' => 12000,
+            'total_damage' => 10000,
             'total_he_damage' => 2000,
             'total_effective_flashes' => 20,
             'total_smokes_used' => 15,
-            'total_molotovs_used' => 12,
+            'total_molotovs_used' => 10,
             'total_first_kills' => 10,
             'total_first_deaths' => 10,
             'total_clutches_1v1_attempted' => 5,
@@ -175,6 +175,7 @@ class MatchSummaryTest extends TestCase
         $this->assertDatabaseHas('match_summaries', [
             'id' => $summary->id,
             'match_id' => $summary->match_id,
+            'total_kills' => $summary->total_kills,
         ]);
     }
 

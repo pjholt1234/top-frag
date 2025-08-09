@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Tests\Unit\Models;
 
 use App\Models\GameMatch;
 use App\Models\Player;

@@ -1,18 +1,19 @@
 <?php
 
-namespace Tests\Unit\Models;
+namespace Tests\Feature\Models;
 
 use App\Models\PlayerMatchSummary;
 use App\Models\GameMatch;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class PlayerMatchSummaryTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_player_match_summary()
     {
         $summary = PlayerMatchSummary::factory()->create([
@@ -77,7 +78,7 @@ class PlayerMatchSummaryTest extends TestCase
         $this->assertEquals(50.0, $summary->clutch_success_rate);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_fillable_attributes()
     {
         $summary = new PlayerMatchSummary();
@@ -117,7 +118,7 @@ class PlayerMatchSummaryTest extends TestCase
         $this->assertEquals($expectedFillable, $summary->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_attributes_correctly()
     {
         $summary = PlayerMatchSummary::factory()->create([
@@ -181,7 +182,7 @@ class PlayerMatchSummaryTest extends TestCase
         $this->assertIsFloat($summary->clutch_success_rate);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_match()
     {
         $match = GameMatch::factory()->create();
@@ -191,7 +192,7 @@ class PlayerMatchSummaryTest extends TestCase
         $this->assertEquals($match->id, $summary->match->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_player()
     {
         $player = Player::factory()->create();
@@ -201,14 +202,14 @@ class PlayerMatchSummaryTest extends TestCase
         $this->assertEquals($player->id, $summary->player->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_correct_table_name()
     {
         $summary = new PlayerMatchSummary();
         $this->assertEquals('player_match_summaries', $summary->getTable());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_be_created_with_factory()
     {
         $summary = PlayerMatchSummary::factory()->create();
@@ -220,7 +221,7 @@ class PlayerMatchSummaryTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_zero_values()
     {
         $summary = PlayerMatchSummary::factory()->create([

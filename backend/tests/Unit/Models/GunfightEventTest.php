@@ -1,18 +1,19 @@
 <?php
 
-namespace Tests\Feature\Models;
+namespace Tests\Unit\Models;
 
 use App\Models\GunfightEvent;
 use App\Models\GameMatch;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class GunfightEventTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_gunfight_event()
     {
         $gunfightEvent = GunfightEvent::factory()->create([
@@ -52,7 +53,7 @@ class GunfightEventTest extends TestCase
         $this->assertEquals(100, $gunfightEvent->damage_dealt);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_fillable_attributes()
     {
         $gunfightEvent = new GunfightEvent();
@@ -90,7 +91,7 @@ class GunfightEventTest extends TestCase
         $this->assertEquals($expectedFillable, $gunfightEvent->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_attributes_correctly()
     {
         $gunfightEvent = GunfightEvent::factory()->create([
@@ -98,20 +99,22 @@ class GunfightEventTest extends TestCase
             'round_time' => 180,
             'tick_timestamp' => 987654321,
             'player_1_hp_start' => 75,
-            'player_2_hp_start' => 100,
+            'player_2_hp_start' => 90,
             'player_1_armor' => 50,
             'player_2_armor' => 100,
             'player_1_flashed' => true,
             'player_2_flashed' => false,
+            'player_1_weapon' => 'awp',
+            'player_2_weapon' => 'deagle',
             'player_1_equipment_value' => 5000,
-            'player_2_equipment_value' => 4500,
+            'player_2_equipment_value' => 6000,
             'player_1_x' => 200.0,
             'player_1_y' => 300.0,
             'player_1_z' => 75.0,
             'player_2_x' => 250.0,
             'player_2_y' => 350.0,
             'player_2_z' => 75.0,
-            'distance' => 100.0,
+            'distance' => 125.0,
             'headshot' => false,
             'wallbang' => true,
             'penetrated_objects' => 2,
@@ -127,6 +130,8 @@ class GunfightEventTest extends TestCase
         $this->assertIsInt($gunfightEvent->player_2_armor);
         $this->assertIsBool($gunfightEvent->player_1_flashed);
         $this->assertIsBool($gunfightEvent->player_2_flashed);
+        $this->assertIsString($gunfightEvent->player_1_weapon);
+        $this->assertIsString($gunfightEvent->player_2_weapon);
         $this->assertIsInt($gunfightEvent->player_1_equipment_value);
         $this->assertIsInt($gunfightEvent->player_2_equipment_value);
         $this->assertIsFloat($gunfightEvent->player_1_x);
@@ -142,7 +147,7 @@ class GunfightEventTest extends TestCase
         $this->assertIsInt($gunfightEvent->damage_dealt);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_match()
     {
         $match = GameMatch::factory()->create();
@@ -152,61 +157,63 @@ class GunfightEventTest extends TestCase
         $this->assertEquals($match->id, $gunfightEvent->match->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_player1()
     {
-        $player1 = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_1_id' => $player1->id]);
+        $player = Player::factory()->create();
+        $gunfightEvent = GunfightEvent::factory()->create(['player_1_id' => $player->id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->player1);
-        $this->assertEquals($player1->id, $gunfightEvent->player1->id);
+        $this->assertEquals($player->id, $gunfightEvent->player1->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_player2()
     {
-        $player2 = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_2_id' => $player2->id]);
+        $player = Player::factory()->create();
+        $gunfightEvent = GunfightEvent::factory()->create(['player_2_id' => $player->id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->player2);
-        $this->assertEquals($player2->id, $gunfightEvent->player2->id);
+        $this->assertEquals($player->id, $gunfightEvent->player2->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_victor()
     {
-        $victor = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => $victor->id]);
+        $player = Player::factory()->create();
+        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => $player->id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->victor);
-        $this->assertEquals($victor->id, $gunfightEvent->victor->id);
+        $this->assertEquals($player->id, $gunfightEvent->victor->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_correct_table_name()
     {
         $gunfightEvent = new GunfightEvent();
         $this->assertEquals('gunfight_events', $gunfightEvent->getTable());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_be_created_with_factory()
     {
         $gunfightEvent = GunfightEvent::factory()->create();
 
         $this->assertDatabaseHas('gunfight_events', [
             'id' => $gunfightEvent->id,
-            'match_id' => $gunfightEvent->match_id,
             'round_number' => $gunfightEvent->round_number,
+            'round_time' => $gunfightEvent->round_time,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_null_victor()
     {
-        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => null]);
+        $gunfightEvent = GunfightEvent::factory()->create([
+            'victor_id' => null,
+        ]);
 
-        $this->assertNull($gunfightEvent->victor);
         $this->assertNull($gunfightEvent->victor_id);
+        $this->assertNull($gunfightEvent->victor);
     }
 }
