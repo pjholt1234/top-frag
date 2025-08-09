@@ -318,6 +318,11 @@ func (h *ParseDemoHandler) sendProgressUpdate(ctx context.Context, job *types.Pr
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	
+	// Add API key for Laravel callback endpoints
+	if h.config.Server.APIKey != "" {
+		req.Header.Set("X-API-Key", h.config.Server.APIKey)
+	}
 
 	client := &http.Client{Timeout: h.config.Batch.HTTPTimeout}
 	resp, err := client.Do(req)
@@ -351,42 +356,4 @@ func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.Process
 	}
 
 	return nil
-}
-
-// GET /api/job/:job_id
-// What this does:
-// Retrieves the status of a specific job by its ID
-// Returns job details including status, progress, and error message
-// Useful for tracking the status of a demo parsing job
-
-func (h *ParseDemoHandler) GetJobStatus(c *gin.Context) {
-	jobID := c.Param("job_id")
-	if jobID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Job ID is required",
-		})
-		return
-	}
-
-	job, exists := h.jobs[jobID]
-	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{
-			"success": false,
-			"error":   "Job not found",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"job": gin.H{
-			"job_id":        job.JobID,
-			"status":        job.Status,
-			"progress":      job.Progress,
-			"current_step":  job.CurrentStep,
-			"error_message": job.ErrorMessage,
-			"start_time":    job.StartTime,
-		},
-	})
 } 

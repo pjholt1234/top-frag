@@ -14,11 +14,10 @@ import (
 // This is using a library called viper to parse the config file
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Parser   ParserConfig   `mapstructure:"parser"`
-	Batch    BatchConfig    `mapstructure:"batch"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
-	Database DatabaseConfig `mapstructure:"database"`
+	Server  ServerConfig  `mapstructure:"server"`
+	Parser  ParserConfig  `mapstructure:"parser"`
+	Batch   BatchConfig   `mapstructure:"batch"`
+	Logging LoggingConfig `mapstructure:"logging"`
 }
 
 type ServerConfig struct {
@@ -49,14 +48,7 @@ type BatchConfig struct {
 type LoggingConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
-}
-
-type DatabaseConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
+	File   string `mapstructure:"file"`
 }
 
 func Load() (*Config, error) {
@@ -109,8 +101,5 @@ func setDefaults() {
 
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
-
-	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 3306)
-	viper.SetDefault("database.database", "cs_stats")
-} 
+	viper.SetDefault("logging.file", "service.log")
+}

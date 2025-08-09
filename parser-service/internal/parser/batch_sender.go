@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"parser-service/internal/api"
 	"parser-service/internal/config"
 	"parser-service/internal/types"
 )
@@ -31,19 +32,23 @@ func NewBatchSender(cfg *config.Config, logger *logrus.Logger) *BatchSender {
 	}
 }
 
-func (bs *BatchSender) extractBaseURL(completionURL string) string {
+func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
 	parsedURL, err := url.Parse(completionURL)
 	if err != nil {
-		bs.logger.WithError(err).Warn("Failed to parse completion URL, using default")
-		return "http://localhost:3000"
+		bs.logger.WithError(err).Error("Failed to parse completion URL")
+		return "", fmt.Errorf("failed to parse completion URL: %w", err)
 	}
 	
 	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
-	return baseURL
+	return baseURL, nil
 }
 
 func (bs *BatchSender) SendMatchMetadata(ctx context.Context, jobID string, completionURL string, matchData *types.ParsedDemoData) error {
-	bs.baseURL = bs.extractBaseURL(completionURL)
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
 	
 	metadata := map[string]interface{}{
 		"status": "processing_data",
@@ -125,7 +130,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, eve
 			"data":          flatEvents,
 		}
 
-		url := fmt.Sprintf("%s/api/demo-data/%s/gunfight-events", bs.baseURL, jobID)
+		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeGunfight)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
 			return fmt.Errorf("failed to send gunfight events batch %d: %w", i+1, err)
 		}
@@ -206,7 +211,7 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, even
 			"data":          flatEvents,
 		}
 
-		url := fmt.Sprintf("%s/api/demo-data/%s/grenade-events", bs.baseURL, jobID)
+		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeGrenade)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
 			return fmt.Errorf("failed to send grenade events batch %d: %w", i+1, err)
 		}
@@ -270,7 +275,7 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, event
 			"data":          flatEvents,
 		}
 
-		url := fmt.Sprintf("%s/api/demo-data/%s/damage-events", bs.baseURL, jobID)
+		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeDamage)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
 			return fmt.Errorf("failed to send damage events batch %d: %w", i+1, err)
 		}
@@ -318,7 +323,7 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, events
 		"data": flatEvents,
 	}
 
-	url := fmt.Sprintf("%s/api/demo-data/%s/round-events", bs.baseURL, jobID)
+	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeRound)
 	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
 		return fmt.Errorf("failed to send round events: %w", err)
 	}
@@ -371,6 +376,11 @@ func (bs *BatchSender) sendRequest(ctx context.Context, url string, payload inte
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	
+	// Add API key for Laravel callback endpoints
+	if bs.config.Server.APIKey != "" {
+		req.Header.Set("X-API-Key", bs.config.Server.APIKey)
+	}
 
 	resp, err := bs.client.Do(req)
 	if err != nil {

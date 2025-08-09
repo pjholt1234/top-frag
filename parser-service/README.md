@@ -135,19 +135,6 @@ completion_callback_url: "http://your-app.com/complete"
 }
 ```
 
-### GET /api/job/:job_id
-Get the status of a parsing job.
-
-**Response:**
-```json
-{
-  "job_id": "abc-123-def",
-  "status": "processing",
-  "progress": 75,
-  "current_step": "Processing events"
-}
-```
-
 ### GET /health
 Health check endpoint.
 

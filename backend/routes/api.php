@@ -2,10 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\DemoParserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,23 +21,13 @@ use App\Http\Controllers\Api\UploadController;
 |
 */
 
-// Health check endpoint (public)
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'healthy',
-        'message' => 'Top Frag API is running',
-        'timestamp' => now()->toISOString()
-    ]);
-});
+Route::get('/health', [HealthController::class, 'check']);
 
-// User endpoint (requires Sanctum authentication)
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+Route::middleware('sanctum.auth')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// All other endpoints require API key authentication
 Route::middleware('api.key')->group(function () {
-    // Match endpoints
     Route::prefix('matches')->group(function () {
         Route::get('/', [MatchController::class, 'index']);
         Route::get('/{match}', [MatchController::class, 'show']);
@@ -43,7 +36,6 @@ Route::middleware('api.key')->group(function () {
         Route::delete('/{match}', [MatchController::class, 'destroy']);
     });
 
-    // Player endpoints
     Route::prefix('players')->group(function () {
         Route::get('/', [PlayerController::class, 'index']);
         Route::get('/{player}', [PlayerController::class, 'show']);
@@ -51,16 +43,21 @@ Route::middleware('api.key')->group(function () {
         Route::get('/{player}/stats', [PlayerController::class, 'stats']);
     });
 
-    // Stats endpoints
     Route::prefix('stats')->group(function () {
         Route::get('/matches', [StatsController::class, 'matches']);
         Route::get('/players', [StatsController::class, 'players']);
         Route::get('/leaderboards', [StatsController::class, 'leaderboards']);
     });
 
-    // Upload endpoints
     Route::prefix('upload')->group(function () {
         Route::post('/demo', [UploadController::class, 'demo']);
         Route::get('/status/{job}', [UploadController::class, 'status']);
+        Route::post('/callback/progress', [UploadController::class, 'progressCallback']);
+        Route::post('/callback/completion', [UploadController::class, 'completionCallback']);
+    });
+
+    // Demo parser endpoints - new format
+    Route::prefix('job')->group(function () {
+        Route::post('/{jobId}/event/{eventName}', [DemoParserController::class, 'handleEvent']);
     });
 });

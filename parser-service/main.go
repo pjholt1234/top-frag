@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"parser-service/internal/api"
 	"parser-service/internal/api/handlers"
 	"parser-service/internal/api/middleware"
 	"parser-service/internal/config"
@@ -95,6 +96,16 @@ func setupLogger(cfg *config.Config) *logrus.Logger {
 		})
 	}
 
+	// Configure file output if specified
+	if cfg.Logging.File != "" {
+		file, err := os.OpenFile(cfg.Logging.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to open log file, using stdout only")
+		} else {
+			logger.SetOutput(file)
+		}
+	}
+
 	return logger
 }
 
@@ -107,15 +118,14 @@ func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *han
 	router.Use(loggingMiddleware())
 
 	// Health endpoints (public)
-	router.GET("/health", healthHandler.HandleHealth)
-	router.GET("/ready", healthHandler.HandleReadiness)
+	router.GET(api.HealthEndpoint, healthHandler.HandleHealth)
+	router.GET(api.ReadinessEndpoint, healthHandler.HandleReadiness)
 
 	// API endpoints (require authentication)
-	api := router.Group("/api")
-	api.Use(middleware.APIKeyAuth(cfg.Server.APIKey))
+	apiGroup := router.Group("/api")
+	apiGroup.Use(middleware.APIKeyAuth(cfg.Server.APIKey))
 	{
-		api.POST("/parse-demo", parseDemoHandler.HandleParseDemo) // File upload endpoint
-		api.GET("/job/:job_id", parseDemoHandler.GetJobStatus)
+		apiGroup.POST(api.ParseDemoEndpoint, parseDemoHandler.HandleParseDemo) // File upload endpoint
 	}
 
 	return router
