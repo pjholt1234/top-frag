@@ -28,36 +28,17 @@ Route::middleware('sanctum.auth')->get('/user', function (Request $request) {
 });
 
 Route::middleware('api.key')->group(function () {
-    Route::prefix('matches')->group(function () {
-        Route::get('/', [MatchController::class, 'index']);
-        Route::get('/{match}', [MatchController::class, 'show']);
-        Route::post('/', [MatchController::class, 'store']);
-        Route::put('/{match}', [MatchController::class, 'update']);
-        Route::delete('/{match}', [MatchController::class, 'destroy']);
-    });
+    Route::prefix('upload')
+        ->controller(UploadController::class)
+        ->group(function () {
+            Route::post('/demo', 'demo');
+        });
 
-    Route::prefix('players')->group(function () {
-        Route::get('/', [PlayerController::class, 'index']);
-        Route::get('/{player}', [PlayerController::class, 'show']);
-        Route::get('/{player}/matches', [PlayerController::class, 'matches']);
-        Route::get('/{player}/stats', [PlayerController::class, 'stats']);
-    });
-
-    Route::prefix('stats')->group(function () {
-        Route::get('/matches', [StatsController::class, 'matches']);
-        Route::get('/players', [StatsController::class, 'players']);
-        Route::get('/leaderboards', [StatsController::class, 'leaderboards']);
-    });
-
-    Route::prefix('upload')->group(function () {
-        Route::post('/demo', [UploadController::class, 'demo']);
-        Route::get('/status/{job}', [UploadController::class, 'status']);
-        Route::post('/callback/progress', [UploadController::class, 'progressCallback']);
-        Route::post('/callback/completion', [UploadController::class, 'completionCallback']);
-    });
-
-    // Demo parser endpoints - new format
-    Route::prefix('job')->group(function () {
-        Route::post('/{jobId}/event/{eventName}', [DemoParserController::class, 'handleEvent']);
-    });
+    Route::prefix('job')
+        ->controller(DemoParserController::class)
+        ->group(function () {
+            Route::post('/{jobId}/event/{eventName}', 'handleEvent');
+            Route::post('/callback/progress', 'progressCallback');
+            Route::post('/callback/completion', 'completionCallback');
+        });
 });

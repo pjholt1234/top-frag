@@ -1,0 +1,52 @@
+meta {
+  name: Handle Event
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{laravel_base_url}}/api/{jobId}/event/{eventName}
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "timestamp": "2024-01-15T10:30:00Z",
+    "data": {
+      "event_type": "parsing_complete",
+      "details": "Demo file parsed successfully",
+      "metadata": {
+        "file_size": 1048576,
+        "parse_time": 2.5
+      }
+    }
+  }
+}
+
+docs {
+  summary: Handle demo parsing events
+  description: |
+    Process events related to demo parsing and analysis.
+    Requires API key authentication.
+    
+    URL Parameters:
+    - jobId: The unique job identifier
+    - eventName: The type of event (parsing_started, parsing_complete, parsing_failed, analysis_started, analysis_complete)
+    
+    Body:
+    - timestamp: ISO 8601 timestamp
+    - data: Event-specific data and metadata
+    
+    Example events:
+    - parsing_started: When demo parsing begins
+    - parsing_complete: When demo parsing finishes successfully
+    - parsing_failed: When demo parsing encounters an error
+    - analysis_started: When analysis begins
+    - analysis_complete: When analysis finishes
+}

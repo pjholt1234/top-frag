@@ -62,4 +62,56 @@ class DemoParserController extends Controller
             'event_name' => $eventName,
         ]);
     }
+    /**
+     * Handle progress updates from the parser service.
+     */
+    public function progressCallback(Request $request): JsonResponse
+    {
+        Log::channel('parser')->info('Progress callback received from parser service', [
+            'all_data' => $request->all()
+        ]);
+
+        // Validate the request
+        $validated = $request->validate([
+            'job_id' => 'required|string',
+            'status' => 'required|string',
+            'progress' => 'required|integer|min:0|max:100',
+            'current_step' => 'required|string',
+            'error_message' => 'nullable|string'
+        ]);
+
+        $response = [
+            'success' => true,
+            'message' => 'Progress update received',
+            'job_id' => $validated['job_id']
+        ];
+
+        return response()->json($response, 200);
+    }
+
+    public function completionCallback(Request $request): JsonResponse
+    {
+        Log::channel('parser')->info('Completion callback received from parser service', [
+            'all_data' => $request->all()
+        ]);
+
+        $validated = $request->validate([
+            'job_id' => 'nullable|string',
+            'status' => 'required|string',
+            'match_data' => 'nullable|array',
+            'error' => 'nullable|string'
+        ]);
+
+        if (empty($validated['job_id'])) {
+            $validated['job_id'] = 'unknown-job-' . uniqid();
+        }
+
+        $response = [
+            'success' => true,
+            'message' => 'Completion update received',
+            'job_id' => $validated['job_id']
+        ];
+
+        return response()->json($response, 200);
+    }
 }

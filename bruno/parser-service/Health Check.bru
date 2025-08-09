@@ -1,11 +1,13 @@
 meta {
-  name: 01 - Health Check
+  name: Health Check
   type: http
   seq: 1
 }
 
 get {
   url: {{parser_base_url}}/health
+  body: none
+  auth: none
 }
 
 headers {
@@ -17,4 +19,4 @@ docs {
   description: |
     Verifies that the parser service is running and healthy.
     Returns service status, uptime, memory usage, and goroutine count.
-} 
+}

@@ -1,11 +1,13 @@
 meta {
-  name: 02 - Readiness Check
+  name: Readiness Check
   type: http
   seq: 2
 }
 
 get {
   url: {{parser_base_url}}/ready
+  body: none
+  auth: none
 }
 
 headers {
@@ -17,4 +19,4 @@ docs {
   description: |
     Verifies that the parser service is ready to accept requests.
     Returns readiness status and component health checks.
-} 
+}

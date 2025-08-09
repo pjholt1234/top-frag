@@ -1,11 +1,11 @@
 meta {
-  name: Get Match by ID
+  name: Completion callback
   type: http
-  seq: 2
+  seq: 3
 }
 
-get {
-  url: {{laravel_base_url}}/api/matches/1
+post {
+  url: {{laravel_base_url}}/api/callback/completion
   body: none
   auth: none
 }
@@ -16,8 +16,8 @@ headers {
 }
 
 docs {
-  summary: Get match by ID
+  summary: Get upload status
   description: |
-    Retrieve a specific match by its ID.
+    Check the status of a demo upload job.
     Requires API key authentication.
 }

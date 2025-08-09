@@ -1,11 +1,11 @@
 meta {
-  name: Delete Match
+  name: Progress callback
   type: http
-  seq: 5
+  seq: 2
 }
 
-delete {
-  url: {{laravel_base_url}}/api/matches/1
+post {
+  url: {{laravel_base_url}}/api/callback/progress
   body: none
   auth: none
 }
@@ -16,8 +16,8 @@ headers {
 }
 
 docs {
-  summary: Delete match
+  summary: Get upload status
   description: |
-    Delete a match record.
+    Check the status of a demo upload job.
     Requires API key authentication.
 }
