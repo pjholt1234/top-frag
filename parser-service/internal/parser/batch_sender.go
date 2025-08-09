@@ -33,10 +33,19 @@ func NewBatchSender(cfg *config.Config, logger *logrus.Logger) *BatchSender {
 }
 
 func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
+	if completionURL == "" {
+		return "", fmt.Errorf("empty completion URL")
+	}
+	
 	parsedURL, err := url.Parse(completionURL)
 	if err != nil {
 		bs.logger.WithError(err).Error("Failed to parse completion URL")
 		return "", fmt.Errorf("failed to parse completion URL: %w", err)
+	}
+	
+	// Check if the URL has a valid scheme and host
+	if parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return "", fmt.Errorf("invalid URL: missing scheme or host")
 	}
 	
 	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
