@@ -9,12 +9,13 @@ use App\Enums\GrenadeType;
 use App\Enums\ThrowType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class GrenadeEventTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_grenade_event()
     {
         $grenadeEvent = GrenadeEvent::factory()->create([
@@ -49,7 +50,7 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals(8, $grenadeEvent->effectiveness_rating);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_fillable_attributes()
     {
         $grenadeEvent = new GrenadeEvent();
@@ -79,7 +80,7 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals($expectedFillable, $grenadeEvent->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_attributes_correctly()
     {
         $grenadeEvent = GrenadeEvent::factory()->create([
@@ -123,7 +124,7 @@ class GrenadeEventTest extends TestCase
         $this->assertIsInt($grenadeEvent->effectiveness_rating);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_match()
     {
         $match = GameMatch::factory()->create();
@@ -133,7 +134,7 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals($match->id, $grenadeEvent->match->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_player()
     {
         $player = Player::factory()->create();
@@ -143,14 +144,14 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals($player->id, $grenadeEvent->player->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_correct_table_name()
     {
         $grenadeEvent = new GrenadeEvent();
         $this->assertEquals('grenade_events', $grenadeEvent->getTable());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_be_created_with_factory()
     {
         $grenadeEvent = GrenadeEvent::factory()->create();
@@ -162,7 +163,7 @@ class GrenadeEventTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_empty_affected_players()
     {
         $grenadeEvent = GrenadeEvent::factory()->create([
@@ -173,7 +174,7 @@ class GrenadeEventTest extends TestCase
         $this->assertEmpty($grenadeEvent->affected_players);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_zero_damage_and_flash_duration()
     {
         $grenadeEvent = GrenadeEvent::factory()->create([

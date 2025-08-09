@@ -17,12 +17,13 @@ use App\Enums\GrenadeType;
 use App\Enums\ThrowType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class ModelRelationshipsTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_complete_match_with_all_relationships()
     {
         // Create a match
@@ -246,7 +247,7 @@ class ModelRelationshipsTest extends TestCase
         $this->assertEquals('T', $match->players->first()->pivot->side_start);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_query_relationships_efficiently()
     {
         // Create multiple matches and players to test relationship queries
@@ -295,7 +296,7 @@ class ModelRelationshipsTest extends TestCase
         $this->assertCount(2, $playersInMatch1);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_handle_complex_relationship_queries()
     {
         // Create test data
