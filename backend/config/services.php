@@ -37,6 +37,7 @@ return [
 
     'parser' => [
         'base_url' => env('PARSER_SERVICE_BASE_URL', 'http://localhost:8080'),
+        'api_key' => env('PARSER_SERVICE_API_KEY'),
     ],
 
 ];

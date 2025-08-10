@@ -112,59 +112,6 @@ func TestBatchSender_ExtractBaseURL(t *testing.T) {
 	}
 }
 
-func TestBatchSender_SendMatchMetadata(t *testing.T) {
-	// Create a test server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check headers
-		if r.Header.Get("Content-Type") != "application/json" {
-			t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
-		}
-		
-		if r.Header.Get("X-API-Key") != "test-api-key" {
-			t.Errorf("Expected X-API-Key test-api-key, got %s", r.Header.Get("X-API-Key"))
-		}
-		
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-	
-	cfg := &config.Config{
-		Server: config.ServerConfig{
-			APIKey: "test-api-key",
-		},
-		Batch: config.BatchConfig{
-			HTTPTimeout: 30 * time.Second,
-		},
-	}
-	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
-	
-	// Create test match data
-	matchData := &types.ParsedDemoData{
-		Match: types.Match{
-			Map:              "de_dust2",
-			WinningTeamScore: 16,
-			LosingTeamScore:  14,
-			MatchType:        "competitive",
-			TotalRounds:      30,
-		},
-		Players: []types.Player{
-			{
-				SteamID: "steam_123",
-				Name:    "Player1",
-				Team:    "T",
-			},
-		},
-	}
-	
-	ctx := context.Background()
-	err := sender.SendMatchMetadata(ctx, "test-job-123", server.URL, matchData)
-	
-	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
-	}
-}
-
 func TestBatchSender_SendGunfightEvents(t *testing.T) {
 	// Create a test server that handles the specific routes
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +166,7 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 	}
 	
 	ctx := context.Background()
-	err = sender.SendGunfightEvents(ctx, "test-job-123", events)
+	err = sender.SendGunfightEvents(ctx, "test-job-123", server.URL, events)
 	
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
@@ -236,7 +183,7 @@ func TestBatchSender_SendGunfightEvents_Empty(t *testing.T) {
 	sender := NewBatchSender(cfg, logger)
 	
 	ctx := context.Background()
-	err := sender.SendGunfightEvents(ctx, "test-job-123", []types.GunfightEvent{})
+	err := sender.SendGunfightEvents(ctx, "test-job-123", "http://localhost:8080", []types.GunfightEvent{})
 	
 	if err != nil {
 		t.Errorf("Expected no error for empty events, got: %v", err)
@@ -297,7 +244,7 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 	}
 	
 	ctx := context.Background()
-	err = sender.SendGrenadeEvents(ctx, "test-job-123", events)
+	err = sender.SendGrenadeEvents(ctx, "test-job-123", server.URL, events)
 	
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
@@ -361,7 +308,7 @@ func TestBatchSender_SendDamageEvents(t *testing.T) {
 	}
 	
 	ctx := context.Background()
-	err = sender.SendDamageEvents(ctx, "test-job-123", events)
+	err = sender.SendDamageEvents(ctx, "test-job-123", server.URL, events)
 	
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
@@ -419,7 +366,7 @@ func TestBatchSender_SendRoundEvents(t *testing.T) {
 	}
 	
 	ctx := context.Background()
-	err = sender.SendRoundEvents(ctx, "test-job-123", events)
+	err = sender.SendRoundEvents(ctx, "test-job-123", server.URL, events)
 	
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)

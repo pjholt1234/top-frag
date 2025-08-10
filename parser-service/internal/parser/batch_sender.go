@@ -52,32 +52,17 @@ func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
 	return baseURL, nil
 }
 
-func (bs *BatchSender) SendMatchMetadata(ctx context.Context, jobID string, completionURL string, matchData *types.ParsedDemoData) error {
+func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, completionURL string, events []types.GunfightEvent) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
 		return fmt.Errorf("failed to extract base URL: %w", err)
 	}
 	bs.baseURL = baseURL
-	
-	metadata := map[string]interface{}{
-		"status": "processing_data",
-		"match":  matchData.Match,
-		"players": matchData.Players,
-	}
-
-	bs.logger.WithField("job_id", jobID).Info("Sending match metadata")
-	
-	if err := bs.sendRequest(ctx, completionURL, metadata); err != nil {
-		return fmt.Errorf("failed to send match metadata: %w", err)
-	}
-
-	return nil
-}
-
-func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, events []types.GunfightEvent) error {
-	if len(events) == 0 {
-		return nil
-	}
 
 	batchSize := bs.config.Batch.GunfightEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
@@ -155,10 +140,17 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, eve
 	return nil
 }
 
-func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, events []types.GrenadeEvent) error {
+func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, completionURL string, events []types.GrenadeEvent) error {
 	if len(events) == 0 {
 		return nil
 	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
 
 	batchSize := bs.config.Batch.GrenadeEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
@@ -236,10 +228,17 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, even
 	return nil
 }
 
-func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, events []types.DamageEvent) error {
+func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, completionURL string, events []types.DamageEvent) error {
 	if len(events) == 0 {
 		return nil
 	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
 
 	batchSize := bs.config.Batch.DamageEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
@@ -300,10 +299,17 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, event
 	return nil
 }
 
-func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, events []types.RoundEvent) error {
+func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, completionURL string, events []types.RoundEvent) error {
 	if len(events) == 0 {
 		return nil
 	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
 
 	bs.logger.WithFields(logrus.Fields{
 		"job_id":       jobID,
@@ -345,7 +351,8 @@ func (bs *BatchSender) SendCompletion(ctx context.Context, jobID string, complet
 	bs.logger.WithField("job_id", jobID).Info("Sending completion signal")
 
 	payload := map[string]interface{}{
-		"status": "completed",
+		"job_id": jobID,
+		"status": types.StatusCompleted,
 	}
 
 	if err := bs.sendRequest(ctx, completionURL, payload); err != nil {
@@ -362,7 +369,8 @@ func (bs *BatchSender) SendError(ctx context.Context, jobID string, completionUR
 	}).Error("Sending error signal")
 
 	payload := map[string]interface{}{
-		"status": "failed",
+		"job_id": jobID,
+		"status": types.StatusFailed,
 		"error":  errorMsg,
 	}
 

@@ -19,5 +19,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Seed demo processing jobs
+        $this->call([
+            DemoProcessingJobSeeder::class,
+        ]);
     }
 }

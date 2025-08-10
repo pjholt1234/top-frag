@@ -53,8 +53,8 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	eventProcessor := NewEventProcessor(matchState, dp.logger)
 
 	progressCallback(types.ProgressUpdate{
-		Status:      types.StatusProcessing,
-		Progress:    10,
+		Status:      types.StatusParsing,
+		Progress:    15,
 		CurrentStep: "Parsing demo file",
 	})
 
@@ -69,8 +69,8 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	}
 
 	progressCallback(types.ProgressUpdate{
-		Status:      types.StatusProcessing,
-		Progress:    90,
+		Status:      types.StatusProcessingEvents,
+		Progress:    85,
 		CurrentStep: "Processing final data",
 	})
 
@@ -108,8 +108,8 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	parser.RegisterEventHandler(func(e events.RoundStart) {
 		eventProcessor.HandleRoundStart(e)
 		progressCallback(types.ProgressUpdate{
-			Status:      types.StatusProcessing,
-			Progress:    30 + (eventProcessor.matchState.CurrentRound*2),
+			Status:      types.StatusProcessingEvents,
+			Progress:    20 + (eventProcessor.matchState.CurrentRound*2),
 			CurrentStep: fmt.Sprintf("Processing round %d", eventProcessor.matchState.CurrentRound),
 		})
 	})

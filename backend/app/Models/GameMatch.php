@@ -25,8 +25,6 @@ class GameMatch extends Model
         'total_rounds',
         'total_fight_events',
         'total_grenade_events',
-        'processing_status',
-        'error_message',
     ];
 
     protected $casts = [
@@ -47,7 +45,7 @@ class GameMatch extends Model
 
     public function players()
     {
-        return $this->belongsToMany(Player::class, 'match_players', 'match_id', 'player_id')
+        return $this->belongsToMany(Player::class, 'match_players', 'player_id', 'match_id')
             ->withPivot(['team', 'side_start'])
             ->withTimestamps();
     }
@@ -70,5 +68,10 @@ class GameMatch extends Model
     public function playerMatchSummaries(): HasMany
     {
         return $this->hasMany(PlayerMatchSummary::class, 'match_id');
+    }
+
+    public function demoProcessingJobs(): HasMany
+    {
+        return $this->hasMany(DemoProcessingJob::class, 'match_id');
     }
 }

@@ -5,3 +5,4 @@ demo.dem
 /parser-service/app
 /mock-server
 /parser-service/config.yaml
+/.idea

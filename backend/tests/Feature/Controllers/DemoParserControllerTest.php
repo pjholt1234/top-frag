@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
+use App\Models\DemoProcessingJob;
+use App\Models\GameMatch;
+use App\Models\Player;
+use App\Enums\ProcessingStatus;
 
 class DemoParserControllerTest extends TestCase
 {
@@ -136,5 +139,125 @@ class DemoParserControllerTest extends TestCase
             ->assertJson([
                 'error' => 'Invalid API key',
             ]);
+    }
+
+    public function test_progress_callback_with_match_and_players_data(): void
+    {
+        $jobId = 'test-job-123';
+
+        // Create a demo processing job first
+        DemoProcessingJob::create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::QUEUED,
+            'progress_percentage' => 0,
+            'current_step' => 'Job queued',
+        ]);
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => 'SendingMetadata',
+            'progress' => 90,
+            'current_step' => 'Sending match metadata',
+            'match' => [
+                'map' => 'de_dust2',
+                'winning_team_score' => 16,
+                'losing_team_score' => 14,
+                'match_type' => 'mm',
+                'start_timestamp' => '2025-08-10T01:00:00Z',
+                'end_timestamp' => '2025-08-10T02:00:00Z',
+                'total_rounds' => 30,
+            ],
+            'players' => [
+                [
+                    'steam_id' => 'steam_123',
+                    'name' => 'Player1',
+                    'team' => 'T',
+                ],
+                [
+                    'steam_id' => 'steam_456',
+                    'name' => 'Player2',
+                    'team' => 'CT',
+                ],
+            ],
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/progress', $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Progress update received',
+                'job_id' => $jobId,
+            ]);
+
+        // Verify the match was created
+        $this->assertDatabaseHas('matches', [
+            'map' => 'de_dust2',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+            'match_type' => 'mm',
+            'total_rounds' => 30,
+        ]);
+
+        // Verify the players were created
+        $this->assertDatabaseHas('players', [
+            'steam_id' => 'steam_123',
+            'name' => 'Player1',
+        ]);
+
+        $this->assertDatabaseHas('players', [
+            'steam_id' => 'steam_456',
+            'name' => 'Player2',
+        ]);
+
+        // Verify the match-player relationships were created
+        $match = GameMatch::where('map', 'de_dust2')->first();
+        $player1 = Player::where('steam_id', 'steam_123')->first();
+        $player2 = Player::where('steam_id', 'steam_456')->first();
+
+        $this->assertDatabaseHas('match_players', [
+            'match_id' => $match->id,
+            'player_id' => $player1->id,
+            'team' => 'T',
+        ]);
+
+        $this->assertDatabaseHas('match_players', [
+            'match_id' => $match->id,
+            'player_id' => $player2->id,
+            'team' => 'CT',
+        ]);
+    }
+
+    public function test_completion_callback_without_match_data(): void
+    {
+        $jobId = 'test-job-456';
+        $payload = [
+            'job_id' => $jobId,
+            'status' => 'Completed',
+            'progress' => 100,
+            'current_step' => 'Processing complete',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/completion', $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Completion update received',
+                'job_id' => $jobId,
+            ]);
+
+        $this->assertDatabaseHas('demo_processing_jobs', [
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::COMPLETED,
+            'progress_percentage' => 100,
+            'current_step' => 'Processing complete',
+        ]);
     }
 }

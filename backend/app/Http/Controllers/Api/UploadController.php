@@ -2,49 +2,94 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\ParserServiceConnectorException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Services\ParserServiceConnector;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class UploadController extends Controller
 {
-    /**
-     * Upload a demo file.
-     */
+    public function __construct(private readonly ParserServiceConnector $parserServiceConnector) {}
+
     public function demo(Request $request): JsonResponse
     {
-        Log::channel('parser')->info('Demo upload request received', [
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
-            'headers' => $request->headers->all(),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'content_type' => $request->header('Content-Type'),
-            'content_length' => $request->header('Content-Length'),
-            'has_file' => $request->hasFile('demo'),
-            'all_data' => $request->all()
-        ]);
+        try {
+            // Validate the request
+            $request->validate([
+                'demo' => 'required|file|mimes:dem|max:102400', // 100MB max
+            ]);
 
-        $jobId = 'job_' . uniqid();
-        $uploadId = uniqid();
+            $file = $request->file('demo');
 
-        $response = [
-            'message' => 'Demo upload initiated',
-            'data' => [
-                'job_id' => $jobId,
-                'status' => 'pending',
-                'estimated_processing_time' => '5-10 minutes',
-                'upload_id' => $uploadId
-            ]
-        ];
+            // Store file temporarily
+            $tempPath = $file->store('temp', 'local');
+            $fullPath = storage_path("app/{$tempPath}");
 
-        Log::channel('parser')->info('Demo upload response sent', [
-            'job_id' => $jobId,
-            'upload_id' => $uploadId,
-            'response' => $response
-        ]);
+            try {
+                // Generate a UUID for the job
+                $jobId = Str::uuid()->toString();
 
-        return response()->json($response, 202);
+                // Upload the demo to parser service
+                $response = $this->parserServiceConnector->uploadDemo($fullPath, $jobId);
+
+                Log::channel('parser')->info('Demo upload successful via API', [
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                    'job_id' => $jobId,
+                    'response' => $response,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Demo uploaded successfully',
+                    'data' => $response,
+                ], 200);
+            } finally {
+                // Clean up temporary file
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            }
+        } catch (ParserServiceConnectorException $e) {
+            // The exception is already logged by the exception class
+            Log::channel('parser')->error('Demo upload failed via API', [
+                'file_name' => $request->file('demo')?->getClientOriginalName(),
+                'exception' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Parser service error',
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 500);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::channel('parser')->warning('Demo upload validation failed', [
+                'errors' => $e->errors(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation error',
+                'message' => 'Invalid demo file',
+                'details' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::channel('parser')->error('Unexpected error in demo upload', [
+                'file_name' => $request->file('demo')?->getClientOriginalName(),
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Internal server error',
+                'message' => 'An unexpected error occurred while uploading the demo',
+            ], 500);
+        }
     }
 }

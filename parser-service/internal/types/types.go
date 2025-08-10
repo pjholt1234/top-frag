@@ -280,10 +280,26 @@ const (
 )
 
 const (
-	StatusPending    = "pending"
-	StatusProcessing = "processing"
-	StatusCompleted  = "completed"
-	StatusFailed     = "failed"
+	// Job Lifecycle Statuses
+	StatusQueued           = "Queued"
+	StatusValidating       = "Validating"
+	StatusUploading        = "Uploading"
+	StatusInitializing     = "Initializing"
+	StatusParsing          = "Parsing"
+	StatusProcessingEvents = "ProcessingEvents"
+	StatusSendingMetadata  = "SendingMetadata"
+	StatusSendingEvents    = "SendingEvents"
+	StatusFinalizing       = "Finalizing"
+	StatusCompleted        = "Completed"
+	StatusFailed           = "Failed"
+	
+	// Error-Specific Statuses
+	StatusValidationFailed = "ValidationFailed"
+	StatusUploadFailed     = "UploadFailed"
+	StatusParseFailed      = "ParseFailed"
+	StatusCallbackFailed   = "CallbackFailed"
+	StatusTimeout          = "Timeout"
+	StatusCancelled        = "Cancelled"
 )
 
 // Helper functions
