@@ -61,8 +61,13 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 	// Variable to store map name
 	var mapName string
+	// Variable to store parser reference for getting playback ticks
+	var demoParser demoinfocs.Parser
 
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
+		// Store parser reference for later use
+		demoParser = parser
+		
 		// Register handler for demo file header to get map name
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
@@ -90,13 +95,22 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		return nil, fmt.Errorf("failed to parse demo: %w", err)
 	}
 
+	// Get playback ticks from the parser after parsing is complete
+	playbackTicks := 0
+	if demoParser != nil {
+		// Use the current frame as an approximation of playback ticks
+		// This represents the total number of frames processed
+		playbackTicks = demoParser.CurrentFrame()
+		dp.logger.WithField("playback_ticks", playbackTicks).Info("Extracted playback ticks from demo parser")
+	}
+
 	progressCallback(types.ProgressUpdate{
 		Status:      types.StatusProcessingEvents,
 		Progress:    85,
 		CurrentStep: "Processing final data",
 	})
 
-	parsedData := dp.buildParsedData(matchState, mapName, eventProcessor)
+	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor)
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
 		Info("Demo parsing completed")
@@ -194,7 +208,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 }
 
-func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, eventProcessor *EventProcessor) *types.ParsedDemoData {
+func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, playbackTicks int, eventProcessor *EventProcessor) *types.ParsedDemoData {
 	players := make([]types.Player, 0, len(matchState.Players))
 	for _, player := range matchState.Players {
 		players = append(players, *player)
@@ -241,6 +255,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		StartTimestamp:   nil,
 		EndTimestamp:     nil,
 		TotalRounds:      totalRounds,
+		PlaybackTicks:   playbackTicks,
 	}
 
 	now := time.Now()
@@ -256,6 +271,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"team_b_wins":        teamBWins,
 		"team_a_started_as":  eventProcessor.teamAStartedAs,
 		"team_b_started_as":  eventProcessor.teamBStartedAs,
+		"playback_ticks":     match.PlaybackTicks,
 	}).Info("Match data built")
 
 	return &types.ParsedDemoData{

@@ -118,6 +118,7 @@ type Match struct {
 	StartTimestamp   *time.Time `json:"start_timestamp,omitempty"`
 	EndTimestamp     *time.Time `json:"end_timestamp,omitempty"`
 	TotalRounds      int        `json:"total_rounds"`
+	PlaybackTicks    int        `json:"playback_ticks"`    // Match duration in ticks from demo header
 }
 
 type ParsedDemoData struct {

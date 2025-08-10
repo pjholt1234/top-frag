@@ -26,6 +26,7 @@ class GameMatch extends Model
         'total_rounds',
         'total_fight_events',
         'total_grenade_events',
+        'playback_ticks',
     ];
 
     protected $casts = [

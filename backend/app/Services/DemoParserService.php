@@ -39,25 +39,26 @@ class DemoParserService
             return;
         }
 
-        // Create the match
+        $matchHash = $this->generateMatchHash($matchData, $playersData);
+
         $match = GameMatch::create([
-            'match_hash' => Str::uuid(),
+            'match_hash' => $matchHash,
             'map' => $matchData['map'] ?? 'Unknown',
             'winning_team' => $matchData['winning_team'] ?? 'A',
             'winning_team_score' => $matchData['winning_team_score'] ?? 0,
             'losing_team_score' => $matchData['losing_team_score'] ?? 0,
             'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-            'start_timestamp' => isset($matchData['start_timestamp']) ? \Carbon\Carbon::parse($matchData['start_timestamp']) : null,
-            'end_timestamp' => isset($matchData['end_timestamp']) ? \Carbon\Carbon::parse($matchData['end_timestamp']) : null,
+            'start_timestamp' => null, //todo: add this
+            'end_timestamp' => null, //todo: add this
             'total_rounds' => $matchData['total_rounds'] ?? 0,
             'total_fight_events' => 0, // Will be updated when events are processed
             'total_grenade_events' => 0, // Will be updated when events are processed
+            'playback_ticks' => $matchData['playback_ticks'] ?? 0,
         ]);
 
-        // Update the job with the match ID
+
         $job->update(['match_id' => $match->id]);
 
-        // Process players if provided
         if ($playersData && is_array($playersData)) {
             foreach ($playersData as $playerData) {
                 $this->createOrUpdatePlayer($match, $playerData);
@@ -67,13 +68,13 @@ class DemoParserService
         Log::info("Match created successfully", [
             'job_id' => $jobId,
             'match_id' => $match->id,
+            'match_hash' => $matchHash,
             'players_count' => $playersData ? count($playersData) : 0
         ]);
     }
 
     private function createOrUpdatePlayer(GameMatch $match, array $playerData): void
     {
-        // Find or create the player
         $player = Player::firstOrCreate(
             ['steam_id' => $playerData['steam_id']],
             [
@@ -84,18 +85,41 @@ class DemoParserService
             ]
         );
 
-        // Update player's last seen and total matches
         $player->update([
             'last_seen_at' => now(),
             'total_matches' => $player->total_matches + 1,
         ]);
 
-        // Create the match player relationship
         MatchPlayer::create([
             'match_id' => $match->id,
             'player_id' => $player->id,
             'team' => $this->mapTeam($playerData['team'] ?? 'A'),
         ]);
+    }
+
+    private function generateMatchHash(array $matchData, ?array $playersData = null): string
+    {
+        $hashData = [
+            $matchData['map'] ?? 'Unknown',
+            $matchData['winning_team_score'] ?? 0,
+            $matchData['losing_team_score'] ?? 0,
+            $matchData['match_type'] ?? 'other',
+            $matchData['total_rounds'] ?? 0,
+            $matchData['playback_ticks'] ?? 0,
+        ];
+
+        if ($playersData && is_array($playersData)) {
+            usort($playersData, function ($a, $b) {
+                return ($a['steam_id'] ?? '') <=> ($b['steam_id'] ?? '');
+            });
+
+            foreach ($playersData as $playerData) {
+                $hashData[] = $playerData['steam_id'] ?? 'Unknown';
+                $hashData[] = $playerData['team'] ?? 'A';
+            }
+        }
+
+        return hash('sha256', implode('|', $hashData));
     }
 
     private function mapMatchType(string $type): string

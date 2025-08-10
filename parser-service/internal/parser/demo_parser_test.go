@@ -192,7 +192,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	eventProcessor.teamAWins = 1  // CT wins 1 round
 	eventProcessor.teamBWins = 2  // T wins 2 rounds
 	
-	parsedData := parser.buildParsedData(matchState, "de_test", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -261,7 +261,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	// Create an event processor
 	eventProcessor := NewEventProcessor(matchState, logger)
 	
-	parsedData := parser.buildParsedData(matchState, "de_test", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -316,7 +316,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	eventProcessor.teamAWins = 1  // CT wins 1 round
 	eventProcessor.teamBWins = 1  // T wins 1 round
 	
-	parsedData := parser.buildParsedData(matchState, "de_test", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -397,7 +397,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	eventProcessor.teamAWins = 10  // CT wins 10 rounds total
 	eventProcessor.teamBWins = 11  // T wins 11 rounds total
 	
-	parsedData := parser.buildParsedData(matchState, "de_ancient", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_ancient", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -446,7 +446,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	eventProcessor.teamAWins = 1
 	eventProcessor.teamBWins = 0
 	
-	parsedData := parser.buildParsedData(matchState, "", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -615,7 +615,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	eventProcessor.teamAWins = 14
 	eventProcessor.teamBWins = 16
 	
-	parsedData := parser.buildParsedData(matchState, "de_mirage", eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_mirage", 1000, eventProcessor)
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")

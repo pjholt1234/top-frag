@@ -23,6 +23,7 @@ return new class extends Migration
             $table->integer('total_rounds');
             $table->integer('total_fight_events')->default(0);
             $table->integer('total_grenade_events')->default(0);
+            $table->integer('playback_ticks')->default(0);
             $table->timestamps();
 
             // Indexes
