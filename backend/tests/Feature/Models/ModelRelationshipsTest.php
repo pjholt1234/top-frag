@@ -40,24 +40,21 @@ class ModelRelationshipsTest extends TestCase
         $player2 = Player::factory()->create(['steam_id' => 'STEAM_2', 'name' => 'Player2']);
         $player3 = Player::factory()->create(['steam_id' => 'STEAM_3', 'name' => 'Player3']);
 
-        // Create match players (pivot table)
+        // Create pivot records
         $matchPlayer1 = MatchPlayer::factory()->create([
             'match_id' => $match->id,
             'player_id' => $player1->id,
-            'team' => Team::TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
         $matchPlayer2 = MatchPlayer::factory()->create([
             'match_id' => $match->id,
             'player_id' => $player2->id,
-            'team' => Team::COUNTER_TERRORIST,
-            'side_start' => Team::COUNTER_TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
         $matchPlayer3 = MatchPlayer::factory()->create([
             'match_id' => $match->id,
             'player_id' => $player3->id,
-            'team' => Team::TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
 
         // Create gunfight events
@@ -242,8 +239,7 @@ class ModelRelationshipsTest extends TestCase
         $this->assertEquals($player1->id, $playerSummary1->player->id);
 
         // Test pivot data
-        $this->assertEquals('T', $match->players->first()->pivot->team);
-        $this->assertEquals('T', $match->players->first()->pivot->side_start);
+        $this->assertEquals('A', $match->players->first()->pivot->team);
     }
 
     #[Test]
@@ -260,17 +256,17 @@ class ModelRelationshipsTest extends TestCase
         MatchPlayer::factory()->create([
             'match_id' => $match1->id,
             'player_id' => $player1->id,
-            'team' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
         MatchPlayer::factory()->create([
             'match_id' => $match1->id,
             'player_id' => $player2->id,
-            'team' => Team::COUNTER_TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
         MatchPlayer::factory()->create([
             'match_id' => $match2->id,
             'player_id' => $player1->id,
-            'team' => Team::COUNTER_TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
 
         // Test eager loading
@@ -284,7 +280,7 @@ class ModelRelationshipsTest extends TestCase
 
         // Test whereHas queries
         $matchesWithTerrorists = GameMatch::whereHas('players', function ($query) {
-            $query->where('team', Team::TERRORIST);
+            $query->where('team', Team::TEAM_A);
         })->get();
         $this->assertCount(1, $matchesWithTerrorists);
         $this->assertEquals('match1', $matchesWithTerrorists->first()->match_hash);

@@ -184,12 +184,12 @@ class DemoParserControllerTest extends TestCase
                 [
                     'steam_id' => 'steam_123',
                     'name' => 'Player1',
-                    'team' => 'T',
+                    'team' => 'A',
                 ],
                 [
                     'steam_id' => 'steam_456',
                     'name' => 'Player2',
-                    'team' => 'CT',
+                    'team' => 'B',
                 ],
             ],
         ];
@@ -234,13 +234,13 @@ class DemoParserControllerTest extends TestCase
         $this->assertDatabaseHas('match_players', [
             'match_id' => $match->id,
             'player_id' => $player1->id,
-            'team' => 'T',
+            'team' => 'A',
         ]);
 
         $this->assertDatabaseHas('match_players', [
             'match_id' => $match->id,
             'player_id' => $player2->id,
-            'team' => 'CT',
+            'team' => 'B',
         ]);
     }
 

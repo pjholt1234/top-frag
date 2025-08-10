@@ -43,6 +43,7 @@ class DemoParserService
         $match = GameMatch::create([
             'match_hash' => Str::uuid(),
             'map' => $matchData['map'] ?? 'Unknown',
+            'winning_team' => $matchData['winning_team'] ?? 'A',
             'winning_team_score' => $matchData['winning_team_score'] ?? 0,
             'losing_team_score' => $matchData['losing_team_score'] ?? 0,
             'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
@@ -93,8 +94,7 @@ class DemoParserService
         MatchPlayer::create([
             'match_id' => $match->id,
             'player_id' => $player->id,
-            'team' => $this->mapTeam($playerData['team'] ?? 'unknown'),
-            'side_start' => $this->mapTeam($playerData['team'] ?? 'unknown'), // Assuming same as team for now
+            'team' => $this->mapTeam($playerData['team'] ?? 'A'),
         ]);
     }
 
@@ -111,10 +111,10 @@ class DemoParserService
 
     private function mapTeam(string $team): string
     {
-        return match (strtolower($team)) {
-            't', 'terrorist', 'terrorists' => Team::TERRORIST->value,
-            'ct', 'counter-terrorist', 'counter-terrorists' => Team::COUNTER_TERRORIST->value,
-            default => Team::TERRORIST->value, // Default to T instead of 'Unknown'
+        return match (strtoupper($team)) {
+            'A' => Team::TEAM_A->value,
+            'B' => Team::TEAM_B->value,
+            default => Team::TEAM_A->value, // Default fallback
         };
     }
 

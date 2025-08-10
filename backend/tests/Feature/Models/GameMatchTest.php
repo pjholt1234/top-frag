@@ -51,6 +51,7 @@ class GameMatchTest extends TestCase
         $expectedFillable = [
             'match_hash',
             'map',
+            'winning_team',
             'winning_team_score',
             'losing_team_score',
             'match_type',
@@ -95,7 +96,7 @@ class GameMatchTest extends TestCase
     }
 
     #[Test]
-    public function it_belongs_to_many_players()
+    public function it_has_many_players_through_pivot()
     {
         $match = GameMatch::factory()->create();
         $player1 = Player::factory()->create();
@@ -105,20 +106,17 @@ class GameMatchTest extends TestCase
         MatchPlayer::factory()->create([
             'match_id' => $match->id,
             'player_id' => $player1->id,
-            'team' => Team::TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
         MatchPlayer::factory()->create([
             'match_id' => $match->id,
             'player_id' => $player2->id,
-            'team' => Team::COUNTER_TERRORIST,
-            'side_start' => Team::COUNTER_TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
 
         $this->assertCount(2, $match->players);
         $this->assertInstanceOf(Player::class, $match->players->first());
         $this->assertArrayHasKey('team', $match->players->first()->pivot->toArray());
-        $this->assertArrayHasKey('side_start', $match->players->first()->pivot->toArray());
     }
 
     #[Test]

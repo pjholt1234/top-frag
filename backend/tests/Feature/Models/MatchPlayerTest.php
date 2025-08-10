@@ -6,7 +6,6 @@ use App\Models\MatchPlayer;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Enums\Team;
-use App\Enums\Side;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -19,13 +18,11 @@ class MatchPlayerTest extends TestCase
     public function it_can_create_a_match_player()
     {
         $matchPlayer = MatchPlayer::factory()->create([
-            'team' => Team::TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
 
         $this->assertInstanceOf(MatchPlayer::class, $matchPlayer);
-        $this->assertEquals(Team::TERRORIST, $matchPlayer->team);
-        $this->assertEquals(Team::TERRORIST, $matchPlayer->side_start);
+        $this->assertEquals(Team::TEAM_A, $matchPlayer->team);
     }
 
     #[Test]
@@ -33,7 +30,7 @@ class MatchPlayerTest extends TestCase
     {
         $matchPlayer = new MatchPlayer();
 
-        $expectedFillable = ['match_id', 'player_id', 'team', 'side_start'];
+        $expectedFillable = ['match_id', 'player_id', 'team'];
         $this->assertEquals($expectedFillable, $matchPlayer->getFillable());
     }
 
@@ -41,14 +38,11 @@ class MatchPlayerTest extends TestCase
     public function it_casts_attributes_correctly()
     {
         $matchPlayer = MatchPlayer::factory()->create([
-            'team' => Team::COUNTER_TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
 
         $this->assertInstanceOf(Team::class, $matchPlayer->team);
-        $this->assertInstanceOf(Team::class, $matchPlayer->side_start);
-        $this->assertEquals(Team::COUNTER_TERRORIST, $matchPlayer->team);
-        $this->assertEquals(Team::TERRORIST, $matchPlayer->side_start);
+        $this->assertEquals(Team::TEAM_B, $matchPlayer->team);
     }
 
     #[Test]
@@ -79,27 +73,51 @@ class MatchPlayerTest extends TestCase
     }
 
     #[Test]
-    public function it_can_be_created_with_factory()
+    public function it_can_be_created_with_valid_data()
     {
-        $matchPlayer = MatchPlayer::factory()->create();
+        $match = GameMatch::factory()->create();
+        $player = Player::factory()->create();
+
+        $matchPlayer = MatchPlayer::create([
+            'match_id' => $match->id,
+            'player_id' => $player->id,
+            'team' => Team::TEAM_A,
+        ]);
 
         $this->assertDatabaseHas('match_players', [
-            'id' => $matchPlayer->id,
-            'match_id' => $matchPlayer->match_id,
-            'player_id' => $matchPlayer->player_id,
+            'match_id' => $match->id,
+            'player_id' => $player->id,
+            'team' => Team::TEAM_A->value,
         ]);
     }
 
     #[Test]
-    public function it_can_have_different_team_and_side_start()
+    public function it_has_correct_fillable_fields()
+    {
+        $matchPlayer = new MatchPlayer();
+        $expectedFillable = ['match_id', 'player_id', 'team'];
+        $this->assertEquals($expectedFillable, $matchPlayer->getFillable());
+    }
+
+    #[Test]
+    public function it_casts_team_to_enum()
     {
         $matchPlayer = MatchPlayer::factory()->create([
-            'team' => Team::COUNTER_TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
 
-        $this->assertEquals(Team::COUNTER_TERRORIST, $matchPlayer->team);
-        $this->assertEquals(Team::TERRORIST, $matchPlayer->side_start);
-        $this->assertNotEquals($matchPlayer->team, $matchPlayer->side_start);
+        $this->assertInstanceOf(Team::class, $matchPlayer->team);
+        $this->assertEquals(Team::TEAM_A, $matchPlayer->team);
+    }
+
+    #[Test]
+    public function it_can_have_different_team_values()
+    {
+        $matchPlayer = MatchPlayer::factory()->create([
+            'team' => Team::TEAM_A,
+        ]);
+
+        $this->assertEquals(Team::TEAM_A, $matchPlayer->team);
+        $this->assertNotEquals(Team::TEAM_B, $matchPlayer->team);
     }
 }

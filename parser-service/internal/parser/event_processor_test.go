@@ -462,6 +462,9 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
 	
+	// Set current round to 1 (within rounds 1-12 for team assignment)
+	processor.currentRound = 1
+	
 	// Create mock player
 	player := &common.Player{
 		SteamID64: 123,
@@ -477,14 +480,10 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 	
 	// Test player was added to match state
 	if len(matchState.Players) != 1 {
-		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
+		t.Errorf("Expected 1 player, got %d", len(matchState.Players))
 	}
 	
-	playerData, exists := matchState.Players["steam_123"]
-	if !exists {
-		t.Fatal("Expected player to be added to match state")
-	}
-	
+	playerData := matchState.Players["steam_123"]
 	if playerData.SteamID != "steam_123" {
 		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
 	}
@@ -493,8 +492,9 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
 	}
 	
-	if playerData.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerData.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerData.Team)
 	}
 	
 	// Test player state was created
@@ -515,8 +515,9 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
 	}
 	
-	if playerState.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerState.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerState.Team)
 	}
 }
 
@@ -547,21 +548,24 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 			"steam_123": {
 				SteamID: "steam_123",
 				Name:    "TestPlayer",
-				Team:    "CT",
+				Team:    "A", // Already assigned to team A
 			},
 		},
 	}
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
 	
+	// Set current round to 1 (within rounds 1-12 for team assignment)
+	processor.currentRound = 1
+	
 	// Add player state
 	processor.playerStates[123] = &types.PlayerState{
 		SteamID: "steam_123",
 		Name:    "TestPlayer",
-		Team:    "CT",
+		Team:    "A", // Already assigned to team A
 	}
 	
-	// Create mock player with team change
+	// Create mock player with team change to T side
 	player := &common.Player{
 		SteamID64: 123,
 		Name:      "TestPlayer",
@@ -575,15 +579,16 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 	processor.HandlePlayerTeamChange(event)
 	
 	// Test player team was updated in match state
+	// Since this is round 1 and player switches to T side, they should be assigned to team B
 	playerData := matchState.Players["steam_123"]
-	if playerData.Team != "T" {
-		t.Errorf("Expected team 'T', got %s", playerData.Team)
+	if playerData.Team != "B" {
+		t.Errorf("Expected team 'B', got %s", playerData.Team)
 	}
 	
 	// Test player state team was updated
 	playerState := processor.playerStates[123]
-	if playerState.Team != "T" {
-		t.Errorf("Expected team 'T', got %s", playerState.Team)
+	if playerState.Team != "B" {
+		t.Errorf("Expected team 'B', got %s", playerState.Team)
 	}
 }
 
@@ -593,6 +598,9 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 	}
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
+	
+	// Set current round to 1 (within rounds 1-12 for team assignment)
+	processor.currentRound = 1
 	
 	// Create mock player
 	player := &common.Player{
@@ -622,8 +630,9 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
 	}
 	
-	if playerData.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerData.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerData.Team)
 	}
 	
 	// Test player state was created
@@ -644,8 +653,9 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
 	}
 	
-	if playerState.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerState.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerState.Team)
 	}
 	
 	// Test that calling ensurePlayerTracked again doesn't duplicate
@@ -668,6 +678,9 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 	}
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
+	
+	// Set current round to 1 (within rounds 1-12 for team assignment)
+	processor.currentRound = 1
 	
 	// Test that ensurePlayerTracked works correctly
 	// This is the core functionality we want to test
@@ -700,8 +713,9 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
 	}
 	
-	if playerData.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerData.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerData.Team)
 	}
 	
 	// Test that player state was created
@@ -722,8 +736,9 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
 	}
 	
-	if playerState.Team != "CT" {
-		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	// With new team assignment: CT side in round 1 should be assigned to team A
+	if playerState.Team != "A" {
+		t.Errorf("Expected team 'A', got %s", playerState.Team)
 	}
 	
 	// Test that calling ensurePlayerTracked again doesn't duplicate
@@ -735,5 +750,68 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 	
 	if len(processor.playerStates) != 1 {
 		t.Errorf("Expected 1 player state after duplicate call, got %d", len(processor.playerStates))
+	}
+} 
+
+func TestEventProcessor_SideSwitching(t *testing.T) {
+	matchState := &types.MatchState{
+		CurrentRound: 0,
+		Players:      make(map[string]*types.Player),
+		RoundEvents:  []types.RoundEvent{},
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Set up initial team assignments
+	processor.teamAStartedAs = "CT"
+	processor.teamBStartedAs = "T"
+	processor.teamACurrentSide = "CT"
+	processor.teamBCurrentSide = "T"
+	processor.assignmentComplete = true
+	
+	// Test first half (rounds 1-12): CT wins should go to Team A
+	processor.currentRound = 1
+	processor.updateTeamWins("CT")
+	if processor.teamAWins != 1 {
+		t.Errorf("Expected Team A wins 1, got %d", processor.teamAWins)
+	}
+	if processor.teamBWins != 0 {
+		t.Errorf("Expected Team B wins 0, got %d", processor.teamBWins)
+	}
+	
+	// Test halftime switch (round 13)
+	processor.currentRound = 13
+	processor.updateTeamWins("T") // T wins should now go to Team A (since they switched)
+	if processor.teamAWins != 2 {
+		t.Errorf("Expected Team A wins 2, got %d", processor.teamAWins)
+	}
+	if processor.teamBWins != 0 {
+		t.Errorf("Expected Team B wins 0, got %d", processor.teamBWins)
+	}
+	
+	// Verify sides switched
+	if processor.teamACurrentSide != "T" {
+		t.Errorf("Expected Team A current side T, got %s", processor.teamACurrentSide)
+	}
+	if processor.teamBCurrentSide != "CT" {
+		t.Errorf("Expected Team B current side CT, got %s", processor.teamBCurrentSide)
+	}
+	
+	// Test overtime switch (round 25) - the switch happens at the start of the round
+	processor.currentRound = 25
+	processor.updateTeamWins("CT") // CT wins should now go to Team A (since they switched back)
+	if processor.teamAWins != 3 {
+		t.Errorf("Expected Team A wins 3, got %d", processor.teamAWins)
+	}
+	if processor.teamBWins != 0 {
+		t.Errorf("Expected Team B wins 0, got %d", processor.teamBWins)
+	}
+	
+	// Verify sides switched back
+	if processor.teamACurrentSide != "CT" {
+		t.Errorf("Expected Team A current side CT, got %s", processor.teamACurrentSide)
+	}
+	if processor.teamBCurrentSide != "T" {
+		t.Errorf("Expected Team B current side T, got %s", processor.teamBCurrentSide)
 	}
 } 

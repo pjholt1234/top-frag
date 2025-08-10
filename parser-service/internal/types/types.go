@@ -26,7 +26,7 @@ type Vector struct {
 type Player struct {
 	SteamID string `json:"steam_id"`
 	Name    string `json:"name"`
-	Team    string `json:"team"`
+	Team    string `json:"team"` // "A" or "B" (arbitrary team assignment)
 }
 
 type GunfightEvent struct {
@@ -111,6 +111,7 @@ type DamageEvent struct {
 
 type Match struct {
 	Map              string     `json:"map"`
+	WinningTeam      string     `json:"winning_team"`      // "A" or "B"
 	WinningTeamScore int        `json:"winning_team_score"`
 	LosingTeamScore  int        `json:"losing_team_score"`
 	MatchType        string     `json:"match_type"`

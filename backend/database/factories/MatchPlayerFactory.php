@@ -31,7 +31,6 @@ class MatchPlayerFactory extends Factory
             'match_id' => GameMatch::factory(),
             'player_id' => Player::factory(),
             'team' => $this->faker->randomElement(Team::cases()),
-            'side_start' => $this->faker->randomElement(Team::cases()),
         ];
     }
 }

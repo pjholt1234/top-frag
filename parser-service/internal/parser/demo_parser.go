@@ -96,7 +96,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		CurrentStep: "Processing final data",
 	})
 
-	parsedData := dp.buildParsedData(matchState, mapName)
+	parsedData := dp.buildParsedData(matchState, mapName, eventProcessor)
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
 		Info("Demo parsing completed")
@@ -194,7 +194,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 }
 
-func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string) *types.ParsedDemoData {
+func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, eventProcessor *EventProcessor) *types.ParsedDemoData {
 	players := make([]types.Player, 0, len(matchState.Players))
 	for _, player := range matchState.Players {
 		players = append(players, *player)
@@ -208,122 +208,39 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 
 	// Count round end events to get actual total rounds
 	totalRounds := 0
-	ctWins := 0
-	tWins := 0
-	
-	// Track team scores properly accounting for CS2's overtime system
-	// Regular game: First to 13 wins
-	// Overtime: 3 rounds per half, first to 16, 19, 22, etc.
-	
-	// Track wins by period
-	regularGameCTWins := 0  // Rounds 1-24 (max)
-	regularGameTWins := 0   // Rounds 1-24 (max)
-	overtimeCTWins := 0     // Rounds 25+
-	overtimeTWins := 0      // Rounds 25+
-	
-	// Track each round individually for team score calculation
-	roundWinners := make(map[int]string)
 	
 	for _, roundEvent := range matchState.RoundEvents {
 		if roundEvent.EventType == "end" {
 			totalRounds++
-			winner := "Unknown"
-			if roundEvent.Winner != nil {
-				winner = *roundEvent.Winner
-				roundWinners[roundEvent.RoundNumber] = winner
-				
-				if winner == "CT" {
-					ctWins++
-					if roundEvent.RoundNumber <= 24 {
-						regularGameCTWins++
-					} else {
-						overtimeCTWins++
-					}
-				} else if winner == "T" {
-					tWins++
-					if roundEvent.RoundNumber <= 24 {
-						regularGameTWins++
-					} else {
-						overtimeTWins++
-					}
-				}
-			}
 		}
 	}
 
-	// Calculate actual team scores by analyzing the pattern of wins
-	// In CS2, teams switch sides at halftime (round 12)
-	// We need to determine which team won based on the pattern
+	// Determine winning team and scores using the event processor
+	winningTeam := eventProcessor.getWinningTeam()
+	teamAWins := eventProcessor.teamAWins
+	teamBWins := eventProcessor.teamBWins
 	
-	// Analyze first half (rounds 1-12) vs second half (rounds 13-21)
-	firstHalfCTWins := 0
-	firstHalfTWins := 0
-	secondHalfCTWins := 0
-	secondHalfTWins := 0
+	// Set the match scores
+	winningTeamScore := 0
+	losingTeamScore := 0
 	
-	for roundNum := 1; roundNum <= 21; roundNum++ {
-		winner, exists := roundWinners[roundNum]
-		if exists {
-			if roundNum <= 12 {
-				// First half
-				if winner == "CT" {
-					firstHalfCTWins++
-				} else if winner == "T" {
-					firstHalfTWins++
-				}
-			} else {
-				// Second half
-				if winner == "CT" {
-					secondHalfCTWins++
-				} else if winner == "T" {
-					secondHalfTWins++
-				}
-			}
-		}
-	}
-	
-	// Determine which team is which based on the pattern
-	// If a team dominates first half as CT, they likely continue winning in second half as T
-	team1Score := 0
-	team2Score := 0
-	
-	if firstHalfCTWins > firstHalfTWins {
-		// CT dominated first half, so the team that was CT in first half is likely the stronger team
-		// In second half, they would be T
-		team1Score = firstHalfCTWins + secondHalfTWins
-		team2Score = firstHalfTWins + secondHalfCTWins
+	if winningTeam == "A" {
+		winningTeamScore = teamAWins
+		losingTeamScore = teamBWins
 	} else {
-		// T dominated first half, so the team that was T in first half is likely the stronger team
-		// In second half, they would be CT
-		team1Score = firstHalfTWins + secondHalfCTWins
-		team2Score = firstHalfCTWins + secondHalfTWins
-	}
-	
-	// Ensure scores don't exceed total rounds
-	if team1Score + team2Score > totalRounds {
-		// Fallback to simple CT vs T counting
-		team1Score = ctWins
-		team2Score = tWins
-		dp.logger.Warn("Team scores exceeded total rounds, falling back to CT vs T counting")
+		winningTeamScore = teamBWins
+		losingTeamScore = teamAWins
 	}
 
 	match := types.Match{
 		Map:              mapName,
-		WinningTeamScore: 0,
-		LosingTeamScore:  0,
+		WinningTeam:      winningTeam,
+		WinningTeamScore: winningTeamScore,
+		LosingTeamScore:  losingTeamScore,
 		MatchType:        types.MatchTypeOther,
 		StartTimestamp:   nil,
 		EndTimestamp:     nil,
 		TotalRounds:      totalRounds,
-	}
-	
-	// Set the match scores
-	if team1Score > team2Score {
-		match.WinningTeamScore = team1Score
-		match.LosingTeamScore = team2Score
-	} else {
-		match.WinningTeamScore = team2Score
-		match.LosingTeamScore = team1Score
 	}
 
 	now := time.Now()
@@ -332,9 +249,13 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	dp.logger.WithFields(logrus.Fields{
 		"map_name":           mapName,
 		"total_rounds":       match.TotalRounds,
+		"winning_team":       match.WinningTeam,
 		"winning_team_score": match.WinningTeamScore,
 		"losing_team_score":  match.LosingTeamScore,
-		"has_overtime":       overtimeCTWins + overtimeTWins > 0,
+		"team_a_wins":        teamAWins,
+		"team_b_wins":        teamBWins,
+		"team_a_started_as":  eventProcessor.teamAStartedAs,
+		"team_b_started_as":  eventProcessor.teamBStartedAs,
 	}).Info("Match data built")
 
 	return &types.ParsedDemoData{

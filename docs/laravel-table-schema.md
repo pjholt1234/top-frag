@@ -15,6 +15,7 @@ CREATE TABLE matches (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     match_hash VARCHAR(64) UNIQUE NOT NULL, -- SHA256 hash of demo file content for deduplication
     map VARCHAR(50) NOT NULL,
+    winning_team VARCHAR(10) NOT NULL DEFAULT 'A', -- 'A' or 'B' (arbitrary team assignment)
     winning_team_score INT NOT NULL,
     losing_team_score INT NOT NULL,
     match_type VARCHAR(20) NOT NULL, -- 'hltv', 'mm', 'faceit', 'esportal', 'other'
@@ -31,15 +32,16 @@ CREATE TABLE matches (
     INDEX idx_match_hash (match_hash),
     INDEX idx_map (map),
     INDEX idx_match_type (match_type),
+    INDEX idx_winning_team (winning_team),
     INDEX idx_processing_status (processing_status)
 );
 ```
 
-**Match Hash Explanation:**
-The `match_hash` is a SHA256 hash of the demo file content. This provides:
-- **Deduplication**: Same demo uploaded multiple times = same hash
-- **Unique identification**: Each unique match has a stable identifier
-- **Cross-user sharing**: Multiple users can upload the same demo, only processed once
+**Team Assignment Explanation:**
+Teams are assigned arbitrarily as A or B based on their starting sides in rounds 1-12:
+- Team A: Players who started on CT side in rounds 1-12
+- Team B: Players who started on T side in rounds 1-12
+- The winning team is determined by counting wins across all rounds
 
 ### 2. players
 Stores player information across all matches.
@@ -68,8 +70,7 @@ CREATE TABLE match_players (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     match_id BIGINT UNSIGNED NOT NULL,
     player_id BIGINT UNSIGNED NOT NULL,
-    team VARCHAR(10) NOT NULL, -- 'CT' or 'T'
-    side_start VARCHAR(10) NOT NULL, -- Which side they started on ('CT' or 'T')
+    team VARCHAR(10) NOT NULL, -- 'A' or 'B' (arbitrary team assignment)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     
@@ -79,7 +80,7 @@ CREATE TABLE match_players (
     
     INDEX idx_match_id (match_id),
     INDEX idx_player_id (player_id),
-    INDEX idx_team (team)
+    INDEX idx_match_players_team (team)
 );
 ```
 

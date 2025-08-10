@@ -17,6 +17,7 @@ class GameMatch extends Model
     protected $fillable = [
         'match_hash',
         'map',
+        'winning_team',
         'winning_team_score',
         'losing_team_score',
         'match_type',
@@ -30,6 +31,7 @@ class GameMatch extends Model
     protected $casts = [
         'match_type' => MatchType::class,
         'processing_status' => ProcessingStatus::class,
+        'winning_team' => 'string',
         'start_timestamp' => 'datetime',
         'end_timestamp' => 'datetime',
         'total_rounds' => 'integer',
@@ -46,7 +48,7 @@ class GameMatch extends Model
     public function players()
     {
         return $this->belongsToMany(Player::class, 'match_players', 'match_id', 'player_id')
-            ->withPivot(['team', 'side_start'])
+            ->withPivot(['team'])
             ->withTimestamps();
     }
 

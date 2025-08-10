@@ -17,12 +17,10 @@ class MatchPlayer extends Model
         'match_id',
         'player_id',
         'team',
-        'side_start',
     ];
 
     protected $casts = [
         'team' => Team::class,
-        'side_start' => Team::class,
     ];
 
     // Relationships

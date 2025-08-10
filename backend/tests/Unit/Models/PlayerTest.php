@@ -80,20 +80,17 @@ class PlayerTest extends TestCase
         MatchPlayer::factory()->create([
             'player_id' => $player->id,
             'match_id' => $match1->id,
-            'team' => Team::TERRORIST,
-            'side_start' => Team::TERRORIST,
+            'team' => Team::TEAM_A,
         ]);
         MatchPlayer::factory()->create([
             'player_id' => $player->id,
             'match_id' => $match2->id,
-            'team' => Team::COUNTER_TERRORIST,
-            'side_start' => Team::COUNTER_TERRORIST,
+            'team' => Team::TEAM_B,
         ]);
 
         $this->assertCount(2, $player->matches);
         $this->assertInstanceOf(GameMatch::class, $player->matches->first());
         $this->assertArrayHasKey('team', $player->matches->first()->pivot->toArray());
-        $this->assertArrayHasKey('side_start', $player->matches->first()->pivot->toArray());
     }
 
     #[Test]
