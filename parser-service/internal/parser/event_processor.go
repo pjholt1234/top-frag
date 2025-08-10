@@ -57,6 +57,9 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 		winner = "CT"
 	} else if e.Winner == common.TeamTerrorists {
 		winner = "T"
+	} else {
+		winner = "Unknown"
+		ep.logger.WithField("winner_team", e.Winner).Warn("Unknown winner team")
 	}
 
 	duration := 120
@@ -73,7 +76,6 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.logger.WithFields(logrus.Fields{
 		"round":    ep.matchState.CurrentRound,
 		"winner":   winner,
-		"duration": duration,
 	}).Debug("Round ended")
 }
 
@@ -81,6 +83,10 @@ func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {
 	if e.Killer == nil || e.Victim == nil {
 		return
 	}
+
+	// Ensure players are tracked
+	ep.ensurePlayerTracked(e.Killer)
+	ep.ensurePlayerTracked(e.Victim)
 
 	if ep.matchState.FirstKillPlayer == nil {
 		steamID := types.SteamIDToString(e.Killer.SteamID64)
@@ -124,6 +130,10 @@ func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) {
 		return
 	}
 
+	// Ensure players are tracked
+	ep.ensurePlayerTracked(e.Attacker)
+	ep.ensurePlayerTracked(e.Player)
+
 	roundTime := 0
 
 	damageEvent := types.DamageEvent{
@@ -153,6 +163,9 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	if e.Projectile.Thrower == nil {
 		return
 	}
+
+	// Ensure player is tracked
+	ep.ensurePlayerTracked(e.Projectile.Thrower)
 
 	roundTime := 0
 
@@ -201,6 +214,9 @@ func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) {
 		return
 	}
 
+	// Ensure player is tracked
+	ep.ensurePlayerTracked(e.Shooter)
+
 	if playerState, exists := ep.playerStates[e.Shooter.SteamID64]; exists {
 		playerState.CurrentWeapon = e.Weapon.String()
 	}
@@ -216,6 +232,76 @@ func (ep *EventProcessor) HandleBombDefused(e events.BombDefused) {
 
 func (ep *EventProcessor) HandleBombExplode(e events.BombExplode) {
 	ep.logger.Debug("Bomb exploded")
+}
+
+func (ep *EventProcessor) HandlePlayerConnect(e events.PlayerConnect) {
+	if e.Player == nil {
+		return
+	}
+
+	steamID := types.SteamIDToString(e.Player.SteamID64)
+	
+	// Add player to match state if not already present
+	if _, exists := ep.matchState.Players[steamID]; !exists {
+		ep.matchState.Players[steamID] = &types.Player{
+			SteamID: steamID,
+			Name:    e.Player.Name,
+			Team:    ep.getTeamString(e.Player.Team),
+		}
+	}
+
+	// Add player state
+	if _, exists := ep.playerStates[e.Player.SteamID64]; !exists {
+		ep.playerStates[e.Player.SteamID64] = &types.PlayerState{
+			SteamID: steamID,
+			Name:    e.Player.Name,
+			Team:    ep.getTeamString(e.Player.Team),
+		}
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"steam_id": steamID,
+		"name":     e.Player.Name,
+		"team":     ep.getTeamString(e.Player.Team),
+	}).Debug("Player connected")
+}
+
+func (ep *EventProcessor) HandlePlayerDisconnected(e events.PlayerDisconnected) {
+	if e.Player == nil {
+		return
+	}
+
+	steamID := types.SteamIDToString(e.Player.SteamID64)
+	
+	ep.logger.WithFields(logrus.Fields{
+		"steam_id": steamID,
+		"name":     e.Player.Name,
+	}).Debug("Player disconnected")
+}
+
+func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) {
+	if e.Player == nil {
+		return
+	}
+
+	steamID := types.SteamIDToString(e.Player.SteamID64)
+	team := ep.getTeamString(e.Player.Team)
+
+	// Update player in match state
+	if player, exists := ep.matchState.Players[steamID]; exists {
+		player.Team = team
+	}
+
+	// Update player state
+	if playerState, exists := ep.playerStates[e.Player.SteamID64]; exists {
+		playerState.Team = team
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"steam_id": steamID,
+		"name":     e.Player.Name,
+		"team":     team,
+	}).Debug("Player team changed")
 }
 
 func (ep *EventProcessor) createGunfightEvent(e events.Kill) types.GunfightEvent {
@@ -332,4 +418,30 @@ func (ep *EventProcessor) getTeamString(team common.Team) string {
 
 func (ep *EventProcessor) determineThrowType(projectile *common.GrenadeProjectile) string {
 	return types.ThrowTypeUtility
+} 
+
+func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
+	if player == nil {
+		return
+	}
+
+	steamID := types.SteamIDToString(player.SteamID64)
+	
+	// Add player to match state if not already present
+	if _, exists := ep.matchState.Players[steamID]; !exists {
+		ep.matchState.Players[steamID] = &types.Player{
+			SteamID: steamID,
+			Name:    player.Name,
+			Team:    ep.getTeamString(player.Team),
+		}
+	}
+
+	// Add player state if not already present
+	if _, exists := ep.playerStates[player.SteamID64]; !exists {
+		ep.playerStates[player.SteamID64] = &types.PlayerState{
+			SteamID: steamID,
+			Name:    player.Name,
+			Team:    ep.getTeamString(player.Team),
+		}
+	}
 } 

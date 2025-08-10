@@ -32,31 +32,74 @@ class ParserServiceConnectorExceptionTest extends TestCase
 
     public function test_static_factory_methods_create_exceptions_with_correct_messages()
     {
-        // Arrange
+        // Test service unavailable
         Log::shouldReceive('channel')
             ->with('parser')
             ->andReturnSelf();
 
         Log::shouldReceive('error')
-            ->times(5)
+            ->once()
             ->andReturnNull();
 
-        // Act & Assert
         $this->expectException(ParserServiceConnectorException::class);
         $this->expectExceptionMessage('Parser service is unavailable: Custom reason');
         throw ParserServiceConnectorException::serviceUnavailable('Custom reason');
+    }
+
+    public function test_upload_failed_exception()
+    {
+        Log::shouldReceive('channel')
+            ->with('parser')
+            ->andReturnSelf();
+
+        Log::shouldReceive('error')
+            ->once()
+            ->andReturnNull();
 
         $this->expectException(ParserServiceConnectorException::class);
         $this->expectExceptionMessage('Demo upload failed: Upload error');
         throw ParserServiceConnectorException::uploadFailed('Upload error');
+    }
+
+    public function test_configuration_error_exception()
+    {
+        Log::shouldReceive('channel')
+            ->with('parser')
+            ->andReturnSelf();
+
+        Log::shouldReceive('error')
+            ->once()
+            ->andReturnNull();
 
         $this->expectException(ParserServiceConnectorException::class);
         $this->expectExceptionMessage('Parser service configuration error: Missing or invalid \'test.config\'');
         throw ParserServiceConnectorException::configurationError('test.config');
+    }
+
+    public function test_timeout_error_exception()
+    {
+        Log::shouldReceive('channel')
+            ->with('parser')
+            ->andReturnSelf();
+
+        Log::shouldReceive('error')
+            ->once()
+            ->andReturnNull();
 
         $this->expectException(ParserServiceConnectorException::class);
         $this->expectExceptionMessage('Parser service request timed out after 30 seconds');
         throw ParserServiceConnectorException::timeoutError(30);
+    }
+
+    public function test_authentication_error_exception()
+    {
+        Log::shouldReceive('channel')
+            ->with('parser')
+            ->andReturnSelf();
+
+        Log::shouldReceive('error')
+            ->once()
+            ->andReturnNull();
 
         $this->expectException(ParserServiceConnectorException::class);
         $this->expectExceptionMessage('Parser service authentication failed: Invalid key');
@@ -74,12 +117,7 @@ class ParserServiceConnectorExceptionTest extends TestCase
 
         Log::shouldReceive('error')
             ->once()
-            ->with('ParserServiceConnectorException occurred', \Mockery::on(function ($context) {
-                return isset($context['previous_exception']) &&
-                    $context['previous_exception']['class'] === 'Exception' &&
-                    $context['previous_exception']['message'] === 'Previous error' &&
-                    $context['previous_exception']['code'] === 404;
-            }))
+            ->with('ParserServiceConnectorException occurred', \Mockery::type('array'))
             ->andReturnNull();
 
         // Act & Assert

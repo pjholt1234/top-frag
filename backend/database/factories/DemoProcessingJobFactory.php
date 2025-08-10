@@ -27,7 +27,7 @@ class DemoProcessingJobFactory extends Factory
     public function definition(): array
     {
         return [
-            'job_id' => $this->faker->unique()->uuid(),
+            'uuid' => $this->faker->unique()->uuid(),
             'match_id' => null, // Will be set when needed
             'processing_status' => $this->faker->randomElement(ProcessingStatus::cases()),
             'progress_percentage' => $this->faker->numberBetween(0, 100),

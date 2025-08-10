@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\GameMatch;
 use App\Enums\MatchType;
-use App\Enums\ProcessingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -40,8 +39,6 @@ class GameMatchFactory extends Factory
             'total_rounds' => $this->faker->numberBetween(15, 50),
             'total_fight_events' => $this->faker->numberBetween(50, 300),
             'total_grenade_events' => $this->faker->numberBetween(20, 150),
-            'processing_status' => $this->faker->randomElement(ProcessingStatus::cases()),
-            'error_message' => $this->faker->optional()->sentence(),
         ];
     }
 }

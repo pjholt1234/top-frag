@@ -186,23 +186,30 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		},
 	}
 	
-	parsedData := parser.buildParsedData(matchState)
+	parsedData := parser.buildParsedData(matchState, "de_test")
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
 	
 	// Test match data
-	if parsedData.Match.TotalRounds != 30 {
-		t.Errorf("Expected total rounds 30, got %d", parsedData.Match.TotalRounds)
+	if parsedData.Match.TotalRounds != 3 {
+		t.Errorf("Expected total rounds 3, got %d", parsedData.Match.TotalRounds)
 	}
 	
+	// With the new logic: T wins 2 rounds, CT wins 1 round
+	// Since T dominated (2 wins vs 1), team1 (T) should have 2 wins, team2 (CT) should have 1 win
 	if parsedData.Match.WinningTeamScore != 2 {
 		t.Errorf("Expected winning team score 2, got %d", parsedData.Match.WinningTeamScore)
 	}
 	
 	if parsedData.Match.LosingTeamScore != 1 {
 		t.Errorf("Expected losing team score 1, got %d", parsedData.Match.LosingTeamScore)
+	}
+	
+	// Test map name
+	if parsedData.Match.Map != "de_test" {
+		t.Errorf("Expected map 'de_test', got %s", parsedData.Match.Map)
 	}
 	
 	// Test players
@@ -241,7 +248,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 		RoundEvents:  []types.RoundEvent{},
 	}
 	
-	parsedData := parser.buildParsedData(matchState)
+	parsedData := parser.buildParsedData(matchState, "de_test")
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -254,6 +261,10 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	
 	if parsedData.Match.LosingTeamScore != 0 {
 		t.Errorf("Expected losing team score 0, got %d", parsedData.Match.LosingTeamScore)
+	}
+	
+	if parsedData.Match.TotalRounds != 0 {
+		t.Errorf("Expected total rounds 0, got %d", parsedData.Match.TotalRounds)
 	}
 }
 
@@ -281,19 +292,135 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 		},
 	}
 	
-	parsedData := parser.buildParsedData(matchState)
+	parsedData := parser.buildParsedData(matchState, "de_test")
 	
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
 	
-	// Test tie game handling
+	// Test tie game handling - both teams should have 1 win
 	if parsedData.Match.WinningTeamScore != 1 {
 		t.Errorf("Expected winning team score 1, got %d", parsedData.Match.WinningTeamScore)
 	}
 	
 	if parsedData.Match.LosingTeamScore != 1 {
 		t.Errorf("Expected losing team score 1, got %d", parsedData.Match.LosingTeamScore)
+	}
+	
+	if parsedData.Match.TotalRounds != 2 {
+		t.Errorf("Expected total rounds 2, got %d", parsedData.Match.TotalRounds)
+	}
+}
+
+func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
+	cfg := &config.Config{}
+	logger := logrus.New()
+	parser := NewDemoParser(cfg, logger)
+	
+	// Create a test match state simulating CS2 halftime switch
+	// First half: CT wins 7, T wins 5
+	// Second half: CT wins 3, T wins 6
+	// Total: CT wins 10, T wins 11
+	// But the same team was CT in first half and T in second half
+	matchState := &types.MatchState{
+		CurrentRound: 21,
+		TotalRounds:  21,
+		Players: map[string]*types.Player{
+			"steam_123": {
+				SteamID: "steam_123",
+				Name:    "Player1",
+				Team:    "T",
+			},
+			"steam_456": {
+				SteamID: "steam_456",
+				Name:    "Player2",
+				Team:    "CT",
+			},
+		},
+		RoundEvents: []types.RoundEvent{},
+	}
+	
+	// Add round events for first half (CT dominates)
+	for i := 1; i <= 12; i++ {
+		winner := "T"
+		if i <= 7 {
+			winner = "CT"
+		}
+		matchState.RoundEvents = append(matchState.RoundEvents, types.RoundEvent{
+			RoundNumber: i,
+			EventType:   "end",
+			Winner:      demoStringPtr(winner),
+		})
+	}
+	
+	// Add round events for second half (T dominates)
+	for i := 13; i <= 21; i++ {
+		winner := "CT"
+		if i >= 16 {
+			winner = "T"
+		}
+		matchState.RoundEvents = append(matchState.RoundEvents, types.RoundEvent{
+			RoundNumber: i,
+			EventType:   "end",
+			Winner:      demoStringPtr(winner),
+		})
+	}
+	
+	parsedData := parser.buildParsedData(matchState, "de_ancient")
+	
+	if parsedData == nil {
+		t.Fatal("Expected parsed data to be created, got nil")
+	}
+	
+	// The team that was CT in first half (and won 7 rounds) should be the winning team
+	// They should have 7 + 6 = 13 wins total
+	if parsedData.Match.WinningTeamScore != 13 {
+		t.Errorf("Expected winning team score 13, got %d", parsedData.Match.WinningTeamScore)
+	}
+	
+	// The team that was T in first half (and won 5 rounds) should be the losing team
+	// They should have 5 + 3 = 8 wins total
+	if parsedData.Match.LosingTeamScore != 8 {
+		t.Errorf("Expected losing team score 8, got %d", parsedData.Match.LosingTeamScore)
+	}
+	
+	if parsedData.Match.TotalRounds != 21 {
+		t.Errorf("Expected total rounds 21, got %d", parsedData.Match.TotalRounds)
+	}
+	
+	if parsedData.Match.Map != "de_ancient" {
+		t.Errorf("Expected map 'de_ancient', got %s", parsedData.Match.Map)
+	}
+}
+
+func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
+	cfg := &config.Config{}
+	logger := logrus.New()
+	parser := NewDemoParser(cfg, logger)
+	
+	// Create a test match state
+	matchState := &types.MatchState{
+		CurrentRound: 1,
+		TotalRounds:  1,
+		Players:      make(map[string]*types.Player),
+		RoundEvents: []types.RoundEvent{
+			{
+				RoundNumber: 1,
+				EventType:   "end",
+				Winner:      demoStringPtr("CT"),
+			},
+		},
+	}
+	
+	// Test with empty map name (should fallback to de_dust2)
+	parsedData := parser.buildParsedData(matchState, "")
+	
+	if parsedData == nil {
+		t.Fatal("Expected parsed data to be created, got nil")
+	}
+	
+	if parsedData.Match.Map != "de_dust2" {
+		t.Errorf("Expected fallback map 'de_dust2', got %s", parsedData.Match.Map)
 	}
 }
 

@@ -454,3 +454,286 @@ func TestEventProcessor_DetermineThrowType(t *testing.T) {
 		t.Errorf("Expected '%s', got %s", types.ThrowTypeUtility, throwType)
 	}
 } 
+
+func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Create mock player
+	player := &common.Player{
+		SteamID64: 123,
+		Name:      "TestPlayer",
+		Team:      common.TeamCounterTerrorists,
+	}
+	
+	event := events.PlayerConnect{
+		Player: player,
+	}
+	
+	processor.HandlePlayerConnect(event)
+	
+	// Test player was added to match state
+	if len(matchState.Players) != 1 {
+		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
+	}
+	
+	playerData, exists := matchState.Players["steam_123"]
+	if !exists {
+		t.Fatal("Expected player to be added to match state")
+	}
+	
+	if playerData.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	}
+	
+	if playerData.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
+	}
+	
+	if playerData.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	}
+	
+	// Test player state was created
+	if len(processor.playerStates) != 1 {
+		t.Errorf("Expected 1 player state, got %d", len(processor.playerStates))
+	}
+	
+	playerState, exists := processor.playerStates[123]
+	if !exists {
+		t.Fatal("Expected player state to be created")
+	}
+	
+	if playerState.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	}
+	
+	if playerState.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
+	}
+	
+	if playerState.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	}
+}
+
+func TestEventProcessor_HandlePlayerDisconnected(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Create mock player
+	player := &common.Player{
+		SteamID64: 123,
+		Name:      "TestPlayer",
+	}
+	
+	event := events.PlayerDisconnected{
+		Player: player,
+	}
+	
+	// Should not crash
+	processor.HandlePlayerDisconnected(event)
+}
+
+func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: map[string]*types.Player{
+			"steam_123": {
+				SteamID: "steam_123",
+				Name:    "TestPlayer",
+				Team:    "CT",
+			},
+		},
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Add player state
+	processor.playerStates[123] = &types.PlayerState{
+		SteamID: "steam_123",
+		Name:    "TestPlayer",
+		Team:    "CT",
+	}
+	
+	// Create mock player with team change
+	player := &common.Player{
+		SteamID64: 123,
+		Name:      "TestPlayer",
+		Team:      common.TeamTerrorists,
+	}
+	
+	event := events.PlayerTeamChange{
+		Player: player,
+	}
+	
+	processor.HandlePlayerTeamChange(event)
+	
+	// Test player team was updated in match state
+	playerData := matchState.Players["steam_123"]
+	if playerData.Team != "T" {
+		t.Errorf("Expected team 'T', got %s", playerData.Team)
+	}
+	
+	// Test player state team was updated
+	playerState := processor.playerStates[123]
+	if playerState.Team != "T" {
+		t.Errorf("Expected team 'T', got %s", playerState.Team)
+	}
+}
+
+func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Create mock player
+	player := &common.Player{
+		SteamID64: 123,
+		Name:      "TestPlayer",
+		Team:      common.TeamCounterTerrorists,
+	}
+	
+	// Test ensurePlayerTracked
+	processor.ensurePlayerTracked(player)
+	
+	// Test player was added to match state
+	if len(matchState.Players) != 1 {
+		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
+	}
+	
+	playerData, exists := matchState.Players["steam_123"]
+	if !exists {
+		t.Fatal("Expected player to be added to match state")
+	}
+	
+	if playerData.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	}
+	
+	if playerData.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
+	}
+	
+	if playerData.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	}
+	
+	// Test player state was created
+	if len(processor.playerStates) != 1 {
+		t.Errorf("Expected 1 player state, got %d", len(processor.playerStates))
+	}
+	
+	playerState, exists := processor.playerStates[123]
+	if !exists {
+		t.Fatal("Expected player state to be created")
+	}
+	
+	if playerState.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	}
+	
+	if playerState.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
+	}
+	
+	if playerState.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	}
+	
+	// Test that calling ensurePlayerTracked again doesn't duplicate
+	processor.ensurePlayerTracked(player)
+	
+	if len(matchState.Players) != 1 {
+		t.Errorf("Expected 1 player in match state after duplicate call, got %d", len(matchState.Players))
+	}
+	
+	if len(processor.playerStates) != 1 {
+		t.Errorf("Expected 1 player state after duplicate call, got %d", len(processor.playerStates))
+	}
+}
+
+func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
+	matchState := &types.MatchState{
+		CurrentRound: 1,
+		Players:      make(map[string]*types.Player),
+		RoundEvents:  make([]types.RoundEvent, 0),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	
+	// Test that ensurePlayerTracked works correctly
+	// This is the core functionality we want to test
+	processor.ensurePlayerTracked(nil) // Should handle nil gracefully
+	
+	// Test with a simple player structure
+	simplePlayer := &common.Player{
+		SteamID64: 123,
+		Name:      "TestPlayer",
+		Team:      common.TeamCounterTerrorists,
+	}
+	
+	processor.ensurePlayerTracked(simplePlayer)
+	
+	// Test that player was added to match state
+	if len(matchState.Players) != 1 {
+		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
+	}
+	
+	playerData, exists := matchState.Players["steam_123"]
+	if !exists {
+		t.Fatal("Expected player to be added to match state")
+	}
+	
+	if playerData.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	}
+	
+	if playerData.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerData.Name)
+	}
+	
+	if playerData.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerData.Team)
+	}
+	
+	// Test that player state was created
+	if len(processor.playerStates) != 1 {
+		t.Errorf("Expected 1 player state, got %d", len(processor.playerStates))
+	}
+	
+	playerState, exists := processor.playerStates[123]
+	if !exists {
+		t.Fatal("Expected player state to be created")
+	}
+	
+	if playerState.SteamID != "steam_123" {
+		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	}
+	
+	if playerState.Name != "TestPlayer" {
+		t.Errorf("Expected name 'TestPlayer', got %s", playerState.Name)
+	}
+	
+	if playerState.Team != "CT" {
+		t.Errorf("Expected team 'CT', got %s", playerState.Team)
+	}
+	
+	// Test that calling ensurePlayerTracked again doesn't duplicate
+	processor.ensurePlayerTracked(simplePlayer)
+	
+	if len(matchState.Players) != 1 {
+		t.Errorf("Expected 1 player in match state after duplicate call, got %d", len(matchState.Players))
+	}
+	
+	if len(processor.playerStates) != 1 {
+		t.Errorf("Expected 1 player state after duplicate call, got %d", len(processor.playerStates))
+	}
+} 

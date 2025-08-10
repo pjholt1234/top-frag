@@ -35,8 +35,24 @@ class DemoParserControllerTest extends TestCase
                     'tick_timestamp' => 12345,
                     'player_1_steam_id' => 'steam_123',
                     'player_2_steam_id' => 'steam_456',
+                    'player_1_hp_start' => 100,
+                    'player_2_hp_start' => 100,
+                    'player_1_armor' => 100,
+                    'player_2_armor' => 0,
+                    'player_1_flashed' => false,
+                    'player_2_flashed' => false,
+                    'player_1_weapon' => 'ak47',
+                    'player_2_weapon' => 'm4a1',
+                    'player_1_equipment_value' => 2700,
+                    'player_2_equipment_value' => 3100,
+                    'player_1_position' => ['x' => 100.5, 'y' => 200.3, 'z' => 50.0],
+                    'player_2_position' => ['x' => 150.2, 'y' => 180.7, 'z' => 50.0],
                     'distance' => 50.0,
                     'headshot' => true,
+                    'wallbang' => false,
+                    'penetrated_objects' => 0,
+                    'victor_steam_id' => 'steam_123',
+                    'damage_dealt' => 100,
                 ]
             ]
         ];
@@ -65,7 +81,7 @@ class DemoParserControllerTest extends TestCase
                 [
                     'round_number' => 1,
                     'tick_timestamp' => 12345,
-                    'event_type' => 'round_start',
+                    'event_type' => 'start',
                 ]
             ]
         ];
@@ -97,11 +113,8 @@ class DemoParserControllerTest extends TestCase
             'Content-Type' => 'application/json',
         ])->postJson("/api/job/{$jobId}/event/{$eventName}", $payload);
 
-        $response->assertStatus(400)
-            ->assertJson([
-                'success' => false,
-                'error' => 'Invalid event name. Valid events: round, gunfight, grenade, damage',
-            ]);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['data']);
     }
 
     public function test_handle_event_without_api_key()
@@ -234,6 +247,15 @@ class DemoParserControllerTest extends TestCase
     public function test_completion_callback_without_match_data(): void
     {
         $jobId = 'test-job-456';
+
+        // Create a demo processing job first
+        DemoProcessingJob::create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PROCESSING,
+            'progress_percentage' => 50,
+            'current_step' => 'Processing in progress',
+        ]);
+
         $payload = [
             'job_id' => $jobId,
             'status' => 'Completed',

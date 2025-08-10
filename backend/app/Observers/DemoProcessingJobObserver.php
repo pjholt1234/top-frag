@@ -10,6 +10,8 @@ class DemoProcessingJobObserver
     public function creating(DemoProcessingJob $job): void
     {
         $job->started_at = now();
-        $job->uuid = Str::uuid();
+        if (empty($job->uuid)) {
+            $job->uuid = Str::uuid();
+        }
     }
 }

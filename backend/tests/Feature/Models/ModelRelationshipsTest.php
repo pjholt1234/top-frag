@@ -33,7 +33,6 @@ class ModelRelationshipsTest extends TestCase
             'winning_team_score' => 16,
             'losing_team_score' => 14,
             'match_type' => MatchType::MATCHMAKING,
-            'processing_status' => ProcessingStatus::COMPLETED,
         ]);
 
         // Create players

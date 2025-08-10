@@ -10,7 +10,6 @@ use App\Models\GrenadeEvent;
 use App\Models\MatchSummary;
 use App\Models\PlayerMatchSummary;
 use App\Enums\MatchType;
-use App\Enums\ProcessingStatus;
 use App\Enums\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -34,7 +33,6 @@ class GameMatchTest extends TestCase
             'total_rounds' => 30,
             'total_fight_events' => 150,
             'total_grenade_events' => 75,
-            'processing_status' => ProcessingStatus::COMPLETED,
         ]);
 
         $this->assertInstanceOf(GameMatch::class, $match);
@@ -43,7 +41,6 @@ class GameMatchTest extends TestCase
         $this->assertEquals(16, $match->winning_team_score);
         $this->assertEquals(14, $match->losing_team_score);
         $this->assertEquals(MatchType::MATCHMAKING, $match->match_type);
-        $this->assertEquals(ProcessingStatus::COMPLETED, $match->processing_status);
     }
 
     #[Test]
@@ -62,8 +59,6 @@ class GameMatchTest extends TestCase
             'total_rounds',
             'total_fight_events',
             'total_grenade_events',
-            'processing_status',
-            'error_message',
         ];
         $this->assertEquals($expectedFillable, $match->getFillable());
     }
@@ -73,7 +68,6 @@ class GameMatchTest extends TestCase
     {
         $match = GameMatch::factory()->create([
             'match_type' => MatchType::MATCHMAKING,
-            'processing_status' => ProcessingStatus::COMPLETED,
             'start_timestamp' => '2023-01-01 12:00:00',
             'end_timestamp' => '2023-01-01 13:30:00',
             'total_rounds' => 30,
@@ -82,7 +76,6 @@ class GameMatchTest extends TestCase
         ]);
 
         $this->assertInstanceOf(MatchType::class, $match->match_type);
-        $this->assertInstanceOf(ProcessingStatus::class, $match->processing_status);
         $this->assertInstanceOf(\Carbon\Carbon::class, $match->start_timestamp);
         $this->assertInstanceOf(\Carbon\Carbon::class, $match->end_timestamp);
         $this->assertIsInt($match->total_rounds);

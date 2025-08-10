@@ -26,7 +26,7 @@ class DemoParserService
             'processing_status' => $data['status'],
             'progress_percentage' => $data['progress'] ?? 0,
             'completed_at' => $isCompleted ? now() : null,
-            'current_step' => $isCompleted ? 'Completed' : $data['current_step'],
+            'current_step' => $data['current_step'] ?? ($isCompleted ? 'Completed' : null),
         ]);
     }
 

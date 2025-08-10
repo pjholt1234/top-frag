@@ -75,6 +75,8 @@ class DemoParserController extends Controller
         $validated = $request->validate([
             'job_id' => 'required|string',
             'status' => 'required|string',
+            'progress' => 'nullable|integer|min:0|max:100',
+            'current_step' => 'nullable|string',
             'error' => 'nullable|string'
         ]);
 
@@ -82,7 +84,8 @@ class DemoParserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Completion update received'
+            'message' => 'Completion update received',
+            'job_id' => $validated['job_id']
         ], 200);
     }
 }
