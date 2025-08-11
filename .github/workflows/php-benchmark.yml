@@ -39,16 +39,16 @@ jobs:
       run: chmod -R 777 storage bootstrap/cache
       working-directory: ./backend
 
-    - name: Run PHPBench benchmarks
+    - name: Run PHPBench benchmarks with HTML output
       run: |
         export DB_CONNECTION=sqlite
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
         # Ensure .phpbench directory exists
         mkdir -p .phpbench
-        # Suppress PHPBench reflection warnings and handle exit codes (known bug in PHPBench 1.4.1)
+        # Use composer script with error tolerance (known bug in PHPBench 1.4.1)
         set +e
-        php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure
+        composer benchmark:html
         BENCHMARK_EXIT_CODE=$?
         echo "PHPBench exit code: $BENCHMARK_EXIT_CODE"
         # Exit with success if benchmarks ran (even if reflection failed)
@@ -64,10 +64,12 @@ jobs:
     - name: Debug PHPBench output
       run: |
         echo "Checking for PHPBench output files..."
+        echo "Contents of .phpbench directory:"
         ls -la .phpbench/ || echo "No .phpbench directory found"
-        find . -name "*.html" -o -name ".phpbench" 2>/dev/null || echo "No HTML or phpbench files found"
-        echo "Current directory contents:"
-        ls -la
+        echo "Contents of .phpbench/html directory:"
+        ls -la .phpbench/html/ || echo "No .phpbench/html directory found"
+        echo "All HTML files in current directory:"
+        find . -name "*.html" 2>/dev/null || echo "No HTML files found"
       working-directory: ./backend
 
     - name: Upload benchmark artifacts
