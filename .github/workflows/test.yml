@@ -163,9 +163,9 @@ jobs:
         export DB_CONNECTION=sqlite
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
-        # Run benchmarks with error tolerance and continue on reflection issues
+        # Run benchmarks using composer script with error tolerance
         set +e  # Don't exit on error
-        vendor/bin/phpbench run benchmarks/ --report=aggregate --output=json --tolerate-failure --stop-on-error=false
+        composer benchmark
         BENCHMARK_EXIT_CODE=$?
         echo "PHPBench exit code: $BENCHMARK_EXIT_CODE"
         # Exit with success if benchmarks ran (even if reflection failed)
@@ -184,9 +184,9 @@ jobs:
         export DB_CONNECTION=sqlite
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
-        # Generate HTML report with error tolerance
+        # Generate HTML report using composer script with error tolerance
         set +e  # Don't exit on error
-        vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure --stop-on-error=false
+        composer benchmark:html
         REPORT_EXIT_CODE=$?
         echo "PHPBench HTML report exit code: $REPORT_EXIT_CODE"
         # Exit with success if report generation attempted (even if reflection failed)
