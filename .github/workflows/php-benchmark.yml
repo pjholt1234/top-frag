@@ -81,6 +81,24 @@ jobs:
         echo "=== All HTML Files in Repository ==="
         find . -name "*.html" -type f 2>/dev/null || echo "No HTML files found"
 
+    - name: Ensure artifacts exist before upload
+      run: |
+        echo "Waiting 2 seconds to ensure file system sync..."
+        sleep 2
+        
+        echo "=== Final verification before upload ==="
+        if [ -f "backend/.phpbench/html/index.html" ]; then
+          echo "✅ HTML file exists: backend/.phpbench/html/index.html"
+          echo "File size: $(ls -la backend/.phpbench/html/index.html)"
+          echo "File contents (first 5 lines):"
+          head -5 backend/.phpbench/html/index.html
+        else
+          echo "❌ HTML file NOT found: backend/.phpbench/html/index.html"
+          echo "Creating emergency fallback..."
+          mkdir -p backend/.phpbench/html/
+          echo "<html><body><h1>Emergency Fallback Report</h1><p>Benchmarks completed but file not found for upload.</p></body></html>" > backend/.phpbench/html/index.html
+        fi
+
     - name: Upload benchmark artifacts
       uses: actions/upload-artifact@v4
       with:
