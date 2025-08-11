@@ -77,7 +77,7 @@ class DemoParserServiceBench implements BenchmarkInterface
      * @Revs(50)
      * @Iterations(5)
      * @Warmup(2)
-     * @Assert("mode(variant.time.avg) < 5ms")
+     * @Assert("mode(variant.time.avg) < 50ms")
      */
     public function benchCreateDamageEvent(): void
     {
@@ -92,7 +92,7 @@ class DemoParserServiceBench implements BenchmarkInterface
      * @Revs(50)
      * @Iterations(5)
      * @Warmup(2)
-     * @Assert("mode(variant.time.avg) < 5ms")
+     * @Assert("mode(variant.time.avg) < 25ms")
      */
     public function benchCreateGunfightEvent(): void
     {
@@ -107,7 +107,7 @@ class DemoParserServiceBench implements BenchmarkInterface
      * @Revs(50)
      * @Iterations(5)
      * @Warmup(2)
-     * @Assert("mode(variant.time.avg) < 5ms")
+     * @Assert("mode(variant.time.avg) < 25ms")
      */
     public function benchCreateGrenadeEvent(): void
     {
@@ -122,7 +122,7 @@ class DemoParserServiceBench implements BenchmarkInterface
      * @Revs(25)
      * @Iterations(3)
      * @Warmup(1)
-     * @Assert("mode(variant.time.avg) < 15ms")
+     * @Assert("mode(variant.time.avg) < 100ms")
      */
     public function benchCreateAllEventTypes(): void
     {

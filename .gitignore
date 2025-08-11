@@ -6,3 +6,4 @@ demo.dem
 /mock-server
 /parser-service/config.yaml
 /.idea
+/backend/.phpbench

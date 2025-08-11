@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\MatchType;
 use App\Models\DemoProcessingJob;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\MatchPlayer;
@@ -16,9 +17,11 @@ use App\Models\GrenadeEvent;
 
 class DemoParserService
 {
+    private array $jobCache = [];
+
     public function updateProcessingJob(string $jobId, array $data, bool $isCompleted = false): void
     {
-        $job = DemoProcessingJob::where('uuid', $jobId)->first();
+        $job = $this->getJob($jobId);
 
         if (!$job) {
             Log::warning("Demo processing job not found for match event creation", ['job_id' => $jobId]);
@@ -31,11 +34,14 @@ class DemoParserService
             'completed_at' => $isCompleted ? now() : null,
             'current_step' => $data['current_step'] ?? ($isCompleted ? 'Completed' : null),
         ]);
+
+        // Clear cache after update to ensure fresh data
+        $this->clearJobCache($jobId);
     }
 
     public function createMatchWithPlayers(string $jobId, array $matchData, ?array $playersData = null): void
     {
-        $job = DemoProcessingJob::where('uuid', $jobId)->first();
+        $job = $this->getJob($jobId);
 
         if (!$job) {
             Log::warning("Demo processing job not found for match creation", ['job_id' => $jobId]);
@@ -99,7 +105,7 @@ class DemoParserService
 
     public function createMatchEvent(string $jobId, array $eventData, string $eventName): void
     {
-        $job = DemoProcessingJob::where('uuid', $jobId)->first();
+        $job = $this->getJob($jobId);
 
         if (!$job) {
             return;
@@ -112,12 +118,39 @@ class DemoParserService
             return;
         }
 
-        match ($eventName) {
-            MatchEventType::DAMAGE->value => $this->createDamageEvent($match, $eventData),
-            MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
-            MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
-            default => Log::error("Invalid event name", ['job_id' => $jobId, 'event_name' => $eventName]),
-        };
+        // Use database transaction for better performance and data consistency
+        DB::transaction(function () use ($match, $eventData, $eventName, $jobId) {
+            match ($eventName) {
+                MatchEventType::DAMAGE->value => $this->createDamageEvent($match, $eventData),
+                MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
+                MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
+                default => Log::error("Invalid event name", ['job_id' => $jobId, 'event_name' => $eventName]),
+            };
+        });
+    }
+
+    /**
+     * Get job with caching to avoid repeated database queries
+     */
+    private function getJob(string $jobId): ?DemoProcessingJob
+    {
+        if (!isset($this->jobCache[$jobId])) {
+            $this->jobCache[$jobId] = DemoProcessingJob::with('match')->where('uuid', $jobId)->first();
+        }
+
+        return $this->jobCache[$jobId];
+    }
+
+    /**
+     * Clear job cache when needed (e.g., after job completion)
+     */
+    public function clearJobCache(string $jobId = null): void
+    {
+        if ($jobId) {
+            unset($this->jobCache[$jobId]);
+        } else {
+            $this->jobCache = [];
+        }
     }
 
     private function createOrUpdatePlayer(GameMatch $match, array $playerData): void
@@ -195,84 +228,135 @@ class DemoParserService
 
     private function createDamageEvent(GameMatch $match, array $damageEvents): void
     {
-        foreach ($damageEvents as $damageEvent) {
-            DamageEvent::create([
-                'match_id' => $match->id,
-                'armor_damage' => $damageEvent['armor_damage'],
-                'attacker_steam_id' => $damageEvent['attacker_steam_id'],
-                'damage' => $damageEvent['damage'],
-                'headshot' => $damageEvent['headshot'],
-                'health_damage' => $damageEvent['health_damage'],
-                'round_number' => $damageEvent['round_number'],
-                'round_time' => $damageEvent['round_time'],
-                'tick_timestamp' => $damageEvent['tick_timestamp'],
-                'victim_steam_id' => $damageEvent['victim_steam_id'],
-                'weapon' => $damageEvent['weapon'],
-            ]);
+        if (empty($damageEvents)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues with large datasets
+        $chunks = array_chunk($damageEvents, 1000);
+
+        foreach ($chunks as $chunk) {
+            $records = [];
+            $now = now();
+
+            foreach ($chunk as $damageEvent) {
+                $records[] = [
+                    'match_id' => $match->id,
+                    'armor_damage' => $damageEvent['armor_damage'],
+                    'attacker_steam_id' => $damageEvent['attacker_steam_id'],
+                    'damage' => $damageEvent['damage'],
+                    'headshot' => $damageEvent['headshot'],
+                    'health_damage' => $damageEvent['health_damage'],
+                    'round_number' => $damageEvent['round_number'],
+                    'round_time' => $damageEvent['round_time'],
+                    'tick_timestamp' => $damageEvent['tick_timestamp'],
+                    'victim_steam_id' => $damageEvent['victim_steam_id'],
+                    'weapon' => $damageEvent['weapon'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // Use bulk insert for better performance
+            DamageEvent::insert($records);
         }
     }
 
     private function createGunfightEvent(GameMatch $match, array $gunFightEvents): void
     {
-        foreach ($gunFightEvents as $gunFightEvent) {
-            GunfightEvent::create([
-                'match_id' => $match->id,
-                'round_number' => $gunFightEvent['round_number'],
-                'round_time' => $gunFightEvent['round_time'],
-                'tick_timestamp' => $gunFightEvent['tick_timestamp'],
-                'player_1_steam_id' => $gunFightEvent['player_1_steam_id'],
-                'player_2_steam_id' => $gunFightEvent['player_2_steam_id'],
-                'player_1_hp_start' => $gunFightEvent['player_1_hp_start'],
-                'player_2_hp_start' => $gunFightEvent['player_2_hp_start'],
-                'player_1_armor' => $gunFightEvent['player_1_armor'],
-                'player_2_armor' => $gunFightEvent['player_2_armor'],
-                'player_1_equipment_value' => $gunFightEvent['player_1_equipment_value'],
-                'player_2_equipment_value' => $gunFightEvent['player_2_equipment_value'],
-                'player_1_flashed' => $gunFightEvent['player_1_flashed'],
-                'player_2_flashed' => $gunFightEvent['player_2_flashed'],
-                'player_1_weapon' => $gunFightEvent['player_1_weapon'],
-                'player_2_weapon' => $gunFightEvent['player_2_weapon'],
-                'player_1_x' => $gunFightEvent['player_1_x'],
-                'player_1_y' => $gunFightEvent['player_1_y'],
-                'player_1_z' => $gunFightEvent['player_1_z'],
-                'player_2_x' => $gunFightEvent['player_2_x'],
-                'player_2_y' => $gunFightEvent['player_2_y'],
-                'player_2_z' => $gunFightEvent['player_2_z'],
-                'distance' => $gunFightEvent['distance'],
-                'headshot' => $gunFightEvent['headshot'],
-                'wallbang' => $gunFightEvent['wallbang'],
-                'penetrated_objects' => $gunFightEvent['penetrated_objects'],
-                'victor_steam_id' => $gunFightEvent['victor_steam_id'],
-                'damage_dealt' => $gunFightEvent['damage_dealt'],
-            ]);
+        if (empty($gunFightEvents)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues with large datasets
+        $chunks = array_chunk($gunFightEvents, 1000);
+
+        foreach ($chunks as $chunk) {
+            $records = [];
+            $now = now();
+
+            foreach ($chunk as $gunFightEvent) {
+                $records[] = [
+                    'match_id' => $match->id,
+                    'round_number' => $gunFightEvent['round_number'],
+                    'round_time' => $gunFightEvent['round_time'],
+                    'tick_timestamp' => $gunFightEvent['tick_timestamp'],
+                    'player_1_steam_id' => $gunFightEvent['player_1_steam_id'],
+                    'player_2_steam_id' => $gunFightEvent['player_2_steam_id'],
+                    'player_1_hp_start' => $gunFightEvent['player_1_hp_start'],
+                    'player_2_hp_start' => $gunFightEvent['player_2_hp_start'],
+                    'player_1_armor' => $gunFightEvent['player_1_armor'],
+                    'player_2_armor' => $gunFightEvent['player_2_armor'],
+                    'player_1_equipment_value' => $gunFightEvent['player_1_equipment_value'],
+                    'player_2_equipment_value' => $gunFightEvent['player_2_equipment_value'],
+                    'player_1_flashed' => $gunFightEvent['player_1_flashed'],
+                    'player_2_flashed' => $gunFightEvent['player_2_flashed'],
+                    'player_1_weapon' => $gunFightEvent['player_1_weapon'],
+                    'player_2_weapon' => $gunFightEvent['player_2_weapon'],
+                    'player_1_x' => $gunFightEvent['player_1_x'],
+                    'player_1_y' => $gunFightEvent['player_1_y'],
+                    'player_1_z' => $gunFightEvent['player_1_z'],
+                    'player_2_x' => $gunFightEvent['player_2_x'],
+                    'player_2_y' => $gunFightEvent['player_2_y'],
+                    'player_2_z' => $gunFightEvent['player_2_z'],
+                    'distance' => $gunFightEvent['distance'],
+                    'headshot' => $gunFightEvent['headshot'],
+                    'wallbang' => $gunFightEvent['wallbang'],
+                    'penetrated_objects' => $gunFightEvent['penetrated_objects'],
+                    'victor_steam_id' => $gunFightEvent['victor_steam_id'],
+                    'damage_dealt' => $gunFightEvent['damage_dealt'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // Use bulk insert for better performance
+            GunfightEvent::insert($records);
         }
     }
 
     private function createGrenadeEvent(GameMatch $match, array $grenadeEvents): void
     {
-        foreach ($grenadeEvents as $grenadeEvent) {
-            GrenadeEvent::create([
-                'match_id' => $match->id,
-                'round_number' => $grenadeEvent['round_number'],
-                'round_time' => $grenadeEvent['round_time'],
-                'tick_timestamp' => $grenadeEvent['tick_timestamp'],
-                'player_steam_id' => $grenadeEvent['player_steam_id'],
-                'grenade_type' => $grenadeEvent['grenade_type'],
-                'player_x' => $grenadeEvent['player_x'],
-                'player_y' => $grenadeEvent['player_y'],
-                'player_z' => $grenadeEvent['player_z'],
-                'player_aim_x' => $grenadeEvent['player_aim_x'],
-                'player_aim_y' => $grenadeEvent['player_aim_y'],
-                'player_aim_z' => $grenadeEvent['player_aim_z'],
-                'grenade_final_x' => $grenadeEvent['grenade_final_x'],
-                'grenade_final_y' => $grenadeEvent['grenade_final_y'],
-                'grenade_final_z' => $grenadeEvent['grenade_final_z'],
-                'damage_dealt' => 0, //todo
-                'flash_duration' => 0, //todo
-                'affected_players', //todo
-                'throw_type', // todo
-                'effectiveness_rating', // todo
-            ]);
+        if (empty($grenadeEvents)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues with large datasets
+        $chunks = array_chunk($grenadeEvents, 1000);
+
+        foreach ($chunks as $chunk) {
+            $records = [];
+            $now = now();
+
+            foreach ($chunk as $grenadeEvent) {
+                $records[] = [
+                    'match_id' => $match->id,
+                    'round_number' => $grenadeEvent['round_number'],
+                    'round_time' => $grenadeEvent['round_time'],
+                    'tick_timestamp' => $grenadeEvent['tick_timestamp'],
+                    'player_steam_id' => $grenadeEvent['player_steam_id'],
+                    'grenade_type' => $grenadeEvent['grenade_type'],
+                    'player_x' => $grenadeEvent['player_x'],
+                    'player_y' => $grenadeEvent['player_y'],
+                    'player_z' => $grenadeEvent['player_z'],
+                    'player_aim_x' => $grenadeEvent['player_aim_x'],
+                    'player_aim_y' => $grenadeEvent['player_aim_y'],
+                    'player_aim_z' => $grenadeEvent['player_aim_z'],
+                    'grenade_final_x' => $grenadeEvent['grenade_final_x'],
+                    'grenade_final_y' => $grenadeEvent['grenade_final_y'],
+                    'grenade_final_z' => $grenadeEvent['grenade_final_z'],
+                    'damage_dealt' => 0, //todo
+                    'flash_duration' => 0, //todo
+                    'affected_players' => null, //todo - fixed syntax error
+                    'throw_type' => 'utility', // todo - fixed syntax error and added default
+                    'effectiveness_rating' => null, // todo - fixed syntax error
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // Use bulk insert for better performance
+            GrenadeEvent::insert($records);
         }
     }
 }
