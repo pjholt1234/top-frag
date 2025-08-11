@@ -64,12 +64,21 @@ jobs:
         fi
       working-directory: ./backend
 
+    - name: Copy benchmark artifacts to root
+      run: |
+        echo "Copying benchmark artifacts to root directory..."
+        mkdir -p ../benchmark-results
+        cp -r .phpbench/html/* ../benchmark-results/ 2>/dev/null || echo "No HTML files to copy"
+        cp .phpbench/*.html ../benchmark-results/ 2>/dev/null || echo "No additional HTML files to copy"
+        echo "Files copied to root:"
+        ls -la ../benchmark-results/ || echo "No files in benchmark-results"
+      working-directory: ./backend
+
     - name: Upload benchmark artifacts
       uses: actions/upload-artifact@v4
       with:
         name: php-benchmark-results
         path: |
-          backend/.phpbench/html/
-          backend/.phpbench/*.html
+          benchmark-results/
         retention-days: 30
       if: always()  # Always try to upload artifacts, even if previous steps failed 
