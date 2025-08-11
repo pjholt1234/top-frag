@@ -13,28 +13,18 @@ class DemoParserController extends Controller
 {
     public function __construct(private readonly DemoParserService $demoParserService) {}
 
-    public function handleEvent(DemoParserEventRequest $request, string $jobId, string $eventName): JsonResponse
+    public function handleEvent(Request $request, string $jobId, string $eventName): JsonResponse
     {
-        // Log the incoming request data to parser.log
-        // Log::channel('parser')->info('Demo parser event received', [
-        //     'job_id' => $jobId,
-        //     'event_name' => $eventName,
-        //     'request_data' => $request->validated(),
-        //     'headers' => $request->headers->all(),
-        //     'timestamp' => now()->toISOString(),
-        // ]);
+        Log::channel('parser')->info('Demo parser event received', [
+            'job_id' => $jobId,
+            'event_name' => $eventName,
+        ]);
 
-        // // Log successful event processing
-        // Log::channel('parser')->info('Demo parser event processed successfully', [
-        //     'job_id' => $jobId,
-        //     'event_name' => $eventName,
-        //     'data_count' => count($request->input('data', [])),
-        //     'batch_info' => [
-        //         'batch_index' => $request->input('batch_index'),
-        //         'is_last' => $request->input('is_last'),
-        //         'total_batches' => $request->input('total_batches'),
-        //     ],
-        // ]);
+        if ($eventName === "grenade") {
+            Log::channel('parser')->info('Demo parser event received', $request->input('data', []));
+        }
+
+        $this->demoParserService->createMatchEvent($jobId, $request->input('data', []), $eventName);
 
         return response()->json([
             'success' => true,

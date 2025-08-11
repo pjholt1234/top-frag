@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('round_time'); // Seconds into the round
             $table->bigInteger('tick_timestamp');
 
-            $table->foreignId('player_id')->constrained('players')->onDelete('cascade');
+            $table->string('player_steam_id');
             $table->string('grenade_type', 20); // 'hegrenade', 'flashbang', 'smokegrenade', 'molotov', 'incendiary', 'decoy'
 
             // Player position when throwing
@@ -49,7 +49,7 @@ return new class extends Migration
             // Indexes
             $table->index(['match_id', 'round_number']);
             $table->index(['match_id', 'tick_timestamp']);
-            $table->index('player_id');
+            $table->index('player_steam_id');
             $table->index('grenade_type');
             $table->index(['round_number', 'round_time']);
         });

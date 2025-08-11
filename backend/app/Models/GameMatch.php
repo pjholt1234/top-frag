@@ -77,4 +77,9 @@ class GameMatch extends Model
     {
         return $this->hasMany(DemoProcessingJob::class, 'match_id');
     }
+
+    public function damageEvents(): HasMany
+    {
+        return $this->hasMany(DamageEvent::class, 'match_id');
+    }
 }

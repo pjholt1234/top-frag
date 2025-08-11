@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('matches', function (Blueprint $table) {
             $table->id();
-            $table->string('match_hash', 64)->unique();
-            $table->string('map', 50);
-            $table->integer('winning_team_score');
-            $table->integer('losing_team_score');
-            $table->string('match_type');
+            $table->string('match_hash', 64)->unique()->nullable();
+            $table->string('map', 50)->nullable();
+            $table->integer('winning_team_score')->nullable();
+            $table->integer('losing_team_score')->nullable();
+            $table->string('match_type')->nullable();
             $table->timestamp('start_timestamp')->nullable();
             $table->timestamp('end_timestamp')->nullable();
-            $table->integer('total_rounds');
+            $table->integer('total_rounds')->nullable();
             $table->integer('total_fight_events')->default(0);
             $table->integer('total_grenade_events')->default(0);
             $table->integer('playback_ticks')->default(0);

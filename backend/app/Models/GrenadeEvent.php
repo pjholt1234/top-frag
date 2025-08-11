@@ -19,7 +19,7 @@ class GrenadeEvent extends Model
         'round_number',
         'round_time',
         'tick_timestamp',
-        'player_id',
+        'player_steam_id',
         'grenade_type',
         'player_x',
         'player_y',
@@ -66,6 +66,6 @@ class GrenadeEvent extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id');
+        return $this->belongsTo(Player::class, 'player_steam_id', 'steam_id');
     }
 }

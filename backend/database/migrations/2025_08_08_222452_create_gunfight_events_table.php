@@ -18,8 +18,8 @@ return new class extends Migration
             $table->integer('round_time'); // Seconds into the round
             $table->bigInteger('tick_timestamp');
 
-            $table->foreignId('player_1_id')->constrained('players')->onDelete('cascade');
-            $table->foreignId('player_2_id')->constrained('players')->onDelete('cascade');
+            $table->string('player_1_steam_id');
+            $table->string('player_2_steam_id');
 
             $table->integer('player_1_hp_start');
             $table->integer('player_2_hp_start');
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->boolean('wallbang')->default(false);
             $table->integer('penetrated_objects')->default(0);
 
-            $table->foreignId('victor_id')->nullable()->constrained('players')->onDelete('set null'); // NULL if no clear winner
+            $table->string('victor_steam_id')->nullable(); // NULL if no clear winner
             $table->integer('damage_dealt')->default(0);
 
             $table->timestamps();
@@ -52,8 +52,8 @@ return new class extends Migration
             // Indexes
             $table->index(['match_id', 'round_number']);
             $table->index(['match_id', 'tick_timestamp']);
-            $table->index(['player_1_id', 'player_2_id']);
-            $table->index('victor_id');
+            $table->index(['player_1_steam_id', 'player_2_steam_id']);
+            $table->index('victor_steam_id');
             $table->index(['round_number', 'round_time']);
         });
     }

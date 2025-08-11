@@ -17,8 +17,8 @@ class GunfightEvent extends Model
         'round_number',
         'round_time',
         'tick_timestamp',
-        'player_1_id',
-        'player_2_id',
+        'player_1_steam_id',
+        'player_2_steam_id',
         'player_1_hp_start',
         'player_2_hp_start',
         'player_1_armor',
@@ -39,7 +39,7 @@ class GunfightEvent extends Model
         'headshot',
         'wallbang',
         'penetrated_objects',
-        'victor_id',
+        'victor_steam_id',
         'damage_dealt',
     ];
 
@@ -76,16 +76,16 @@ class GunfightEvent extends Model
 
     public function player1(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_1_id');
+        return $this->belongsTo(Player::class, 'player_1_steam_id', 'steam_id');
     }
 
     public function player2(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_2_id');
+        return $this->belongsTo(Player::class, 'player_2_steam_id', 'steam_id');
     }
 
     public function victor(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'victor_id');
+        return $this->belongsTo(Player::class, 'victor_steam_id', 'steam_id');
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use App\Services\ParserServiceConnector;
 use Illuminate\Support\Facades\Log;
 use App\Models\DemoProcessingJob;
+use App\Models\GameMatch;
 
 class ParseDemo implements ShouldQueue
 {
@@ -22,8 +23,10 @@ class ParseDemo implements ShouldQueue
     public function handle(): void
     {
         try {
-            $job = DemoProcessingJob::create();
-
+            $match = GameMatch::create();
+            $job = DemoProcessingJob::create([
+                'match_id' => $match->id,
+            ]);
             $this->parserServiceConnector->checkServiceHealth();
             $response = $this->parserServiceConnector->uploadDemo($this->filePath, $job->uuid);
 
