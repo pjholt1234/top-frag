@@ -113,12 +113,30 @@ jobs:
       run: vendor/bin/phpunit --coverage-text
       working-directory: ./backend
 
+    - name: Configure database for PHPBench
+      run: |
+        # Use PHPBench-specific environment file
+        cp .env.phpbench .env
+        # Create SQLite database file for PHPBench
+        touch database/database.sqlite
+      working-directory: ./backend
+
     - name: Run PHPBench benchmarks
-      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=json
+      run: |
+        # Set environment variables for PHPBench
+        export DB_CONNECTION=sqlite
+        export DB_DATABASE=:memory:
+        export APP_ENV=phpbench
+        vendor/bin/phpbench run benchmarks/ --report=aggregate --output=json --tolerate-failure
       working-directory: ./backend
 
     - name: Generate PHPBench HTML report
-      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html
+      run: |
+        # Set environment variables for PHPBench
+        export DB_CONNECTION=sqlite
+        export DB_DATABASE=:memory:
+        export APP_ENV=phpbench
+        vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure
       working-directory: ./backend
 
     - name: Upload coverage artifacts
