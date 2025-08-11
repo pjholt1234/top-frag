@@ -29,10 +29,6 @@ jobs:
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       working-directory: ./backend
 
-    - name: Generate key
-      run: php artisan key:generate
-      working-directory: ./backend
-
     - name: Directory Permissions
       run: chmod -R 777 storage bootstrap/cache
       working-directory: ./backend
@@ -45,6 +41,10 @@ jobs:
         touch database/database.sqlite
       working-directory: ./backend
 
+    - name: Generate key
+      run: php artisan key:generate
+      working-directory: ./backend
+
     - name: Run PHPBench benchmarks with detailed output
       run: |
         # Set environment variables for PHPBench
@@ -52,6 +52,7 @@ jobs:
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
         # Run benchmarks with error tolerance and continue on reflection issues
+        set +e  # Don't exit on error
         vendor/bin/phpbench run benchmarks/ \
           --report=aggregate \
           --report=default \
@@ -59,7 +60,17 @@ jobs:
           --output=html \
           --store \
           --tolerate-failure \
-          --stop-on-error=false || true
+          --stop-on-error=false
+        BENCHMARK_EXIT_CODE=$?
+        echo "PHPBench exit code: $BENCHMARK_EXIT_CODE"
+        # Exit with success if benchmarks ran (even if reflection failed)
+        if [ $BENCHMARK_EXIT_CODE -eq 0 ] || [ $BENCHMARK_EXIT_CODE -eq 1 ]; then
+          echo "✅ Benchmarks completed successfully"
+          exit 0
+        else
+          echo "❌ Benchmarks failed with exit code: $BENCHMARK_EXIT_CODE"
+          exit $BENCHMARK_EXIT_CODE
+        fi
       working-directory: ./backend
 
     - name: Generate performance trend report
@@ -69,7 +80,18 @@ jobs:
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
         # Generate trend report with error tolerance
-        vendor/bin/phpbench report --report=trend --output=html --tolerate-failure --stop-on-error=false || true
+        set +e  # Don't exit on error
+        vendor/bin/phpbench report --report=trend --output=html --tolerate-failure --stop-on-error=false
+        REPORT_EXIT_CODE=$?
+        echo "PHPBench trend report exit code: $REPORT_EXIT_CODE"
+        # Exit with success if report generation attempted (even if reflection failed)
+        if [ $REPORT_EXIT_CODE -eq 0 ] || [ $REPORT_EXIT_CODE -eq 1 ]; then
+          echo "✅ Trend report generation attempted"
+          exit 0
+        else
+          echo "❌ Trend report generation failed with exit code: $REPORT_EXIT_CODE"
+          exit $REPORT_EXIT_CODE
+        fi
       working-directory: ./backend
 
     - name: Verify PHPBench results
