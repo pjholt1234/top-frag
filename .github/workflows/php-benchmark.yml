@@ -64,21 +64,28 @@ jobs:
         fi
       working-directory: ./backend
 
-    - name: Copy benchmark artifacts to root
+    - name: Debug file structure from root
       run: |
-        echo "Copying benchmark artifacts to root directory..."
-        mkdir -p ../benchmark-results
-        cp -r .phpbench/html/* ../benchmark-results/ 2>/dev/null || echo "No HTML files to copy"
-        cp .phpbench/*.html ../benchmark-results/ 2>/dev/null || echo "No additional HTML files to copy"
-        echo "Files copied to root:"
-        ls -la ../benchmark-results/ || echo "No files in benchmark-results"
-      working-directory: ./backend
+        echo "=== Root Directory Contents ==="
+        ls -la
+        
+        echo "=== Backend Directory Contents ==="
+        ls -la backend/
+        
+        echo "=== Backend PHPBench Directory ==="
+        ls -la backend/.phpbench/ 2>/dev/null || echo "No .phpbench directory found"
+        
+        echo "=== Backend PHPBench HTML Directory ==="
+        ls -la backend/.phpbench/html/ 2>/dev/null || echo "No .phpbench/html directory found"
+        
+        echo "=== All HTML Files in Repository ==="
+        find . -name "*.html" -type f 2>/dev/null || echo "No HTML files found"
 
     - name: Upload benchmark artifacts
       uses: actions/upload-artifact@v4
       with:
         name: php-benchmark-results
         path: |
-          benchmark-results/
+          backend/.phpbench/html/
         retention-days: 30
       if: always()  # Always try to upload artifacts, even if previous steps failed 
