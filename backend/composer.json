@@ -69,10 +69,13 @@
             "./benchmark-test.sh"
         ],
         "benchmark:html": [
-            "@php -d error_reporting=\"E_ALL & ~E_WARNING\" vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure"
+            "@php vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html"
         ],
         "benchmark:html:test": [
             "./benchmark-test-html.sh"
+        ],
+        "benchmark:ci": [
+            "./benchmark-ci.sh"
         ]
     },
     "extra": {
