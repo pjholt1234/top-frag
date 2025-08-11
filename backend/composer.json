@@ -21,6 +21,7 @@
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "phpbench/phpbench": "^1.4",
         "phpunit/phpunit": "^11.5.3"
     },
     "autoload": {
@@ -32,7 +33,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "App\\Benchmarks\\": "benchmarks/"
         }
     },
     "scripts": {
@@ -59,6 +61,18 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "benchmark": [
+            "@php vendor/bin/phpbench run benchmarks/ --report=aggregate"
+        ],
+        "benchmark:test": [
+            "./benchmark-test.sh"
+        ],
+        "benchmark:html": [
+            "@php vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html"
+        ],
+        "benchmark:html:test": [
+            "./benchmark-test-html.sh"
         ]
     },
     "extra": {
