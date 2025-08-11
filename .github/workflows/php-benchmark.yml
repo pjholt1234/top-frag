@@ -50,9 +50,12 @@ jobs:
         mkdir -p .phpbench
         echo "Created .phpbench directory"
         ls -la .phpbench/
-        # Use composer script with error tolerance (known bug in PHPBench 1.4.1)
+        # Show what command will be executed
+        echo "Composer script content:"
+        composer run --list | grep benchmark:html
         echo "Running composer benchmark:html..."
-        composer benchmark:html 2>/dev/null || true
+        # Run with full output to see what's happening
+        composer benchmark:html 2>&1
         BENCHMARK_EXIT_CODE=$?
         echo "PHPBench exit code: $BENCHMARK_EXIT_CODE"
         # Check if files were generated
