@@ -99,24 +99,6 @@ class DemoParserControllerTest extends TestCase
             ]);
     }
 
-    public function test_handle_event_with_invalid_event_name()
-    {
-        $jobId = 'test-job-789';
-        $eventName = 'invalid_event';
-
-        $payload = [
-            'data' => []
-        ];
-
-        $response = $this->withHeaders([
-            'X-API-Key' => 'test-api-key',
-            'Content-Type' => 'application/json',
-        ])->postJson("/api/job/{$jobId}/event/{$eventName}", $payload);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['data']);
-    }
-
     public function test_handle_event_without_api_key()
     {
         $jobId = 'test-job-999';

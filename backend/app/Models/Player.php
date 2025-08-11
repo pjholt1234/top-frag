@@ -54,7 +54,7 @@ class Player extends Model
 
     public function grenadeEvents(): HasMany
     {
-        return $this->hasMany(GrenadeEvent::class, 'player_id');
+        return $this->hasMany(GrenadeEvent::class, 'player_steam_id', 'steam_id');
     }
 
     public function playerMatchSummaries(): HasMany

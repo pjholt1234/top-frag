@@ -57,14 +57,13 @@ class GunfightEventTest extends TestCase
     public function it_has_fillable_attributes()
     {
         $gunfightEvent = new GunfightEvent();
-
         $expectedFillable = [
             'match_id',
             'round_number',
             'round_time',
             'tick_timestamp',
-            'player_1_id',
-            'player_2_id',
+            'player_1_steam_id',
+            'player_2_steam_id',
             'player_1_hp_start',
             'player_2_hp_start',
             'player_1_armor',
@@ -85,7 +84,7 @@ class GunfightEventTest extends TestCase
             'headshot',
             'wallbang',
             'penetrated_objects',
-            'victor_id',
+            'victor_steam_id',
             'damage_dealt',
         ];
         $this->assertEquals($expectedFillable, $gunfightEvent->getFillable());
@@ -157,30 +156,30 @@ class GunfightEventTest extends TestCase
     public function it_belongs_to_player1()
     {
         $player1 = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_1_id' => $player1->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['player_1_steam_id' => $player1->steam_id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->player1);
-        $this->assertEquals($player1->id, $gunfightEvent->player1->id);
+        $this->assertEquals($player1->steam_id, $gunfightEvent->player1->steam_id);
     }
 
     #[Test]
     public function it_belongs_to_player2()
     {
         $player2 = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_2_id' => $player2->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['player_2_steam_id' => $player2->steam_id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->player2);
-        $this->assertEquals($player2->id, $gunfightEvent->player2->id);
+        $this->assertEquals($player2->steam_id, $gunfightEvent->player2->steam_id);
     }
 
     #[Test]
     public function it_belongs_to_victor()
     {
         $victor = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => $victor->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['victor_steam_id' => $victor->steam_id]);
 
         $this->assertInstanceOf(Player::class, $gunfightEvent->victor);
-        $this->assertEquals($victor->id, $gunfightEvent->victor->id);
+        $this->assertEquals($victor->steam_id, $gunfightEvent->victor->steam_id);
     }
 
     #[Test]
@@ -205,9 +204,9 @@ class GunfightEventTest extends TestCase
     #[Test]
     public function it_can_have_null_victor()
     {
-        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => null]);
+        $gunfightEvent = GunfightEvent::factory()->create(['victor_steam_id' => null]);
 
         $this->assertNull($gunfightEvent->victor);
-        $this->assertNull($gunfightEvent->victor_id);
+        $this->assertNull($gunfightEvent->victor_steam_id);
     }
 }

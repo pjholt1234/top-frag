@@ -47,7 +47,6 @@ class GameMatchTest extends TestCase
     public function it_has_fillable_attributes()
     {
         $match = new GameMatch();
-
         $expectedFillable = [
             'match_hash',
             'map',
@@ -60,6 +59,7 @@ class GameMatchTest extends TestCase
             'total_rounds',
             'total_fight_events',
             'total_grenade_events',
+            'playback_ticks',
         ];
         $this->assertEquals($expectedFillable, $match->getFillable());
     }

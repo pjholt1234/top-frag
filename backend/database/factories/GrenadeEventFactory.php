@@ -33,7 +33,7 @@ class GrenadeEventFactory extends Factory
             'round_number' => $this->faker->numberBetween(1, 30),
             'round_time' => $this->faker->numberBetween(0, 115),
             'tick_timestamp' => $this->faker->numberBetween(100000000, 999999999),
-            'player_id' => Player::factory(),
+            'player_steam_id' => Player::factory(),
             'grenade_type' => $this->faker->randomElement(GrenadeType::cases()),
             'player_x' => $this->faker->randomFloat(2, -2000, 2000),
             'player_y' => $this->faker->randomFloat(2, -2000, 2000),

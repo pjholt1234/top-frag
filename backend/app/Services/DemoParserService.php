@@ -47,24 +47,41 @@ class DemoParserService
         $match = $job->match;
 
         if (!$match) {
-            Log::warning("Match not found for job", ['job_id' => $jobId]);
-            return;
-        }
+            // Create a new match if it doesn't exist
+            $match = GameMatch::create([
+                'match_hash' => $matchHash,
+                'map' => $matchData['map'] ?? 'Unknown',
+                'winning_team' => $matchData['winning_team'] ?? 'A',
+                'winning_team_score' => $matchData['winning_team_score'] ?? 0,
+                'losing_team_score' => $matchData['losing_team_score'] ?? 0,
+                'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
+                'start_timestamp' => null, //todo: add this
+                'end_timestamp' => null, //todo: add this
+                'total_rounds' => $matchData['total_rounds'] ?? 0,
+                'total_fight_events' => 0, // Will be updated when events are processed
+                'total_grenade_events' => 0, // Will be updated when events are processed
+                'playback_ticks' => $matchData['playback_ticks'] ?? 0,
+            ]);
 
-        $match->update([
-            'match_hash' => $matchHash,
-            'map' => $matchData['map'] ?? 'Unknown',
-            'winning_team' => $matchData['winning_team'] ?? 'A',
-            'winning_team_score' => $matchData['winning_team_score'] ?? 0,
-            'losing_team_score' => $matchData['losing_team_score'] ?? 0,
-            'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-            'start_timestamp' => null, //todo: add this
-            'end_timestamp' => null, //todo: add this
-            'total_rounds' => $matchData['total_rounds'] ?? 0,
-            'total_fight_events' => 0, // Will be updated when events are processed
-            'total_grenade_events' => 0, // Will be updated when events are processed
-            'playback_ticks' => $matchData['playback_ticks'] ?? 0,
-        ]);
+            // Update the job to reference the new match
+            $job->update(['match_id' => $match->id]);
+        } else {
+            // Update existing match
+            $match->update([
+                'match_hash' => $matchHash,
+                'map' => $matchData['map'] ?? 'Unknown',
+                'winning_team' => $matchData['winning_team'] ?? 'A',
+                'winning_team_score' => $matchData['winning_team_score'] ?? 0,
+                'losing_team_score' => $matchData['losing_team_score'] ?? 0,
+                'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
+                'start_timestamp' => null, //todo: add this
+                'end_timestamp' => null, //todo: add this
+                'total_rounds' => $matchData['total_rounds'] ?? 0,
+                'total_fight_events' => 0, // Will be updated when events are processed
+                'total_grenade_events' => 0, // Will be updated when events are processed
+                'playback_ticks' => $matchData['playback_ticks'] ?? 0,
+            ]);
+        }
 
         if ($playersData && is_array($playersData)) {
             foreach ($playersData as $playerData) {

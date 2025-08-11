@@ -97,7 +97,7 @@ class PlayerTest extends TestCase
     public function it_has_gunfight_events_as_player1()
     {
         $player = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_1_id' => $player->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['player_1_steam_id' => $player->steam_id]);
 
         $this->assertCount(1, $player->gunfightEventsAsPlayer1);
         $this->assertInstanceOf(GunfightEvent::class, $player->gunfightEventsAsPlayer1->first());
@@ -107,7 +107,7 @@ class PlayerTest extends TestCase
     public function it_has_gunfight_events_as_player2()
     {
         $player = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['player_2_id' => $player->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['player_2_steam_id' => $player->steam_id]);
 
         $this->assertCount(1, $player->gunfightEventsAsPlayer2);
         $this->assertInstanceOf(GunfightEvent::class, $player->gunfightEventsAsPlayer2->first());
@@ -117,7 +117,7 @@ class PlayerTest extends TestCase
     public function it_has_gunfight_events_as_victor()
     {
         $player = Player::factory()->create();
-        $gunfightEvent = GunfightEvent::factory()->create(['victor_id' => $player->id]);
+        $gunfightEvent = GunfightEvent::factory()->create(['victor_steam_id' => $player->steam_id]);
 
         $this->assertCount(1, $player->gunfightEventsAsVictor);
         $this->assertInstanceOf(GunfightEvent::class, $player->gunfightEventsAsVictor->first());
@@ -127,7 +127,7 @@ class PlayerTest extends TestCase
     public function it_has_grenade_events()
     {
         $player = Player::factory()->create();
-        $grenadeEvent = GrenadeEvent::factory()->create(['player_id' => $player->id]);
+        $grenadeEvent = GrenadeEvent::factory()->create(['player_steam_id' => $player->steam_id]);
 
         $this->assertCount(1, $player->grenadeEvents);
         $this->assertInstanceOf(GrenadeEvent::class, $player->grenadeEvents->first());

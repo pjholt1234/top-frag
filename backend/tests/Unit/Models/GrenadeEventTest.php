@@ -54,13 +54,12 @@ class GrenadeEventTest extends TestCase
     public function it_has_fillable_attributes()
     {
         $grenadeEvent = new GrenadeEvent();
-
         $expectedFillable = [
             'match_id',
             'round_number',
             'round_time',
             'tick_timestamp',
-            'player_id',
+            'player_steam_id',
             'grenade_type',
             'player_x',
             'player_y',
@@ -138,10 +137,10 @@ class GrenadeEventTest extends TestCase
     public function it_belongs_to_player()
     {
         $player = Player::factory()->create();
-        $grenadeEvent = GrenadeEvent::factory()->create(['player_id' => $player->id]);
+        $grenadeEvent = GrenadeEvent::factory()->create(['player_steam_id' => $player->steam_id]);
 
         $this->assertInstanceOf(Player::class, $grenadeEvent->player);
-        $this->assertEquals($player->id, $grenadeEvent->player->id);
+        $this->assertEquals($player->steam_id, $grenadeEvent->player->steam_id);
     }
 
     #[Test]

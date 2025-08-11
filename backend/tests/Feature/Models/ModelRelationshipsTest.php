@@ -60,17 +60,17 @@ class ModelRelationshipsTest extends TestCase
         // Create gunfight events
         $gunfightEvent1 = GunfightEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_id' => $player1->id,
-            'player_2_id' => $player2->id,
-            'victor_id' => $player1->id,
+            'player_1_steam_id' => $player1->steam_id,
+            'player_2_steam_id' => $player2->steam_id,
+            'victor_steam_id' => $player1->steam_id,
             'headshot' => true,
             'damage_dealt' => 100,
         ]);
         $gunfightEvent2 = GunfightEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_id' => $player2->id,
-            'player_2_id' => $player3->id,
-            'victor_id' => $player2->id,
+            'player_1_steam_id' => $player2->steam_id,
+            'player_2_steam_id' => $player3->steam_id,
+            'victor_steam_id' => $player2->steam_id,
             'headshot' => false,
             'damage_dealt' => 75,
         ]);
@@ -78,7 +78,7 @@ class ModelRelationshipsTest extends TestCase
         // Create grenade events
         $grenadeEvent1 = GrenadeEvent::factory()->create([
             'match_id' => $match->id,
-            'player_id' => $player1->id,
+            'player_steam_id' => $player1->steam_id,
             'grenade_type' => GrenadeType::FLASHBANG,
             'throw_type' => ThrowType::LINEUP,
             'damage_dealt' => 25,
@@ -87,7 +87,7 @@ class ModelRelationshipsTest extends TestCase
         ]);
         $grenadeEvent2 = GrenadeEvent::factory()->create([
             'match_id' => $match->id,
-            'player_id' => $player2->id,
+            'player_steam_id' => $player2->steam_id,
             'grenade_type' => GrenadeType::SMOKE_GRENADE,
             'throw_type' => ThrowType::UTILITY,
             'damage_dealt' => 0,
@@ -302,28 +302,28 @@ class ModelRelationshipsTest extends TestCase
         // Create gunfight events
         GunfightEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_id' => $player1->id,
-            'player_2_id' => $player2->id,
-            'victor_id' => $player1->id,
+            'player_1_steam_id' => $player1->steam_id,
+            'player_2_steam_id' => $player2->steam_id,
+            'victor_steam_id' => $player1->steam_id,
             'headshot' => true,
         ]);
         GunfightEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_id' => $player2->id,
-            'player_2_id' => $player1->id,
-            'victor_id' => $player2->id,
+            'player_1_steam_id' => $player2->steam_id,
+            'player_2_steam_id' => $player1->steam_id,
+            'victor_steam_id' => $player2->steam_id,
             'headshot' => false,
         ]);
 
         // Create grenade events
         GrenadeEvent::factory()->create([
             'match_id' => $match->id,
-            'player_id' => $player1->id,
+            'player_steam_id' => $player1->steam_id,
             'grenade_type' => GrenadeType::FLASHBANG,
         ]);
         GrenadeEvent::factory()->create([
             'match_id' => $match->id,
-            'player_id' => $player2->id,
+            'player_steam_id' => $player2->steam_id,
             'grenade_type' => GrenadeType::SMOKE_GRENADE,
         ]);
 

@@ -34,8 +34,8 @@ class GunfightEventFactory extends Factory
             'round_number' => $this->faker->numberBetween(1, 30),
             'round_time' => $this->faker->numberBetween(0, 115),
             'tick_timestamp' => $this->faker->numberBetween(100000000, 999999999),
-            'player_1_id' => $player1,
-            'player_2_id' => $player2,
+            'player_1_steam_id' => $player1,
+            'player_2_steam_id' => $player2,
             'player_1_hp_start' => $this->faker->numberBetween(1, 100),
             'player_2_hp_start' => $this->faker->numberBetween(1, 100),
             'player_1_armor' => $this->faker->numberBetween(0, 100),
@@ -56,7 +56,7 @@ class GunfightEventFactory extends Factory
             'headshot' => $this->faker->boolean(),
             'wallbang' => $this->faker->boolean(),
             'penetrated_objects' => $this->faker->numberBetween(0, 5),
-            'victor_id' => $this->faker->randomElement([$player1, $player2]),
+            'victor_steam_id' => $this->faker->randomElement([$player1, $player2]),
             'damage_dealt' => $this->faker->numberBetween(1, 100),
         ];
     }
