@@ -52,8 +52,45 @@ jobs:
       working-directory: ./backend
 
     - name: Execute tests with coverage
-      run: vendor/bin/phpunit --coverage-clover=coverage.xml
+      run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-html=coverage-html
       working-directory: ./backend
+
+    - name: Display coverage summary
+      run: vendor/bin/phpunit --coverage-text
+      working-directory: ./backend
+
+    - name: Run PHPBench benchmarks
+      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=json
+      working-directory: ./backend
+
+    - name: Generate PHPBench HTML report
+      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html
+      working-directory: ./backend
+
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: php-coverage
+        path: |
+          ./backend/coverage.xml
+          ./backend/coverage-html/
+        retention-days: 30
+
+    - name: Upload PHPBench results
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpbench-results
+        path: |
+          ./backend/.phpbench/
+        retention-days: 30
+
+    - name: Upload PHPBench HTML report
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpbench-html-report
+        path: |
+          ./backend/.phpbench/html/
+        retention-days: 30
 
     # - name: Upload coverage to Codecov
     #   uses: codecov/codecov-action@v3

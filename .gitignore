@@ -7,3 +7,4 @@ demo.dem
 /parser-service/config.yaml
 /.idea
 /backend/.phpbench
+/parser-service/coverage.html

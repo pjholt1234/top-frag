@@ -31,6 +31,29 @@ jobs:
     - name: Display coverage
       run: cd parser-service && go tool cover -func=coverage.out
 
+    - name: Generate HTML coverage report
+      run: cd parser-service && go tool cover -html=coverage.out -o coverage.html
+
+    - name: Check coverage threshold
+      run: |
+        cd parser-service
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "Coverage is below 70% threshold"
+          exit 1
+        fi
+        echo "Coverage threshold met: $COVERAGE%"
+
+    - name: Upload Go coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-coverage
+        path: |
+          ./parser-service/coverage.out
+          ./parser-service/coverage.html
+        retention-days: 30
+
   php-tests:
     runs-on: ubuntu-latest
     name: PHP Tests
@@ -83,8 +106,45 @@ jobs:
       working-directory: ./backend
 
     - name: Execute tests with coverage
-      run: vendor/bin/phpunit --coverage-clover=coverage.xml
+      run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-html=coverage-html
       working-directory: ./backend
+
+    - name: Display coverage summary
+      run: vendor/bin/phpunit --coverage-text
+      working-directory: ./backend
+
+    - name: Run PHPBench benchmarks
+      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=json
+      working-directory: ./backend
+
+    - name: Generate PHPBench HTML report
+      run: vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html
+      working-directory: ./backend
+
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: php-coverage
+        path: |
+          ./backend/coverage.xml
+          ./backend/coverage-html/
+        retention-days: 30
+
+    - name: Upload PHPBench results
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpbench-results
+        path: |
+          ./backend/.phpbench/
+        retention-days: 30
+
+    - name: Upload PHPBench HTML report
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpbench-html-report
+        path: |
+          ./backend/.phpbench/html/
+        retention-days: 30
 
     # - name: Upload coverage to Codecov
     #   uses: codecov/codecov-action@v3

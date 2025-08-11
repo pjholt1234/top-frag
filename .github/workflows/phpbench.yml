@@ -1,0 +1,106 @@
+name: PHPBench Performance Tracking
+
+on:
+  schedule:
+    # Run every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  phpbench:
+    runs-on: ubuntu-latest
+    name: PHPBench Performance Tracking
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, pdo_mysql, pgsql, pdo_pgsql, gd, exif, zip, curl, fileinfo, soap, dom, xmlreader, xmlwriter, tokenizer, xml, simplexml, phar, iconv, session, filter, hash, json, openssl, spl, standard, reflection, date, libxml, pcre, zlib, ctype, curl, mbstring, fileinfo, gd, iconv, json, mbstring, openssl, pdo, xml, zip, bcmath, calendar, exif, ffi, ftp, gettext, gmp, intl, ldap, mysqli, odbc, pcntl, pdo_dblib, pdo_firebird, pdo_odbc, pdo_pgsql, pdo_sqlsrv, pgsql, shmop, snmp, soap, sockets, sqlite3, sysvmsg, sysvsem, sysvshm, tidy, xmlrpc, xsl, zend-opcache
+
+    - name: Copy .env
+      run: cp .env.example .env
+      working-directory: ./backend
+
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      working-directory: ./backend
+
+    - name: Generate key
+      run: php artisan key:generate
+      working-directory: ./backend
+
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
+      working-directory: ./backend
+
+    - name: Create Database
+      run: |
+        php artisan migrate --force
+        php artisan db:seed --force
+      working-directory: ./backend
+
+    - name: Run PHPBench benchmarks with detailed output
+      run: |
+        vendor/bin/phpbench run benchmarks/ \
+          --report=aggregate \
+          --report=default \
+          --output=json \
+          --output=html \
+          --store
+      working-directory: ./backend
+
+    - name: Generate performance trend report
+      run: |
+        vendor/bin/phpbench report --report=trend --output=html
+      working-directory: ./backend
+
+    - name: Upload PHPBench results and reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: phpbench-performance-$(date +%Y-%m-%d)
+        path: |
+          ./backend/.phpbench/
+        retention-days: 90
+
+    - name: Comment on PR with benchmark results (if PR)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          try {
+            const benchmarkPath = path.join(process.cwd(), 'backend', '.phpbench', 'latest', 'aggregate.json');
+            if (fs.existsSync(benchmarkPath)) {
+              const benchmarkData = JSON.parse(fs.readFileSync(benchmarkPath, 'utf8'));
+              
+              let comment = '## 📊 PHPBench Performance Results\n\n';
+              comment += 'Latest benchmark results:\n\n';
+              
+              if (benchmarkData.benchmarks) {
+                benchmarkData.benchmarks.forEach(benchmark => {
+                  comment += `### ${benchmark.subject}\n`;
+                  comment += `- **Mean**: ${benchmark.stats.mean}ms\n`;
+                  comment += `- **Min**: ${benchmark.stats.min}ms\n`;
+                  comment += `- **Max**: ${benchmark.stats.max}ms\n`;
+                  comment += `- **Standard Deviation**: ${benchmark.stats.stdev}ms\n\n`;
+                });
+              }
+              
+              comment += '📈 Full reports are available as workflow artifacts.';
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+          } catch (error) {
+            console.log('Could not generate benchmark comment:', error.message);
+          } 
