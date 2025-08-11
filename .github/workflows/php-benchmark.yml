@@ -69,7 +69,7 @@ jobs:
       with:
         name: php-benchmark-results
         path: |
-          ./backend/.phpbench/html/
-          ./backend/.phpbench/*.html
+          backend/.phpbench/html/
+          backend/.phpbench/*.html
         retention-days: 30
       if: always()  # Always try to upload artifacts, even if previous steps failed 
