@@ -44,6 +44,8 @@ jobs:
         export DB_CONNECTION=sqlite
         export DB_DATABASE=:memory:
         export APP_ENV=phpbench
+        # Ensure .phpbench directory exists
+        mkdir -p .phpbench
         # Suppress PHPBench reflection warnings and handle exit codes (known bug in PHPBench 1.4.1)
         set +e
         php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure
@@ -59,10 +61,21 @@ jobs:
         fi
       working-directory: ./backend
 
+    - name: Debug PHPBench output
+      run: |
+        echo "Checking for PHPBench output files..."
+        ls -la .phpbench/ || echo "No .phpbench directory found"
+        find . -name "*.html" -o -name ".phpbench" 2>/dev/null || echo "No HTML or phpbench files found"
+        echo "Current directory contents:"
+        ls -la
+      working-directory: ./backend
+
     - name: Upload benchmark artifacts
       uses: actions/upload-artifact@v4
       with:
         name: php-benchmark-results
         path: |
           ./backend/.phpbench/
+          ./backend/.phpbench/html/
+          ./backend/*.html
         retention-days: 30 
