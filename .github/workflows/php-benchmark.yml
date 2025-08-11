@@ -46,11 +46,16 @@ jobs:
         export APP_ENV=phpbench
         # Ensure .phpbench directory exists
         mkdir -p .phpbench
+        echo "Created .phpbench directory"
+        ls -la .phpbench/
         # Use composer script with error tolerance (known bug in PHPBench 1.4.1)
-        set +e
         composer benchmark:html
         BENCHMARK_EXIT_CODE=$?
         echo "PHPBench exit code: $BENCHMARK_EXIT_CODE"
+        # Check if files were generated
+        echo "Checking for generated files..."
+        ls -la .phpbench/ || echo "No .phpbench directory found"
+        ls -la .phpbench/html/ || echo "No .phpbench/html directory found"
         # Exit with success if benchmarks ran (even if reflection failed)
         if [ $BENCHMARK_EXIT_CODE -eq 0 ] || [ $BENCHMARK_EXIT_CODE -eq 1 ]; then
           echo "✅ Benchmarks completed successfully"
@@ -63,13 +68,17 @@ jobs:
 
     - name: Debug PHPBench output
       run: |
-        echo "Checking for PHPBench output files..."
+        echo "Final check for PHPBench output files..."
         echo "Contents of .phpbench directory:"
         ls -la .phpbench/ || echo "No .phpbench directory found"
         echo "Contents of .phpbench/html directory:"
         ls -la .phpbench/html/ || echo "No .phpbench/html directory found"
         echo "All HTML files in current directory:"
         find . -name "*.html" 2>/dev/null || echo "No HTML files found"
+        echo "Current working directory:"
+        pwd
+        echo "Current directory contents:"
+        ls -la
       working-directory: ./backend
 
     - name: Upload benchmark artifacts
