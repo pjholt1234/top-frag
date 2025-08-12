@@ -11,6 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: cd backend
+        run: cd backend
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -21,6 +24,9 @@ jobs:
 
       - name: Run Pint
         run: ./vendor/bin/pint --test
+
+      - name: cd parser-service
+        run: cd ../parser-service
 
       - name: Setup Go
         uses: actions/setup-go@v4
