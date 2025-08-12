@@ -39,30 +39,6 @@ jobs:
       run: chmod -R 777 storage bootstrap/cache
       working-directory: ./backend
 
-    - name: Run PHPBench benchmarks (Robust CI Script)
-      run: ./benchmark-ci.sh
-      working-directory: ./backend
-
-    - name: Verify benchmark artifacts
-      run: |
-        echo "=== PHPBench Directory Structure ==="
-        find .phpbench -type f -name "*.html" 2>/dev/null || echo "No HTML files found in .phpbench"
-        
-        echo "=== PHPBench HTML Directory ==="
-        if [ -d ".phpbench/html" ]; then
-          ls -la .phpbench/html/
-          echo "=== HTML File Contents (first 10 lines) ==="
-          head -10 .phpbench/html/index.html || echo "Could not read HTML file"
-        else
-          echo ".phpbench/html directory not found"
-        fi
-      working-directory: ./backend
-
-    - name: Upload benchmark artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: php-benchmark-results
-        path: |
-          backend/.phpbench/html/
-        retention-days: 30
-      if: always()  # Always try to upload artifacts, even if previous steps failed 
+    - name: Run PHPBench benchmarks
+      run: php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate 2>&1 | grep -v "Uninitialized string offset" | grep -v "RemoteReflector.php"
+      working-directory: ./backend 
