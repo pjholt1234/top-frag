@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Models\GrenadeEvent;
-use App\Models\GameMatch;
-use App\Models\Player;
 use App\Enums\GrenadeType;
 use App\Enums\ThrowType;
+use App\Models\GameMatch;
+use App\Models\GrenadeEvent;
+use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

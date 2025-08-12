@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\ProcessingStatus;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\Player;
-use App\Enums\ProcessingStatus;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DemoParserControllerTest extends TestCase
 {
@@ -53,8 +53,8 @@ class DemoParserControllerTest extends TestCase
                     'penetrated_objects' => 0,
                     'victor_steam_id' => 'steam_123',
                     'damage_dealt' => 100,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->withHeaders([
@@ -82,8 +82,8 @@ class DemoParserControllerTest extends TestCase
                     'round_number' => 1,
                     'tick_timestamp' => 12345,
                     'event_type' => 'start',
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->withHeaders([
@@ -105,7 +105,7 @@ class DemoParserControllerTest extends TestCase
         $eventName = 'gunfight';
 
         $payload = [
-            'data' => []
+            'data' => [],
         ];
 
         $response = $this->postJson("/api/job/{$jobId}/event/{$eventName}", $payload);
@@ -122,7 +122,7 @@ class DemoParserControllerTest extends TestCase
         $eventName = 'gunfight';
 
         $payload = [
-            'data' => []
+            'data' => [],
         ];
 
         $response = $this->withHeaders([

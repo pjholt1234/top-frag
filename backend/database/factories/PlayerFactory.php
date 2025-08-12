@@ -25,7 +25,7 @@ class PlayerFactory extends Factory
     public function definition(): array
     {
         return [
-            'steam_id' => 'STEAM_' . $this->faker->numberBetween(100000000, 999999999),
+            'steam_id' => 'STEAM_'.$this->faker->numberBetween(100000000, 999999999),
             'name' => $this->faker->userName(),
             'first_seen_at' => $this->faker->dateTimeBetween('-1 year', '-1 month'),
             'last_seen_at' => $this->faker->dateTimeBetween('-1 month', 'now'),

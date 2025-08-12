@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
-use App\Enums\ProcessingStatus;
 use Illuminate\Database\Seeder;
 
 class DemoProcessingJobSeeder extends Seeder

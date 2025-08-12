@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DemoParserEventRequest;
+use App\Services\DemoParserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Services\DemoParserService;
 
 class DemoParserController extends Controller
 {
@@ -20,7 +19,7 @@ class DemoParserController extends Controller
             'event_name' => $eventName,
         ]);
 
-        if ($eventName === "grenade") {
+        if ($eventName === 'grenade') {
             Log::channel('parser')->info('Demo parser event received', $request->input('data', []));
         }
 
@@ -56,7 +55,7 @@ class DemoParserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Progress update received',
-            'job_id' => $validated['job_id']
+            'job_id' => $validated['job_id'],
         ], 200);
     }
 
@@ -67,7 +66,7 @@ class DemoParserController extends Controller
             'status' => 'required|string',
             'progress' => 'nullable|integer|min:0|max:100',
             'current_step' => 'nullable|string',
-            'error' => 'nullable|string'
+            'error' => 'nullable|string',
         ]);
 
         $this->demoParserService->updateProcessingJob($validated['job_id'], $validated, true);
@@ -75,7 +74,7 @@ class DemoParserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Completion update received',
-            'job_id' => $validated['job_id']
+            'job_id' => $validated['job_id'],
         ], 200);
     }
 }

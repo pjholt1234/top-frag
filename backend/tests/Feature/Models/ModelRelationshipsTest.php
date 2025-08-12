@@ -2,22 +2,20 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\User;
-use App\Models\Player;
-use App\Models\GameMatch;
-use App\Models\MatchPlayer;
-use App\Models\GunfightEvent;
-use App\Models\GrenadeEvent;
-use App\Models\MatchSummary;
-use App\Models\PlayerMatchSummary;
-use App\Enums\Team;
-use App\Enums\MatchType;
-use App\Enums\ProcessingStatus;
 use App\Enums\GrenadeType;
+use App\Enums\MatchType;
+use App\Enums\Team;
 use App\Enums\ThrowType;
+use App\Models\GameMatch;
+use App\Models\GrenadeEvent;
+use App\Models\GunfightEvent;
+use App\Models\MatchPlayer;
+use App\Models\MatchSummary;
+use App\Models\Player;
+use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class ModelRelationshipsTest extends TestCase
 {

@@ -3,16 +3,17 @@
 namespace App\Jobs;
 
 use App\Exceptions\ParserServiceConnectorException;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
-use App\Services\ParserServiceConnector;
-use Illuminate\Support\Facades\Log;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
+use App\Services\ParserServiceConnector;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 
 class ParseDemo implements ShouldQueue
 {
     use Queueable;
+
     private readonly ParserServiceConnector $parserServiceConnector;
 
     public function __construct(private readonly string $filePath)

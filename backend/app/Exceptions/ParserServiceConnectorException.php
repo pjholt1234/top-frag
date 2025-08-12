@@ -10,11 +10,9 @@ class ParserServiceConnectorException extends Exception
     /**
      * Create a new ParserServiceConnectorException instance.
      *
-     * @param string $message
-     * @param int $code
-     * @param Exception|null $previous
+     * @param  Exception|null  $previous
      */
-    public function __construct(string $message = "", int $code = 0)
+    public function __construct(string $message = '', int $code = 0)
     {
         parent::__construct($message, $code);
 
@@ -24,8 +22,6 @@ class ParserServiceConnectorException extends Exception
 
     /**
      * Log the error details to the parser channel.
-     *
-     * @return void
      */
     private function logError(): void
     {
@@ -52,33 +48,22 @@ class ParserServiceConnectorException extends Exception
 
     /**
      * Create an exception for service health check failures.
-     *
-     * @param string $reason
-     * @param int $statusCode
-     * @return static
      */
-    public static function serviceUnavailable(string $reason = "Service health check failed", int $statusCode = 503): static
+    public static function serviceUnavailable(string $reason = 'Service health check failed', int $statusCode = 503): static
     {
         return new static("Parser service is unavailable: {$reason}", $statusCode);
     }
 
     /**
      * Create an exception for upload failures.
-     *
-     * @param string $reason
-     * @param int $statusCode
-     * @return static
      */
-    public static function uploadFailed(string $reason = "Demo upload failed", int $statusCode = 500): static
+    public static function uploadFailed(string $reason = 'Demo upload failed', int $statusCode = 500): static
     {
         return new static("Demo upload failed: {$reason}", $statusCode);
     }
 
     /**
      * Create an exception for configuration errors.
-     *
-     * @param string $configKey
-     * @return static
      */
     public static function configurationError(string $configKey): static
     {
@@ -87,9 +72,6 @@ class ParserServiceConnectorException extends Exception
 
     /**
      * Create an exception for timeout errors.
-     *
-     * @param int $timeout
-     * @return static
      */
     public static function timeoutError(int $timeout): static
     {
@@ -98,11 +80,8 @@ class ParserServiceConnectorException extends Exception
 
     /**
      * Create an exception for authentication errors.
-     *
-     * @param string $reason
-     * @return static
      */
-    public static function authenticationError(string $reason = "Invalid API key"): static
+    public static function authenticationError(string $reason = 'Invalid API key'): static
     {
         return new static("Parser service authentication failed: {$reason}", 401);
     }

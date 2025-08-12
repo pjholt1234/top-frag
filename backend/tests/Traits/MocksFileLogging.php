@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Trait to mock file logging operations during tests.
- * 
+ *
  * This trait prevents actual file writing during tests by:
  * 1. Mocking the Log facade
  * 2. Creating a test-specific storage path
@@ -30,7 +30,7 @@ trait MocksFileLogging
     {
         // Clean up test log files
         $logFiles = [
-            storage_path('logs/parser.log')
+            storage_path('logs/parser.log'),
         ];
 
         foreach ($logFiles as $logFile) {

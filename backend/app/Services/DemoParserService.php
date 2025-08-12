@@ -2,18 +2,18 @@
 
 namespace App\Services;
 
-use App\Enums\MatchType;
-use App\Models\DemoProcessingJob;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use App\Models\GameMatch;
-use App\Models\Player;
-use App\Models\MatchPlayer;
-use App\Enums\Team;
 use App\Enums\MatchEventType;
-use App\Models\GunfightEvent;
+use App\Enums\MatchType;
+use App\Enums\Team;
 use App\Models\DamageEvent;
+use App\Models\DemoProcessingJob;
+use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
+use App\Models\GunfightEvent;
+use App\Models\MatchPlayer;
+use App\Models\Player;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DemoParserService
 {
@@ -23,8 +23,9 @@ class DemoParserService
     {
         $job = $this->getJob($jobId);
 
-        if (!$job) {
-            Log::warning("Demo processing job not found for match event creation", ['job_id' => $jobId]);
+        if (! $job) {
+            Log::warning('Demo processing job not found for match event creation', ['job_id' => $jobId]);
+
             return;
         }
 
@@ -43,8 +44,9 @@ class DemoParserService
     {
         $job = $this->getJob($jobId);
 
-        if (!$job) {
-            Log::warning("Demo processing job not found for match creation", ['job_id' => $jobId]);
+        if (! $job) {
+            Log::warning('Demo processing job not found for match creation', ['job_id' => $jobId]);
+
             return;
         }
 
@@ -52,7 +54,7 @@ class DemoParserService
 
         $match = $job->match;
 
-        if (!$match) {
+        if (! $match) {
             // Create a new match if it doesn't exist
             $match = GameMatch::create([
                 'match_hash' => $matchHash,
@@ -61,8 +63,8 @@ class DemoParserService
                 'winning_team_score' => $matchData['winning_team_score'] ?? 0,
                 'losing_team_score' => $matchData['losing_team_score'] ?? 0,
                 'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-                'start_timestamp' => null, //todo: add this
-                'end_timestamp' => null, //todo: add this
+                'start_timestamp' => null, // todo: add this
+                'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
                 'total_fight_events' => 0, // Will be updated when events are processed
                 'total_grenade_events' => 0, // Will be updated when events are processed
@@ -80,8 +82,8 @@ class DemoParserService
                 'winning_team_score' => $matchData['winning_team_score'] ?? 0,
                 'losing_team_score' => $matchData['losing_team_score'] ?? 0,
                 'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-                'start_timestamp' => null, //todo: add this
-                'end_timestamp' => null, //todo: add this
+                'start_timestamp' => null, // todo: add this
+                'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
                 'total_fight_events' => 0, // Will be updated when events are processed
                 'total_grenade_events' => 0, // Will be updated when events are processed
@@ -95,11 +97,11 @@ class DemoParserService
             }
         }
 
-        Log::info("Match created successfully", [
+        Log::info('Match created successfully', [
             'job_id' => $jobId,
             'match_id' => $match->id,
             'match_hash' => $matchHash,
-            'players_count' => $playersData ? count($playersData) : 0
+            'players_count' => $playersData ? count($playersData) : 0,
         ]);
     }
 
@@ -107,14 +109,15 @@ class DemoParserService
     {
         $job = $this->getJob($jobId);
 
-        if (!$job) {
+        if (! $job) {
             return;
         }
 
         $match = $job->match;
 
-        if (!$match) {
-            Log::error("Match not found for job", ['job_id' => $jobId]);
+        if (! $match) {
+            Log::error('Match not found for job', ['job_id' => $jobId]);
+
             return;
         }
 
@@ -124,7 +127,7 @@ class DemoParserService
                 MatchEventType::DAMAGE->value => $this->createDamageEvent($match, $eventData),
                 MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
-                default => Log::error("Invalid event name", ['job_id' => $jobId, 'event_name' => $eventName]),
+                default => Log::error('Invalid event name', ['job_id' => $jobId, 'event_name' => $eventName]),
             };
         });
     }
@@ -134,7 +137,7 @@ class DemoParserService
      */
     private function getJob(string $jobId): ?DemoProcessingJob
     {
-        if (!isset($this->jobCache[$jobId])) {
+        if (! isset($this->jobCache[$jobId])) {
             $this->jobCache[$jobId] = DemoProcessingJob::with('match')->where('uuid', $jobId)->first();
         }
 
@@ -144,7 +147,7 @@ class DemoParserService
     /**
      * Clear job cache when needed (e.g., after job completion)
      */
-    public function clearJobCache(string $jobId = null): void
+    public function clearJobCache(?string $jobId = null): void
     {
         if ($jobId) {
             unset($this->jobCache[$jobId]);
@@ -345,9 +348,9 @@ class DemoParserService
                     'grenade_final_x' => $grenadeEvent['grenade_final_x'],
                     'grenade_final_y' => $grenadeEvent['grenade_final_y'],
                     'grenade_final_z' => $grenadeEvent['grenade_final_z'],
-                    'damage_dealt' => 0, //todo
-                    'flash_duration' => 0, //todo
-                    'affected_players' => null, //todo - fixed syntax error
+                    'damage_dealt' => 0, // todo
+                    'flash_duration' => 0, // todo
+                    'affected_players' => null, // todo - fixed syntax error
                     'throw_type' => 'utility', // todo - fixed syntax error and added default
                     'effectiveness_rating' => null, // todo - fixed syntax error
                     'created_at' => $now,

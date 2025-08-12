@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Models\DemoProcessingJob;
 use App\Observers\DemoProcessingJobObserver;
+use App\Services\DemoParserService;
 use App\Services\ParserServiceConnector;
 use Illuminate\Support\ServiceProvider;
-use App\Services\DemoParserService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,11 +16,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ParserServiceConnector::class, function ($app) {
-            return new ParserServiceConnector();
+            return new ParserServiceConnector;
         });
 
         $this->app->singleton(DemoParserService::class, function ($app) {
-            return new DemoParserService();
+            return new DemoParserService;
         });
 
         $this->app->alias(ParserServiceConnector::class, 'parser.connector');

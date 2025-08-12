@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\PlayerMatchSummary;
 use App\Models\GameMatch;
 use App\Models\Player;
+use App\Models\PlayerMatchSummary;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

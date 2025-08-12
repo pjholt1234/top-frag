@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\MatchPlayer;
-use App\Models\GameMatch;
-use App\Models\Player;
 use App\Enums\Team;
+use App\Models\GameMatch;
+use App\Models\MatchPlayer;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class MatchPlayerTest extends TestCase
 {
@@ -28,7 +28,7 @@ class MatchPlayerTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $matchPlayer = new MatchPlayer();
+        $matchPlayer = new MatchPlayer;
 
         $expectedFillable = ['match_id', 'player_id', 'team'];
         $this->assertEquals($expectedFillable, $matchPlayer->getFillable());
@@ -68,7 +68,7 @@ class MatchPlayerTest extends TestCase
     #[Test]
     public function it_uses_correct_table_name()
     {
-        $matchPlayer = new MatchPlayer();
+        $matchPlayer = new MatchPlayer;
         $this->assertEquals('match_players', $matchPlayer->getTable());
     }
 
@@ -94,7 +94,7 @@ class MatchPlayerTest extends TestCase
     #[Test]
     public function it_has_correct_fillable_fields()
     {
-        $matchPlayer = new MatchPlayer();
+        $matchPlayer = new MatchPlayer;
         $expectedFillable = ['match_id', 'player_id', 'team'];
         $this->assertEquals($expectedFillable, $matchPlayer->getFillable());
     }

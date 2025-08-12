@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\GrenadeEvent;
-use App\Models\GameMatch;
-use App\Models\Player;
 use App\Enums\GrenadeType;
 use App\Enums\ThrowType;
+use App\Models\GameMatch;
+use App\Models\GrenadeEvent;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class GrenadeEventTest extends TestCase
 {
@@ -53,7 +53,7 @@ class GrenadeEventTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $grenadeEvent = new GrenadeEvent();
+        $grenadeEvent = new GrenadeEvent;
 
         $expectedFillable = [
             'match_id',
@@ -147,7 +147,7 @@ class GrenadeEventTest extends TestCase
     #[Test]
     public function it_uses_correct_table_name()
     {
-        $grenadeEvent = new GrenadeEvent();
+        $grenadeEvent = new GrenadeEvent;
         $this->assertEquals('grenade_events', $grenadeEvent->getTable());
     }
 

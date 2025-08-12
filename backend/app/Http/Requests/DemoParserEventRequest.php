@@ -111,7 +111,7 @@ class DemoParserEventRequest extends FormRequest
                 'smokegrenade',
                 'molotov',
                 'incendiary',
-                'decoy'
+                'decoy',
             ])],
             'data.*.player_position.x' => 'required|numeric|between:-10000,10000',
             'data.*.player_position.y' => 'required|numeric|between:-10000,10000',
@@ -132,7 +132,7 @@ class DemoParserEventRequest extends FormRequest
                 'lineup',
                 'reaction',
                 'pre_aim',
-                'utility'
+                'utility',
             ])],
         ];
     }
@@ -251,19 +251,19 @@ class DemoParserEventRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Ensure data is always an array
-        if (!$this->has('data')) {
+        if (! $this->has('data')) {
             $this->merge(['data' => []]);
         }
 
         // Ensure batch fields are present for gunfight events
         if ($this->route('eventName') === 'gunfight') {
-            if (!$this->has('batch_index')) {
+            if (! $this->has('batch_index')) {
                 $this->merge(['batch_index' => 1]);
             }
-            if (!$this->has('is_last')) {
+            if (! $this->has('is_last')) {
                 $this->merge(['is_last' => true]);
             }
-            if (!$this->has('total_batches')) {
+            if (! $this->has('total_batches')) {
                 $this->merge(['total_batches' => 1]);
             }
         }

@@ -9,8 +9,8 @@ class GrenadeEventDataFactory implements DataFactoryInterface
     /**
      * Create a single grenade event or an array of grenade events
      *
-     * @param int|null $count Number of events to create (null for single event)
-     * @param array $attributes Override default attributes
+     * @param  int|null  $count  Number of events to create (null for single event)
+     * @param  array  $attributes  Override default attributes
      * @return array|array[]
      */
     public static function create(?int $count = null, array $attributes = []): array
@@ -32,9 +32,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
     /**
      * Generate a single grenade event
      *
-     * @param \Faker\Generator $faker
-     * @param array $attributes
-     * @return array
+     * @param  \Faker\Generator  $faker
      */
     private static function generateSingleEvent($faker, array $attributes = []): array
     {
@@ -44,7 +42,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'flashbang',
             'molotov',
             'incendiary',
-            'decoy'
+            'decoy',
         ]);
 
         // Generate realistic coordinates based on CS:GO map dimensions
@@ -71,7 +69,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'player_aim_x' => $playerAimX,
             'player_aim_y' => $playerAimY,
             'player_aim_z' => $playerAimZ,
-            'player_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'player_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'player_x' => $playerX,
             'player_y' => $playerY,
             'player_z' => $playerZ,
@@ -87,9 +85,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
     /**
      * Generate realistic damage values based on grenade type
      *
-     * @param \Faker\Generator $faker
-     * @param string $grenadeType
-     * @return int
+     * @param  \Faker\Generator  $faker
      */
     private static function generateDamageForGrenade($faker, string $grenadeType): int
     {
@@ -105,10 +101,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a grenade event with specific grenade type
-     *
-     * @param string $grenadeType
-     * @param array $attributes
-     * @return array
      */
     public static function createWithGrenadeType(string $grenadeType, array $attributes = []): array
     {
@@ -117,10 +109,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a grenade event for a specific round
-     *
-     * @param int $roundNumber
-     * @param array $attributes
-     * @return array
      */
     public static function createForRound(int $roundNumber, array $attributes = []): array
     {
@@ -129,10 +117,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a grenade event with specific throw type
-     *
-     * @param string $throwType
-     * @param array $attributes
-     * @return array
      */
     public static function createWithThrowType(string $throwType, array $attributes = []): array
     {
@@ -141,9 +125,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a HE grenade event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createHEGrenade(array $attributes = []): array
     {
@@ -152,9 +133,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a smoke grenade event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createSmokeGrenade(array $attributes = []): array
     {
@@ -163,9 +141,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a flashbang event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createFlashbang(array $attributes = []): array
     {
@@ -174,9 +149,6 @@ class GrenadeEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a molotov event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createMolotov(array $attributes = []): array
     {

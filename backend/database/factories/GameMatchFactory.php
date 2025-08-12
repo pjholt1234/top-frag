@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\GameMatch;
 use App\Enums\MatchType;
+use App\Models\GameMatch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

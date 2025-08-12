@@ -2,17 +2,16 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\GrenadeType;
 use App\Enums\MatchEventType;
 use App\Enums\MatchType;
 use App\Enums\ProcessingStatus;
 use App\Enums\Team;
-use App\Enums\GrenadeType;
-use App\Models\DemoProcessingJob;
 use App\Models\DamageEvent;
+use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
-use App\Models\MatchPlayer;
 use App\Models\Player;
 use App\Services\DemoParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,7 +27,7 @@ class DemoParserServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new DemoParserService();
+        $this->service = new DemoParserService;
     }
 
     public function test_it_can_update_processing_job_with_valid_data()

@@ -17,7 +17,7 @@ enum ProcessingStatus: string
     case COMPLETED = 'Completed';
     case FAILED = 'Failed';
 
-        // Error-Specific Statuses
+    // Error-Specific Statuses
     case VALIDATION_FAILED = 'ValidationFailed';
     case UPLOAD_FAILED = 'UploadFailed';
     case PARSE_FAILED = 'ParseFailed';
@@ -25,7 +25,7 @@ enum ProcessingStatus: string
     case TIMEOUT = 'Timeout';
     case CANCELLED = 'Cancelled';
 
-        // Legacy statuses (keeping for backward compatibility)
+    // Legacy statuses (keeping for backward compatibility)
     case PENDING = 'Pending';
     case PREPARING = 'Preparing';
     case PROCESSING = 'Processing';

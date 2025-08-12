@@ -5,8 +5,8 @@ namespace Tests\Feature\Models;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class UserTest extends TestCase
 {
@@ -28,7 +28,7 @@ class UserTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $user = new User();
+        $user = new User;
 
         $expectedFillable = ['name', 'email', 'password'];
         $this->assertEquals($expectedFillable, $user->getFillable());
@@ -37,7 +37,7 @@ class UserTest extends TestCase
     #[Test]
     public function it_has_hidden_attributes()
     {
-        $user = new User();
+        $user = new User;
 
         $expectedHidden = ['password', 'remember_token'];
         $this->assertEquals($expectedHidden, $user->getHidden());
@@ -80,7 +80,7 @@ class UserTest extends TestCase
     #[Test]
     public function it_has_required_traits()
     {
-        $user = new User();
+        $user = new User;
 
         $this->assertTrue(method_exists($user, 'notify'));
         $this->assertTrue(method_exists($user, 'routeNotificationFor'));

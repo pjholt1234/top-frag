@@ -2,16 +2,16 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\Player;
-use App\Models\GameMatch;
-use App\Models\MatchPlayer;
-use App\Models\GunfightEvent;
-use App\Models\GrenadeEvent;
-use App\Models\PlayerMatchSummary;
 use App\Enums\Team;
+use App\Models\GameMatch;
+use App\Models\GrenadeEvent;
+use App\Models\GunfightEvent;
+use App\Models\MatchPlayer;
+use App\Models\Player;
+use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class PlayerTest extends TestCase
 {
@@ -37,7 +37,7 @@ class PlayerTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $player = new Player();
+        $player = new Player;
 
         $expectedFillable = ['steam_id', 'name', 'first_seen_at', 'last_seen_at', 'total_matches'];
         $this->assertEquals($expectedFillable, $player->getFillable());

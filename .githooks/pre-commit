@@ -1,14 +1,14 @@
 #!/bin/sh
-echo "🔍 Running Pint (PHP formatter)..."
+cd backend
+
 ./vendor/bin/pint
 
-echo "🔍 Running goimports..."
+cd ../parser-service    
+
 goimports -w .
 
-echo "🔍 Running gofmt..."
 gofmt -w .
 
-echo "📦 Adding formatted files..."
-git add .
+cd ../
 
-echo "✅ Formatting complete"
+git add .

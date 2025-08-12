@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
-use App\Models\MatchPlayer;
-use App\Models\GameMatch;
-use App\Models\Player;
 use App\Enums\Team;
+use App\Models\GameMatch;
+use App\Models\MatchPlayer;
+use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

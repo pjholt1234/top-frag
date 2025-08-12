@@ -22,20 +22,20 @@ class SanctumAuth
             'headers' => $request->headers->all(),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'user_id' => $request->user()?->id
+            'user_id' => $request->user()?->id,
         ]);
 
         // Check if user is authenticated via Sanctum
-        if (!$request->user()) {
+        if (! $request->user()) {
             Log::channel('parser')->warning('Unauthenticated Sanctum request', [
                 'method' => $request->method(),
                 'url' => $request->fullUrl(),
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
                 'error' => 'Unauthenticated',
-                'message' => 'Valid Sanctum token is required'
+                'message' => 'Valid Sanctum token is required',
             ], 401);
         }
 
@@ -43,7 +43,7 @@ class SanctumAuth
 
         Log::channel('parser')->info('Sanctum authentication response sent', [
             'user_id' => $request->user()?->id,
-            'response' => $response
+            'response' => $response,
         ]);
 
         return $response;

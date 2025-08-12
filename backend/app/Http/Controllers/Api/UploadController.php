@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Exceptions\ParserServiceConnectorException;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Services\ParserServiceConnector;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 

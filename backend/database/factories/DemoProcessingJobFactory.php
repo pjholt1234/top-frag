@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProcessingStatus;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
-use App\Enums\ProcessingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -40,7 +40,7 @@ class DemoProcessingJobFactory extends Factory
      */
     public function pending(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'processing_status' => ProcessingStatus::PENDING,
             'progress_percentage' => 0,
             'error_message' => null,
@@ -52,7 +52,7 @@ class DemoProcessingJobFactory extends Factory
      */
     public function processing(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'processing_status' => ProcessingStatus::PROCESSING,
             'progress_percentage' => $this->faker->numberBetween(1, 99),
             'error_message' => null,
@@ -64,7 +64,7 @@ class DemoProcessingJobFactory extends Factory
      */
     public function completed(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'processing_status' => ProcessingStatus::COMPLETED,
             'progress_percentage' => 100,
             'error_message' => null,
@@ -76,7 +76,7 @@ class DemoProcessingJobFactory extends Factory
      */
     public function failed(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'processing_status' => ProcessingStatus::FAILED,
             'progress_percentage' => $this->faker->numberBetween(0, 100),
             'error_message' => $this->faker->sentence(),
@@ -88,7 +88,7 @@ class DemoProcessingJobFactory extends Factory
      */
     public function forMatch(GameMatch $match): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'match_id' => $match->id,
         ]);
     }

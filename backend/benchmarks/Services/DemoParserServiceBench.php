@@ -2,49 +2,58 @@
 
 namespace App\Benchmarks\Services;
 
-use App\Services\DemoParserService;
-use App\Models\DemoProcessingJob;
-use App\Models\GameMatch;
+use App\Benchmarks\BenchmarkInterface;
+use App\Benchmarks\Traits\RefreshDatabase;
 use App\Enums\MatchEventType;
 use App\Enums\ProcessingStatus;
-use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
+use App\Models\DemoProcessingJob;
+use App\Models\GameMatch;
+use App\Services\DemoParserService;
+use Database\Factories\DataFactories\DamageEventDataFactory;
+use Database\Factories\DataFactories\GrenadeEventDataFactory;
+use Database\Factories\DataFactories\GunfightEventDataFactory;
 use PhpBench\Benchmark\Metadata\Annotations\AfterMethods;
+use PhpBench\Benchmark\Metadata\Annotations\Assert;
+use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
 use PhpBench\Benchmark\Metadata\Annotations\Iterations;
 use PhpBench\Benchmark\Metadata\Annotations\Revs;
 use PhpBench\Benchmark\Metadata\Annotations\Warmup;
-use PhpBench\Benchmark\Metadata\Annotations\Assert;
-use App\Benchmarks\Traits\RefreshDatabase;
-use Database\Factories\DataFactories\DamageEventDataFactory;
-use Database\Factories\DataFactories\GunfightEventDataFactory;
-use Database\Factories\DataFactories\GrenadeEventDataFactory;
-use App\Benchmarks\BenchmarkInterface;
 
 /**
  * @BeforeMethods({"setUp"})
+ *
  * @AfterMethods({"tearDown"})
  */
 class DemoParserServiceBench implements BenchmarkInterface
 {
     private DemoParserService $service;
+
     private DemoProcessingJob $job;
+
     private GameMatch $match;
+
     private array $damageEventData;
+
     private array $gunfightEventData;
+
     private array $grenadeEventData;
 
     private const MAX_DAMAGE_EVENTS = 200;
+
     private const MAX_GUNFIGHT_EVENTS = 100;
+
     private const MAX_GRENADE_EVENTS = 100;
+
     private const MAX_ROUND_EVENTS = 50;
 
     use RefreshDatabase;
 
     public function setUp(): void
     {
-        $this->service = new DemoParserService();
+        $this->service = new DemoParserService;
 
         $this->job = DemoProcessingJob::create([
-            'uuid' => 'benchmark-test-' . uniqid(),
+            'uuid' => 'benchmark-test-'.uniqid(),
             'processing_status' => ProcessingStatus::PROCESSING,
             'progress_percentage' => 0,
         ]);
@@ -75,8 +84,11 @@ class DemoParserServiceBench implements BenchmarkInterface
 
     /**
      * @Revs(50)
+     *
      * @Iterations(5)
+     *
      * @Warmup(2)
+     *
      * @Assert("mode(variant.time.avg) < 50ms")
      */
     public function benchCreateDamageEvent(): void
@@ -90,8 +102,11 @@ class DemoParserServiceBench implements BenchmarkInterface
 
     /**
      * @Revs(50)
+     *
      * @Iterations(5)
+     *
      * @Warmup(2)
+     *
      * @Assert("mode(variant.time.avg) < 25ms")
      */
     public function benchCreateGunfightEvent(): void
@@ -105,8 +120,11 @@ class DemoParserServiceBench implements BenchmarkInterface
 
     /**
      * @Revs(50)
+     *
      * @Iterations(5)
+     *
      * @Warmup(2)
+     *
      * @Assert("mode(variant.time.avg) < 25ms")
      */
     public function benchCreateGrenadeEvent(): void
@@ -120,8 +138,11 @@ class DemoParserServiceBench implements BenchmarkInterface
 
     /**
      * @Revs(25)
+     *
      * @Iterations(3)
+     *
      * @Warmup(1)
+     *
      * @Assert("mode(variant.time.avg) < 100ms")
      */
     public function benchCreateAllEventTypes(): void

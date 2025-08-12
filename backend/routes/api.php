@@ -1,14 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\DemoParserController;
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\UploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Api\MatchController;
-use App\Http\Controllers\Api\PlayerController;
-use App\Http\Controllers\Api\StatsController;
-use App\Http\Controllers\Api\UploadController;
-use App\Http\Controllers\Api\HealthController;
-use App\Http\Controllers\Api\DemoParserController;
 
 /*
 |--------------------------------------------------------------------------

@@ -2,21 +2,26 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use Exception;
 use App\Exceptions\ParserServiceConnectorException;
+use Exception;
+use Illuminate\Support\Facades\Http;
 
 class ParserServiceConnector
 {
     private string $base_url;
+
     private string $apiKey;
 
     private string $progressCallbackURL;
+
     private string $completionCallbackURL;
+
     private string $parseDemoURL;
 
     private const string PROGRESS_CALLBACK_ENDPOINT = '/api/job/callback/progress';
+
     private const string COMPLETION_CALLBACK_ENDPOINT = '/api/job/callback/completion';
+
     private const string PARSE_DEMO_ENDPOINT = '/api/parse-demo';
 
     public function __construct()
@@ -24,20 +29,20 @@ class ParserServiceConnector
         $this->base_url = config('services.parser.base_url');
         $this->apiKey = config('services.parser.api_key');
 
-        $this->progressCallbackURL = config('app.url') . self::PROGRESS_CALLBACK_ENDPOINT;
-        $this->completionCallbackURL = config('app.url') . self::COMPLETION_CALLBACK_ENDPOINT;
-        $this->parseDemoURL = $this->base_url . self::PARSE_DEMO_ENDPOINT;
+        $this->progressCallbackURL = config('app.url').self::PROGRESS_CALLBACK_ENDPOINT;
+        $this->completionCallbackURL = config('app.url').self::COMPLETION_CALLBACK_ENDPOINT;
+        $this->parseDemoURL = $this->base_url.self::PARSE_DEMO_ENDPOINT;
     }
 
     public function checkServiceHealth(): void
     {
         try {
-            $response = Http::get($this->base_url . '/health');
+            $response = Http::get($this->base_url.'/health');
         } catch (Exception) {
             throw ParserServiceConnectorException::serviceUnavailable();
         }
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw ParserServiceConnectorException::serviceUnavailable();
         }
     }
@@ -74,7 +79,7 @@ class ParserServiceConnector
             throw ParserServiceConnectorException::uploadFailed();
         }
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw ParserServiceConnectorException::uploadFailed(statusCode: $response->getStatusCode());
         }
 

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\MatchSummary;
 use App\Models\GameMatch;
+use App\Models\MatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class MatchSummaryTest extends TestCase
 {
@@ -68,7 +68,7 @@ class MatchSummaryTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $summary = new MatchSummary();
+        $summary = new MatchSummary;
 
         $expectedFillable = [
             'match_id',
@@ -163,7 +163,7 @@ class MatchSummaryTest extends TestCase
     #[Test]
     public function it_uses_correct_table_name()
     {
-        $summary = new MatchSummary();
+        $summary = new MatchSummary;
         $this->assertEquals('match_summaries', $summary->getTable());
     }
 

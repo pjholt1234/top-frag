@@ -2,18 +2,18 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\GameMatch;
-use App\Models\Player;
-use App\Models\MatchPlayer;
-use App\Models\GunfightEvent;
-use App\Models\GrenadeEvent;
-use App\Models\MatchSummary;
-use App\Models\PlayerMatchSummary;
 use App\Enums\MatchType;
 use App\Enums\Team;
+use App\Models\GameMatch;
+use App\Models\GrenadeEvent;
+use App\Models\GunfightEvent;
+use App\Models\MatchPlayer;
+use App\Models\MatchSummary;
+use App\Models\Player;
+use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class GameMatchTest extends TestCase
 {
@@ -46,7 +46,7 @@ class GameMatchTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $match = new GameMatch();
+        $match = new GameMatch;
         $expectedFillable = [
             'match_hash',
             'map',
@@ -165,7 +165,7 @@ class GameMatchTest extends TestCase
     #[Test]
     public function it_uses_correct_table_name()
     {
-        $match = new GameMatch();
+        $match = new GameMatch;
         $this->assertEquals('matches', $match->getTable());
     }
 

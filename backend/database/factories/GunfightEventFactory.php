@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\GunfightEvent;
 use App\Models\GameMatch;
+use App\Models\GunfightEvent;
 use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

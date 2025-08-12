@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\GunfightEvent;
 use App\Models\GameMatch;
+use App\Models\GunfightEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class GunfightEventTest extends TestCase
 {
@@ -56,7 +56,7 @@ class GunfightEventTest extends TestCase
     #[Test]
     public function it_has_fillable_attributes()
     {
-        $gunfightEvent = new GunfightEvent();
+        $gunfightEvent = new GunfightEvent;
         $expectedFillable = [
             'match_id',
             'round_number',
@@ -185,7 +185,7 @@ class GunfightEventTest extends TestCase
     #[Test]
     public function it_uses_correct_table_name()
     {
-        $gunfightEvent = new GunfightEvent();
+        $gunfightEvent = new GunfightEvent;
         $this->assertEquals('gunfight_events', $gunfightEvent->getTable());
     }
 

@@ -9,8 +9,8 @@ class DamageEventDataFactory implements DataFactoryInterface
     /**
      * Create a single damage event or an array of damage events
      *
-     * @param int|null $count Number of events to create (null for single event)
-     * @param array $attributes Override default attributes
+     * @param  int|null  $count  Number of events to create (null for single event)
+     * @param  array  $attributes  Override default attributes
      * @return array|array[]
      */
     public static function create(?int $count = null, array $attributes = []): array
@@ -32,9 +32,7 @@ class DamageEventDataFactory implements DataFactoryInterface
     /**
      * Generate a single damage event
      *
-     * @param \Faker\Generator $faker
-     * @param array $attributes
-     * @return array
+     * @param  \Faker\Generator  $faker
      */
     private static function generateSingleEvent($faker, array $attributes = []): array
     {
@@ -62,7 +60,7 @@ class DamageEventDataFactory implements DataFactoryInterface
             'Incendiary Grenade',
             'Smoke Grenade',
             'Flashbang',
-            'Decoy Grenade'
+            'Decoy Grenade',
         ]);
 
         // Determine if it's a grenade weapon
@@ -72,7 +70,7 @@ class DamageEventDataFactory implements DataFactoryInterface
             'Incendiary Grenade',
             'Smoke Grenade',
             'Flashbang',
-            'Decoy Grenade'
+            'Decoy Grenade',
         ]);
 
         // Generate realistic damage values based on weapon type
@@ -82,14 +80,14 @@ class DamageEventDataFactory implements DataFactoryInterface
 
         $defaultAttributes = [
             'armor_damage' => $armorDamage,
-            'attacker_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'attacker_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'damage' => $damage,
             'headshot' => $faker->boolean(20), // 20% chance of headshot
             'health_damage' => $healthDamage,
             'round_number' => $faker->numberBetween(1, 24),
             'round_time' => $faker->numberBetween(0, 115),
             'tick_timestamp' => $faker->numberBetween(0, 999999999),
-            'victim_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'victim_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'weapon' => $weapon,
         ];
 
@@ -99,9 +97,7 @@ class DamageEventDataFactory implements DataFactoryInterface
     /**
      * Generate realistic damage values based on weapon type
      *
-     * @param \Faker\Generator $faker
-     * @param string $weapon
-     * @return int
+     * @param  \Faker\Generator  $faker
      */
     private static function generateDamageForWeapon($faker, string $weapon): int
     {
@@ -143,10 +139,7 @@ class DamageEventDataFactory implements DataFactoryInterface
     /**
      * Generate realistic armor damage based on weapon and total damage
      *
-     * @param \Faker\Generator $faker
-     * @param string $weapon
-     * @param int $totalDamage
-     * @return int
+     * @param  \Faker\Generator  $faker
      */
     private static function generateArmorDamage($faker, string $weapon, int $totalDamage): int
     {
@@ -185,9 +178,6 @@ class DamageEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a damage event with headshot
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createHeadshot(array $attributes = []): array
     {
@@ -196,10 +186,6 @@ class DamageEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a damage event with specific weapon
-     *
-     * @param string $weapon
-     * @param array $attributes
-     * @return array
      */
     public static function createWithWeapon(string $weapon, array $attributes = []): array
     {
@@ -208,10 +194,6 @@ class DamageEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a damage event for a specific round
-     *
-     * @param int $roundNumber
-     * @param array $attributes
-     * @return array
      */
     public static function createForRound(int $roundNumber, array $attributes = []): array
     {

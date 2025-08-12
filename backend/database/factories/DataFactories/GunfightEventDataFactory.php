@@ -9,8 +9,8 @@ class GunfightEventDataFactory implements DataFactoryInterface
     /**
      * Create a single gunfight event or an array of gunfight events
      *
-     * @param int|null $count Number of events to create (null for single event)
-     * @param array $attributes Override default attributes
+     * @param  int|null  $count  Number of events to create (null for single event)
+     * @param  array  $attributes  Override default attributes
      * @return array|array[]
      */
     public static function create(?int $count = null, array $attributes = []): array
@@ -32,9 +32,7 @@ class GunfightEventDataFactory implements DataFactoryInterface
     /**
      * Generate a single gunfight event
      *
-     * @param \Faker\Generator $faker
-     * @param array $attributes
-     * @return array
+     * @param  \Faker\Generator  $faker
      */
     private static function generateSingleEvent($faker, array $attributes = []): array
     {
@@ -56,7 +54,7 @@ class GunfightEventDataFactory implements DataFactoryInterface
             'MP9',
             'UMP-45',
             'P90',
-            'PP-Bizon'
+            'PP-Bizon',
         ];
 
         $player1Weapon = $faker->randomElement($weapons);
@@ -81,8 +79,8 @@ class GunfightEventDataFactory implements DataFactoryInterface
         // Determine victor (randomly, but could be based on weapon/health/armor)
         $victor = $faker->randomElement(['player_1', 'player_2']);
         $victorSteamId = $victor === 'player_1' ?
-            'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999) :
-            'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999);
+            'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999) :
+            'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999);
 
         $defaultAttributes = [
             'damage_dealt' => $faker->numberBetween(50, 100), // Usually lethal damage
@@ -93,7 +91,7 @@ class GunfightEventDataFactory implements DataFactoryInterface
             'player_1_equipment_value' => $faker->numberBetween(0, 10000),
             'player_1_flashed' => $faker->boolean(15), // 15% chance of being flashed
             'player_1_hp_start' => $faker->numberBetween(1, 100),
-            'player_1_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'player_1_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'player_1_weapon' => $player1Weapon,
             'player_1_x' => $player1X,
             'player_1_y' => $player1Y,
@@ -102,7 +100,7 @@ class GunfightEventDataFactory implements DataFactoryInterface
             'player_2_equipment_value' => $faker->numberBetween(0, 10000),
             'player_2_flashed' => $faker->boolean(15), // 15% chance of being flashed
             'player_2_hp_start' => $faker->numberBetween(1, 100),
-            'player_2_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'player_2_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'player_2_weapon' => $player2Weapon,
             'player_2_x' => $player2X,
             'player_2_y' => $player2Y,
@@ -119,9 +117,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with headshot
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createHeadshot(array $attributes = []): array
     {
@@ -130,9 +125,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with wallbang
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createWallbang(array $attributes = []): array
     {
@@ -141,26 +133,17 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with specific weapons
-     *
-     * @param string $player1Weapon
-     * @param string $player2Weapon
-     * @param array $attributes
-     * @return array
      */
     public static function createWithWeapons(string $player1Weapon, string $player2Weapon, array $attributes = []): array
     {
         return self::create(null, array_merge($attributes, [
             'player_1_weapon' => $player1Weapon,
-            'player_2_weapon' => $player2Weapon
+            'player_2_weapon' => $player2Weapon,
         ]));
     }
 
     /**
      * Create a gunfight event for a specific round
-     *
-     * @param int $roundNumber
-     * @param array $attributes
-     * @return array
      */
     public static function createForRound(int $roundNumber, array $attributes = []): array
     {
@@ -169,11 +152,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with specific distance range
-     *
-     * @param int $minDistance
-     * @param int $maxDistance
-     * @param array $attributes
-     * @return array
      */
     public static function createWithDistanceRange(int $minDistance, int $maxDistance, array $attributes = []): array
     {
@@ -185,9 +163,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a close-range gunfight event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createCloseRange(array $attributes = []): array
     {
@@ -196,9 +171,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a medium-range gunfight event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createMediumRange(array $attributes = []): array
     {
@@ -207,9 +179,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a long-range gunfight event
-     *
-     * @param array $attributes
-     * @return array
      */
     public static function createLongRange(array $attributes = []): array
     {
@@ -218,10 +187,6 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with specific victor
-     *
-     * @param string $victorSteamId
-     * @param array $attributes
-     * @return array
      */
     public static function createWithVictor(string $victorSteamId, array $attributes = []): array
     {
@@ -230,17 +195,12 @@ class GunfightEventDataFactory implements DataFactoryInterface
 
     /**
      * Create a gunfight event with flashed players
-     *
-     * @param bool $player1Flashed
-     * @param bool $player2Flashed
-     * @param array $attributes
-     * @return array
      */
     public static function createWithFlashedPlayers(bool $player1Flashed = true, bool $player2Flashed = true, array $attributes = []): array
     {
         return self::create(null, array_merge($attributes, [
             'player_1_flashed' => $player1Flashed,
-            'player_2_flashed' => $player2Flashed
+            'player_2_flashed' => $player2Flashed,
         ]));
     }
 }

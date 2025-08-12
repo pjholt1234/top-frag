@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Services\ParserServiceConnector;
 use App\Jobs\ParseDemo;
+use App\Services\ParserServiceConnector;
+use Illuminate\Console\Command;
 
 class TestParserFlowCommand extends Command
 {
@@ -17,7 +17,6 @@ class TestParserFlowCommand extends Command
 
     protected $description = 'Test the complete parser flow by uploading a demo file to the parser service';
 
-
     public function __construct(private readonly ParserServiceConnector $parserServiceConnector)
     {
         parent::__construct();
@@ -28,17 +27,18 @@ class TestParserFlowCommand extends Command
         $fileName = $this->option('file');
         $filePath = storage_path("app/public/{$fileName}");
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             $this->error("File not found: {$filePath}");
+
             return 1;
         }
 
         $fileSize = filesize($filePath);
-        $this->info("File size: " . number_format($fileSize / 1024 / 1024, 2) . " MB");
+        $this->info('File size: '.number_format($fileSize / 1024 / 1024, 2).' MB');
 
         // Dispatch the ParseDemo job with the file path
         ParseDemo::dispatch($filePath);
 
-        $this->info("ParseDemo job dispatched successfully!");
+        $this->info('ParseDemo job dispatched successfully!');
     }
 }

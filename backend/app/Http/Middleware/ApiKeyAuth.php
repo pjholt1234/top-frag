@@ -23,28 +23,28 @@ class ApiKeyAuth
         }
 
         // Check if API key is provided
-        if (!$apiKey) {
+        if (! $apiKey) {
             return response()->json([
                 'error' => 'API key is required',
-                'message' => 'Please provide a valid API key in the X-API-Key or Authorization header'
+                'message' => 'Please provide a valid API key in the X-API-Key or Authorization header',
             ], 401);
         }
 
         // Validate API key against environment variable
         $validApiKey = config('app.api_key') ?? env('API_KEY');
 
-        if (!$validApiKey) {
+        if (! $validApiKey) {
             // If no API key is configured, reject all requests
             return response()->json([
                 'error' => 'API authentication not configured',
-                'message' => 'Please configure API_KEY in your environment'
+                'message' => 'Please configure API_KEY in your environment',
             ], 500);
         }
 
         if ($apiKey !== $validApiKey) {
             return response()->json([
                 'error' => 'Invalid API key',
-                'message' => 'The provided API key is not valid'
+                'message' => 'The provided API key is not valid',
             ], 401);
         }
 
