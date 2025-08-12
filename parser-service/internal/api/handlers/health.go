@@ -10,7 +10,7 @@ import (
 )
 
 type HealthHandler struct {
-	logger *logrus.Logger
+	logger    *logrus.Logger
 	startTime time.Time
 }
 
@@ -33,14 +33,14 @@ func (h *HealthHandler) HandleHealth(c *gin.Context) {
 	uptime := time.Since(h.startTime)
 
 	health := gin.H{
-		"status": "healthy",
+		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"uptime": uptime.String(),
+		"uptime":    uptime.String(),
 		"memory": gin.H{
-			"alloc":     m.Alloc,
+			"alloc":       m.Alloc,
 			"total_alloc": m.TotalAlloc,
-			"sys":        m.Sys,
-			"num_gc":     m.NumGC,
+			"sys":         m.Sys,
+			"num_gc":      m.NumGC,
 		},
 		"goroutines": runtime.NumGoroutine(),
 	}
@@ -50,13 +50,13 @@ func (h *HealthHandler) HandleHealth(c *gin.Context) {
 
 func (h *HealthHandler) HandleReadiness(c *gin.Context) {
 	readiness := gin.H{
-		"status": "ready",
+		"status":    "ready",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"checks": gin.H{
-			"demo_parser": "ok",
+			"demo_parser":  "ok",
 			"batch_sender": "ok",
 		},
 	}
 
 	c.JSON(http.StatusOK, readiness)
-} 
+}

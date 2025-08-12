@@ -67,7 +67,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
 		// Store parser reference for later use
 		demoParser = parser
-		
+
 		// Register handler for demo file header to get map name
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
@@ -76,7 +76,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		// Register event handlers for the demo parser
 		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
-		
+
 		// Get final game state after parsing
 		gameState := parser.GameState()
 		if gameState != nil {
@@ -87,7 +87,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 				"round_events_count":      len(eventProcessor.matchState.RoundEvents),
 			}).Info("Final game state information")
 		}
-		
+
 		return nil
 	})
 
@@ -145,7 +145,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 		eventProcessor.HandleRoundStart(e)
 		progressCallback(types.ProgressUpdate{
 			Status:      types.StatusProcessingEvents,
-			Progress:    20 + (eventProcessor.matchState.CurrentRound*2),
+			Progress:    20 + (eventProcessor.matchState.CurrentRound * 2),
 			CurrentStep: fmt.Sprintf("Processing round %d", eventProcessor.matchState.CurrentRound),
 		})
 	})
@@ -222,7 +222,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 
 	// Count round end events to get actual total rounds
 	totalRounds := 0
-	
+
 	for _, roundEvent := range matchState.RoundEvents {
 		if roundEvent.EventType == "end" {
 			totalRounds++
@@ -233,11 +233,11 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	winningTeam := eventProcessor.getWinningTeam()
 	teamAWins := eventProcessor.teamAWins
 	teamBWins := eventProcessor.teamBWins
-	
+
 	// Set the match scores
 	winningTeamScore := 0
 	losingTeamScore := 0
-	
+
 	if winningTeam == "A" {
 		winningTeamScore = teamAWins
 		losingTeamScore = teamBWins
@@ -255,7 +255,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		StartTimestamp:   nil,
 		EndTimestamp:     nil,
 		TotalRounds:      totalRounds,
-		PlaybackTicks:   playbackTicks,
+		PlaybackTicks:    playbackTicks,
 	}
 
 	now := time.Now()
@@ -275,11 +275,11 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	}).Info("Match data built")
 
 	return &types.ParsedDemoData{
-		Match:           match,
-		Players:         players,
-		GunfightEvents:  matchState.GunfightEvents,
-		GrenadeEvents:   matchState.GrenadeEvents,
-		RoundEvents:     matchState.RoundEvents,
-		DamageEvents:    matchState.DamageEvents,
+		Match:          match,
+		Players:        players,
+		GunfightEvents: matchState.GunfightEvents,
+		GrenadeEvents:  matchState.GrenadeEvents,
+		RoundEvents:    matchState.RoundEvents,
+		DamageEvents:   matchState.DamageEvents,
 	}
-} 
+}

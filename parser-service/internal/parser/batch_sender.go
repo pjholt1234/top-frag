@@ -16,9 +16,9 @@ import (
 )
 
 type BatchSender struct {
-	config *config.Config
-	logger *logrus.Logger
-	client *http.Client
+	config  *config.Config
+	logger  *logrus.Logger
+	client  *http.Client
 	baseURL string
 }
 
@@ -36,18 +36,18 @@ func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
 	if completionURL == "" {
 		return "", fmt.Errorf("empty completion URL")
 	}
-	
+
 	parsedURL, err := url.Parse(completionURL)
 	if err != nil {
 		bs.logger.WithError(err).Error("Failed to parse completion URL")
 		return "", fmt.Errorf("failed to parse completion URL: %w", err)
 	}
-	
+
 	// Check if the URL has a valid scheme and host
 	if parsedURL.Scheme == "" || parsedURL.Host == "" {
 		return "", fmt.Errorf("invalid URL: missing scheme or host")
 	}
-	
+
 	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
 	return baseURL, nil
 }
@@ -87,33 +87,33 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 		flatEvents := make([]map[string]interface{}, len(batch))
 		for j, event := range batch {
 			flatEvents[j] = map[string]interface{}{
-				"round_number":           event.RoundNumber,
-				"round_time":             event.RoundTime,
-				"tick_timestamp":         event.TickTimestamp,
-				"player_1_steam_id":      event.Player1SteamID,
-				"player_2_steam_id":      event.Player2SteamID,
-				"player_1_hp_start":      event.Player1HPStart,
-				"player_2_hp_start":      event.Player2HPStart,
-				"player_1_armor":         event.Player1Armor,
-				"player_2_armor":         event.Player2Armor,
-				"player_1_flashed":       event.Player1Flashed,
-				"player_2_flashed":       event.Player2Flashed,
-				"player_1_weapon":        event.Player1Weapon,
-				"player_2_weapon":        event.Player2Weapon,
+				"round_number":             event.RoundNumber,
+				"round_time":               event.RoundTime,
+				"tick_timestamp":           event.TickTimestamp,
+				"player_1_steam_id":        event.Player1SteamID,
+				"player_2_steam_id":        event.Player2SteamID,
+				"player_1_hp_start":        event.Player1HPStart,
+				"player_2_hp_start":        event.Player2HPStart,
+				"player_1_armor":           event.Player1Armor,
+				"player_2_armor":           event.Player2Armor,
+				"player_1_flashed":         event.Player1Flashed,
+				"player_2_flashed":         event.Player2Flashed,
+				"player_1_weapon":          event.Player1Weapon,
+				"player_2_weapon":          event.Player2Weapon,
 				"player_1_equipment_value": event.Player1EquipValue,
 				"player_2_equipment_value": event.Player2EquipValue,
-				"player_1_x":             event.Player1Position.X,
-				"player_1_y":             event.Player1Position.Y,
-				"player_1_z":             event.Player1Position.Z,
-				"player_2_x":             event.Player2Position.X,
-				"player_2_y":             event.Player2Position.Y,
-				"player_2_z":             event.Player2Position.Z,
-				"distance":               event.Distance,
-				"headshot":               event.Headshot,
-				"wallbang":               event.Wallbang,
-				"penetrated_objects":     event.PenetratedObjects,
-				"victor_steam_id":        event.VictorSteamID,
-				"damage_dealt":           event.DamageDealt,
+				"player_1_x":               event.Player1Position.X,
+				"player_1_y":               event.Player1Position.Y,
+				"player_1_z":               event.Player1Position.Z,
+				"player_2_x":               event.Player2Position.X,
+				"player_2_y":               event.Player2Position.Y,
+				"player_2_z":               event.Player2Position.Z,
+				"distance":                 event.Distance,
+				"headshot":                 event.Headshot,
+				"wallbang":                 event.Wallbang,
+				"penetrated_objects":       event.PenetratedObjects,
+				"victor_steam_id":          event.VictorSteamID,
+				"damage_dealt":             event.DamageDealt,
 			}
 		}
 
@@ -130,10 +130,10 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 		}
 
 		bs.logger.WithFields(logrus.Fields{
-			"job_id":      jobID,
-			"batch":       i + 1,
+			"job_id":        jobID,
+			"batch":         i + 1,
 			"total_batches": totalBatches,
-			"events":      len(batch),
+			"events":        len(batch),
 		}).Debug("Sent gunfight events batch")
 	}
 
@@ -218,10 +218,10 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 		}
 
 		bs.logger.WithFields(logrus.Fields{
-			"job_id":      jobID,
-			"batch":       i + 1,
+			"job_id":        jobID,
+			"batch":         i + 1,
 			"total_batches": totalBatches,
-			"events":      len(batch),
+			"events":        len(batch),
 		}).Debug("Sent grenade events batch")
 	}
 
@@ -289,10 +289,10 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, compl
 		}
 
 		bs.logger.WithFields(logrus.Fields{
-			"job_id":      jobID,
-			"batch":       i + 1,
+			"job_id":        jobID,
+			"batch":         i + 1,
 			"total_batches": totalBatches,
-			"events":      len(batch),
+			"events":        len(batch),
 		}).Debug("Sent damage events batch")
 	}
 
@@ -393,7 +393,7 @@ func (bs *BatchSender) sendRequest(ctx context.Context, url string, payload inte
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	// Add API key for Laravel callback endpoints
 	if bs.config.Server.APIKey != "" {
 		req.Header.Set("X-API-Key", bs.config.Server.APIKey)
@@ -434,4 +434,4 @@ func (bs *BatchSender) sendRequestWithRetry(ctx context.Context, url string, pay
 	}
 
 	return fmt.Errorf("request failed after %d attempts: %w", bs.config.Batch.RetryAttempts, lastErr)
-} 
+}

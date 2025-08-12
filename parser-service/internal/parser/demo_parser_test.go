@@ -14,17 +14,17 @@ import (
 func TestNewDemoParser(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	
+
 	parser := NewDemoParser(cfg, logger)
-	
+
 	if parser == nil {
 		t.Fatal("Expected DemoParser to be created, got nil")
 	}
-	
+
 	if parser.config != cfg {
 		t.Error("Expected config to be set correctly")
 	}
-	
+
 	if parser.logger != logger {
 		t.Error("Expected logger to be set correctly")
 	}
@@ -38,7 +38,7 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 	}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	tests := []struct {
 		name        string
 		demoPath    string
@@ -68,13 +68,13 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 					t.Fatalf("Failed to create test file: %v", err)
 				}
 				defer file.Close()
-				
+
 				// Write some content to make it a valid file
 				_, err = file.WriteString("demo content")
 				if err != nil {
 					t.Fatalf("Failed to write to test file: %v", err)
 				}
-				
+
 				return demoPath
 			},
 		},
@@ -90,19 +90,19 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 					t.Fatalf("Failed to create test file: %v", err)
 				}
 				defer file.Close()
-				
+
 				// Write content to make it larger than the max size
 				largeContent := make([]byte, 200*1024*1024) // 200MB
 				_, err = file.Write(largeContent)
 				if err != nil {
 					t.Fatalf("Failed to write to test file: %v", err)
 				}
-				
+
 				return demoPath
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var demoPath string
@@ -111,13 +111,13 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 			} else {
 				demoPath = tt.demoPath
 			}
-			
+
 			err := parser.validateDemoFile(demoPath)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Expected no error but got: %v", err)
 			}
@@ -129,7 +129,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a test match state
 	matchState := &types.MatchState{
 		CurrentRound: 3,
@@ -178,68 +178,68 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		},
 		DamageEvents: []types.DamageEvent{
 			{
-				RoundNumber:      1,
+				RoundNumber:     1,
 				AttackerSteamID: "steam_123",
 				VictimSteamID:   "steam_456",
 			},
 		},
 	}
-	
+
 	// Create an event processor with team assignment data
 	eventProcessor := NewEventProcessor(matchState, logger)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
-	eventProcessor.teamAWins = 1  // CT wins 1 round
-	eventProcessor.teamBWins = 2  // T wins 2 rounds
-	
+	eventProcessor.teamAWins = 1 // CT wins 1 round
+	eventProcessor.teamBWins = 2 // T wins 2 rounds
+
 	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// Test match data
 	if parsedData.Match.TotalRounds != 3 {
 		t.Errorf("Expected total rounds 3, got %d", parsedData.Match.TotalRounds)
 	}
-	
+
 	// With the new logic: T wins 2 rounds, CT wins 1 round
 	// Since T won more rounds, they should be the winning team
 	if parsedData.Match.WinningTeam != "B" {
 		t.Errorf("Expected winning team 'B', got %s", parsedData.Match.WinningTeam)
 	}
-	
+
 	if parsedData.Match.WinningTeamScore != 2 {
 		t.Errorf("Expected winning team score 2, got %d", parsedData.Match.WinningTeamScore)
 	}
-	
+
 	if parsedData.Match.LosingTeamScore != 1 {
 		t.Errorf("Expected losing team score 1, got %d", parsedData.Match.LosingTeamScore)
 	}
-	
+
 	// Test map name
 	if parsedData.Match.Map != "de_test" {
 		t.Errorf("Expected map 'de_test', got %s", parsedData.Match.Map)
 	}
-	
+
 	// Test players
 	if len(parsedData.Players) != 2 {
 		t.Errorf("Expected 2 players, got %d", len(parsedData.Players))
 	}
-	
+
 	// Test events
 	if len(parsedData.GunfightEvents) != 1 {
 		t.Errorf("Expected 1 gunfight event, got %d", len(parsedData.GunfightEvents))
 	}
-	
+
 	if len(parsedData.GrenadeEvents) != 1 {
 		t.Errorf("Expected 1 grenade event, got %d", len(parsedData.GrenadeEvents))
 	}
-	
+
 	if len(parsedData.DamageEvents) != 1 {
 		t.Errorf("Expected 1 damage event, got %d", len(parsedData.DamageEvents))
 	}
-	
+
 	if len(parsedData.RoundEvents) != 3 {
 		t.Errorf("Expected 3 round events, got %d", len(parsedData.RoundEvents))
 	}
@@ -249,7 +249,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a test match state with no rounds
 	matchState := &types.MatchState{
 		CurrentRound: 0,
@@ -257,29 +257,29 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 		RoundEvents:  []types.RoundEvent{},
 	}
-	
+
 	// Create an event processor
 	eventProcessor := NewEventProcessor(matchState, logger)
-	
+
 	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// Test default values
 	if parsedData.Match.WinningTeam != "A" {
 		t.Errorf("Expected winning team 'A' (default), got %s", parsedData.Match.WinningTeam)
 	}
-	
+
 	if parsedData.Match.WinningTeamScore != 0 {
 		t.Errorf("Expected winning team score 0, got %d", parsedData.Match.WinningTeamScore)
 	}
-	
+
 	if parsedData.Match.LosingTeamScore != 0 {
 		t.Errorf("Expected losing team score 0, got %d", parsedData.Match.LosingTeamScore)
 	}
-	
+
 	if parsedData.Match.TotalRounds != 0 {
 		t.Errorf("Expected total rounds 0, got %d", parsedData.Match.TotalRounds)
 	}
@@ -289,7 +289,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a test match state with tied rounds
 	matchState := &types.MatchState{
 		CurrentRound: 2,
@@ -308,29 +308,29 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Create an event processor with tied scores
 	eventProcessor := NewEventProcessor(matchState, logger)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
-	eventProcessor.teamAWins = 1  // CT wins 1 round
-	eventProcessor.teamBWins = 1  // T wins 1 round
-	
+	eventProcessor.teamAWins = 1 // CT wins 1 round
+	eventProcessor.teamBWins = 1 // T wins 1 round
+
 	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// In case of tie, default to team A
 	if parsedData.Match.WinningTeam != "A" {
 		t.Errorf("Expected winning team 'A' (tie default), got %s", parsedData.Match.WinningTeam)
 	}
-	
+
 	if parsedData.Match.WinningTeamScore != 1 {
 		t.Errorf("Expected winning team score 1, got %d", parsedData.Match.WinningTeamScore)
 	}
-	
+
 	if parsedData.Match.LosingTeamScore != 1 {
 		t.Errorf("Expected losing team score 1, got %d", parsedData.Match.LosingTeamScore)
 	}
@@ -340,7 +340,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a test match state simulating CS2 halftime switch
 	// First half: CT wins 7, T wins 5
 	// Second half: CT wins 3, T wins 6
@@ -363,7 +363,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 		},
 		RoundEvents: []types.RoundEvent{},
 	}
-	
+
 	// Add round events for first half (CT dominates)
 	for i := 1; i <= 12; i++ {
 		winner := "T"
@@ -376,7 +376,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 			Winner:      stringPtr(winner),
 		})
 	}
-	
+
 	// Add round events for second half (T dominates)
 	for i := 13; i <= 21; i++ {
 		winner := "CT"
@@ -389,33 +389,33 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 			Winner:      stringPtr(winner),
 		})
 	}
-	
+
 	// Create an event processor with the team assignment data
 	eventProcessor := NewEventProcessor(matchState, logger)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
-	eventProcessor.teamAWins = 10  // CT wins 10 rounds total
-	eventProcessor.teamBWins = 11  // T wins 11 rounds total
-	
+	eventProcessor.teamAWins = 10 // CT wins 10 rounds total
+	eventProcessor.teamBWins = 11 // T wins 11 rounds total
+
 	parsedData := parser.buildParsedData(matchState, "de_ancient", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// The team that was T should be the winning team (11 wins vs 10)
 	if parsedData.Match.WinningTeam != "B" {
 		t.Errorf("Expected winning team 'B', got %s", parsedData.Match.WinningTeam)
 	}
-	
+
 	if parsedData.Match.WinningTeamScore != 11 {
 		t.Errorf("Expected winning team score 11, got %d", parsedData.Match.WinningTeamScore)
 	}
-	
+
 	if parsedData.Match.LosingTeamScore != 10 {
 		t.Errorf("Expected losing team score 10, got %d", parsedData.Match.LosingTeamScore)
 	}
-	
+
 	if parsedData.Match.TotalRounds != 21 {
 		t.Errorf("Expected total rounds 21, got %d", parsedData.Match.TotalRounds)
 	}
@@ -425,7 +425,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	matchState := &types.MatchState{
 		CurrentRound: 1,
 		TotalRounds:  1,
@@ -438,20 +438,20 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Create an event processor
 	eventProcessor := NewEventProcessor(matchState, logger)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1
 	eventProcessor.teamBWins = 0
-	
+
 	parsedData := parser.buildParsedData(matchState, "", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// Should fallback to de_dust2
 	if parsedData.Match.Map != "de_dust2" {
 		t.Errorf("Expected fallback map 'de_dust2', got %s", parsedData.Match.Map)
@@ -466,14 +466,14 @@ func TestDemoParser_ParseDemo_InvalidPath(t *testing.T) {
 	}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	ctx := context.Background()
 	progressCallback := func(update types.ProgressUpdate) {
 		// Mock progress callback
 	}
-	
+
 	_, err := parser.ParseDemo(ctx, "/nonexistent/path.dem", progressCallback)
-	
+
 	if err == nil {
 		t.Error("Expected error for non-existent file, got none")
 	}
@@ -487,7 +487,7 @@ func TestDemoParser_ParseDemo_InvalidExtension(t *testing.T) {
 	}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a temporary file with wrong extension
 	tmpDir := t.TempDir()
 	invalidPath := filepath.Join(tmpDir, "test.txt")
@@ -496,24 +496,24 @@ func TestDemoParser_ParseDemo_InvalidExtension(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer file.Close()
-	
+
 	ctx := context.Background()
 	progressCallback := func(update types.ProgressUpdate) {
 		// Mock progress callback
 	}
-	
+
 	_, err = parser.ParseDemo(ctx, invalidPath, progressCallback)
-	
+
 	if err == nil {
 		t.Error("Expected error for invalid file extension, got none")
 	}
-} 
+}
 
 func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	parser := NewDemoParser(cfg, logger)
-	
+
 	// Create a test match state simulating overtime with side switches
 	// First half: CT wins 6, T wins 6 (tied 6-6)
 	// Second half: CT wins 6, T wins 6 (tied 12-12, goes to overtime)
@@ -537,7 +537,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 		},
 		RoundEvents: []types.RoundEvent{},
 	}
-	
+
 	// Add round events for first half (tied 6-6)
 	for i := 1; i <= 12; i++ {
 		winner := "T"
@@ -550,7 +550,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 			Winner:      stringPtr(winner),
 		})
 	}
-	
+
 	// Add round events for second half (tied 6-6, total 12-12)
 	for i := 13; i <= 24; i++ {
 		winner := "CT"
@@ -563,7 +563,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 			Winner:      stringPtr(winner),
 		})
 	}
-	
+
 	// Add overtime rounds 1-3 (teams continue on their current sides)
 	// Team A is now T, Team B is now CT
 	// CT wins 2, T wins 1
@@ -582,7 +582,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 		EventType:   "end",
 		Winner:      stringPtr("T"),
 	})
-	
+
 	// Add overtime rounds 4-6 (teams switch sides)
 	// Team A is now CT, Team B is now T
 	// CT wins 1, T wins 2
@@ -601,40 +601,40 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 		EventType:   "end",
 		Winner:      stringPtr("T"),
 	})
-	
+
 	// Create an event processor with the team assignment data
 	eventProcessor := NewEventProcessor(matchState, logger)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamACurrentSide = "CT"
 	eventProcessor.teamBCurrentSide = "T"
-	
+
 	// Manually set the win counts based on our expected calculation
 	// Team A (started CT): 6 CT wins in first half + 6 T wins in second half + 1 T win in OT1 + 1 CT win in OT2 = 14 wins
 	// Team B (started T): 6 T wins in first half + 6 CT wins in second half + 2 CT wins in OT1 + 2 T wins in OT2 = 16 wins
 	eventProcessor.teamAWins = 14
 	eventProcessor.teamBWins = 16
-	
+
 	parsedData := parser.buildParsedData(matchState, "de_mirage", 1000, eventProcessor)
-	
+
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
 	}
-	
+
 	// Team B should be the winning team (16 wins vs 14)
 	if parsedData.Match.WinningTeam != "B" {
 		t.Errorf("Expected winning team 'B', got %s", parsedData.Match.WinningTeam)
 	}
-	
+
 	if parsedData.Match.WinningTeamScore != 16 {
 		t.Errorf("Expected winning team score 16, got %d", parsedData.Match.WinningTeamScore)
 	}
-	
+
 	if parsedData.Match.LosingTeamScore != 14 {
 		t.Errorf("Expected losing team score 14, got %d", parsedData.Match.LosingTeamScore)
 	}
-	
+
 	if parsedData.Match.TotalRounds != 30 {
 		t.Errorf("Expected total rounds 30, got %d", parsedData.Match.TotalRounds)
 	}
-} 
+}

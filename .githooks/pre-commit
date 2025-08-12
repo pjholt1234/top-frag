@@ -1,0 +1,14 @@
+#!/bin/sh
+echo "🔍 Running Pint (PHP formatter)..."
+./vendor/bin/pint
+
+echo "🔍 Running goimports..."
+goimports -w .
+
+echo "🔍 Running gofmt..."
+gofmt -w .
+
+echo "📦 Adding formatted files..."
+git add .
+
+echo "✅ Formatting complete"

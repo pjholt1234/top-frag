@@ -10,38 +10,38 @@ import (
 // Struct for managing match events
 
 type EventProcessor struct {
-	matchState *types.MatchState
-	logger     *logrus.Logger
+	matchState   *types.MatchState
+	logger       *logrus.Logger
 	playerStates map[uint64]*types.PlayerState
-	
+
 	// Team assignment tracking
-	teamAssignments map[string]string // steamID -> "A" or "B"
-	teamAWins       int               // Count of wins for team A
-	teamBWins       int               // Count of wins for team B
-	teamAStartedAs  string            // "CT" or "T" - which side team A started on
-	teamBStartedAs  string            // "CT" or "T" - which side team B started on
-	teamACurrentSide string           // "CT" or "T" - which side team A is currently on
-	teamBCurrentSide string           // "CT" or "T" - which side team B is currently on
-	assignmentComplete bool           // Whether all players have been assigned teams
-	currentRound    int               // Current round number for team assignment
+	teamAssignments    map[string]string // steamID -> "A" or "B"
+	teamAWins          int               // Count of wins for team A
+	teamBWins          int               // Count of wins for team B
+	teamAStartedAs     string            // "CT" or "T" - which side team A started on
+	teamBStartedAs     string            // "CT" or "T" - which side team B started on
+	teamACurrentSide   string            // "CT" or "T" - which side team A is currently on
+	teamBCurrentSide   string            // "CT" or "T" - which side team B is currently on
+	assignmentComplete bool              // Whether all players have been assigned teams
+	currentRound       int               // Current round number for team assignment
 }
 
 func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *EventProcessor {
 	return &EventProcessor{
-		matchState: matchState,
-		logger:     logger,
+		matchState:   matchState,
+		logger:       logger,
 		playerStates: make(map[uint64]*types.PlayerState),
-		
+
 		// Initialize team assignment tracking
-		teamAssignments: make(map[string]string),
-		teamAWins:       0,
-		teamBWins:       0,
-		teamAStartedAs:  "",
-		teamBStartedAs:  "",
-		teamACurrentSide: "",
-		teamBCurrentSide: "",
+		teamAssignments:    make(map[string]string),
+		teamAWins:          0,
+		teamBWins:          0,
+		teamAStartedAs:     "",
+		teamBStartedAs:     "",
+		teamACurrentSide:   "",
+		teamBCurrentSide:   "",
 		assignmentComplete: false,
-		currentRound:    0, // Initialize currentRound
+		currentRound:       0, // Initialize currentRound
 	}
 }
 
@@ -104,8 +104,8 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	}
 
 	ep.logger.WithFields(logrus.Fields{
-		"round":    ep.matchState.CurrentRound,
-		"winner":   winner,
+		"round":       ep.matchState.CurrentRound,
+		"winner":      winner,
 		"team_a_wins": ep.teamAWins,
 		"team_b_wins": ep.teamBWins,
 	}).Debug("Round ended")
@@ -273,11 +273,11 @@ func (ep *EventProcessor) HandlePlayerConnect(e events.PlayerConnect) {
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
 	side := ep.getTeamString(e.Player.Team)
-	
+
 	// Assign team based on rounds 1-12
 	ep.assignTeamBasedOnRound1To12(steamID, side)
 	assignedTeam := ep.getAssignedTeam(steamID)
-	
+
 	// Add player to match state if not already present
 	if _, exists := ep.matchState.Players[steamID]; !exists {
 		ep.matchState.Players[steamID] = &types.Player{
@@ -297,9 +297,9 @@ func (ep *EventProcessor) HandlePlayerConnect(e events.PlayerConnect) {
 	}
 
 	ep.logger.WithFields(logrus.Fields{
-		"steam_id": steamID,
-		"name":     e.Player.Name,
-		"side":     side,
+		"steam_id":      steamID,
+		"name":          e.Player.Name,
+		"side":          side,
 		"assigned_team": assignedTeam,
 	}).Debug("Player connected")
 }
@@ -310,7 +310,7 @@ func (ep *EventProcessor) HandlePlayerDisconnected(e events.PlayerDisconnected) 
 	}
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
-	
+
 	ep.logger.WithFields(logrus.Fields{
 		"steam_id": steamID,
 		"name":     e.Player.Name,
@@ -324,7 +324,7 @@ func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) {
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
 	side := ep.getTeamString(e.Player.Team)
-	
+
 	// Assign team based on rounds 1-12 (if not already assigned)
 	ep.assignTeamBasedOnRound1To12(steamID, side)
 	assignedTeam := ep.getAssignedTeam(steamID)
@@ -340,9 +340,9 @@ func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) {
 	}
 
 	ep.logger.WithFields(logrus.Fields{
-		"steam_id": steamID,
-		"name":     e.Player.Name,
-		"side":     side,
+		"steam_id":      steamID,
+		"name":          e.Player.Name,
+		"side":          side,
 		"assigned_team": assignedTeam,
 	}).Debug("Player team changed")
 }
@@ -356,29 +356,29 @@ func (ep *EventProcessor) createGunfightEvent(e events.Kill) types.GunfightEvent
 	distance := types.CalculateDistance(player1Pos, player2Pos)
 
 	gunfightEvent := types.GunfightEvent{
-		RoundNumber:      ep.matchState.CurrentRound,
-		RoundTime:        roundTime,
-		TickTimestamp:    0,
-		Player1SteamID:   types.SteamIDToString(e.Killer.SteamID64),
-		Player2SteamID:   types.SteamIDToString(e.Victim.SteamID64),
-		Player1HPStart:   ep.getPlayerHP(e.Killer),
-		Player2HPStart:   ep.getPlayerHP(e.Victim),
-		Player1Armor:     ep.getPlayerArmor(e.Killer),
-		Player2Armor:     ep.getPlayerArmor(e.Victim),
-		Player1Flashed:   ep.getPlayerFlashed(e.Killer),
-		Player2Flashed:   ep.getPlayerFlashed(e.Victim),
-		Player1Weapon:    ep.getPlayerWeapon(e.Killer),
-		Player2Weapon:    ep.getPlayerWeapon(e.Victim),
+		RoundNumber:       ep.matchState.CurrentRound,
+		RoundTime:         roundTime,
+		TickTimestamp:     0,
+		Player1SteamID:    types.SteamIDToString(e.Killer.SteamID64),
+		Player2SteamID:    types.SteamIDToString(e.Victim.SteamID64),
+		Player1HPStart:    ep.getPlayerHP(e.Killer),
+		Player2HPStart:    ep.getPlayerHP(e.Victim),
+		Player1Armor:      ep.getPlayerArmor(e.Killer),
+		Player2Armor:      ep.getPlayerArmor(e.Victim),
+		Player1Flashed:    ep.getPlayerFlashed(e.Killer),
+		Player2Flashed:    ep.getPlayerFlashed(e.Victim),
+		Player1Weapon:     ep.getPlayerWeapon(e.Killer),
+		Player2Weapon:     ep.getPlayerWeapon(e.Victim),
 		Player1EquipValue: ep.getPlayerEquipmentValue(e.Killer),
 		Player2EquipValue: ep.getPlayerEquipmentValue(e.Victim),
-		Player1Position:  player1Pos,
-		Player2Position:  player2Pos,
-		Distance:         distance,
-		Headshot:         e.IsHeadshot,
-		Wallbang:         e.PenetratedObjects > 0,
+		Player1Position:   player1Pos,
+		Player2Position:   player2Pos,
+		Distance:          distance,
+		Headshot:          e.IsHeadshot,
+		Wallbang:          e.PenetratedObjects > 0,
 		PenetratedObjects: e.PenetratedObjects,
-		VictorSteamID:    nil,
-		DamageDealt:      0,
+		VictorSteamID:     nil,
+		DamageDealt:       0,
 	}
 
 	victorSteamID := types.SteamIDToString(e.Killer.SteamID64)
@@ -461,7 +461,7 @@ func (ep *EventProcessor) getTeamString(team common.Team) string {
 
 func (ep *EventProcessor) determineThrowType(projectile *common.GrenadeProjectile) string {
 	return types.ThrowTypeUtility
-} 
+}
 
 func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 	if player == nil {
@@ -470,11 +470,11 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 
 	steamID := types.SteamIDToString(player.SteamID64)
 	side := ep.getTeamString(player.Team)
-	
+
 	// Assign team based on rounds 1-12 (if not already assigned)
 	ep.assignTeamBasedOnRound1To12(steamID, side)
 	assignedTeam := ep.getAssignedTeam(steamID)
-	
+
 	// Add player to match state if not already present
 	if _, exists := ep.matchState.Players[steamID]; !exists {
 		ep.matchState.Players[steamID] = &types.Player{
@@ -492,7 +492,7 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 			Team:    assignedTeam,
 		}
 	}
-} 
+}
 
 // assignTeamBasedOnRound1To12 assigns a player to team A or B based on their side in rounds 1-12
 func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) {
@@ -500,15 +500,15 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 	if ep.currentRound > 12 {
 		return
 	}
-	
+
 	if ep.assignmentComplete {
 		return // Stop assigning once complete
 	}
-	
+
 	if _, assigned := ep.teamAssignments[steamID]; assigned {
 		return // Already assigned
 	}
-	
+
 	// Assign based on side in rounds 1-12
 	if side == "CT" {
 		ep.teamAssignments[steamID] = "A"
@@ -527,16 +527,16 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 			ep.teamBCurrentSide = "T"
 		}
 	}
-	
+
 	// Check if we've assigned all players (assuming 10 players total)
 	if len(ep.teamAssignments) == 10 {
 		ep.assignmentComplete = true
 		ep.logger.Info("Team assignment complete", logrus.Fields{
-			"team_a_started_as": ep.teamAStartedAs,
-			"team_b_started_as": ep.teamBStartedAs,
+			"team_a_started_as":   ep.teamAStartedAs,
+			"team_b_started_as":   ep.teamBStartedAs,
 			"team_a_current_side": ep.teamACurrentSide,
 			"team_b_current_side": ep.teamBCurrentSide,
-			"assignments":       ep.teamAssignments,
+			"assignments":         ep.teamAssignments,
 		})
 	}
 }
@@ -553,7 +553,7 @@ func (ep *EventProcessor) getAssignedTeam(steamID string) string {
 func (ep *EventProcessor) updateTeamWins(winner string) {
 	// Check for side switches before updating wins
 	ep.checkForSideSwitch()
-	
+
 	if winner == ep.teamACurrentSide {
 		ep.teamAWins++
 	} else if winner == ep.teamBCurrentSide {
@@ -567,13 +567,13 @@ func (ep *EventProcessor) checkForSideSwitch() {
 	if ep.currentRound == 13 {
 		ep.switchTeamSides()
 		ep.logger.Info("Halftime switch occurred", logrus.Fields{
-			"round": ep.currentRound,
+			"round":               ep.currentRound,
 			"team_a_current_side": ep.teamACurrentSide,
 			"team_b_current_side": ep.teamBCurrentSide,
 		})
 		return
 	}
-	
+
 	// Overtime switches: every 3 rounds after round 24
 	if ep.currentRound > 24 {
 		// Calculate which overtime period we're in
@@ -582,8 +582,8 @@ func (ep *EventProcessor) checkForSideSwitch() {
 		if overtimeRounds%3 == 1 {
 			ep.switchTeamSides()
 			ep.logger.Info("Overtime side switch occurred", logrus.Fields{
-				"round": ep.currentRound,
-				"overtime_round": overtimeRounds,
+				"round":               ep.currentRound,
+				"overtime_round":      overtimeRounds,
 				"team_a_current_side": ep.teamACurrentSide,
 				"team_b_current_side": ep.teamBCurrentSide,
 			})
@@ -604,4 +604,4 @@ func (ep *EventProcessor) getWinningTeam() string {
 		return "B"
 	}
 	return "A" // Default to A in case of tie
-} 
+}

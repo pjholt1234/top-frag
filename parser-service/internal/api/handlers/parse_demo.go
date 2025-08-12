@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"bytes"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
-	"io"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -23,11 +23,11 @@ import (
 )
 
 type ParseDemoHandler struct {
-	config     *config.Config
-	logger     *logrus.Logger
-	demoParser *parser.DemoParser
+	config      *config.Config
+	logger      *logrus.Logger
+	demoParser  *parser.DemoParser
 	batchSender *parser.BatchSender
-	jobs       map[string]*types.ProcessingJob
+	jobs        map[string]*types.ProcessingJob
 }
 
 func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *parser.DemoParser, batchSender *parser.BatchSender) *ParseDemoHandler {
@@ -96,18 +96,18 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	}
 
 	job := &types.ProcessingJob{
-		JobID:               req.JobID,
-		TempFilePath:        tempFilePath,
-		ProgressCallbackURL: req.ProgressCallbackURL,
+		JobID:                 req.JobID,
+		TempFilePath:          tempFilePath,
+		ProgressCallbackURL:   req.ProgressCallbackURL,
 		CompletionCallbackURL: req.CompletionCallbackURL,
-		Status:              types.StatusQueued,
-		Progress:            0,
-		CurrentStep:         "Job queued",
-		StartTime:           time.Now(),
+		Status:                types.StatusQueued,
+		Progress:              0,
+		CurrentStep:           "Job queued",
+		StartTime:             time.Now(),
 	}
 
 	h.jobs[req.JobID] = job
-    
+
 	// Start background processing
 	go h.processDemo(context.Background(), job)
 
@@ -142,7 +142,7 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 	if filePath == "" {
 		return
 	}
-	
+
 	if err := os.Remove(filePath); err != nil {
 		h.logger.WithError(err).WithField("temp_file", filePath).Error("Failed to clean up temporary file")
 	} else {
@@ -199,10 +199,10 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 				"job_id": job.JobID,
 				"panic":  r,
 			}).Error("Panic in demo processing")
-			
+
 			job.Status = types.StatusFailed
 			job.ErrorMessage = "Internal processing error"
-			
+
 			if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
 				h.logger.WithError(err).Error("Failed to send error to Laravel")
 			}
@@ -246,7 +246,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
 		job.Progress = update.Progress
 		job.CurrentStep = update.CurrentStep
-		
+
 		// Update status based on progress
 		if update.Progress < 20 {
 			job.Status = types.StatusParsing
@@ -368,7 +368,7 @@ func (h *ParseDemoHandler) sendProgressUpdate(ctx context.Context, job *types.Pr
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	// Add API key for Laravel callback endpoints
 	if h.config.Server.APIKey != "" {
 		req.Header.Set("X-API-Key", h.config.Server.APIKey)
@@ -426,7 +426,7 @@ func (h *ParseDemoHandler) sendProgressUpdateWithMatchData(ctx context.Context, 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	// Add API key for Laravel callback endpoints
 	if h.config.Server.APIKey != "" {
 		req.Header.Set("X-API-Key", h.config.Server.APIKey)
@@ -464,4 +464,4 @@ func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.Process
 	}
 
 	return nil
-} 
+}

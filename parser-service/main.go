@@ -48,8 +48,8 @@ func main() {
 	// This creates a concurrent operation that doesn't block the main thread
 	// The best way to think about this is Jobs + Queues in laravel.
 
-	// The main difference is that Laravel jobs are persistent (stored in database/Redis) 
-	// while Go goroutines are ephemeral (in-memory only). Laravel jobs survive server 
+	// The main difference is that Laravel jobs are persistent (stored in database/Redis)
+	// while Go goroutines are ephemeral (in-memory only). Laravel jobs survive server
 	// restarts, while goroutines don't!
 	go func() {
 		logger.WithField("port", cfg.Server.Port).Info("Starting HTTP server")
@@ -57,7 +57,7 @@ func main() {
 			logger.WithError(err).Fatal("Failed to start server")
 		}
 	}()
-	
+
 	// This is pretty confusing....
 	// This creates a channel, allowing the gorountine to listen for OS signals
 	// When a signal is received, it's sent to the channel

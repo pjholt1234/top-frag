@@ -20,25 +20,25 @@ func TestNewBatchSender(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	
+
 	sender := NewBatchSender(cfg, logger)
-	
+
 	if sender == nil {
 		t.Fatal("Expected BatchSender to be created, got nil")
 	}
-	
+
 	if sender.config != cfg {
 		t.Error("Expected config to be set correctly")
 	}
-	
+
 	if sender.logger != logger {
 		t.Error("Expected logger to be set correctly")
 	}
-	
+
 	if sender.client == nil {
 		t.Error("Expected HTTP client to be initialized")
 	}
-	
+
 	if sender.client.Timeout != 30*time.Second {
 		t.Errorf("Expected timeout 30s, got %v", sender.client.Timeout)
 	}
@@ -48,12 +48,12 @@ func TestBatchSender_ExtractBaseURL(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	tests := []struct {
-		name           string
-		completionURL  string
-		expectedBase   string
-		expectError    bool
+		name          string
+		completionURL string
+		expectedBase  string
+		expectError   bool
 	}{
 		{
 			name:          "valid HTTPS URL",
@@ -92,19 +92,19 @@ func TestBatchSender_ExtractBaseURL(t *testing.T) {
 			expectError:   true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			baseURL, err := sender.extractBaseURL(tt.completionURL)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Expected no error but got: %v", err)
 			}
-			
+
 			if !tt.expectError && baseURL != tt.expectedBase {
 				t.Errorf("Expected base URL '%s', got '%s'", tt.expectedBase, baseURL)
 			}
@@ -124,7 +124,7 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -138,14 +138,14 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to extract base URL: %v", err)
 	}
 	sender.baseURL = baseURL
-	
+
 	// Create test events
 	events := []types.GunfightEvent{
 		{
@@ -164,10 +164,10 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 			Player2SteamID: "steam_678",
 		},
 	}
-	
+
 	ctx := context.Background()
 	err = sender.SendGunfightEvents(ctx, "test-job-123", server.URL, events)
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -181,10 +181,10 @@ func TestBatchSender_SendGunfightEvents_Empty(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.SendGunfightEvents(ctx, "test-job-123", "http://localhost:8080", []types.GunfightEvent{})
-	
+
 	if err != nil {
 		t.Errorf("Expected no error for empty events, got: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -216,14 +216,14 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to extract base URL: %v", err)
 	}
 	sender.baseURL = baseURL
-	
+
 	// Create test events
 	events := []types.GrenadeEvent{
 		{
@@ -242,10 +242,10 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 			GrenadeType:   "he",
 		},
 	}
-	
+
 	ctx := context.Background()
 	err = sender.SendGrenadeEvents(ctx, "test-job-123", server.URL, events)
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestBatchSender_SendDamageEvents(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -277,39 +277,39 @@ func TestBatchSender_SendDamageEvents(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to extract base URL: %v", err)
 	}
 	sender.baseURL = baseURL
-	
+
 	// Create test events
 	events := []types.DamageEvent{
 		{
-			RoundNumber:      1,
+			RoundNumber:     1,
 			AttackerSteamID: "steam_123",
 			VictimSteamID:   "steam_456",
 			Damage:          25,
 		},
 		{
-			RoundNumber:      1,
+			RoundNumber:     1,
 			AttackerSteamID: "steam_789",
 			VictimSteamID:   "steam_012",
 			Damage:          50,
 		},
 		{
-			RoundNumber:      2,
+			RoundNumber:     2,
 			AttackerSteamID: "steam_345",
 			VictimSteamID:   "steam_678",
 			Damage:          75,
 		},
 	}
-	
+
 	ctx := context.Background()
 	err = sender.SendDamageEvents(ctx, "test-job-123", server.URL, events)
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -327,7 +327,7 @@ func TestBatchSender_SendRoundEvents(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -340,14 +340,14 @@ func TestBatchSender_SendRoundEvents(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to extract base URL: %v", err)
 	}
 	sender.baseURL = baseURL
-	
+
 	// Create test events
 	events := []types.RoundEvent{
 		{
@@ -364,10 +364,10 @@ func TestBatchSender_SendRoundEvents(t *testing.T) {
 			EventType:   "start",
 		},
 	}
-	
+
 	ctx := context.Background()
 	err = sender.SendRoundEvents(ctx, "test-job-123", server.URL, events)
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -379,7 +379,7 @@ func TestBatchSender_SendCompletion(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -390,10 +390,10 @@ func TestBatchSender_SendCompletion(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.SendCompletion(ctx, "test-job-123", server.URL)
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -405,7 +405,7 @@ func TestBatchSender_SendError(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -416,10 +416,10 @@ func TestBatchSender_SendError(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.SendError(ctx, "test-job-123", server.URL, "Test error message")
-	
+
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -436,10 +436,10 @@ func TestBatchSender_SendRequest_Error(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.sendRequest(ctx, "http://invalid-url-that-does-not-exist", map[string]string{"test": "data"})
-	
+
 	if err == nil {
 		t.Error("Expected error for invalid URL, got none")
 	}
@@ -451,7 +451,7 @@ func TestBatchSender_SendRequest_ServerError(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -462,10 +462,10 @@ func TestBatchSender_SendRequest_ServerError(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.sendRequest(ctx, server.URL, map[string]string{"test": "data"})
-	
+
 	if err == nil {
 		t.Error("Expected error for server error, got none")
 	}
@@ -483,7 +483,7 @@ func TestBatchSender_SendRequestWithRetry(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -496,14 +496,14 @@ func TestBatchSender_SendRequestWithRetry(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.sendRequestWithRetry(ctx, server.URL, map[string]string{"test": "data"})
-	
+
 	if err != nil {
 		t.Errorf("Expected no error after retries, got: %v", err)
 	}
-	
+
 	if attempts != 3 {
 		t.Errorf("Expected 3 attempts, got %d", attempts)
 	}
@@ -515,7 +515,7 @@ func TestBatchSender_SendRequestWithRetry_AllFail(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
-	
+
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			APIKey: "test-api-key",
@@ -528,10 +528,10 @@ func TestBatchSender_SendRequestWithRetry_AllFail(t *testing.T) {
 	}
 	logger := logrus.New()
 	sender := NewBatchSender(cfg, logger)
-	
+
 	ctx := context.Background()
 	err := sender.sendRequestWithRetry(ctx, server.URL, map[string]string{"test": "data"})
-	
+
 	if err == nil {
 		t.Error("Expected error after all retries failed, got none")
 	}
@@ -540,4 +540,4 @@ func TestBatchSender_SendRequestWithRetry_AllFail(t *testing.T) {
 // Helper function for creating string pointers
 func stringPtr(s string) *string {
 	return &s
-} 
+}
