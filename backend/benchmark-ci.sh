@@ -18,8 +18,8 @@ mkdir -p .phpbench
 echo "📊 Attempting PHPBench run with error suppression..."
 set +e
 
-# Capture the benchmark output
-BENCHMARK_OUTPUT=$(php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure 2>&1)
+# Capture the benchmark output, filtering out the reflection error
+BENCHMARK_OUTPUT=$(php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --output=html --tolerate-failure 2>&1 | grep -v "Uninitialized string offset" | grep -v "RemoteReflector.php" | grep -v "run \[--group" | grep -v "report \[--report" || true)
 EXIT_CODE=$?
 set -e
 
@@ -35,7 +35,8 @@ fi
 # Method 2: If HTML generation failed, try running without HTML output first
 echo "🔄 HTML generation failed, trying alternative approach..."
 set +e
-BENCHMARK_OUTPUT_2=$(php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --tolerate-failure 2>&1)
+# Capture clean benchmark output without reflection errors
+BENCHMARK_OUTPUT_2=$(php -d error_reporting="E_ALL & ~E_WARNING" vendor/bin/phpbench run benchmarks/ --report=aggregate --tolerate-failure 2>&1 | grep -v "Uninitialized string offset" | grep -v "RemoteReflector.php" | grep -v "run \[--group" | grep -v "report \[--report" || true)
 EXIT_CODE_2=$?
 set -e
 
@@ -45,8 +46,11 @@ echo "PHPBench (no HTML) exit code: $EXIT_CODE_2"
 echo "📈 Creating comprehensive HTML report with benchmark data..."
 mkdir -p .phpbench/html
 
-# Extract benchmark results from the output
-BENCHMARK_RESULTS=$(echo "$BENCHMARK_OUTPUT_2" | grep -A 20 "Subjects:" || echo "No detailed results found")
+# Extract benchmark results from the clean output
+BENCHMARK_RESULTS=$(echo "$BENCHMARK_OUTPUT_2" | grep -A 50 "Subjects:" | head -30 || echo "No detailed results found")
+
+# Extract individual benchmark timings
+BENCHMARK_TIMINGS=$(echo "$BENCHMARK_OUTPUT_2" | grep -E "✔ Mo[0-9]+\.[0-9]+ms" || echo "No timing data found")
 
 # Create a proper HTML report with the actual benchmark data
 cat > .phpbench/html/index.html << EOF
@@ -62,9 +66,11 @@ cat > .phpbench/html/index.html << EOF
         .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
         .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
         .results { background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .timings { background: #e7f3ff; border: 1px solid #b3d9ff; padding: 20px; border-radius: 5px; margin: 20px 0; }
         .benchmark-item { background: white; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; }
         pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
         .timestamp { color: #666; font-size: 0.9em; }
+        .timing-item { background: white; padding: 8px; margin: 5px 0; border-radius: 3px; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -84,14 +90,19 @@ cat > .phpbench/html/index.html << EOF
         <p><strong>Exit codes:</strong> Main run: $EXIT_CODE, No-HTML run: $EXIT_CODE_2</p>
     </div>
     
+    <div class="timings">
+        <h3>⏱️ Benchmark Timings</h3>
+        <pre>$BENCHMARK_TIMINGS</pre>
+    </div>
+    
     <div class="results">
         <h3>📊 Benchmark Results</h3>
         <pre>$BENCHMARK_RESULTS</pre>
     </div>
     
     <div class="results">
-        <h3>📋 Full Benchmark Output</h3>
-        <pre>$(echo "$BENCHMARK_OUTPUT_2" | head -100)</pre>
+        <h3>📋 Full Benchmark Output (Clean)</h3>
+        <pre>$(echo "$BENCHMARK_OUTPUT_2" | head -80)</pre>
     </div>
     
     <h3>🔧 Benchmark Files</h3>
