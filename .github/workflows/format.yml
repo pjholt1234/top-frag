@@ -11,22 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: cd backend
-        run: cd backend
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
 
       - name: Install dependencies
+        working-directory: ./backend
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Run Pint
+        working-directory: ./backend
         run: ./vendor/bin/pint --test
-
-      - name: cd parser-service
-        run: cd ../parser-service
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -34,6 +30,7 @@ jobs:
           go-version: '1.21'
 
       - name: Check Go formatting
+        working-directory: ./parser-service
         run: |
           if [ -n "$(gofmt -l .)" ]; then
             echo "Go files need formatting"
