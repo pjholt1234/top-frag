@@ -41,6 +41,7 @@ class GunfightEvent extends Model
         'penetrated_objects',
         'victor_steam_id',
         'damage_dealt',
+        'is_first_kill',
     ];
 
     protected $casts = [
@@ -66,6 +67,7 @@ class GunfightEvent extends Model
         'wallbang' => 'boolean',
         'penetrated_objects' => 'integer',
         'damage_dealt' => 'integer',
+        'is_first_kill' => 'boolean',
     ];
 
     // Relationships

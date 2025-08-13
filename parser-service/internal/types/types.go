@@ -58,6 +58,7 @@ type GunfightEvent struct {
 
 	VictorSteamID *string `json:"victor_steam_id,omitempty"`
 	DamageDealt   int     `json:"damage_dealt"`
+	IsFirstKill   bool    `json:"is_first_kill"`
 }
 
 type AffectedPlayer struct {
@@ -281,6 +282,67 @@ const (
 	MatchTypeOther    = "other"
 )
 
+// Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants
+var EquipmentValues = map[int]int{
+	// Pistols
+	1:  200, // EqP2000
+	2:  200, // EqGlock
+	3:  300, // EqP250
+	4:  700, // EqDeagle
+	5:  500, // EqFiveSeven
+	6:  300, // EqDualBerettas
+	7:  500, // EqTec9
+	8:  500, // EqCZ
+	9:  200, // EqUSP
+	10: 600, // EqRevolver
+
+	// SMGs
+	101: 1500, // EqMP7
+	102: 1250, // EqMP9
+	103: 1400, // EqBizon
+	104: 1050, // EqMac10
+	105: 1200, // EqUMP
+	106: 2350, // EqP90
+	107: 1500, // EqMP5
+
+	// Heavy
+	201: 1100, // EqSawedOff
+	202: 1050, // EqNova
+	203: 1300, // EqMag7
+	204: 2000, // EqXM1014
+	205: 5200, // EqM249
+	206: 1700, // EqNegev
+
+	// Rifles
+	301: 1800, // EqGalil
+	302: 1950, // EqFamas
+	303: 2700, // EqAK47
+	304: 2900, // EqM4A4
+	305: 2900, // EqM4A1
+	306: 1700, // EqScout
+	307: 3000, // EqSG556
+	308: 3300, // EqAUG
+	309: 4750, // EqAWP
+	310: 5000, // EqScar20
+	311: 5000, // EqG3SG1
+
+	// Equipment
+	401: 200,  // EqZeus
+	402: 650,  // EqKevlar
+	403: 1000, // EqHelmet (Kevlar + Helmet)
+	404: 0,    // EqBomb
+	405: 0,    // EqKnife
+	406: 400,  // EqDefuseKit
+
+	// Grenades
+	501: 50,  // EqDecoy
+	502: 400, // EqMolotov
+	503: 500, // EqIncendiary
+	504: 200, // EqFlash
+	505: 300, // EqSmoke
+	506: 300, // EqHE
+}
+
 const (
 	// Job Lifecycle Statuses
 	StatusQueued           = "Queued"
@@ -305,6 +367,23 @@ const (
 )
 
 // Helper functions
+
+// GetEquipmentValue returns the monetary value of a specific equipment item
+func GetEquipmentValue(equipmentType int) int {
+	if value, exists := EquipmentValues[equipmentType]; exists {
+		return value
+	}
+	return 0 // Unknown equipment
+}
+
+// CalculateTotalEquipmentValue calculates the total value of all equipment in a player's inventory
+func CalculateTotalEquipmentValue(inventory []int) int {
+	total := 0
+	for _, item := range inventory {
+		total += GetEquipmentValue(item)
+	}
+	return total
+}
 
 func CalculateDistance(pos1, pos2 Position) float64 {
 	dx := pos1.X - pos2.X

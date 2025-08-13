@@ -372,6 +372,7 @@ class DemoParserServiceTest extends TestCase
                 'penetrated_objects' => 0,
                 'victor_steam_id' => 'steam_123',
                 'damage_dealt' => 85,
+                'is_first_kill' => false,
             ],
         ];
 
@@ -407,6 +408,7 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(0, $gunfightEvent->penetrated_objects);
         $this->assertEquals('steam_123', $gunfightEvent->victor_steam_id);
         $this->assertEquals(85, $gunfightEvent->damage_dealt);
+        $this->assertFalse($gunfightEvent->is_first_kill);
     }
 
     public function test_it_can_create_grenade_event()

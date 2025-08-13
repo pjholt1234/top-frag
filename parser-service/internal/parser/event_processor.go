@@ -1,10 +1,11 @@
 package parser
 
 import (
+	"parser-service/internal/types"
+
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
-	"parser-service/internal/types"
 )
 
 // Struct for managing match events
@@ -24,6 +25,7 @@ type EventProcessor struct {
 	teamBCurrentSide   string            // "CT" or "T" - which side team B is currently on
 	assignmentComplete bool              // Whether all players have been assigned teams
 	currentRound       int               // Current round number for team assignment
+	currentTick        int64             // Current tick timestamp
 }
 
 func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *EventProcessor {
@@ -42,13 +44,14 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 		teamBCurrentSide:   "",
 		assignmentComplete: false,
 		currentRound:       0, // Initialize currentRound
+		currentTick:        0, // Initialize currentTick
 	}
 }
 
 func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
 	ep.matchState.CurrentRound++
 	ep.currentRound = ep.matchState.CurrentRound // Track current round for team assignment
-	ep.matchState.RoundStartTick = 0
+	ep.matchState.RoundStartTick = ep.currentTick
 	ep.matchState.CurrentRoundKills = 0
 	ep.matchState.CurrentRoundDeaths = 0
 	ep.matchState.FirstKillPlayer = nil
@@ -64,7 +67,7 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
 
 	roundEvent := types.RoundEvent{
 		RoundNumber:   ep.matchState.CurrentRound,
-		TickTimestamp: 0,
+		TickTimestamp: ep.currentTick,
 		EventType:     "start",
 	}
 	ep.matchState.RoundEvents = append(ep.matchState.RoundEvents, roundEvent)
@@ -91,7 +94,7 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 
 	roundEvent := types.RoundEvent{
 		RoundNumber:   ep.matchState.CurrentRound,
-		TickTimestamp: 0,
+		TickTimestamp: ep.currentTick,
 		EventType:     "end",
 		Winner:        &winner,
 		Duration:      &duration,
@@ -120,6 +123,9 @@ func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {
 	ep.ensurePlayerTracked(e.Killer)
 	ep.ensurePlayerTracked(e.Victim)
 
+	// Check if this is the first kill of the round
+	isFirstKill := ep.matchState.FirstKillPlayer == nil
+
 	if ep.matchState.FirstKillPlayer == nil {
 		steamID := types.SteamIDToString(e.Killer.SteamID64)
 		ep.matchState.FirstKillPlayer = &steamID
@@ -146,14 +152,15 @@ func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {
 		victimState.Deaths++
 	}
 
-	gunfightEvent := ep.createGunfightEvent(e)
+	gunfightEvent := ep.createGunfightEvent(e, isFirstKill)
 	ep.matchState.GunfightEvents = append(ep.matchState.GunfightEvents, gunfightEvent)
 
 	ep.logger.WithFields(logrus.Fields{
-		"killer":   e.Killer.Name,
-		"victim":   e.Victim.Name,
-		"weapon":   e.Weapon.String(),
-		"headshot": e.IsHeadshot,
+		"killer":        e.Killer.Name,
+		"victim":        e.Victim.Name,
+		"weapon":        e.Weapon.String(),
+		"headshot":      e.IsHeadshot,
+		"is_first_kill": isFirstKill,
 	}).Debug("Player killed")
 }
 
@@ -166,12 +173,12 @@ func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) {
 	ep.ensurePlayerTracked(e.Attacker)
 	ep.ensurePlayerTracked(e.Player)
 
-	roundTime := 0
+	roundTime := ep.getCurrentRoundTime()
 
 	damageEvent := types.DamageEvent{
 		RoundNumber:     ep.matchState.CurrentRound,
 		RoundTime:       roundTime,
-		TickTimestamp:   0,
+		TickTimestamp:   ep.currentTick,
 		AttackerSteamID: types.SteamIDToString(e.Attacker.SteamID64),
 		VictimSteamID:   types.SteamIDToString(e.Player.SteamID64),
 		Damage:          e.HealthDamage + e.ArmorDamage,
@@ -199,7 +206,7 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	// Ensure player is tracked
 	ep.ensurePlayerTracked(e.Projectile.Thrower)
 
-	roundTime := 0
+	roundTime := ep.getCurrentRoundTime()
 
 	playerPos := ep.getPlayerPosition(e.Projectile.Thrower)
 	playerAim := ep.getPlayerAim(e.Projectile.Thrower)
@@ -207,7 +214,7 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:    ep.matchState.CurrentRound,
 		RoundTime:      roundTime,
-		TickTimestamp:  0,
+		TickTimestamp:  ep.currentTick,
 		PlayerSteamID:  types.SteamIDToString(e.Projectile.Thrower.SteamID64),
 		GrenadeType:    "hegrenade",
 		PlayerPosition: playerPos,
@@ -347,8 +354,8 @@ func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) {
 	}).Debug("Player team changed")
 }
 
-func (ep *EventProcessor) createGunfightEvent(e events.Kill) types.GunfightEvent {
-	roundTime := 0
+func (ep *EventProcessor) createGunfightEvent(e events.Kill, isFirstKill bool) types.GunfightEvent {
+	roundTime := ep.getCurrentRoundTime()
 
 	player1Pos := ep.getPlayerPosition(e.Killer)
 	player2Pos := ep.getPlayerPosition(e.Victim)
@@ -358,7 +365,7 @@ func (ep *EventProcessor) createGunfightEvent(e events.Kill) types.GunfightEvent
 	gunfightEvent := types.GunfightEvent{
 		RoundNumber:       ep.matchState.CurrentRound,
 		RoundTime:         roundTime,
-		TickTimestamp:     0,
+		TickTimestamp:     ep.currentTick,
 		Player1SteamID:    types.SteamIDToString(e.Killer.SteamID64),
 		Player2SteamID:    types.SteamIDToString(e.Victim.SteamID64),
 		Player1HPStart:    ep.getPlayerHP(e.Killer),
@@ -379,11 +386,13 @@ func (ep *EventProcessor) createGunfightEvent(e events.Kill) types.GunfightEvent
 		PenetratedObjects: e.PenetratedObjects,
 		VictorSteamID:     nil,
 		DamageDealt:       0,
+		IsFirstKill:       isFirstKill,
 	}
 
 	victorSteamID := types.SteamIDToString(e.Killer.SteamID64)
 	gunfightEvent.VictorSteamID = &victorSteamID
-	gunfightEvent.DamageDealt = 100
+
+	gunfightEvent.DamageDealt = 100 - gunfightEvent.Player2HPStart
 
 	return gunfightEvent
 }
@@ -431,7 +440,10 @@ func (ep *EventProcessor) getPlayerFlashed(player *common.Player) bool {
 	if player == nil {
 		return false
 	}
-	return false
+
+	flashDuration := player.FlashDuration
+
+	return flashDuration > 0
 }
 
 func (ep *EventProcessor) getPlayerWeapon(player *common.Player) string {
@@ -445,7 +457,27 @@ func (ep *EventProcessor) getPlayerEquipmentValue(player *common.Player) int {
 	if player == nil {
 		return 0
 	}
-	return 0
+
+	equipmentValue := 0
+
+	// Add value of all weapons in inventory (this includes the active weapon)
+	for _, weapon := range player.Inventory {
+		if weapon != nil {
+			weaponType := int(weapon.Type)
+			equipmentValue += types.GetEquipmentValue(weaponType)
+		}
+	}
+
+	// Add armor value
+	if player.Armor() > 0 {
+		if player.HasHelmet() {
+			equipmentValue += types.GetEquipmentValue(403) // EqHelmet (Kevlar + Helmet)
+		} else {
+			equipmentValue += types.GetEquipmentValue(402) // EqKevlar
+		}
+	}
+
+	return equipmentValue
 }
 
 func (ep *EventProcessor) getTeamString(team common.Team) string {
@@ -604,4 +636,17 @@ func (ep *EventProcessor) getWinningTeam() string {
 		return "B"
 	}
 	return "A" // Default to A in case of tie
+}
+
+// UpdateCurrentTick updates the current tick timestamp
+func (ep *EventProcessor) UpdateCurrentTick(tick int64) {
+	ep.currentTick = tick
+}
+
+// getCurrentRoundTime calculates the current time in seconds since the round started
+func (ep *EventProcessor) getCurrentRoundTime() int {
+	if ep.matchState.RoundStartTick == 0 {
+		return 0
+	}
+	return int((ep.currentTick - ep.matchState.RoundStartTick) / 64) // Convert ticks to seconds
 }

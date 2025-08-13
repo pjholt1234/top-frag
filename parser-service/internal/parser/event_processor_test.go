@@ -3,10 +3,11 @@ package parser
 import (
 	"testing"
 
+	"parser-service/internal/types"
+
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
-	"parser-service/internal/types"
 )
 
 func TestNewEventProcessor(t *testing.T) {
@@ -813,5 +814,50 @@ func TestEventProcessor_SideSwitching(t *testing.T) {
 	}
 	if processor.teamBCurrentSide != "T" {
 		t.Errorf("Expected Team B current side T, got %s", processor.teamBCurrentSide)
+	}
+}
+
+func TestEventProcessor_IsFirstKill(t *testing.T) {
+	matchState := &types.MatchState{
+		CurrentRound:   1,
+		Players:        make(map[string]*types.Player),
+		RoundEvents:    make([]types.RoundEvent, 0),
+		GunfightEvents: make([]types.GunfightEvent, 0),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+
+	// Test the core logic: FirstKillPlayer should be nil initially
+	if processor.matchState.FirstKillPlayer != nil {
+		t.Error("Expected FirstKillPlayer to be nil at start of round")
+	}
+
+	// Simulate first kill by setting FirstKillPlayer
+	firstKillerSteamID := "steam_123"
+	processor.matchState.FirstKillPlayer = &firstKillerSteamID
+
+	// Now FirstKillPlayer should not be nil
+	if processor.matchState.FirstKillPlayer == nil {
+		t.Error("Expected FirstKillPlayer to be set after first kill")
+	}
+
+	// Test that isFirstKill logic works correctly
+	isFirstKill := processor.matchState.FirstKillPlayer == nil
+	if isFirstKill {
+		t.Error("Expected isFirstKill to be false after FirstKillPlayer is set")
+	}
+
+	// Reset for new round
+	processor.HandleRoundStart(events.RoundStart{})
+
+	// After round start, FirstKillPlayer should be nil again
+	if processor.matchState.FirstKillPlayer != nil {
+		t.Error("Expected FirstKillPlayer to be nil after round start")
+	}
+
+	// Test isFirstKill logic again
+	isFirstKill = processor.matchState.FirstKillPlayer == nil
+	if !isFirstKill {
+		t.Error("Expected isFirstKill to be true when FirstKillPlayer is nil")
 	}
 }

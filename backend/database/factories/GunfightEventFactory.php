@@ -58,6 +58,7 @@ class GunfightEventFactory extends Factory
             'penetrated_objects' => $this->faker->numberBetween(0, 5),
             'victor_steam_id' => $this->faker->randomElement([$player1, $player2]),
             'damage_dealt' => $this->faker->numberBetween(1, 100),
+            'is_first_kill' => $this->faker->boolean(),
         ];
     }
 }

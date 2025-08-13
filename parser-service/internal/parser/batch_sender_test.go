@@ -2,15 +2,18 @@ package parser
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"parser-service/internal/config"
 	"parser-service/internal/types"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestNewBatchSender(t *testing.T) {
@@ -152,16 +155,19 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 			RoundNumber:    1,
 			Player1SteamID: "steam_123",
 			Player2SteamID: "steam_456",
+			IsFirstKill:    false,
 		},
 		{
 			RoundNumber:    1,
 			Player1SteamID: "steam_789",
 			Player2SteamID: "steam_012",
+			IsFirstKill:    false,
 		},
 		{
 			RoundNumber:    2,
 			Player1SteamID: "steam_345",
 			Player2SteamID: "steam_678",
+			IsFirstKill:    false,
 		},
 	}
 
@@ -187,6 +193,112 @@ func TestBatchSender_SendGunfightEvents_Empty(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Expected no error for empty events, got: %v", err)
+	}
+}
+
+func TestBatchSender_SendGunfightEvents_IsFirstKillField(t *testing.T) {
+	// Create a test server that captures the request body
+	var capturedBody []byte
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if the request is for the gunfight events endpoint
+		if r.Method == "POST" && strings.Contains(r.URL.Path, "/api/job/") && strings.Contains(r.URL.Path, "/event/gunfight") {
+			capturedBody, _ = io.ReadAll(r.Body)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success": true}`))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			APIKey: "test-api-key",
+		},
+		Batch: config.BatchConfig{
+			GunfightEventsSize: 2,
+			HTTPTimeout:        30 * time.Second,
+			RetryAttempts:      3,
+			RetryDelay:         1 * time.Second,
+		},
+	}
+	logger := logrus.New()
+	sender := NewBatchSender(cfg, logger)
+
+	// Set the baseURL for the test
+	baseURL, err := sender.extractBaseURL(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to extract base URL: %v", err)
+	}
+	sender.baseURL = baseURL
+
+	// Create test events with is_first_kill field
+	events := []types.GunfightEvent{
+		{
+			RoundNumber:    1,
+			Player1SteamID: "steam_123",
+			Player2SteamID: "steam_456",
+			IsFirstKill:    true, // First kill of the round
+		},
+		{
+			RoundNumber:    1,
+			Player1SteamID: "steam_789",
+			Player2SteamID: "steam_012",
+			IsFirstKill:    false, // Not first kill
+		},
+	}
+
+	ctx := context.Background()
+	err = sender.SendGunfightEvents(ctx, "test-job-123", server.URL, events)
+
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+
+	// Parse the captured request body
+	var payload map[string]interface{}
+	if err := json.Unmarshal(capturedBody, &payload); err != nil {
+		t.Fatalf("Failed to parse request body: %v", err)
+	}
+
+	// Check that the data field exists
+	data, ok := payload["data"].([]interface{})
+	if !ok {
+		t.Fatal("Expected 'data' field in payload")
+	}
+
+	if len(data) != 2 {
+		t.Fatalf("Expected 2 events in data, got %d", len(data))
+	}
+
+	// Check first event (should be first kill)
+	event1, ok := data[0].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected first event to be a map")
+	}
+
+	isFirstKill1, exists := event1["is_first_kill"]
+	if !exists {
+		t.Error("Expected 'is_first_kill' field in first event")
+	}
+
+	if isFirstKill1 != true {
+		t.Errorf("Expected first event is_first_kill to be true, got %v", isFirstKill1)
+	}
+
+	// Check second event (should not be first kill)
+	event2, ok := data[1].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected second event to be a map")
+	}
+
+	isFirstKill2, exists := event2["is_first_kill"]
+	if !exists {
+		t.Error("Expected 'is_first_kill' field in second event")
+	}
+
+	if isFirstKill2 != false {
+		t.Errorf("Expected second event is_first_kill to be false, got %v", isFirstKill2)
 	}
 }
 

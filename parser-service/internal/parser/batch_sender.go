@@ -9,10 +9,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"parser-service/internal/api"
 	"parser-service/internal/config"
 	"parser-service/internal/types"
+
+	"github.com/sirupsen/logrus"
 )
 
 type BatchSender struct {
@@ -114,6 +115,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 				"penetrated_objects":       event.PenetratedObjects,
 				"victor_steam_id":          event.VictorSteamID,
 				"damage_dealt":             event.DamageDealt,
+				"is_first_kill":            event.IsFirstKill,
 			}
 		}
 

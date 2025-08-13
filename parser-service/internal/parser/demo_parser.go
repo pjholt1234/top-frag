@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"parser-service/internal/config"
+	"parser-service/internal/types"
+
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/msg"
 	"github.com/sirupsen/logrus"
-	"parser-service/internal/config"
-	"parser-service/internal/types"
 )
 
 type DemoParser struct {
@@ -76,6 +77,11 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		// Register event handlers for the demo parser
 		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
+
+		// Register frame handler to update current tick
+		parser.RegisterEventHandler(func(e events.FrameDone) {
+			eventProcessor.UpdateCurrentTick(int64(parser.CurrentFrame()))
+		})
 
 		// Get final game state after parsing
 		gameState := parser.GameState()

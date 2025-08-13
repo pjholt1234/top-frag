@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"parser-service/internal/config"
 	"parser-service/internal/types"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestNewDemoParser(t *testing.T) {
@@ -168,6 +169,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 				RoundNumber:    1,
 				Player1SteamID: "steam_123",
 				Player2SteamID: "steam_456",
+				IsFirstKill:    false,
 			},
 		},
 		GrenadeEvents: []types.GrenadeEvent{
