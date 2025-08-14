@@ -226,45 +226,33 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 			}
 		}
 	}
-
-	// Use stored throw info if available, otherwise fall back to current position
-	var playerPos types.Position
-	var playerAim types.Vector
-	var roundTime int
-	var tickTimestamp int64
-
-	if throwInfo != nil {
-		playerPos = throwInfo.PlayerPosition
-		playerAim = throwInfo.PlayerAim
-		roundTime = throwInfo.RoundTime
-		tickTimestamp = throwInfo.ThrowTick
-
-		// Clean up the stored throw info
-		for key, info := range ep.grenadeThrows {
-			if info == throwInfo {
-				delete(ep.grenadeThrows, key)
-				break
-			}
-		}
-
-		ep.logger.WithFields(logrus.Fields{
-			"player":       e.Projectile.Thrower.Name,
-			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
-			"found_throw":  true,
-		}).Debug("Using stored grenade throw info")
-	} else {
-		// Fallback to current position (original behavior)
-		playerPos = ep.getPlayerPosition(e.Projectile.Thrower)
-		playerAim = ep.getPlayerAim(e.Projectile.Thrower)
-		roundTime = ep.getCurrentRoundTime()
-		tickTimestamp = ep.currentTick
-
+	if throwInfo == nil {
 		ep.logger.WithFields(logrus.Fields{
 			"player":       e.Projectile.Thrower.Name,
 			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
 			"found_throw":  false,
 		}).Warn("No stored grenade throw info found, using current position")
+		return
 	}
+
+	playerPos := throwInfo.PlayerPosition
+	playerAim := throwInfo.PlayerAim
+	roundTime := throwInfo.RoundTime
+	tickTimestamp := throwInfo.ThrowTick
+
+	// Clean up the stored throw info
+	for key, info := range ep.grenadeThrows {
+		if info == throwInfo {
+			delete(ep.grenadeThrows, key)
+			break
+		}
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"player":       e.Projectile.Thrower.Name,
+		"grenade_type": e.Projectile.WeaponInstance.Type.String(),
+		"found_throw":  true,
+	}).Debug("Using stored grenade throw info")
 
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:    ep.matchState.CurrentRound,
@@ -705,11 +693,24 @@ func (ep *EventProcessor) UpdateCurrentTick(tick int64) {
 }
 
 // getCurrentRoundTime calculates the current time in seconds since the round started
+// Subtracts freeze time to get actual gameplay time
 func (ep *EventProcessor) getCurrentRoundTime() int {
 	if ep.matchState.RoundStartTick == 0 {
 		return 0
 	}
-	return int((ep.currentTick - ep.matchState.RoundStartTick) / 64) // Convert ticks to seconds
+
+	// Calculate time since round start
+	timeSinceRoundStart := int((ep.currentTick - ep.matchState.RoundStartTick) / 64)
+
+	// Subtract freeze time to get actual gameplay time
+	actualRoundTime := timeSinceRoundStart - types.CS2FreezeTime
+
+	// Don't return negative values
+	if actualRoundTime < 0 {
+		return 0
+	}
+
+	return actualRoundTime
 }
 
 // isGrenadeWeapon checks if a weapon is a grenade type

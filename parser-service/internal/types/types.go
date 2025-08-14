@@ -293,6 +293,11 @@ const (
 	MatchTypeOther    = "other"
 )
 
+// Game timing constants
+const (
+	CS2FreezeTime = 20 // Freeze time duration in seconds for CS2
+)
+
 // Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants
 var EquipmentValues = map[int]int{
 	// Pistols

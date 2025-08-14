@@ -12,7 +12,7 @@ class FindSmokeGrenadesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'grenades:find-smokes {steam_id : The Steam ID to search for} {--output=console : Output format (console, file)} {--file=smoke_positions.txt : Output file name when using file output}';
+    protected $signature = 'grenades:find {steam_id : The Steam ID to search for} {--output=console : Output format (console, file)} {--file=smoke_positions.txt : Output file name when using file output}';
 
     /**
      * The console command description.
