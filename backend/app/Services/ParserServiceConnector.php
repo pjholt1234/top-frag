@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Http;
 
 class ParserServiceConnector
 {
-    private string $base_url;
+    private ?string $base_url = null;
 
-    private string $apiKey;
+    private ?string $apiKey = null;
 
     private string $progressCallbackURL;
 
