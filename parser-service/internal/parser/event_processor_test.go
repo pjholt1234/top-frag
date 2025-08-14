@@ -5,6 +5,7 @@ import (
 
 	"parser-service/internal/types"
 
+	"github.com/golang/geo/r3"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
@@ -860,4 +861,53 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 	if !isFirstKill {
 		t.Error("Expected isFirstKill to be true when FirstKillPlayer is nil")
 	}
+}
+
+func TestEventProcessor_FlashTracking(t *testing.T) {
+	matchState := &types.MatchState{
+		CurrentRound:  1,
+		Players:       make(map[string]*types.Player),
+		GrenadeEvents: []types.GrenadeEvent{},
+	}
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	processor := NewEventProcessor(matchState, logger)
+
+	// Simulate a flash explosion
+	flashExplodeEvent := events.FlashExplode{
+		GrenadeEvent: events.GrenadeEvent{
+			GrenadeEntityID: 12345,
+			Position:        r3.Vector{X: 100, Y: 200, Z: 50},
+			Thrower: &common.Player{
+				SteamID64: 76561198012345678,
+				Name:      "TestPlayer",
+			},
+		},
+	}
+
+	processor.currentTick = 1000
+	processor.HandleFlashExplode(flashExplodeEvent)
+
+	// Verify flash effect was created
+	if len(processor.activeFlashEffects) != 1 {
+		t.Errorf("Expected 1 active flash effect, got %d", len(processor.activeFlashEffects))
+	}
+
+	flashEffect, exists := processor.activeFlashEffects[12345]
+	if !exists {
+		t.Error("Flash effect not found")
+	}
+
+	if flashEffect.EntityID != 12345 {
+		t.Errorf("Expected entity ID 12345, got %d", flashEffect.EntityID)
+	}
+
+	if flashEffect.ThrowerSteamID != "steam_76561198012345678" {
+		t.Errorf("Expected thrower Steam ID steam_76561198012345678, got %s", flashEffect.ThrowerSteamID)
+	}
+
+	// For now, skip the PlayerFlashed test since it requires a fully initialized Player object
+	// In a real scenario, the demoinfocs library would provide properly initialized Player objects
+	t.Log("Flash tracking test completed - PlayerFlashed event handling requires fully initialized Player objects")
 }

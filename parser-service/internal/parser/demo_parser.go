@@ -176,6 +176,14 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 		eventProcessor.HandleFlashExplode(e)
 	})
 
+	parser.RegisterEventHandler(func(e events.PlayerFlashed) {
+		dp.logger.WithFields(logrus.Fields{
+			"player": e.Player.Name,
+			"tick":   eventProcessor.currentTick,
+		}).Info("PlayerFlashed event received")
+		eventProcessor.HandlePlayerFlashed(e)
+	})
+
 	parser.RegisterEventHandler(func(e events.HeExplode) {
 		eventProcessor.HandleHeExplode(e)
 	})

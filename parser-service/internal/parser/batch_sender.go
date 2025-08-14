@@ -200,6 +200,14 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 			if event.FlashDuration != nil {
 				flatEvent["flash_duration"] = *event.FlashDuration
 			}
+			if event.FriendlyFlashDuration != nil {
+				flatEvent["friendly_flash_duration"] = *event.FriendlyFlashDuration
+			}
+			if event.EnemyFlashDuration != nil {
+				flatEvent["enemy_flash_duration"] = *event.EnemyFlashDuration
+			}
+			flatEvent["friendly_players_affected"] = event.FriendlyPlayersAffected
+			flatEvent["enemy_players_affected"] = event.EnemyPlayersAffected
 			if len(event.AffectedPlayers) > 0 {
 				flatEvent["affected_players"] = event.AffectedPlayers
 			}

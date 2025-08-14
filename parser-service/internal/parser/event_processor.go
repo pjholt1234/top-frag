@@ -29,6 +29,29 @@ type EventProcessor struct {
 
 	// Grenade tracking by entity ID
 	grenadeThrows map[int]*types.GrenadeThrowInfo // entityID -> throw info
+
+	// Flash tracking
+	activeFlashEffects map[int]*FlashEffect // entityID -> flash effect info
+}
+
+// FlashEffect tracks information about an active flash effect
+type FlashEffect struct {
+	EntityID         int
+	ThrowerSteamID   string
+	ExplosionTick    int64
+	AffectedPlayers  map[uint64]*PlayerFlashInfo
+	FriendlyDuration float64
+	EnemyDuration    float64
+	FriendlyCount    int
+	EnemyCount       int
+}
+
+// PlayerFlashInfo tracks individual player flash information
+type PlayerFlashInfo struct {
+	SteamID       string
+	Team          string
+	FlashDuration float64
+	IsFriendly    bool
 }
 
 func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *EventProcessor {
@@ -51,6 +74,9 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 
 		// Initialize grenade tracking
 		grenadeThrows: make(map[int]*types.GrenadeThrowInfo),
+
+		// Initialize flash tracking
+		activeFlashEffects: make(map[int]*FlashEffect),
 	}
 }
 
@@ -209,6 +235,15 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		return
 	}
 
+	// Skip flashbang grenades - they are handled in HandleFlashExplode
+	if e.Projectile.WeaponInstance.Type.String() == "Flashbang" {
+		ep.logger.WithFields(logrus.Fields{
+			"player":       e.Projectile.Thrower.Name,
+			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
+		}).Debug("Skipping flashbang grenade destroy - handled in HandleFlashExplode")
+		return
+	}
+
 	// Ensure player is tracked
 	ep.ensurePlayerTracked(e.Projectile.Thrower)
 
@@ -280,7 +315,182 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 }
 
 func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) {
-	ep.logger.Debug("Flash grenade exploded")
+	ep.logger.WithFields(logrus.Fields{
+		"entity_id": e.GrenadeEntityID,
+		"position":  e.Position,
+		"thrower_name": func() string {
+			if e.Thrower != nil {
+				return e.Thrower.Name
+			}
+			return "unknown"
+		}(),
+		"current_tick":           ep.currentTick,
+		"existing_flash_effects": len(ep.activeFlashEffects),
+	}).Info("Flash grenade exploded")
+
+	// Check if we already have a flash effect for this entity ID
+	if existingFlash, exists := ep.activeFlashEffects[e.GrenadeEntityID]; exists {
+		ep.logger.WithFields(logrus.Fields{
+			"entity_id":     e.GrenadeEntityID,
+			"existing_tick": existingFlash.ExplosionTick,
+			"current_tick":  ep.currentTick,
+		}).Warn("Flash effect already exists for this entity ID, skipping duplicate")
+		return
+	}
+
+	// Create a new flash effect tracker
+	flashEffect := &FlashEffect{
+		EntityID:        e.GrenadeEntityID,
+		ExplosionTick:   ep.currentTick,
+		AffectedPlayers: make(map[uint64]*PlayerFlashInfo),
+	}
+
+	// Try to find the thrower from the grenade event
+	if e.Thrower != nil {
+		flashEffect.ThrowerSteamID = types.SteamIDToString(e.Thrower.SteamID64)
+	}
+
+	// Store the flash effect for tracking using both entity ID and UniqueID if available
+	ep.activeFlashEffects[e.GrenadeEntityID] = flashEffect
+
+	ep.logger.WithFields(logrus.Fields{
+		"entity_id":      e.GrenadeEntityID,
+		"thrower":        flashEffect.ThrowerSteamID,
+		"explosion_tick": ep.currentTick,
+		"active_flashes": len(ep.activeFlashEffects),
+	}).Info("Started tracking flash effect")
+
+	// Create a grenade event immediately for this flash explosion
+	// We'll update it later when we get PlayerFlashed events
+	playerPos := types.Position{} // Default position
+	playerAim := types.Vector{}   // Default aim
+
+	if e.Thrower != nil {
+		// Try to get player position and aim, but use defaults if they fail
+		playerPos = ep.getPlayerPosition(e.Thrower)
+		playerAim = ep.getPlayerAim(e.Thrower)
+	}
+
+	grenadeEvent := types.GrenadeEvent{
+		RoundNumber:    ep.matchState.CurrentRound,
+		RoundTime:      ep.getCurrentRoundTime(),
+		TickTimestamp:  ep.currentTick,
+		PlayerSteamID:  flashEffect.ThrowerSteamID,
+		GrenadeType:    "Flashbang",
+		PlayerPosition: playerPos,
+		PlayerAim:      playerAim,
+		ThrowType:      "utility", // Default throw type for flashbangs
+	}
+
+	// Set the grenade final position
+	grenadeEvent.GrenadeFinalPosition = &types.Position{
+		X: e.Position.X,
+		Y: e.Position.Y,
+		Z: e.Position.Z,
+	}
+
+	// Add the grenade event to the match state
+	ep.matchState.GrenadeEvents = append(ep.matchState.GrenadeEvents, grenadeEvent)
+
+	ep.logger.WithFields(logrus.Fields{
+		"entity_id": e.GrenadeEntityID,
+		"thrower":   flashEffect.ThrowerSteamID,
+	}).Info("Created grenade event for flash explosion")
+}
+
+func (ep *EventProcessor) HandlePlayerFlashed(e events.PlayerFlashed) {
+	if e.Player == nil {
+		ep.logger.Warn("PlayerFlashed event received with nil player")
+		return
+	}
+
+	playerSteamID := types.SteamIDToString(e.Player.SteamID64)
+	flashDuration := e.FlashDuration().Seconds()
+
+	ep.logger.WithFields(logrus.Fields{
+		"player":         e.Player.Name,
+		"steam_id":       playerSteamID,
+		"flash_duration": flashDuration,
+		"tick":           ep.currentTick,
+		"active_flashes": len(ep.activeFlashEffects),
+	}).Info("Player flashed")
+
+	// Find the most recent flash effect that could have caused this
+	// We'll look for flash effects within a reasonable time window (e.g., 1 second)
+	var mostRecentFlash *FlashEffect
+	var mostRecentTick int64
+
+	for entityID, flashEffect := range ep.activeFlashEffects {
+		ep.logger.WithFields(logrus.Fields{
+			"entity_id":            entityID,
+			"flash_thrower":        flashEffect.ThrowerSteamID,
+			"explosion_tick":       flashEffect.ExplosionTick,
+			"time_since_explosion": ep.currentTick - flashEffect.ExplosionTick,
+		}).Debug("Checking flash effect")
+
+		// Check if this flash effect is recent enough (within 1 second = 64 ticks)
+		if ep.currentTick-flashEffect.ExplosionTick <= 64 {
+			if mostRecentFlash == nil || flashEffect.ExplosionTick > mostRecentTick {
+				mostRecentFlash = flashEffect
+				mostRecentTick = flashEffect.ExplosionTick
+			}
+		}
+	}
+
+	if mostRecentFlash != nil {
+		// Determine if this player is friendly or enemy to the thrower
+		isFriendly := false
+		if mostRecentFlash.ThrowerSteamID != "" {
+			throwerTeam := ep.getAssignedTeam(mostRecentFlash.ThrowerSteamID)
+			playerTeam := ep.getAssignedTeam(playerSteamID)
+			isFriendly = throwerTeam == playerTeam
+
+			ep.logger.WithFields(logrus.Fields{
+				"thrower_team": throwerTeam,
+				"player_team":  playerTeam,
+				"is_friendly":  isFriendly,
+			}).Debug("Team assignment for flash effect")
+		}
+
+		// Add player to the flash effect
+		playerFlashInfo := &PlayerFlashInfo{
+			SteamID:       playerSteamID,
+			Team:          ep.getAssignedTeam(playerSteamID),
+			FlashDuration: flashDuration,
+			IsFriendly:    isFriendly,
+		}
+
+		mostRecentFlash.AffectedPlayers[e.Player.SteamID64] = playerFlashInfo
+
+		// Update friendly/enemy totals
+		if isFriendly {
+			mostRecentFlash.FriendlyDuration += flashDuration
+			mostRecentFlash.FriendlyCount++
+		} else {
+			mostRecentFlash.EnemyDuration += flashDuration
+			mostRecentFlash.EnemyCount++
+		}
+
+		ep.logger.WithFields(logrus.Fields{
+			"entity_id":      mostRecentFlash.EntityID,
+			"player":         e.Player.Name,
+			"is_friendly":    isFriendly,
+			"flash_duration": flashDuration,
+			"friendly_total": mostRecentFlash.FriendlyDuration,
+			"enemy_total":    mostRecentFlash.EnemyDuration,
+			"friendly_count": mostRecentFlash.FriendlyCount,
+			"enemy_count":    mostRecentFlash.EnemyCount,
+		}).Info("Added player to flash effect")
+
+		// Update the corresponding grenade event with flash tracking data
+		ep.updateGrenadeEventWithFlashData(mostRecentFlash)
+	} else {
+		ep.logger.WithFields(logrus.Fields{
+			"player":         e.Player.Name,
+			"tick":           ep.currentTick,
+			"active_flashes": len(ep.activeFlashEffects),
+		}).Warn("No recent flash effect found for player")
+	}
 }
 
 func (ep *EventProcessor) HandleHeExplode(e events.HeExplode) {
@@ -450,6 +660,16 @@ func (ep *EventProcessor) getPlayerPosition(player *common.Player) types.Positio
 		return types.Position{}
 	}
 
+	// Try to get position, but handle potential nil pointer issues
+	defer func() {
+		if r := recover(); r != nil {
+			ep.logger.WithFields(logrus.Fields{
+				"player": player.Name,
+				"error":  r,
+			}).Warn("Failed to get player position, using default")
+		}
+	}()
+
 	position := player.Position()
 	return types.Position{
 		X: position.X,
@@ -462,6 +682,17 @@ func (ep *EventProcessor) getPlayerAim(player *common.Player) types.Vector {
 	if player == nil {
 		return types.Vector{}
 	}
+
+	// Try to get aim, but handle potential nil pointer issues
+	defer func() {
+		if r := recover(); r != nil {
+			ep.logger.WithFields(logrus.Fields{
+				"player": player.Name,
+				"error":  r,
+			}).Warn("Failed to get player aim, using default")
+		}
+	}()
+
 	viewX := player.ViewDirectionX()
 	viewY := player.ViewDirectionY()
 	return types.Vector{
@@ -749,4 +980,109 @@ func (ep *EventProcessor) trackGrenadeThrow(e events.WeaponFire) {
 		"round":        ep.matchState.CurrentRound,
 		"round_time":   roundTime,
 	}).Debug("Tracked grenade throw")
+}
+
+// checkAllPlayersForFlashDuration checks all players for flash duration and updates the grenade event
+func (ep *EventProcessor) checkAllPlayersForFlashDuration(throwerSteamID string, grenadeEvent *types.GrenadeEvent) {
+	var friendlyDuration float64
+	var enemyDuration float64
+	friendlyCount := 0
+	enemyCount := 0
+
+	throwerTeam := ep.getAssignedTeam(throwerSteamID)
+
+	// Check all tracked players for flash duration
+	for steamID, playerState := range ep.playerStates {
+		// Skip the thrower
+		playerSteamIDStr := types.SteamIDToString(steamID)
+		if playerSteamIDStr == throwerSteamID {
+			continue
+		}
+
+		// Check if player is currently flashed
+		if playerState.IsFlashed {
+			playerTeam := ep.getAssignedTeam(playerSteamIDStr)
+			isFriendly := throwerTeam == playerTeam
+
+			// For now, we'll use a default flash duration since we don't have the actual duration
+			// In a real implementation, we'd get this from the player's FlashDuration field
+			flashDuration := 2.0 // Default flash duration
+
+			if isFriendly {
+				friendlyDuration += flashDuration
+				friendlyCount++
+			} else {
+				enemyDuration += flashDuration
+				enemyCount++
+			}
+
+			ep.logger.WithFields(logrus.Fields{
+				"player":         playerState.Name,
+				"steam_id":       playerSteamIDStr,
+				"is_friendly":    isFriendly,
+				"flash_duration": flashDuration,
+			}).Debug("Found flashed player")
+		}
+	}
+
+	// Update the grenade event with flash tracking data
+	if friendlyDuration > 0 {
+		grenadeEvent.FriendlyFlashDuration = &friendlyDuration
+	}
+	if enemyDuration > 0 {
+		grenadeEvent.EnemyFlashDuration = &enemyDuration
+	}
+	grenadeEvent.FriendlyPlayersAffected = friendlyCount
+	grenadeEvent.EnemyPlayersAffected = enemyCount
+
+	ep.logger.WithFields(logrus.Fields{
+		"friendly_duration": friendlyDuration,
+		"enemy_duration":    enemyDuration,
+		"friendly_count":    friendlyCount,
+		"enemy_count":       enemyCount,
+	}).Info("Added flash tracking data from player state check")
+}
+
+// updateGrenadeEventWithFlashData updates the corresponding grenade event with flash tracking data
+func (ep *EventProcessor) updateGrenadeEventWithFlashData(flashEffect *FlashEffect) {
+	// Find the grenade event that corresponds to this flash effect
+	// We'll look for the most recent flashbang grenade event from the same thrower
+	var targetGrenadeEvent *types.GrenadeEvent
+	var mostRecentTick int64
+
+	for i := range ep.matchState.GrenadeEvents {
+		grenadeEvent := &ep.matchState.GrenadeEvents[i]
+		if grenadeEvent.GrenadeType == "Flashbang" &&
+			grenadeEvent.PlayerSteamID == flashEffect.ThrowerSteamID &&
+			grenadeEvent.TickTimestamp <= flashEffect.ExplosionTick &&
+			grenadeEvent.TickTimestamp > mostRecentTick {
+			targetGrenadeEvent = grenadeEvent
+			mostRecentTick = grenadeEvent.TickTimestamp
+		}
+	}
+
+	if targetGrenadeEvent != nil {
+		// Update the grenade event with flash tracking data
+		if flashEffect.FriendlyDuration > 0 {
+			targetGrenadeEvent.FriendlyFlashDuration = &flashEffect.FriendlyDuration
+		}
+		if flashEffect.EnemyDuration > 0 {
+			targetGrenadeEvent.EnemyFlashDuration = &flashEffect.EnemyDuration
+		}
+		targetGrenadeEvent.FriendlyPlayersAffected = flashEffect.FriendlyCount
+		targetGrenadeEvent.EnemyPlayersAffected = flashEffect.EnemyCount
+
+		ep.logger.WithFields(logrus.Fields{
+			"entity_id":         flashEffect.EntityID,
+			"friendly_duration": flashEffect.FriendlyDuration,
+			"enemy_duration":    flashEffect.EnemyDuration,
+			"friendly_players":  flashEffect.FriendlyCount,
+			"enemy_players":     flashEffect.EnemyCount,
+		}).Info("Updated grenade event with flash tracking data")
+	} else {
+		ep.logger.WithFields(logrus.Fields{
+			"entity_id": flashEffect.EntityID,
+			"thrower":   flashEffect.ThrowerSteamID,
+		}).Warn("No grenade event found to update with flash data")
+	}
 }

@@ -84,6 +84,12 @@ type GrenadeEvent struct {
 	FlashDuration   *float64         `json:"flash_duration,omitempty"`
 	AffectedPlayers []AffectedPlayer `json:"affected_players,omitempty"`
 
+	// Flash tracking fields
+	FriendlyFlashDuration   *float64 `json:"friendly_flash_duration,omitempty"`
+	EnemyFlashDuration      *float64 `json:"enemy_flash_duration,omitempty"`
+	FriendlyPlayersAffected int      `json:"friendly_players_affected"`
+	EnemyPlayersAffected    int      `json:"enemy_players_affected"`
+
 	ThrowType string `json:"throw_type"`
 }
 
