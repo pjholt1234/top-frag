@@ -26,6 +26,9 @@ type EventProcessor struct {
 	assignmentComplete bool              // Whether all players have been assigned teams
 	currentRound       int               // Current round number for team assignment
 	currentTick        int64             // Current tick timestamp
+
+	// Grenade tracking by entity ID
+	grenadeThrows map[int]*types.GrenadeThrowInfo // entityID -> throw info
 }
 
 func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *EventProcessor {
@@ -45,6 +48,9 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 		assignmentComplete: false,
 		currentRound:       0, // Initialize currentRound
 		currentTick:        0, // Initialize currentTick
+
+		// Initialize grenade tracking
+		grenadeThrows: make(map[int]*types.GrenadeThrowInfo),
 	}
 }
 
@@ -206,17 +212,66 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	// Ensure player is tracked
 	ep.ensurePlayerTracked(e.Projectile.Thrower)
 
-	roundTime := ep.getCurrentRoundTime()
+	// Try to find the stored throw information
+	var throwInfo *types.GrenadeThrowInfo
+	playerSteamID := types.SteamIDToString(e.Projectile.Thrower.SteamID64)
 
-	playerPos := ep.getPlayerPosition(e.Projectile.Thrower)
-	playerAim := ep.getPlayerAim(e.Projectile.Thrower)
+	// Look for the most recent throw by this player for this grenade type
+	for _, info := range ep.grenadeThrows {
+		if info.PlayerSteamID == playerSteamID &&
+			info.GrenadeType == e.Projectile.WeaponInstance.Type.String() &&
+			info.RoundNumber == ep.matchState.CurrentRound {
+			if throwInfo == nil || info.ThrowTick > throwInfo.ThrowTick {
+				throwInfo = info
+			}
+		}
+	}
+
+	// Use stored throw info if available, otherwise fall back to current position
+	var playerPos types.Position
+	var playerAim types.Vector
+	var roundTime int
+	var tickTimestamp int64
+
+	if throwInfo != nil {
+		playerPos = throwInfo.PlayerPosition
+		playerAim = throwInfo.PlayerAim
+		roundTime = throwInfo.RoundTime
+		tickTimestamp = throwInfo.ThrowTick
+
+		// Clean up the stored throw info
+		for key, info := range ep.grenadeThrows {
+			if info == throwInfo {
+				delete(ep.grenadeThrows, key)
+				break
+			}
+		}
+
+		ep.logger.WithFields(logrus.Fields{
+			"player":       e.Projectile.Thrower.Name,
+			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
+			"found_throw":  true,
+		}).Debug("Using stored grenade throw info")
+	} else {
+		// Fallback to current position (original behavior)
+		playerPos = ep.getPlayerPosition(e.Projectile.Thrower)
+		playerAim = ep.getPlayerAim(e.Projectile.Thrower)
+		roundTime = ep.getCurrentRoundTime()
+		tickTimestamp = ep.currentTick
+
+		ep.logger.WithFields(logrus.Fields{
+			"player":       e.Projectile.Thrower.Name,
+			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
+			"found_throw":  false,
+		}).Warn("No stored grenade throw info found, using current position")
+	}
 
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:    ep.matchState.CurrentRound,
 		RoundTime:      roundTime,
-		TickTimestamp:  ep.currentTick,
-		PlayerSteamID:  types.SteamIDToString(e.Projectile.Thrower.SteamID64),
-		GrenadeType:    "hegrenade",
+		TickTimestamp:  tickTimestamp,
+		PlayerSteamID:  playerSteamID,
+		GrenadeType:    e.Projectile.WeaponInstance.Type.String(),
 		PlayerPosition: playerPos,
 		PlayerAim:      playerAim,
 		ThrowType:      ep.determineThrowType(e.Projectile),
@@ -258,6 +313,11 @@ func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) {
 
 	if playerState, exists := ep.playerStates[e.Shooter.SteamID64]; exists {
 		playerState.CurrentWeapon = e.Weapon.String()
+	}
+
+	// Check if this is a grenade throw
+	if ep.isGrenadeWeapon(*e.Weapon) {
+		ep.trackGrenadeThrow(e)
 	}
 }
 
@@ -401,6 +461,7 @@ func (ep *EventProcessor) getPlayerPosition(player *common.Player) types.Positio
 	if player == nil {
 		return types.Position{}
 	}
+
 	position := player.Position()
 	return types.Position{
 		X: position.X,
@@ -649,4 +710,42 @@ func (ep *EventProcessor) getCurrentRoundTime() int {
 		return 0
 	}
 	return int((ep.currentTick - ep.matchState.RoundStartTick) / 64) // Convert ticks to seconds
+}
+
+// isGrenadeWeapon checks if a weapon is a grenade type
+func (ep *EventProcessor) isGrenadeWeapon(weapon common.Equipment) bool {
+	weaponType := weapon.Type
+	return weaponType == common.EqHE || weaponType == common.EqFlash || weaponType == common.EqSmoke ||
+		weaponType == common.EqMolotov || weaponType == common.EqIncendiary || weaponType == common.EqDecoy
+}
+
+// trackGrenadeThrow stores information about a grenade throw for later use
+func (ep *EventProcessor) trackGrenadeThrow(e events.WeaponFire) {
+	// For now, we'll use a combination of player and tick to create a unique key
+	// This is a fallback since entity ID might not be directly accessible
+	key := int(e.Shooter.SteamID64) + int(ep.currentTick)
+
+	roundTime := ep.getCurrentRoundTime()
+	playerPos := ep.getPlayerPosition(e.Shooter)
+	playerAim := ep.getPlayerAim(e.Shooter)
+
+	throwInfo := &types.GrenadeThrowInfo{
+		PlayerSteamID:  types.SteamIDToString(e.Shooter.SteamID64),
+		PlayerPosition: playerPos,
+		PlayerAim:      playerAim,
+		ThrowTick:      ep.currentTick,
+		RoundNumber:    ep.matchState.CurrentRound,
+		RoundTime:      roundTime,
+		GrenadeType:    e.Weapon.Type.String(),
+	}
+
+	ep.grenadeThrows[key] = throwInfo
+
+	ep.logger.WithFields(logrus.Fields{
+		"key":          key,
+		"player":       e.Shooter.Name,
+		"grenade_type": e.Weapon.Type.String(),
+		"round":        ep.matchState.CurrentRound,
+		"round_time":   roundTime,
+	}).Debug("Tracked grenade throw")
 }

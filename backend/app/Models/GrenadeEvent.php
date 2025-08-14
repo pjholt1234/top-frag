@@ -32,7 +32,10 @@ class GrenadeEvent extends Model
         'grenade_final_z',
         'damage_dealt',
         'flash_duration',
-        'affected_players',
+        'friendly_flash_duration',
+        'enemy_flash_duration',
+        'friendly_players_affected',
+        'enemy_players_affected',
         'throw_type',
         'effectiveness_rating',
     ];
@@ -53,7 +56,10 @@ class GrenadeEvent extends Model
         'grenade_final_z' => 'float',
         'damage_dealt' => 'integer',
         'flash_duration' => 'float',
-        'affected_players' => 'array',
+        'friendly_flash_duration' => 'float',
+        'enemy_flash_duration' => 'float',
+        'friendly_players_affected' => 'integer',
+        'enemy_players_affected' => 'integer',
         'throw_type' => ThrowType::class,
         'effectiveness_rating' => 'integer',
     ];
@@ -67,5 +73,20 @@ class GrenadeEvent extends Model
     public function player(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'player_steam_id', 'steam_id');
+    }
+
+    /**
+     * Generate a position string in the format: setpos {player_x} {player_y} {player_z};setang {player_aim_x} {player_aim_y} 0.000000
+     */
+    public function generatePositionString(): string
+    {
+        return sprintf(
+            'setpos %.6f %.6f %.6f;setang %.6f %.6f 0.000000',
+            $this->player_x,
+            $this->player_y,
+            $this->player_z,
+            $this->player_aim_y,
+            $this->player_aim_x
+        );
     }
 }

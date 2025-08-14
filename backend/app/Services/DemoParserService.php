@@ -349,11 +349,14 @@ class DemoParserService
                     'grenade_final_x' => $grenadeEvent['grenade_final_x'],
                     'grenade_final_y' => $grenadeEvent['grenade_final_y'],
                     'grenade_final_z' => $grenadeEvent['grenade_final_z'],
-                    'damage_dealt' => 0, // todo
-                    'flash_duration' => 0, // todo
-                    'affected_players' => null, // todo - fixed syntax error
-                    'throw_type' => 'utility', // todo - fixed syntax error and added default
-                    'effectiveness_rating' => null, // todo - fixed syntax error
+                    'damage_dealt' => $grenadeEvent['damage_dealt'] ?? 0,
+                    'flash_duration' => $grenadeEvent['flash_duration'] ?? null,
+                    'friendly_flash_duration' => $grenadeEvent['friendly_flash_duration'] ?? null,
+                    'enemy_flash_duration' => $grenadeEvent['enemy_flash_duration'] ?? null,
+                    'friendly_players_affected' => $grenadeEvent['friendly_players_affected'] ?? 0,
+                    'enemy_players_affected' => $grenadeEvent['enemy_players_affected'] ?? 0,
+                    'throw_type' => $grenadeEvent['throw_type'] ?? 'utility',
+                    'effectiveness_rating' => $grenadeEvent['effectiveness_rating'] ?? null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

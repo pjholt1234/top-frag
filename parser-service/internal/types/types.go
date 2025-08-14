@@ -110,6 +110,17 @@ type DamageEvent struct {
 	Weapon       string `json:"weapon"`
 }
 
+// GrenadeThrowInfo stores information about a grenade throw
+type GrenadeThrowInfo struct {
+	PlayerSteamID  string
+	PlayerPosition Position
+	PlayerAim      Vector
+	ThrowTick      int64
+	RoundNumber    int
+	RoundTime      int
+	GrenadeType    string
+}
+
 type Match struct {
 	Map              string     `json:"map"`
 	WinningTeam      string     `json:"winning_team"` // "A" or "B"
