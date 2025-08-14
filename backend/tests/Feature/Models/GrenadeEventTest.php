@@ -34,7 +34,10 @@ class GrenadeEventTest extends TestCase
             'grenade_final_z' => 50.0,
             'damage_dealt' => 25,
             'flash_duration' => 2.5,
-            'affected_players' => ['player1', 'player2'],
+            'friendly_flash_duration' => 1.5,
+            'enemy_flash_duration' => 2.5,
+            'friendly_players_affected' => 1,
+            'enemy_players_affected' => 2,
             'throw_type' => ThrowType::LINEUP,
             'effectiveness_rating' => 8,
         ]);
@@ -46,7 +49,10 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals(ThrowType::LINEUP, $grenadeEvent->throw_type);
         $this->assertEquals(25, $grenadeEvent->damage_dealt);
         $this->assertEquals(2.5, $grenadeEvent->flash_duration);
-        $this->assertEquals(['player1', 'player2'], $grenadeEvent->affected_players);
+        $this->assertEquals(1.5, $grenadeEvent->friendly_flash_duration);
+        $this->assertEquals(2.5, $grenadeEvent->enemy_flash_duration);
+        $this->assertEquals(1, $grenadeEvent->friendly_players_affected);
+        $this->assertEquals(2, $grenadeEvent->enemy_players_affected);
         $this->assertEquals(8, $grenadeEvent->effectiveness_rating);
     }
 
@@ -73,7 +79,10 @@ class GrenadeEventTest extends TestCase
             'grenade_final_z',
             'damage_dealt',
             'flash_duration',
-            'affected_players',
+            'friendly_flash_duration',
+            'enemy_flash_duration',
+            'friendly_players_affected',
+            'enemy_players_affected',
             'throw_type',
             'effectiveness_rating',
         ];
@@ -99,7 +108,10 @@ class GrenadeEventTest extends TestCase
             'grenade_final_z' => 75.0,
             'damage_dealt' => 0,
             'flash_duration' => 0.0,
-            'affected_players' => ['player3', 'player4', 'player5'],
+            'friendly_flash_duration' => 0.0,
+            'enemy_flash_duration' => 0.0,
+            'friendly_players_affected' => 0,
+            'enemy_players_affected' => 0,
             'throw_type' => ThrowType::UTILITY,
             'effectiveness_rating' => 9,
         ]);
@@ -119,7 +131,10 @@ class GrenadeEventTest extends TestCase
         $this->assertIsFloat($grenadeEvent->grenade_final_z);
         $this->assertIsInt($grenadeEvent->damage_dealt);
         $this->assertIsFloat($grenadeEvent->flash_duration);
-        $this->assertIsArray($grenadeEvent->affected_players);
+        $this->assertIsFloat($grenadeEvent->friendly_flash_duration);
+        $this->assertIsFloat($grenadeEvent->enemy_flash_duration);
+        $this->assertIsInt($grenadeEvent->friendly_players_affected);
+        $this->assertIsInt($grenadeEvent->enemy_players_affected);
         $this->assertInstanceOf(ThrowType::class, $grenadeEvent->throw_type);
         $this->assertIsInt($grenadeEvent->effectiveness_rating);
     }
@@ -167,11 +182,12 @@ class GrenadeEventTest extends TestCase
     public function it_can_have_empty_affected_players()
     {
         $grenadeEvent = GrenadeEvent::factory()->create([
-            'affected_players' => [],
+            'friendly_players_affected' => 0,
+            'enemy_players_affected' => 0,
         ]);
 
-        $this->assertIsArray($grenadeEvent->affected_players);
-        $this->assertEmpty($grenadeEvent->affected_players);
+        $this->assertEquals(0, $grenadeEvent->friendly_players_affected);
+        $this->assertEquals(0, $grenadeEvent->enemy_players_affected);
     }
 
     #[Test]
@@ -180,9 +196,13 @@ class GrenadeEventTest extends TestCase
         $grenadeEvent = GrenadeEvent::factory()->create([
             'damage_dealt' => 0,
             'flash_duration' => 0.0,
+            'friendly_flash_duration' => 0.0,
+            'enemy_flash_duration' => 0.0,
         ]);
 
         $this->assertEquals(0, $grenadeEvent->damage_dealt);
         $this->assertEquals(0.0, $grenadeEvent->flash_duration);
+        $this->assertEquals(0.0, $grenadeEvent->friendly_flash_duration);
+        $this->assertEquals(0.0, $grenadeEvent->enemy_flash_duration);
     }
 }

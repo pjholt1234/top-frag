@@ -46,7 +46,10 @@ class GrenadeEventFactory extends Factory
             'grenade_final_z' => $this->faker->randomFloat(2, 0, 200),
             'damage_dealt' => $this->faker->numberBetween(0, 100),
             'flash_duration' => $this->faker->randomFloat(2, 0, 5),
-            'affected_players' => $this->faker->optional()->randomElements(['player1', 'player2', 'player3', 'player4', 'player5'], $this->faker->numberBetween(0, 3)),
+            'friendly_flash_duration' => $this->faker->randomFloat(2, 0, 5),
+            'enemy_flash_duration' => $this->faker->randomFloat(2, 0, 5),
+            'friendly_players_affected' => $this->faker->numberBetween(0, 5),
+            'enemy_players_affected' => $this->faker->numberBetween(0, 5),
             'throw_type' => $this->faker->randomElement(ThrowType::cases()),
             'effectiveness_rating' => $this->faker->numberBetween(1, 10),
         ];

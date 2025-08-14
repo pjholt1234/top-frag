@@ -81,7 +81,10 @@ class ModelRelationshipsTest extends TestCase
             'throw_type' => ThrowType::LINEUP,
             'damage_dealt' => 25,
             'flash_duration' => 2.5,
-            'affected_players' => ['player2', 'player3'],
+            'friendly_flash_duration' => 0.0,
+            'enemy_flash_duration' => 2.5,
+            'friendly_players_affected' => 0,
+            'enemy_players_affected' => 2,
         ]);
         $grenadeEvent2 = GrenadeEvent::factory()->create([
             'match_id' => $match->id,
@@ -90,7 +93,10 @@ class ModelRelationshipsTest extends TestCase
             'throw_type' => ThrowType::UTILITY,
             'damage_dealt' => 0,
             'flash_duration' => 0.0,
-            'affected_players' => [],
+            'friendly_flash_duration' => 0.0,
+            'enemy_flash_duration' => 0.0,
+            'friendly_players_affected' => 0,
+            'enemy_players_affected' => 0,
         ]);
 
         // Create match summary
