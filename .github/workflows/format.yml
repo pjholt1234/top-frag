@@ -17,11 +17,11 @@ jobs:
           php-version: '8.3'
 
       - name: Install dependencies
-        working-directory: ./backend
+        working-directory: ./web-app
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Run Pint
-        working-directory: ./backend
+        working-directory: ./web-app
         run: ./vendor/bin/pint --test
 
       - name: Setup Go
