@@ -13,51 +13,59 @@ import GrenadeLibrary from '@/pages/grenade-library';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
 
-
 const App: React.FC = () => {
-    return (
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-            <AuthProvider>
-                <BrowserRouter>
-                    <Routes>
-                        {/* Public routes - only accessible when not authenticated */}
-                        <Route path="/login" element={
-                            <PublicRoute>
-                                <LoginPage />
-                            </PublicRoute>
-                        } />
-                        <Route path="/register" element={
-                            <PublicRoute>
-                                <RegisterPage />
-                            </PublicRoute>
-                        } />
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes - only accessible when not authenticated */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <RegisterPage />
+                </PublicRoute>
+              }
+            />
 
-                        {/* Protected routes - only accessible when authenticated */}
-                        <Route path="/" element={
-                            <ProtectedRoute>
-                                <Layout />
-                            </ProtectedRoute>
-                        }>
-                            <Route index element={<YourMatches />} />
-                            <Route path="dashboard" element={<Dashboard />} />
-                            <Route path="grenade-library" element={<GrenadeLibrary />} />
-                        </Route>
+            {/* Protected routes - only accessible when authenticated */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<YourMatches />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="grenade-library" element={<GrenadeLibrary />} />
+            </Route>
 
-                        {/* Catch all route - redirect to root if authenticated, login if not */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                </BrowserRouter>
-            </AuthProvider>
-        </ThemeProvider>
-    );
+            {/* Catch all route - redirect to root if authenticated, login if not */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 };
 
 // Check if the element exists before rendering
 const element = document.getElementById('app');
 if (element) {
-    ReactDOM.createRoot(element).render(
-        <React.StrictMode>
-            <App />
-        </React.StrictMode>
-    );
-} 
+  ReactDOM.createRoot(element).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}

@@ -41,7 +41,7 @@ class ApiClient {
     this.timeout = config.timeout || 10000;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...config.headers,
     };
   }
@@ -67,9 +67,12 @@ class ApiClient {
   }
 
   // Build URL with query parameters
-  private buildURL(endpoint: string, params?: Record<string, string | number | boolean>): string {
+  private buildURL(
+    endpoint: string,
+    params?: Record<string, string | number | boolean>
+  ): string {
     const url = new URL(endpoint, this.baseURL);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -77,7 +80,7 @@ class ApiClient {
         }
       });
     }
-    
+
     return url.toString();
   }
 
@@ -103,9 +106,15 @@ class ApiClient {
   }
 
   // Create request with timeout
-  private async createRequest(url: string, options: RequestOptions): Promise<Response> {
+  private async createRequest(
+    url: string,
+    options: RequestOptions
+  ): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), options.timeout || this.timeout);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      options.timeout || this.timeout
+    );
 
     try {
       const response = await fetch(url, {
@@ -135,7 +144,7 @@ class ApiClient {
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
       } else {
-        data = await response.text() as T;
+        data = (await response.text()) as T;
       }
     } catch (error) {
       data = {} as T;
@@ -143,7 +152,8 @@ class ApiClient {
 
     if (!response.ok) {
       const error: ApiError = {
-        message: data?.message || `HTTP ${response.status}: ${response.statusText}`,
+        message:
+          data?.message || `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
         statusText: response.statusText,
         data,
@@ -176,7 +186,10 @@ class ApiClient {
   }
 
   // Generic request method
-  async request<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+  async request<T = any>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<ApiResponse<T>> {
     try {
       const url = this.buildURL(endpoint, options.params);
       const response = await this.createRequest(url, options);
@@ -195,23 +208,49 @@ class ApiClient {
   }
 
   // Convenience methods
-  async get<T = any>(endpoint: string, options: Omit<RequestOptions, 'method'> = {}): Promise<ApiResponse<T>> {
+  async get<T = any>(
+    endpoint: string,
+    options: Omit<RequestOptions, 'method'> = {}
+  ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
-  async post<T = any>(endpoint: string, data?: any, options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body: data });
+  async post<T = any>(
+    endpoint: string,
+    data?: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: data,
+    });
   }
 
-  async put<T = any>(endpoint: string, data?: any, options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<ApiResponse<T>> {
+  async put<T = any>(
+    endpoint: string,
+    data?: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body: data });
   }
 
-  async patch<T = any>(endpoint: string, data?: any, options: Omit<RequestOptions, 'method' | 'body'> = {}): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'PATCH', body: data });
+  async patch<T = any>(
+    endpoint: string,
+    data?: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data,
+    });
   }
 
-  async delete<T = any>(endpoint: string, options: Omit<RequestOptions, 'method'> = {}): Promise<ApiResponse<T>> {
+  async delete<T = any>(
+    endpoint: string,
+    options: Omit<RequestOptions, 'method'> = {}
+  ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 }

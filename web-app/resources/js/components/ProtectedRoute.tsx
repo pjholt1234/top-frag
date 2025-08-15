@@ -5,39 +5,37 @@ import { Card, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-    children,
-    fallback = (
-        <div className="flex items-center justify-center min-h-screen">
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Loading...
-                    </CardTitle>
-                    <CardDescription>
-                        Checking authentication status
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        </div>
-    )
+  children,
+  fallback = (
+    <div className="flex items-center justify-center min-h-screen">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Loading...
+          </CardTitle>
+          <CardDescription>Checking authentication status</CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  ),
 }) => {
-    const { user, loading } = useAuth();
-    const location = useLocation();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-    if (loading) {
-        return <>{fallback}</>;
-    }
+  if (loading) {
+    return <>{fallback}</>;
+  }
 
-    if (!user) {
-        // Redirect to login page with the return url
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
+  if (!user) {
+    // Redirect to login page with the return url
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-    return <>{children}</>;
+  return <>{children}</>;
 };

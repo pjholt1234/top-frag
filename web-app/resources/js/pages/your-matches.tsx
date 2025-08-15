@@ -1,5 +1,5 @@
-import { DataTable, schema } from "@/components/data-table";
-import { z } from "zod";
+import { DataTable, schema } from '@/components/data-table';
+import { z } from 'zod';
 
 const data: z.infer<typeof schema>[] = [];
 
@@ -8,7 +8,7 @@ const YourMatches = () => {
     <div>
       <DataTable data={data} />
     </div>
-  )
-}
+  );
+};
 
 export default YourMatches;
