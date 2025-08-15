@@ -82,4 +82,9 @@ class GameMatch extends Model
     {
         return $this->hasMany(DamageEvent::class, 'match_id');
     }
+
+    public function playerWasParticipant(Player $player): bool
+    {
+        return $this->players->contains($player);
+    }
 }

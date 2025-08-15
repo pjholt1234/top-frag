@@ -71,4 +71,15 @@ class Player extends Model
     {
         return $this->hasMany(DamageEvent::class, 'victim_steam_id', 'steam_id');
     }
+
+    public function playerWonMatch(GameMatch $match): bool
+    {
+        $team = $match->players?->where('steam_id', $this->steam_id)->first()?->pivot->team;
+
+        if (!$team) {
+            return false;
+        }
+
+        return $match->winning_team === $team;
+    }
 }

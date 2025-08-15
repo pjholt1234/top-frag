@@ -71,7 +71,15 @@ class ApiClient {
     endpoint: string,
     params?: Record<string, string | number | boolean>
   ): string {
-    const url = new URL(endpoint, this.baseURL);
+    // Use window.location.origin as the base URL to ensure we have a valid base
+    const baseURL = window.location.origin + this.baseURL;
+
+    // Ensure endpoint starts with / if it doesn't already
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+
+    // Construct the full URL by combining baseURL and endpoint
+    const fullURL = baseURL + normalizedEndpoint;
+    const url = new URL(fullURL);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -153,7 +161,7 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = {
         message:
-          data?.message || `HTTP ${response.status}: ${response.statusText}`,
+          (data as any)?.message || `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
         statusText: response.statusText,
         data,
