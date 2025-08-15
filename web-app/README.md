@@ -59,3 +59,33 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+# Web App
+
+## TypeScript Linting and Formatting
+
+This project uses ESLint and Prettier for code quality and formatting:
+
+### Available Scripts
+
+- `npm run lint` - Check TypeScript/React code for linting issues
+- `npm run lint:fix` - Automatically fix linting issues where possible
+- `npm run format` - Format TypeScript/React files with Prettier
+- `npm run format:check` - Check if TypeScript/React files are properly formatted
+
+### Configuration Files
+
+- `.eslintrc.cjs` - ESLint configuration for TypeScript and React
+- `.prettierrc` - Prettier formatting rules
+- `.eslintignore` - Files and directories to exclude from linting
+- `.prettierignore` - Files and directories to exclude from formatting
+
+### CI Integration
+
+The GitHub Actions workflow (`.github/workflows/format.yml`) automatically runs:
+- TypeScript linting checks
+- Prettier formatting checks
+- PHP code formatting (Pint)
+- Go code formatting (gofmt)
+
+All checks must pass before code can be merged to the main branch.
