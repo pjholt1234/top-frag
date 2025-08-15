@@ -38,13 +38,16 @@ const YourMatches = () => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const response = await api.get<Match[]>('/matches', { requireAuth: true });
+        const response = await api.get<Match[]>('/matches', {
+          requireAuth: true,
+        });
         console.log(response.data);
         setMatches(response.data);
         setError(null);
       } catch (err: unknown) {
         console.error('Error fetching matches:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch matches';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch matches';
         setError(errorMessage);
       } finally {
         setLoading(false);
