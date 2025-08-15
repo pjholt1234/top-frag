@@ -20,8 +20,8 @@ class MatchController extends Controller
             return response()->json(['message' => 'Player not found'], 404);
         }
 
-        $userMatchHistoryService = new UserMatchHistoryService($user);
-        $matchHistory = $userMatchHistoryService->aggregateMatchData();
+        $userMatchHistoryService = new UserMatchHistoryService;
+        $matchHistory = $userMatchHistoryService->aggregateMatchData($user);
 
         return response()->json($matchHistory);
     }

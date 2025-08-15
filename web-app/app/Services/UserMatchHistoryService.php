@@ -9,16 +9,24 @@ use Illuminate\Support\Collection;
 
 class UserMatchHistoryService
 {
-    private Player $player;
+    private ?Player $player;
 
-    public function __construct(private readonly User $user)
+    private ?User $user;
+
+    public function setUser(User $user)
     {
-        $this->player = $this->user->player;
-        $this->aggregateMatchData();
+        $this->user = $user;
+        $this->player = $user->player;
     }
 
-    public function aggregateMatchData(): array
+    public function aggregateMatchData(User $user): array
     {
+        $this->setUser($user);
+
+        if (! $this->player) {
+            return [];
+        }
+
         return $this->user->matches()
             ->map(function (GameMatch $match) {
                 return [
@@ -35,9 +43,9 @@ class UserMatchHistoryService
             'map' => $match->map,
             'winning_team_score' => $match->winning_team_score,
             'losing_team_score' => $match->losing_team_score,
-            'winning_team_name' => $match->winning_team_name,
+            'winning_team_name' => $match->winning_team,
             'player_won_match' => $this->player->playerWonMatch($match),
-            'match_type' => $match->type,
+            'match_type' => $match->match_type,
             'match_date' => $match->created_at,
             'player_was_participant' => true,
         ];
@@ -49,7 +57,7 @@ class UserMatchHistoryService
             $allPlayerGunfightEvents = $this->getAllPlayerGunfightEvents($match, $player);
 
             $playerKillEvents = $allPlayerGunfightEvents->where('victor_steam_id', $player->steam_id);
-            $playerDeathEvents = $allPlayerGunfightEvents->where('victor_steam_id', '!==', $player->steam_id);
+            $playerDeathEvents = $allPlayerGunfightEvents->where('victor_steam_id', '!=', $player->steam_id);
 
             $playerKills = $playerKillEvents->count();
             $playerDeaths = $playerDeathEvents->count();
@@ -84,6 +92,10 @@ class UserMatchHistoryService
 
     private function calculateKillDeathRatio(int $kills, int $deaths): float
     {
+        if ($deaths === 0) {
+            return 0.0;
+        }
+
         return round($kills / $deaths, 2);
     }
 
