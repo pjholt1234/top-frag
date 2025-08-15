@@ -1,0 +1,107 @@
+[
+    {
+        "match_details": {
+            "match_id": 1,
+            "map": "de_ancient",
+            "winning_team_score": 13,
+            "losing_team_score": 8,
+            "winning_team_name": null,
+            "player_won_match": false,
+            "match_type": null,
+            "match_date": "2025-08-14T03:05:08.000000Z",
+            "player_was_participant": true
+        },
+        "player_stats": [
+            {
+                "player_kills": 14,
+                "player_deaths": 17,
+                "player_first_kill_differential": -1,
+                "player_kill_death_ratio": 0.82,
+                "player_adr": 98.38,
+                "team": "B",
+                "player_name": "Tomas"
+            },
+            {
+                "player_kills": 17,
+                "player_deaths": 14,
+                "player_first_kill_differential": -1,
+                "player_kill_death_ratio": 1.21,
+                "player_adr": 92.48,
+                "team": "B",
+                "player_name": "Strider"
+            },
+            {
+                "player_kills": 14,
+                "player_deaths": 16,
+                "player_first_kill_differential": 3,
+                "player_kill_death_ratio": 0.88,
+                "player_adr": 92.29,
+                "team": "A",
+                "player_name": "Marti9n"
+            },
+            {
+                "player_kills": 17,
+                "player_deaths": 9,
+                "player_first_kill_differential": 3,
+                "player_kill_death_ratio": 1.89,
+                "player_adr": 118.19,
+                "team": "A",
+                "player_name": "8eezy"
+            },
+            {
+                "player_kills": 10,
+                "player_deaths": 12,
+                "player_first_kill_differential": 3,
+                "player_kill_death_ratio": 0.83,
+                "player_adr": 81.71,
+                "team": "A",
+                "player_name": "Rift_"
+            },
+            {
+                "player_kills": 26,
+                "player_deaths": 11,
+                "player_first_kill_differential": 4,
+                "player_kill_death_ratio": 2.36,
+                "player_adr": 160.57,
+                "team": "A",
+                "player_name": "-PJ"
+            },
+            {
+                "player_kills": 12,
+                "player_deaths": 12,
+                "player_first_kill_differential": -2,
+                "player_kill_death_ratio": 1,
+                "player_adr": 78.67,
+                "team": "A",
+                "player_name": "n4T3"
+            },
+            {
+                "player_kills": 5,
+                "player_deaths": 15,
+                "player_first_kill_differential": -2,
+                "player_kill_death_ratio": 0.33,
+                "player_adr": 51.24,
+                "team": "B",
+                "player_name": "P3AKZ"
+            },
+            {
+                "player_kills": 9,
+                "player_deaths": 18,
+                "player_first_kill_differential": -4,
+                "player_kill_death_ratio": 0.5,
+                "player_adr": 62.95,
+                "team": "B",
+                "player_name": "PEAKZ"
+            },
+            {
+                "player_kills": 15,
+                "player_deaths": 15,
+                "player_first_kill_differential": -3,
+                "player_kill_death_ratio": 1,
+                "player_adr": 104.48,
+                "team": "B",
+                "player_name": "aladdin69"
+            }
+        ]
+    }
+]
