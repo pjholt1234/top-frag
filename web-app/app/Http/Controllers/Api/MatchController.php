@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Services\UserMatchHistoryService;
+use Illuminate\Http\Request;
 
 class MatchController extends Controller
 {
     public function index(Request $request)
     {
-        //todo auth policies
+        // todo auth policies
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

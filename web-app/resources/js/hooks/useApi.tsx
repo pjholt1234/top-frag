@@ -18,32 +18,32 @@ interface UseApiReturn {
   client: ApiClient;
 
   // Convenience methods with authentication
-  get: <T = any>(
+  get: <T = unknown>(
     endpoint: string,
     options?: Omit<RequestOptions, 'method'>
   ) => Promise<ApiResponse<T>>;
-  post: <T = any>(
+  post: <T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'body'>
   ) => Promise<ApiResponse<T>>;
-  put: <T = any>(
+  put: <T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'body'>
   ) => Promise<ApiResponse<T>>;
-  patch: <T = any>(
+  patch: <T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options?: Omit<RequestOptions, 'method' | 'body'>
   ) => Promise<ApiResponse<T>>;
-  delete: <T = any>(
+  delete: <T = unknown>(
     endpoint: string,
     options?: Omit<RequestOptions, 'method'>
   ) => Promise<ApiResponse<T>>;
 
   // Generic request method
-  request: <T = any>(
+  request: <T = unknown>(
     endpoint: string,
     options?: RequestOptions
   ) => Promise<ApiResponse<T>>;
@@ -82,7 +82,7 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
 
   // Wrapper functions that automatically include authentication
   const get = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
       requestOptions: Omit<RequestOptions, 'method'> = {}
     ): Promise<ApiResponse<T>> => {
@@ -101,9 +101,9 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
   );
 
   const post = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
-      data?: any,
+      data?: unknown,
       requestOptions: Omit<RequestOptions, 'method' | 'body'> = {}
     ): Promise<ApiResponse<T>> => {
       try {
@@ -121,9 +121,9 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
   );
 
   const put = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
-      data?: any,
+      data?: unknown,
       requestOptions: Omit<RequestOptions, 'method' | 'body'> = {}
     ): Promise<ApiResponse<T>> => {
       try {
@@ -141,9 +141,9 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
   );
 
   const patch = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
-      data?: any,
+      data?: unknown,
       requestOptions: Omit<RequestOptions, 'method' | 'body'> = {}
     ): Promise<ApiResponse<T>> => {
       try {
@@ -161,7 +161,7 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
   );
 
   const deleteRequest = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
       requestOptions: Omit<RequestOptions, 'method'> = {}
     ): Promise<ApiResponse<T>> => {
@@ -180,7 +180,7 @@ export const useApi = (options: UseApiOptions = {}): UseApiReturn => {
   );
 
   const request = useCallback(
-    async <T = any,>(
+    async <T = unknown,>(
       endpoint: string,
       requestOptions: RequestOptions = {}
     ): Promise<ApiResponse<T>> => {

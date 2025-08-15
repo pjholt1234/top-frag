@@ -76,7 +76,7 @@ class Player extends Model
     {
         $team = $match->players?->where('steam_id', $this->steam_id)->first()?->pivot->team;
 
-        if (!$team) {
+        if (! $team) {
             return false;
         }
 

@@ -2,8 +2,35 @@ import { MatchesTable } from '@/components/matches-table';
 import { api } from '../lib/api';
 import { useState, useEffect } from 'react';
 
+interface PlayerStats {
+  player_name: string;
+  player_kills: number;
+  player_deaths: number;
+  player_first_kill_differential: number;
+  player_kill_death_ratio: number;
+  player_adr: number;
+  team: string;
+}
+
+interface MatchDetails {
+  match_id: number;
+  map: string;
+  winning_team_score: number;
+  losing_team_score: number;
+  winning_team_name: string | null;
+  player_won_match: boolean;
+  match_type: string | null;
+  match_date: string;
+  player_was_participant: boolean;
+}
+
+interface Match {
+  match_details: MatchDetails;
+  player_stats: PlayerStats[];
+}
+
 const YourMatches = () => {
-  const [matches, setMatches] = useState([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,13 +38,14 @@ const YourMatches = () => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/matches', { requireAuth: true });
+        const response = await api.get<Match[]>('/matches', { requireAuth: true });
         console.log(response.data);
         setMatches(response.data);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching matches:', err);
-        setError(err.message || 'Failed to fetch matches');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch matches';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

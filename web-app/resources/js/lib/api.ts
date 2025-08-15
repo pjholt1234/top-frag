@@ -7,14 +7,14 @@ interface ApiConfig {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   params?: Record<string, string | number | boolean>;
   timeout?: number;
   requireAuth?: boolean;
   useApiKey?: boolean;
 }
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   data: T;
   status: number;
   statusText: string;
@@ -26,7 +26,7 @@ interface ApiError {
   message: string;
   status?: number;
   statusText?: string;
-  data?: any;
+  data?: unknown;
 }
 
 class ApiClient {
@@ -75,7 +75,9 @@ class ApiClient {
     const baseURL = window.location.origin + this.baseURL;
 
     // Ensure endpoint starts with / if it doesn't already
-    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    const normalizedEndpoint = endpoint.startsWith('/')
+      ? endpoint
+      : '/' + endpoint;
 
     // Construct the full URL by combining baseURL and endpoint
     const fullURL = baseURL + normalizedEndpoint;
@@ -161,7 +163,8 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = {
         message:
-          (data as any)?.message || `HTTP ${response.status}: ${response.statusText}`,
+          (data as { message?: string })?.message ||
+          `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
         statusText: response.statusText,
         data,
@@ -194,7 +197,7 @@ class ApiClient {
   }
 
   // Generic request method
-  async request<T = any>(
+  async request<T = unknown>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
@@ -216,16 +219,16 @@ class ApiClient {
   }
 
   // Convenience methods
-  async get<T = any>(
+  async get<T = unknown>(
     endpoint: string,
     options: Omit<RequestOptions, 'method'> = {}
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
-  async post<T = any>(
+  async post<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options: Omit<RequestOptions, 'method' | 'body'> = {}
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -235,17 +238,17 @@ class ApiClient {
     });
   }
 
-  async put<T = any>(
+  async put<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options: Omit<RequestOptions, 'method' | 'body'> = {}
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body: data });
   }
 
-  async patch<T = any>(
+  async patch<T = unknown>(
     endpoint: string,
-    data?: any,
+    data?: unknown,
     options: Omit<RequestOptions, 'method' | 'body'> = {}
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -255,7 +258,7 @@ class ApiClient {
     });
   }
 
-  async delete<T = any>(
+  async delete<T = unknown>(
     endpoint: string,
     options: Omit<RequestOptions, 'method'> = {}
   ): Promise<ApiResponse<T>> {

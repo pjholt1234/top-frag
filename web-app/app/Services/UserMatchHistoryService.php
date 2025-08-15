@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\GameMatch;
 use App\Models\Player;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class UserMatchHistoryService
@@ -86,7 +86,6 @@ class UserMatchHistoryService
     {
         return round($kills / $deaths, 2);
     }
-
 
     private function calculatePlayerAverageDamagePerRound(GameMatch $match, Player $player)
     {

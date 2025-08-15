@@ -172,7 +172,7 @@ class AuthControllerTest extends TestCase
 
         $request = Request::create('/api/auth/logout', 'POST');
         $request->setLaravelSession(app('session.store'));
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
 
         $response = $this->controller->logout($request);
 
@@ -196,7 +196,7 @@ class AuthControllerTest extends TestCase
 
         $request = Request::create('/api/auth/user', 'GET');
         $request->setLaravelSession(app('session.store'));
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
 
         $response = $this->controller->user($request);
 
