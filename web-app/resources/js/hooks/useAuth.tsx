@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from "react";
 import { api } from "../lib/api";
 
 interface User {
@@ -35,14 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
     const [loading, setLoading] = useState(false);
 
-    // Check if user is authenticated on mount
-    useEffect(() => {
-        if (token) {
-            fetchUser();
-        }
-    }, [token]);
-
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
         if (!token) return;
 
         try {
@@ -55,7 +48,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setToken(null);
             setUser(null);
         }
-    };
+    }, [token]);
+
+    // Check if user is authenticated on mount
+    useEffect(() => {
+        if (token) {
+            fetchUser();
+        }
+    }, [token, fetchUser]);
 
     const login = async (email: string, password: string) => {
         setLoading(true);

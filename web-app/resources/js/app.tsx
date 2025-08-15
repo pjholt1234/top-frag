@@ -12,7 +12,7 @@ import YourMatches from '@/pages/your-matches';
 import GrenadeLibrary from '@/pages/grenade-library';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
-import LandingPage from '@/pages/landing';
+
 
 const App: React.FC = () => {
     return (

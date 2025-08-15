@@ -1,6 +1,7 @@
-import { DataTable } from "@/components/data-table";
+import { DataTable, schema } from "@/components/data-table";
+import { z } from "zod";
 
-const data: any[] = [];
+const data: z.infer<typeof schema>[] = [];
 
 const YourMatches = () => {
   return (
