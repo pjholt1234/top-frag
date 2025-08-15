@@ -12,13 +12,7 @@ class AuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
 
-        // Ensure we're using the test database
-        $this->artisan('migrate:fresh');
-    }
 
     public function test_user_can_register_with_valid_data()
     {
@@ -213,13 +207,12 @@ class AuthControllerTest extends TestCase
     public function test_authenticated_user_can_logout()
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
 
         // Create a token for the user
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token');
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
+            'Authorization' => 'Bearer ' . $token->plainTextToken,
         ])->postJson('/api/auth/logout');
 
         $response->assertStatus(200)
@@ -227,10 +220,9 @@ class AuthControllerTest extends TestCase
                 'message' => 'Successfully logged out',
             ]);
 
-        // Verify the token was deleted
+        // Verify the specific token was deleted
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id,
-            'name' => 'auth_token',
+            'id' => $token->accessToken->id,
         ]);
     }
 
@@ -258,7 +250,7 @@ class AuthControllerTest extends TestCase
 
         // Use token to access protected endpoint
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
+            'Authorization' => 'Bearer ' . $token,
         ])->getJson('/api/auth/user');
 
         $response->assertStatus(200)
@@ -304,7 +296,7 @@ class AuthControllerTest extends TestCase
 
         // Use the token immediately
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
+            'Authorization' => 'Bearer ' . $token,
         ])->getJson('/api/auth/user');
 
         $response->assertStatus(200)
@@ -362,11 +354,11 @@ class AuthControllerTest extends TestCase
 
         // Both tokens should work
         $this->withHeaders([
-            'Authorization' => 'Bearer '.$response1->json('token'),
+            'Authorization' => 'Bearer ' . $response1->json('token'),
         ])->getJson('/api/auth/user')->assertStatus(200);
 
         $this->withHeaders([
-            'Authorization' => 'Bearer '.$response2->json('token'),
+            'Authorization' => 'Bearer ' . $response2->json('token'),
         ])->getJson('/api/auth/user')->assertStatus(200);
     }
 }

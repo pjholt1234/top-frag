@@ -172,6 +172,14 @@ class SanctumAuthTest extends TestCase
             }))
             ->once();
 
+        Log::shouldReceive('warning')
+            ->with('Unauthenticated Sanctum request', \Mockery::on(function ($data) {
+                return isset($data['method']) &&
+                    isset($data['url']) &&
+                    isset($data['ip']);
+            }))
+            ->once();
+
         $request = Request::create('/api/protected-route', 'POST');
         $request->headers->set('User-Agent', 'Test Browser');
 
