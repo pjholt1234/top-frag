@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\UploadController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,8 +19,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'check']);
 
-Route::middleware('sanctum.auth')->get('/user', function (Request $request) {
-    return $request->user();
+// Authentication routes
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
 
 Route::middleware('api.key')->group(function () {

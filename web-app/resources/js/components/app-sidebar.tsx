@@ -7,6 +7,7 @@ import {
   IconListDetails,
   IconSettings,
 } from "@tabler/icons-react"
+import { useAuth } from "../hooks/useAuth"
 
 
 import { NavMain } from "@/components/nav-main"
@@ -23,11 +24,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Your Matches",
@@ -56,6 +52,14 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
+  const { user } = useAuth()
+
+  // Create user data for NavUser component
+  const userData = {
+    name: user?.name || "User",
+    email: user?.email || "user@example.com",
+    avatar: "/avatars/default.jpg",
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -79,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   )

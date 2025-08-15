@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.key' => \App\Http\Middleware\ApiKeyAuth::class,
             'sanctum.auth' => \App\Http\Middleware\SanctumAuth::class,
         ]);
+
+        // Configure CORS for API routes
+        $middleware->group('api', [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
