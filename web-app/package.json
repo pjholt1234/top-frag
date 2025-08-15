@@ -11,12 +11,6 @@
     "format:check": "prettier --check \"resources/js/**/*.{ts,tsx}\"",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "resources/js/**/*.{ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ]
-  },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",
     "@tailwindcss/vite": "^4.0.0",

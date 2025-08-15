@@ -1,0 +1,17 @@
+{
+  "name": "top-frag",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "web-app/resources/js/**/*.{ts,tsx}": [
+      "cd web-app && prettier --write",
+      "cd web-app && eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2"
+  }
+}

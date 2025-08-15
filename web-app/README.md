@@ -80,6 +80,16 @@ This project uses ESLint and Prettier for code quality and formatting:
 - `.eslintignore` - Files and directories to exclude from linting
 - `.prettierignore` - Files and directories to exclude from formatting
 
+### Pre-commit Hooks
+
+This project uses pre-commit hooks to automatically format and lint TypeScript files before each commit:
+
+- **Automatic Formatting**: Prettier automatically formats staged TypeScript/React files
+- **Automatic Linting**: ESLint automatically fixes linting issues where possible
+- **No Manual Steps**: Simply commit your changes and the hooks will handle formatting
+
+The pre-commit hooks are configured in the root `package.json` and run via Husky.
+
 ### CI Integration
 
 The GitHub Actions workflow (`.github/workflows/format.yml`) automatically runs:

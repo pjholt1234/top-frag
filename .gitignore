@@ -8,3 +8,4 @@ demo.dem
 /.idea
 /backend/.phpbench
 /parser-service/coverage.html
+/node_modules
