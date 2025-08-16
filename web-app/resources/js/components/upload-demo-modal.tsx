@@ -117,7 +117,10 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          size="sm"
+          className="border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground border-custom-orange text-white"
+        >
           <Upload className="h-4 w-4 mr-2" />
           Upload Demo
         </Button>
@@ -131,7 +134,7 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-6">
+        <div className="space-y-6 py-6 px-4">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -176,7 +179,7 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
           <Button
             onClick={handleUpload}
             disabled={!file || isUploading}
-            className="w-full"
+            className="w-full bg-custom-orange"
           >
             {isUploading ? (
               <>
