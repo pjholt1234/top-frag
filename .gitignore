@@ -9,3 +9,4 @@ demo.dem
 /backend/.phpbench
 /parser-service/coverage.html
 /node_modules
+/web-app/.phpbench
