@@ -127,7 +127,7 @@ class UserMatchHistoryService
         $query = $this->player->matches()->select('matches.id');
 
         if (! empty($filters['map'])) {
-            $query->where('map', 'like', '%' . $filters['map'] . '%');
+            $query->where('map', 'like', '%'.$filters['map'].'%');
         }
 
         if (! empty($filters['match_type'])) {
@@ -166,7 +166,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
         return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
@@ -245,7 +245,7 @@ class UserMatchHistoryService
         // Apply filters that work for in-progress jobs
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
-                $q->where('map', 'like', '%' . $filters['map'] . '%');
+                $q->where('map', 'like', '%'.$filters['map'].'%');
             });
         }
 
@@ -260,7 +260,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
         $jobs = $query->orderBy('created_at', 'desc')->get();

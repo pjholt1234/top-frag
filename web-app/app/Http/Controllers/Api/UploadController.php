@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\ProcessingStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UploadDemoRequest;
 use App\Http\Resources\InProgressJobsResource;
 use App\Jobs\ParseDemo;
 use App\Services\ParserServiceConnector;
@@ -17,12 +18,8 @@ class UploadController extends Controller
 {
     public function __construct(private readonly ParserServiceConnector $parserServiceConnector) {}
 
-    public function userDemo(Request $request): JsonResponse
+    public function userDemo(UploadDemoRequest $request): JsonResponse
     {
-        $request->validate([
-            'demo' => 'required|file|max:1073741824|extensions:dem', // 1GB max
-        ]);
-
         try {
             $file = $request->file('demo');
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CompletionCallbackRequest;
+use App\Http\Requests\ProgressCallbackRequest;
 use App\Services\DemoParserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,17 +31,9 @@ class DemoParserController extends Controller
         ]);
     }
 
-    public function progressCallback(Request $request): JsonResponse
+    public function progressCallback(ProgressCallbackRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'job_id' => 'required|string',
-            'status' => 'required|string',
-            'progress' => 'required|integer|min:0|max:100',
-            'current_step' => 'required|string',
-            'error_message' => 'nullable|string',
-            'match' => 'nullable|array',
-            'players' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
 
         $this->demoParserService->updateProcessingJob($validated['job_id'], $validated);
 
@@ -55,15 +49,9 @@ class DemoParserController extends Controller
         ], 200);
     }
 
-    public function completionCallback(Request $request): JsonResponse
+    public function completionCallback(CompletionCallbackRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'job_id' => 'required|string',
-            'status' => 'required|string',
-            'progress' => 'nullable|integer|min:0|max:100',
-            'current_step' => 'nullable|string',
-            'error' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $this->demoParserService->updateProcessingJob($validated['job_id'], $validated, true);
 
