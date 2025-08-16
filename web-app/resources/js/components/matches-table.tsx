@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Pagination } from '@/components/ui/pagination';
 
 interface PlayerStats {
   player_name: string;
@@ -38,11 +39,26 @@ interface Match {
   player_stats: PlayerStats[];
 }
 
-interface MatchesTableProps {
-  matches: Match[];
+interface PaginationData {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number;
+  to: number;
 }
 
-export function MatchesTable({ matches }: MatchesTableProps) {
+interface MatchesTableProps {
+  matches: Match[];
+  pagination?: PaginationData;
+  onPageChange?: (page: number) => void;
+}
+
+export function MatchesTable({
+  matches,
+  pagination,
+  onPageChange,
+}: MatchesTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const toggleRow = (matchId: number) => {
@@ -334,6 +350,18 @@ export function MatchesTable({ matches }: MatchesTableProps) {
           })}
         </TableBody>
       </Table>
+
+      {pagination && onPageChange && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={pagination.current_page}
+            lastPage={pagination.last_page}
+            total={pagination.total}
+            perPage={pagination.per_page}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

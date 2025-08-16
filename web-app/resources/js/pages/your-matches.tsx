@@ -29,20 +29,42 @@ interface Match {
   player_stats: PlayerStats[];
 }
 
+interface PaginationData {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from: number;
+  to: number;
+}
+
+interface MatchesResponse {
+  data: Match[];
+  pagination: PaginationData;
+}
+
 const YourMatches = () => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [pagination, setPagination] = useState<PaginationData | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const response = await api.get<Match[]>('/matches', {
+        const response = await api.get<MatchesResponse>('/matches', {
           requireAuth: true,
+          params: {
+            page: currentPage,
+          },
         });
         console.log(response.data);
-        setMatches(response.data);
+        setMatches(response.data.data);
+        setPagination(response.data.pagination);
         setError(null);
       } catch (err: unknown) {
         console.error('Error fetching matches:', err);
@@ -55,7 +77,11 @@ const YourMatches = () => {
     };
 
     fetchMatches();
-  }, []);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   if (loading) {
     return (
@@ -98,7 +124,11 @@ const YourMatches = () => {
           </div>
         </div>
       ) : (
-        <MatchesTable matches={matches} />
+        <MatchesTable
+          matches={matches}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );

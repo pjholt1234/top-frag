@@ -38,15 +38,15 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
 
     private User $userWithoutPlayer;
 
-    private const MAX_MATCHES = 10;
+    private const int MAX_MATCHES = 10;
 
-    private const MAX_PLAYERS_PER_MATCH = 50;
+    private const int MAX_PLAYERS_PER_MATCH = 50;
 
-    private const MAX_DAMAGE_EVENTS_PER_MATCH = 600;
+    private const int MAX_DAMAGE_EVENTS_PER_MATCH = 600;
 
-    private const MAX_GUNFIGHT_EVENTS_PER_MATCH = 100;
+    private const int MAX_GUNFIGHT_EVENTS_PER_MATCH = 100;
 
-    private const MAX_GRENADE_EVENTS_PER_MATCH = 400;
+    private const int MAX_GRENADE_EVENTS_PER_MATCH = 400;
 
     use RefreshDatabase;
 

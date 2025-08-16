@@ -417,4 +417,82 @@ class UserMatchHistoryServiceTest extends TestCase
         $this->assertEquals('de_mirage', $result[1]['match_details']['map']);
         $this->assertFalse($result[1]['match_details']['player_won_match']);
     }
+
+    public function test_get_paginated_match_history_returns_correct_structure()
+    {
+        $user = User::factory()->create(['steam_id' => 'STEAM_0:1:123456789']);
+        $player = Player::factory()->create(['steam_id' => $user->steam_id]);
+        $match = GameMatch::factory()->create();
+
+        $match->players()->attach($player->id, ['team' => 'A']);
+
+        $result = $this->service->getPaginatedMatchHistory($user, 10, 1);
+
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('pagination', $result);
+        $this->assertArrayHasKey('current_page', $result['pagination']);
+        $this->assertArrayHasKey('per_page', $result['pagination']);
+        $this->assertArrayHasKey('total', $result['pagination']);
+        $this->assertArrayHasKey('last_page', $result['pagination']);
+    }
+
+    public function test_get_recent_match_history_returns_correct_number_of_matches()
+    {
+        $user = User::factory()->create(['steam_id' => 'STEAM_0:1:123456789']);
+        $player = Player::factory()->create(['steam_id' => $user->steam_id]);
+
+        // Create 10 matches
+        for ($i = 0; $i < 10; $i++) {
+            $match = GameMatch::factory()->create();
+            $match->players()->attach($player->id, ['team' => 'A']);
+        }
+
+        $result = $this->service->getRecentMatchHistory($user, 5);
+
+        $this->assertCount(5, $result);
+    }
+
+    public function test_optimized_methods_produce_same_results_as_original()
+    {
+        $user = User::factory()->create(['steam_id' => 'STEAM_0:1:123456789']);
+        $player = Player::factory()->create(['steam_id' => $user->steam_id]);
+        $match = GameMatch::factory()->create(['total_rounds' => 30]);
+
+        $match->players()->attach($player->id, ['team' => 'A']);
+
+        // Create some gunfight events
+        GunfightEvent::factory()->count(5)->create([
+            'match_id' => $match->id,
+            'victor_steam_id' => $player->steam_id,
+            'is_first_kill' => true,
+        ]);
+
+        GunfightEvent::factory()->count(3)->create([
+            'match_id' => $match->id,
+            'player_1_steam_id' => $player->steam_id,
+            'victor_steam_id' => 'STEAM_0:1:999999999', // Different player wins
+        ]);
+
+        // Create some damage events
+        DamageEvent::factory()->count(10)->create([
+            'match_id' => $match->id,
+            'attacker_steam_id' => $player->steam_id,
+            'health_damage' => 50,
+        ]);
+
+        $originalResult = $this->service->aggregateMatchData($user);
+        $optimizedResult = $this->service->getPaginatedMatchHistory($user, 10, 1);
+
+        // Compare the first match data
+        $this->assertEquals(
+            $originalResult[0]['match_details'],
+            $optimizedResult['data'][0]['match_details']
+        );
+
+        // Compare player stats (should be identical)
+        $this->assertEquals(
+            $originalResult[0]['player_stats'][0]['player_kills'],
+            $optimizedResult['data'][0]['player_stats'][0]['player_kills']
+        );
+    }
 }

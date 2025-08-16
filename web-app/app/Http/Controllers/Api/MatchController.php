@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class MatchController extends Controller
 {
+    public function __construct(private readonly UserMatchHistoryService $userMatchHistoryService) {}
+
     public function index(Request $request)
     {
         // todo auth policies
@@ -20,8 +22,13 @@ class MatchController extends Controller
             return response()->json(['message' => 'Player not found'], 404);
         }
 
-        $userMatchHistoryService = new UserMatchHistoryService;
-        $matchHistory = $userMatchHistoryService->aggregateMatchData($user);
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+
+        $perPage = max(1, min(50, (int) $perPage));
+        $page = max(1, (int) $page);
+
+        $matchHistory = $this->userMatchHistoryService->getPaginatedMatchHistory($user, $perPage, $page);
 
         return response()->json($matchHistory);
     }

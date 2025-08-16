@@ -6,6 +6,7 @@ use App\Models\DemoProcessingJob;
 use App\Observers\DemoProcessingJobObserver;
 use App\Services\DemoParserService;
 use App\Services\ParserServiceConnector;
+use App\Services\UserMatchHistoryService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(DemoParserService::class, function ($app) {
             return new DemoParserService;
+        });
+
+        $this->app->singleton(UserMatchHistoryService::class, function ($app) {
+            return new UserMatchHistoryService;
         });
 
         $this->app->alias(ParserServiceConnector::class, 'parser.connector');
