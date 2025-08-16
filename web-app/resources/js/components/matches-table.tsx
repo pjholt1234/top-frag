@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconChevronRight,
+  IconChevronUp,
+} from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { getAdrColor } from '@/lib/utils';
 import {
@@ -60,12 +64,24 @@ interface MatchesTableProps {
   onPageChange?: (page: number) => void;
 }
 
+type SortColumn =
+  | 'player_name'
+  | 'player_kill_death_ratio'
+  | 'player_kills'
+  | 'player_deaths'
+  | 'player_first_kill_differential'
+  | 'player_adr';
+type SortDirection = 'asc' | 'desc';
+
 export function MatchesTable({
   matches,
   pagination,
   onPageChange,
 }: MatchesTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [matchSortStates, setMatchSortStates] = useState<
+    Record<number, { column: SortColumn; direction: SortDirection }>
+  >({});
 
   console.log('MatchesTable received matches:', matches);
 
@@ -77,6 +93,107 @@ export function MatchesTable({
       newExpanded.add(matchId);
     }
     setExpandedRows(newExpanded);
+  };
+
+  const handleSort = (matchId: number, column: SortColumn) => {
+    const currentSort = matchSortStates[matchId];
+
+    if (currentSort && currentSort.column === column) {
+      // Toggle direction for same column
+      setMatchSortStates(prev => ({
+        ...prev,
+        [matchId]: {
+          column,
+          direction: currentSort.direction === 'asc' ? 'desc' : 'asc',
+        },
+      }));
+    } else {
+      // Set new column with default direction
+      setMatchSortStates(prev => ({
+        ...prev,
+        [matchId]: {
+          column,
+          direction: 'desc',
+        },
+      }));
+    }
+  };
+
+  const sortPlayers = (
+    players: PlayerStats[],
+    matchId: number
+  ): PlayerStats[] => {
+    const sortState = matchSortStates[matchId];
+    if (!sortState) {
+      // Default sort by ADR descending if no sort state exists
+      return [...players].sort((a, b) => b.player_adr - a.player_adr);
+    }
+
+    const { column, direction } = sortState;
+
+    return [...players].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      switch (column) {
+        case 'player_name':
+          aValue = a.player_name.toLowerCase();
+          bValue = b.player_name.toLowerCase();
+          break;
+        case 'player_kill_death_ratio':
+          aValue = a.player_kill_death_ratio;
+          bValue = b.player_kill_death_ratio;
+          break;
+        case 'player_kills':
+          aValue = a.player_kills;
+          bValue = b.player_kills;
+          break;
+        case 'player_deaths':
+          aValue = a.player_deaths;
+          bValue = b.player_deaths;
+          break;
+        case 'player_first_kill_differential':
+          aValue = a.player_first_kill_differential;
+          bValue = b.player_first_kill_differential;
+          break;
+        case 'player_adr':
+          aValue = a.player_adr;
+          bValue = b.player_adr;
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        if (direction === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      } else {
+        if (direction === 'asc') {
+          return (aValue as number) - (bValue as number);
+        } else {
+          return (bValue as number) - (aValue as number);
+        }
+      }
+    });
+  };
+
+  const getSortIcon = (matchId: number, column: SortColumn) => {
+    const sortState = matchSortStates[matchId];
+    if (!sortState || sortState.column !== column) {
+      return null;
+    }
+    return sortState.direction === 'asc' ? (
+      <IconChevronUp className="h-4 w-4 ml-1" />
+    ) : (
+      <IconChevronDown className="h-4 w-4 ml-1" />
+    );
+  };
+
+  const createSortHandler = (matchId: number, column: SortColumn) => {
+    return () => handleSort(matchId, column);
   };
 
   const formatDate = (dateString: string) => {
@@ -97,14 +214,6 @@ export function MatchesTable({
     }
   };
 
-  const getTeamPlayers = (playerStats: PlayerStats[], team: string) => {
-    if (!Array.isArray(playerStats)) {
-      console.warn('playerStats is not an array:', playerStats);
-      return [];
-    }
-    return playerStats.filter(player => player && player.team === team);
-  };
-
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'processing':
@@ -116,6 +225,11 @@ export function MatchesTable({
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
+  };
+
+  const capitalizeFirst = (str: string) => {
+    const [first, ...rest] = str;
+    return first.toUpperCase() + rest.join('');
   };
 
   return (
@@ -195,8 +309,14 @@ export function MatchesTable({
 
             const matchId = match.match_details.id || match.id;
             const isExpanded = expandedRows.has(matchId);
-            const teamAPlayers = getTeamPlayers(match.player_stats || [], 'A');
-            const teamBPlayers = getTeamPlayers(match.player_stats || [], 'B');
+            const allPlayers = match.player_stats || [];
+            const sortedPlayers = sortPlayers(allPlayers, matchId);
+            const teamAPlayers = sortedPlayers.filter(
+              player => player.team === 'A'
+            );
+            const teamBPlayers = sortedPlayers.filter(
+              player => player.team === 'B'
+            );
 
             return (
               <React.Fragment key={matchId}>
@@ -230,7 +350,8 @@ export function MatchesTable({
                     </span>
                   </TableCell>
                   <TableCell>
-                    {match.match_details.match_type || 'Unknown'}
+                    {capitalizeFirst(match.match_details.match_type) ||
+                      'Unknown'}
                   </TableCell>
                   <TableCell>
                     {formatDate(match.match_details.created_at)}
@@ -246,23 +367,83 @@ export function MatchesTable({
                             <Table className="border-0 w-full table-fixed">
                               <TableHeader>
                                 <TableRow className="border-b border-border">
-                                  <TableHead className="text-sm py-2 pl-6 pr-3 border-0 w-1/3">
-                                    Player
+                                  <TableHead
+                                    className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_name'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Player
+                                      {getSortIcon(matchId, 'player_name')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    K/D
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_kill_death_ratio'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      K/D
+                                      {getSortIcon(
+                                        matchId,
+                                        'player_kill_death_ratio'
+                                      )}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    Kills
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_kills'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Kills
+                                      {getSortIcon(matchId, 'player_kills')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    Deaths
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_deaths'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Deaths
+                                      {getSortIcon(matchId, 'player_deaths')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    FK +/-
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_first_kill_differential'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      FK +/-
+                                      {getSortIcon(
+                                        matchId,
+                                        'player_first_kill_differential'
+                                      )}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    ADR
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_adr'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      ADR
+                                      {getSortIcon(matchId, 'player_adr')}
+                                    </div>
                                   </TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -301,16 +482,16 @@ export function MatchesTable({
                                       <span
                                         className={
                                           player.player_first_kill_differential >
-                                            0
+                                          0
                                             ? 'text-green-600 dark:text-green-400'
                                             : player.player_first_kill_differential <
-                                              0
+                                                0
                                               ? 'text-red-600 dark:text-red-400'
                                               : ''
                                         }
                                       >
                                         {player.player_first_kill_differential >
-                                          0
+                                        0
                                           ? '+'
                                           : ''}
                                         {player.player_first_kill_differential}
@@ -336,23 +517,83 @@ export function MatchesTable({
                             <Table className="border-0 w-full table-fixed">
                               <TableHeader>
                                 <TableRow className="border-b border-border">
-                                  <TableHead className="text-sm py-2 pl-6 pr-3 border-0 w-1/3">
-                                    Player
+                                  <TableHead
+                                    className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_name'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Player
+                                      {getSortIcon(matchId, 'player_name')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    K/D
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_kill_death_ratio'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      K/D
+                                      {getSortIcon(
+                                        matchId,
+                                        'player_kill_death_ratio'
+                                      )}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    Kills
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_kills'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Kills
+                                      {getSortIcon(matchId, 'player_kills')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    Deaths
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_deaths'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      Deaths
+                                      {getSortIcon(matchId, 'player_deaths')}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    FK +/-
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_first_kill_differential'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      FK +/-
+                                      {getSortIcon(
+                                        matchId,
+                                        'player_first_kill_differential'
+                                      )}
+                                    </div>
                                   </TableHead>
-                                  <TableHead className="text-sm py-2 px-3 border-0 w-1/6">
-                                    ADR
+                                  <TableHead
+                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={createSortHandler(
+                                      matchId,
+                                      'player_adr'
+                                    )}
+                                  >
+                                    <div className="flex items-center">
+                                      ADR
+                                      {getSortIcon(matchId, 'player_adr')}
+                                    </div>
                                   </TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -391,16 +632,16 @@ export function MatchesTable({
                                       <span
                                         className={
                                           player.player_first_kill_differential >
-                                            0
+                                          0
                                             ? 'text-green-600 dark:text-green-400'
                                             : player.player_first_kill_differential <
-                                              0
+                                                0
                                               ? 'text-red-600 dark:text-red-400'
                                               : ''
                                         }
                                       >
                                         {player.player_first_kill_differential >
-                                          0
+                                        0
                                           ? '+'
                                           : ''}
                                         {player.player_first_kill_differential}

@@ -69,7 +69,12 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
         },
       });
 
-      if (response.data && typeof response.data === 'object' && 'success' in response.data && response.data.success) {
+      if (
+        response.data &&
+        typeof response.data === 'object' &&
+        'success' in response.data &&
+        response.data.success
+      ) {
         setSuccess(true);
         setFile(null);
         // Reset file input
@@ -91,7 +96,8 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
       }
     } catch (err: unknown) {
       console.error('Upload error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload demo file';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to upload demo file';
       setError(errorMessage);
     } finally {
       setIsUploading(false);
