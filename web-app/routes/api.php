@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/matches', [MatchController::class, 'index']);
+    Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
 });
 
 Route::middleware('api.key')->group(function () {

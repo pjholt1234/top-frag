@@ -71,8 +71,18 @@ class ApiClient {
     endpoint: string,
     params?: Record<string, string | number | boolean>
   ): string {
-    // Use window.location.origin as the base URL to ensure we have a valid base
-    const baseURL = window.location.origin + this.baseURL;
+    // Check if baseURL is already absolute
+    const isAbsoluteURL =
+      this.baseURL.startsWith('http://') || this.baseURL.startsWith('https://');
+
+    let fullURL: string;
+    if (isAbsoluteURL) {
+      // If baseURL is absolute, use it directly
+      fullURL = this.baseURL;
+    } else {
+      // Otherwise, use window.location.origin as the base
+      fullURL = window.location.origin + this.baseURL;
+    }
 
     // Ensure endpoint starts with / if it doesn't already
     const normalizedEndpoint = endpoint.startsWith('/')
@@ -80,8 +90,7 @@ class ApiClient {
       : '/' + endpoint;
 
     // Construct the full URL by combining baseURL and endpoint
-    const fullURL = baseURL + normalizedEndpoint;
-    const url = new URL(fullURL);
+    const url = new URL(fullURL + normalizedEndpoint);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -97,6 +106,11 @@ class ApiClient {
   // Create headers for the request
   private createHeaders(options: RequestOptions): Record<string, string> {
     const headers = { ...this.defaultHeaders, ...options.headers };
+
+    // Remove Content-Type header if it's explicitly set to undefined (for FormData)
+    if (options.headers && options.headers['Content-Type'] === undefined) {
+      delete headers['Content-Type'];
+    }
 
     if (options.requireAuth && !options.useApiKey) {
       const token = this.getAuthToken();
@@ -127,10 +141,21 @@ class ApiClient {
     );
 
     try {
+      let body: string | FormData | undefined;
+
+      // Handle FormData vs JSON body
+      if (options.body) {
+        if (options.body instanceof FormData) {
+          body = options.body;
+        } else {
+          body = JSON.stringify(options.body);
+        }
+      }
+
       const response = await fetch(url, {
         method: options.method || 'GET',
         headers: this.createHeaders(options),
-        body: options.body ? JSON.stringify(options.body) : undefined,
+        body,
         signal: controller.signal,
       });
 

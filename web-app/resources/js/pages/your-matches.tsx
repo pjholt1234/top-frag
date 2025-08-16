@@ -1,6 +1,7 @@
 import { MatchesTable } from '@/components/matches-table';
 import { MatchesFilters } from '@/components/matches-filters';
 import { MatchesTableSkeleton } from '@/components/matches-table-skeleton';
+import { UploadDemoModal } from '@/components/upload-demo-modal';
 import { api } from '../lib/api';
 import { useState, useEffect } from 'react';
 
@@ -132,11 +133,19 @@ const YourMatches = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Your Matches</h1>
-        <p className="text-muted-foreground">
-          View your match history and detailed player statistics
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Your Matches</h1>
+          <p className="text-muted-foreground">
+            View your match history and detailed player statistics
+          </p>
+        </div>
+        <UploadDemoModal
+          onUploadSuccess={() => {
+            // Refresh matches after successful upload
+            setCurrentPage(1);
+          }}
+        />
       </div>
 
       <MatchesFilters
