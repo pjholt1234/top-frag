@@ -8,6 +8,6 @@ class GrenadeEventObserver
 {
     public function created(GrenadeEvent $grenadeEvent): void
     {
-        $grenadeEvent->match->invalidateMatchCache();
+        $grenadeEvent->match?->invalidateMatchCache();
     }
 }

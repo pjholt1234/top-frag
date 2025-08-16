@@ -20,14 +20,13 @@ class UploadController extends Controller
     public function userDemo(Request $request): JsonResponse
     {
         $request->validate([
-            'demo' => 'required|file|max:1073741824', // 1GB max
+            'demo' => 'required|file|max:1073741824|extensions:dem', // 1GB max
         ]);
 
         try {
-
             $file = $request->file('demo');
 
-            $fileName = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
             $publicPath = $file->storeAs('demos', $fileName, 'public');
             $fullPath = storage_path("app/public/{$publicPath}");
 

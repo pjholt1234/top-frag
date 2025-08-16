@@ -8,6 +8,6 @@ class GunfightEventObserver
 {
     public function created(GunfightEvent $gunfightEvent): void
     {
-        $gunfightEvent->match->invalidateMatchCache();
+        $gunfightEvent->match?->invalidateMatchCache();
     }
 }

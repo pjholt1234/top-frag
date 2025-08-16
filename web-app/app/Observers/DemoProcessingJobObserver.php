@@ -19,12 +19,12 @@ class DemoProcessingJobObserver
     {
         // If job status or progress changed, invalidate match cache
         if ($job->wasChanged('processing_status') || $job->wasChanged('progress_percentage')) {
-            $job->match->invalidateMatchCache();
+            $job->match?->invalidateMatchCache();
         }
     }
 
     public function completed(DemoProcessingJob $job): void
     {
-        $job->match->invalidateMatchCache();
+        $job->match?->invalidateMatchCache();
     }
 }

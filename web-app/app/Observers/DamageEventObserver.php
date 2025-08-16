@@ -8,6 +8,6 @@ class DamageEventObserver
 {
     public function created(DamageEvent $damageEvent): void
     {
-        $damageEvent->match->invalidateMatchCache();
+        $damageEvent->match?->invalidateMatchCache();
     }
 }

@@ -31,19 +31,19 @@ class UploadControllerTest extends TestCase
         $response->assertStatus(200); // Expect validation error due to file type
     }
 
-    //    public function test_user_cannot_upload_invalid_file_type()
-    //    {
-    //        $user = User::factory()->create();
-    //        $this->actingAs($user);
-    //
-    //        $file = UploadedFile::fake()->createWithContent('test.txt', 'fake text file content');
-    //
-    //        $response = $this->postJson('/api/user/upload/demo', [
-    //            'demo' => $file,
-    //        ]);
-    //
-    //        $response->assertStatus(422);
-    //    }
+    public function test_user_cannot_upload_invalid_file_type()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $file = UploadedFile::fake()->createWithContent('test.txt', 'fake text file content');
+
+        $response = $this->postJson('/api/user/upload/demo', [
+            'demo' => $file,
+        ]);
+
+        $response->assertStatus(422);
+    }
 
     public function test_user_cannot_upload_file_larger_than_1_gb()
     {
