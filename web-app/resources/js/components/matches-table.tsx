@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
 
 interface PlayerStats {
   player_name: string;
@@ -23,20 +24,25 @@ interface PlayerStats {
 }
 
 interface MatchDetails {
-  match_id: number;
+  id: number | null;
   map: string;
   winning_team_score: number;
   losing_team_score: number;
-  winning_team_name: string | null;
-  player_won_match: boolean;
-  match_type: string | null;
-  match_date: string;
-  player_was_participant: boolean;
+  winning_team: string;
+  match_type: string;
+  created_at: string;
 }
 
-interface Match {
-  match_details: MatchDetails;
-  player_stats: PlayerStats[];
+interface UnifiedMatch {
+  id: number;
+  created_at: string;
+  is_completed: boolean;
+  match_details: MatchDetails | null;
+  player_stats: PlayerStats[] | null;
+  processing_status: string | null;
+  progress_percentage: number | null;
+  current_step: string | null;
+  error_message: string | null;
 }
 
 interface PaginationData {
@@ -49,7 +55,7 @@ interface PaginationData {
 }
 
 interface MatchesTableProps {
-  matches: Match[];
+  matches: UnifiedMatch[];
   pagination?: PaginationData;
   onPageChange?: (page: number) => void;
 }
@@ -60,6 +66,8 @@ export function MatchesTable({
   onPageChange,
 }: MatchesTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  console.log('MatchesTable received matches:', matches);
 
   const toggleRow = (matchId: number) => {
     const newExpanded = new Set(expandedRows);
@@ -72,17 +80,42 @@ export function MatchesTable({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!dateString) {
+      return 'Unknown';
+    }
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      console.warn('Error formatting date:', dateString, error);
+      return 'Invalid Date';
+    }
   };
 
   const getTeamPlayers = (playerStats: PlayerStats[], team: string) => {
-    return playerStats.filter(player => player.team === team);
+    if (!Array.isArray(playerStats)) {
+      console.warn('playerStats is not an array:', playerStats);
+      return [];
+    }
+    return playerStats.filter(player => player && player.team === team);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'queued':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'error':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    }
   };
 
   return (
@@ -100,18 +133,79 @@ export function MatchesTable({
         </TableHeader>
         <TableBody>
           {matches.map(match => {
-            const isExpanded = expandedRows.has(match.match_details.match_id);
-            const teamAPlayers = getTeamPlayers(match.player_stats, 'A');
-            const teamBPlayers = getTeamPlayers(match.player_stats, 'B');
+            // Handle in-progress jobs
+            if (!match.is_completed) {
+              return (
+                <TableRow
+                  key={`in-progress-${match.id}`}
+                  className="bg-muted/30"
+                >
+                  <TableCell>
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center space-x-2">
+                      <span>{match.match_details?.map || 'Processing...'}</span>
+                      {match.processing_status &&
+                        match.progress_percentage !== null && (
+                          <Badge
+                            className={getStatusColor(match.processing_status)}
+                          >
+                            {match.progress_percentage}%
+                          </Badge>
+                        )}
+                      {match.error_message && (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                          Error
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">
+                      {match.error_message ? 'Error' : 'Processing...'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">
+                      {match.error_message ? 'Error' : 'Processing...'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">
+                      {match.error_message ? 'Error' : 'Processing...'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">
+                      {match.error_message ? 'Error' : 'Processing...'}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            }
+
+            // Handle completed matches
+            if (!match.match_details || !match.player_stats) {
+              console.warn('Match missing required data:', match);
+              return null;
+            }
+
+            const matchId = match.match_details.id || match.id;
+            const isExpanded = expandedRows.has(matchId);
+            const teamAPlayers = getTeamPlayers(match.player_stats || [], 'A');
+            const teamBPlayers = getTeamPlayers(match.player_stats || [], 'B');
 
             return (
-              <React.Fragment key={match.match_details.match_id}>
+              <React.Fragment key={matchId}>
                 <TableRow>
                   <TableCell>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleRow(match.match_details.match_id)}
+                      onClick={() => toggleRow(matchId)}
                       className="h-6 w-6 p-0"
                     >
                       {isExpanded ? (
@@ -125,35 +219,21 @@ export function MatchesTable({
                     {match.match_details.map}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`font-mono ${
-                        !match.match_details.player_was_participant
-                          ? '' // White/default for non-participation
-                          : match.match_details.player_won_match
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-red-600 dark:text-red-400'
-                      }`}
-                    >
+                    <span className="font-mono">
                       {match.match_details.winning_team_score} -{' '}
                       {match.match_details.losing_team_score}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={
-                        match.match_details.player_won_match
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-600 dark:text-red-400'
-                      }
-                    >
-                      {match.match_details.player_won_match ? 'Win' : 'Loss'}
+                    <span className="text-green-600 dark:text-green-400">
+                      Win
                     </span>
                   </TableCell>
                   <TableCell>
                     {match.match_details.match_type || 'Unknown'}
                   </TableCell>
                   <TableCell>
-                    {formatDate(match.match_details.match_date)}
+                    {formatDate(match.match_details.created_at)}
                   </TableCell>
                 </TableRow>
                 {isExpanded && (
@@ -221,16 +301,16 @@ export function MatchesTable({
                                       <span
                                         className={
                                           player.player_first_kill_differential >
-                                          0
+                                            0
                                             ? 'text-green-600 dark:text-green-400'
                                             : player.player_first_kill_differential <
-                                                0
+                                              0
                                               ? 'text-red-600 dark:text-red-400'
                                               : ''
                                         }
                                       >
                                         {player.player_first_kill_differential >
-                                        0
+                                          0
                                           ? '+'
                                           : ''}
                                         {player.player_first_kill_differential}
@@ -311,16 +391,16 @@ export function MatchesTable({
                                       <span
                                         className={
                                           player.player_first_kill_differential >
-                                          0
+                                            0
                                             ? 'text-green-600 dark:text-green-400'
                                             : player.player_first_kill_differential <
-                                                0
+                                              0
                                               ? 'text-red-600 dark:text-red-400'
                                               : ''
                                         }
                                       >
                                         {player.player_first_kill_differential >
-                                        0
+                                          0
                                           ? '+'
                                           : ''}
                                         {player.player_first_kill_differential}

@@ -31,7 +31,7 @@ class DemoParserService
 
         $job->update([
             'processing_status' => $data['status'],
-            'progress_percentage' => $data['progress'] ?? 0,
+            'progress_percentage' => $isCompleted ? 100 : $data['progress'],
             'completed_at' => $isCompleted ? now() : null,
             'current_step' => $data['current_step'] ?? ($isCompleted ? 'Completed' : null),
         ]);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -57,5 +58,10 @@ class User extends Authenticatable
     public function matches(): Collection
     {
         return $this->player?->matches ?? collect();
+    }
+
+    public function demoProcessingJobs(): HasMany
+    {
+        return $this->hasMany(DemoProcessingJob::class, 'user_id');
     }
 }

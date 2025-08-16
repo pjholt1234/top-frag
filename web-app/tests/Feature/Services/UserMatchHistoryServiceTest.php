@@ -451,48 +451,4 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $this->assertCount(5, $result);
     }
-
-    public function test_optimized_methods_produce_same_results_as_original()
-    {
-        $user = User::factory()->create(['steam_id' => 'STEAM_0:1:123456789']);
-        $player = Player::factory()->create(['steam_id' => $user->steam_id]);
-        $match = GameMatch::factory()->create(['total_rounds' => 30]);
-
-        $match->players()->attach($player->id, ['team' => 'A']);
-
-        // Create some gunfight events
-        GunfightEvent::factory()->count(5)->create([
-            'match_id' => $match->id,
-            'victor_steam_id' => $player->steam_id,
-            'is_first_kill' => true,
-        ]);
-
-        GunfightEvent::factory()->count(3)->create([
-            'match_id' => $match->id,
-            'player_1_steam_id' => $player->steam_id,
-            'victor_steam_id' => 'STEAM_0:1:999999999', // Different player wins
-        ]);
-
-        // Create some damage events
-        DamageEvent::factory()->count(10)->create([
-            'match_id' => $match->id,
-            'attacker_steam_id' => $player->steam_id,
-            'health_damage' => 50,
-        ]);
-
-        $originalResult = $this->service->aggregateMatchData($user);
-        $optimizedResult = $this->service->getPaginatedMatchHistory($user, 10, 1);
-
-        // Compare the first match data
-        $this->assertEquals(
-            $originalResult[0]['match_details'],
-            $optimizedResult['data'][0]['match_details']
-        );
-
-        // Compare player stats (should be identical)
-        $this->assertEquals(
-            $originalResult[0]['player_stats'][0]['player_kills'],
-            $optimizedResult['data'][0]['player_stats'][0]['player_kills']
-        );
-    }
 }

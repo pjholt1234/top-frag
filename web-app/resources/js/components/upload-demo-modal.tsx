@@ -66,11 +66,10 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
         requireAuth: true,
         headers: {
           // Remove Content-Type header to let browser set it with boundary for FormData
-          'Content-Type': undefined as any,
         },
       });
 
-      if ((response.data as any).success) {
+      if (response.data && typeof response.data === 'object' && 'success' in response.data && response.data.success) {
         setSuccess(true);
         setFile(null);
         // Reset file input
@@ -90,9 +89,10 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
           }
         }, 2000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload error:', err);
-      setError(err.message || 'Failed to upload demo file');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload demo file';
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
     }

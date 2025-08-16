@@ -65,6 +65,40 @@ class UserMatchHistoryService
             ];
         }
 
+        // Get completed matches
+        $completedMatches = $this->getCompletedMatches($user, $filters);
+
+        // Get in-progress jobs
+        $inProgressJobs = $this->getInProgressJobs($user, $filters);
+
+        // Merge and sort by created_at (newest first)
+        $allMatches = collect([...$completedMatches, ...$inProgressJobs])
+            ->sortByDesc('created_at')
+            ->values();
+
+        // Apply pagination manually
+        $total = $allMatches->count();
+        $offset = ($page - 1) * $perPage;
+        $paginatedMatches = $allMatches->slice($offset, $perPage);
+
+        return [
+            'data' => $paginatedMatches->toArray(),
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => ceil($total / $perPage),
+                'from' => $offset + 1,
+                'to' => min($offset + $perPage, $total),
+            ],
+        ];
+    }
+
+    /**
+     * Get completed matches with filters
+     */
+    private function getCompletedMatches(User $user, array $filters = []): array
+    {
         // Start with base query
         $query = $this->player->matches();
 
@@ -112,7 +146,7 @@ class UserMatchHistoryService
             $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
-        // Get paginated matches with eager loading
+        // Get matches with eager loading
         $matches = $query
             ->with([
                 'players',
@@ -120,26 +154,93 @@ class UserMatchHistoryService
                 'damageEvents',
             ])
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->get();
 
-        $matchData = $matches->getCollection()->map(function (GameMatch $match) {
+        return $matches->map(function (GameMatch $match) {
             return [
-                'match_details' => $this->getMatchDetails($match),
+                'id' => $match->id,
+                'created_at' => $match->created_at,
+                'is_completed' => true,
+                'match_details' => [
+                    'id' => $match->id,
+                    'map' => $match->map,
+                    'winning_team_score' => $match->winning_team_score,
+                    'losing_team_score' => $match->losing_team_score,
+                    'winning_team' => $match->winning_team,
+                    'match_type' => $match->match_type,
+                    'created_at' => $match->created_at,
+                ],
                 'player_stats' => $this->getPlayerStatsOptimized($match),
+                'processing_status' => null,
+                'progress_percentage' => null,
+                'current_step' => null,
+                'error_message' => null,
             ];
         })->toArray();
+    }
 
-        return [
-            'data' => $matchData,
-            'pagination' => [
-                'current_page' => $matches->currentPage(),
-                'per_page' => $matches->perPage(),
-                'total' => $matches->total(),
-                'last_page' => $matches->lastPage(),
-                'from' => $matches->firstItem(),
-                'to' => $matches->lastItem(),
-            ],
-        ];
+    /**
+     * Get in-progress jobs with filters
+     */
+    private function getInProgressJobs(User $user, array $filters = []): array
+    {
+        $query = $user->demoProcessingJobs()
+            ->where('progress_percentage', '<', 100)
+            ->where('processing_status', '!=', \App\Enums\ProcessingStatus::COMPLETED->value)
+            ->with('match');
+
+        // Apply filters that work for in-progress jobs
+        if (! empty($filters['map'])) {
+            $query->whereHas('match', function ($q) use ($filters) {
+                $q->where('map', 'like', '%'.$filters['map'].'%');
+            });
+        }
+
+        if (! empty($filters['match_type'])) {
+            $query->whereHas('match', function ($q) use ($filters) {
+                $q->where('match_type', $filters['match_type']);
+            });
+        }
+
+        if (! empty($filters['date_from'])) {
+            $query->where('created_at', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+        }
+
+        $jobs = $query->orderBy('created_at', 'desc')->get();
+
+        return $jobs->map(function ($job) {
+            $match = $job->match;
+            $player = $this->user->player;
+
+            $matchDetails = null;
+            if ($match) {
+                $matchDetails = [
+                    'id' => $match->id,
+                    'map' => $match->map,
+                    'winning_team_score' => $match->winning_team_score,
+                    'losing_team_score' => $match->losing_team_score,
+                    'winning_team' => $match->winning_team,
+                    'match_type' => $match->match_type,
+                    'created_at' => $match->created_at,
+                ];
+            }
+
+            return [
+                'id' => $job->id,
+                'created_at' => $job->created_at,
+                'is_completed' => false,
+                'match_details' => $matchDetails,
+                'player_stats' => null, // Not available for in-progress jobs
+                'processing_status' => $job->processing_status,
+                'progress_percentage' => $job->progress_percentage,
+                'current_step' => $job->current_step,
+                'error_message' => $job->error_message,
+            ];
+        })->toArray();
     }
 
     /**

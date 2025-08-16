@@ -20,6 +20,7 @@ class DemoProcessingJob extends Model
         'started_at',
         'completed_at',
         'current_step',
+        'user_id',
     ];
 
     protected $casts = [
@@ -33,5 +34,10 @@ class DemoProcessingJob extends Model
     public function match(): BelongsTo
     {
         return $this->belongsTo(GameMatch::class, 'match_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

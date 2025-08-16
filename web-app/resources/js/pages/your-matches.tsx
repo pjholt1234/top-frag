@@ -16,20 +16,25 @@ interface PlayerStats {
 }
 
 interface MatchDetails {
-  match_id: number;
+  id: number;
   map: string;
   winning_team_score: number;
   losing_team_score: number;
-  winning_team_name: string | null;
-  player_won_match: boolean;
-  match_type: string | null;
-  match_date: string;
-  player_was_participant: boolean;
+  winning_team: string;
+  match_type: string;
+  created_at: string;
 }
 
-interface Match {
-  match_details: MatchDetails;
-  player_stats: PlayerStats[];
+interface UnifiedMatch {
+  id: number;
+  created_at: string;
+  is_completed: boolean;
+  match_details: MatchDetails | null;
+  player_stats: PlayerStats[] | null;
+  processing_status: string | null;
+  progress_percentage: number | null;
+  current_step: string | null;
+  error_message: string | null;
 }
 
 interface PaginationData {
@@ -42,7 +47,7 @@ interface PaginationData {
 }
 
 interface MatchesResponse {
-  data: Match[];
+  data: UnifiedMatch[];
   pagination: PaginationData;
 }
 
@@ -56,7 +61,8 @@ interface MatchFilters {
 }
 
 const YourMatches = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<UnifiedMatch[]>([]);
+  const [inProgressJobs, setInProgressJobs] = useState<UnifiedMatch[]>([]);
   const [pagination, setPagination] = useState<PaginationData | undefined>(
     undefined
   );
@@ -72,11 +78,10 @@ const YourMatches = () => {
     date_to: '',
   });
 
+  // Poll matches every 5 seconds to get real-time updates including in-progress jobs
   useEffect(() => {
-    const fetchMatches = async () => {
+    const pollMatches = async () => {
       try {
-        setLoading(true);
-
         // Build query parameters
         const params: Record<string, string> = {
           page: currentPage.toString(),
@@ -93,21 +98,50 @@ const YourMatches = () => {
           requireAuth: true,
           params,
         });
-        console.log(response.data);
-        setMatches(response.data.data);
+
+        console.log('API Response:', response.data);
+        console.log('All matches:', response.data.data);
+
+        // Ensure we have valid data structure
+        if (!response.data.data || !Array.isArray(response.data.data)) {
+          throw new Error(
+            'Invalid response format: missing or invalid data array'
+          );
+        }
+
+        // Extract in-progress jobs from the unified response
+        const inProgressJobs = response.data.data.filter(
+          match => match && typeof match === 'object' && !match.is_completed
+        );
+        const completedMatches = response.data.data.filter(
+          match => match && typeof match === 'object' && match.is_completed
+        );
+
+        console.log('In-progress jobs:', inProgressJobs);
+        console.log('Completed matches:', completedMatches);
+
+        setMatches(completedMatches);
+        setInProgressJobs(inProgressJobs);
         setPagination(response.data.pagination);
+        setLoading(false);
         setError(null);
       } catch (err: unknown) {
-        console.error('Error fetching matches:', err);
+        console.error('Error polling matches:', err);
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to fetch matches';
         setError(errorMessage);
-      } finally {
         setLoading(false);
       }
     };
 
-    fetchMatches();
+    // Initial call
+    pollMatches();
+
+    // Set up interval for polling every 2 seconds
+    const interval = setInterval(pollMatches, 2000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, [currentPage, filters]);
 
   const handlePageChange = (page: number) => {
@@ -163,7 +197,7 @@ const YourMatches = () => {
         </div>
       ) : loading ? (
         <MatchesTableSkeleton rows={10} />
-      ) : matches.length === 0 ? (
+      ) : matches.length === 0 && inProgressJobs.length === 0 ? (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <p className="text-muted-foreground mb-2">No matches found</p>
@@ -176,7 +210,7 @@ const YourMatches = () => {
         </div>
       ) : (
         <MatchesTable
-          matches={matches}
+          matches={[...inProgressJobs, ...matches]}
           pagination={pagination}
           onPageChange={handlePageChange}
         />

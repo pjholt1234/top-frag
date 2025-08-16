@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('uuid')->unique();
             $table->unsignedBigInteger('match_id')->nullable();
-            $table->string('processing_status')->default(ProcessingStatus::PENDING->name);
+            $table->string('processing_status')->default(ProcessingStatus::PENDING->value);
             $table->integer('progress_percentage')->default(0);
             $table->string('current_step')->nullable();
             $table->text('error_message')->nullable();

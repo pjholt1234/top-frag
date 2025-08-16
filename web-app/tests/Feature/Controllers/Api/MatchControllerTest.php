@@ -82,16 +82,18 @@ class MatchControllerTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
+                        'id',
+                        'created_at',
+                        'is_completed',
                         'match_details' => [
-                            'match_id',
+                            'id',
                             'map',
                             'winning_team_score',
                             'losing_team_score',
-                            'winning_team_name',
-                            'player_won_match',
+                            'winning_team',
+                            'winning_team',
                             'match_type',
-                            'match_date',
-                            'player_was_participant',
+                            'created_at',
                         ],
                         'player_stats' => [
                             '*' => [

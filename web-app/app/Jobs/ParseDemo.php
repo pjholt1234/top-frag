@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Exceptions\ParserServiceConnectorException;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
+use App\Models\User;
 use App\Services\ParserServiceConnector;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,7 +17,7 @@ class ParseDemo implements ShouldQueue
 
     private readonly ParserServiceConnector $parserServiceConnector;
 
-    public function __construct(private readonly string $filePath)
+    public function __construct(private readonly string $filePath, private readonly ?User $user = null)
     {
         $this->parserServiceConnector = app(ParserServiceConnector::class);
     }
@@ -27,7 +28,9 @@ class ParseDemo implements ShouldQueue
             $match = GameMatch::create();
             $job = DemoProcessingJob::create([
                 'match_id' => $match->id,
+                'user_id' => $this->user?->id,
             ]);
+
             $this->parserServiceConnector->checkServiceHealth();
             $response = $this->parserServiceConnector->uploadDemo($this->filePath, $job->uuid);
 
