@@ -19,10 +19,6 @@ class DemoParserController extends Controller
             'event_name' => $eventName,
         ]);
 
-        if ($eventName === 'grenade') {
-            Log::channel('parser')->info('Demo parser event received', $request->input('data', []));
-        }
-
         $this->demoParserService->createMatchEvent($jobId, $request->input('data', []), $eventName);
 
         return response()->json([
