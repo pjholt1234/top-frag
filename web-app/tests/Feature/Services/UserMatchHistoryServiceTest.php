@@ -435,20 +435,4 @@ class UserMatchHistoryServiceTest extends TestCase
         $this->assertArrayHasKey('total', $result['pagination']);
         $this->assertArrayHasKey('last_page', $result['pagination']);
     }
-
-    public function test_get_recent_match_history_returns_correct_number_of_matches()
-    {
-        $user = User::factory()->create(['steam_id' => 'STEAM_0:1:123456789']);
-        $player = Player::factory()->create(['steam_id' => $user->steam_id]);
-
-        // Create 10 matches
-        for ($i = 0; $i < 10; $i++) {
-            $match = GameMatch::factory()->create();
-            $match->players()->attach($player->id, ['team' => 'A']);
-        }
-
-        $result = $this->service->getRecentMatchHistory($user, 5);
-
-        $this->assertCount(5, $result);
-    }
 }

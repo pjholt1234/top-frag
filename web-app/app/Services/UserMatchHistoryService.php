@@ -127,7 +127,7 @@ class UserMatchHistoryService
         $query = $this->player->matches()->select('matches.id');
 
         if (! empty($filters['map'])) {
-            $query->where('map', 'like', '%'.$filters['map'].'%');
+            $query->where('map', 'like', '%' . $filters['map'] . '%');
         }
 
         if (! empty($filters['match_type'])) {
@@ -166,7 +166,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
@@ -245,7 +245,7 @@ class UserMatchHistoryService
         // Apply filters that work for in-progress jobs
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
-                $q->where('map', 'like', '%'.$filters['map'].'%');
+                $q->where('map', 'like', '%' . $filters['map'] . '%');
             });
         }
 
@@ -260,14 +260,13 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         $jobs = $query->orderBy('created_at', 'desc')->get();
 
         return $jobs->map(function ($job) {
             $match = $job->match;
-            $player = $this->user->player;
 
             $matchDetails = null;
             if ($match) {
@@ -292,36 +291,6 @@ class UserMatchHistoryService
                 'progress_percentage' => $job->progress_percentage,
                 'current_step' => $job->current_step,
                 'error_message' => $job->error_message,
-            ];
-        })->toArray();
-    }
-
-    /**
-     * Get recent match history with a limit for quick loading
-     */
-    public function getRecentMatchHistory(User $user, int $limit = 5): array
-    {
-        $this->setUser($user);
-
-        if (! $this->player) {
-            return [];
-        }
-
-        // Get recent matches with eager loading
-        $matches = $this->player->matches()
-            ->with([
-                'players',
-                'gunfightEvents',
-                'damageEvents',
-            ])
-            ->orderBy('created_at', 'desc')
-            ->limit($limit)
-            ->get();
-
-        return $matches->map(function (GameMatch $match) {
-            return [
-                'match_details' => $this->getMatchDetails($match),
-                'player_stats' => $this->getPlayerStatsOptimized($match),
             ];
         })->toArray();
     }
