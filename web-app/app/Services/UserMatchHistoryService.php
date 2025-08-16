@@ -49,7 +49,7 @@ class UserMatchHistoryService
     /**
      * Get paginated match history for better performance with large datasets
      */
-    public function getPaginatedMatchHistory(User $user, int $perPage = 10, int $page = 1): array
+    public function getPaginatedMatchHistory(User $user, int $perPage = 10, int $page = 1, array $filters = []): array
     {
         $this->setUser($user);
 
@@ -65,8 +65,55 @@ class UserMatchHistoryService
             ];
         }
 
+        // Start with base query
+        $query = $this->player->matches();
+
+        // Apply filters
+        if (! empty($filters['map'])) {
+            $query->where('map', 'like', '%'.$filters['map'].'%');
+        }
+
+        if (! empty($filters['match_type'])) {
+            $query->where('match_type', $filters['match_type']);
+        }
+
+        if (isset($filters['player_was_participant']) && $filters['player_was_participant'] !== '') {
+            $query->whereHas('players', function ($q) {
+                $q->where('steam_id', $this->player->steam_id);
+            });
+        }
+
+        if (isset($filters['player_won_match']) && $filters['player_won_match'] !== '') {
+            $isWin = $filters['player_won_match'] === 'true';
+            $query->where(function ($q) use ($isWin) {
+                if ($isWin) {
+                    $q->where('winning_team', 'A')->whereHas('players', function ($pq) {
+                        $pq->where('steam_id', $this->player->steam_id)->where('team', 'A');
+                    })->orWhere('winning_team', 'B')->whereHas('players', function ($pq) {
+                        $pq->where('steam_id', $this->player->steam_id)->where('team', 'B');
+                    });
+                } else {
+                    $q->where(function ($subQ) {
+                        $subQ->where('winning_team', 'A')->whereHas('players', function ($pq) {
+                            $pq->where('steam_id', $this->player->steam_id)->where('team', 'B');
+                        })->orWhere('winning_team', 'B')->whereHas('players', function ($pq) {
+                            $pq->where('steam_id', $this->player->steam_id)->where('team', 'A');
+                        });
+                    });
+                }
+            });
+        }
+
+        if (! empty($filters['date_from'])) {
+            $query->where('created_at', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+        }
+
         // Get paginated matches with eager loading
-        $matches = $this->player->matches()
+        $matches = $query
             ->with([
                 'players',
                 'gunfightEvents',

@@ -30,7 +30,22 @@ class MatchController extends Controller
         $perPage = max(1, min(50, (int) $perPage));
         $page = max(1, (int) $page);
 
-        $matchHistory = $this->userMatchHistoryService->getPaginatedMatchHistory($user, $perPage, $page);
+        // Extract filter parameters
+        $filters = [
+            'map' => $request->get('map'),
+            'match_type' => $request->get('match_type'),
+            'player_was_participant' => $request->get('player_was_participant'),
+            'player_won_match' => $request->get('player_won_match'),
+            'date_from' => $request->get('date_from'),
+            'date_to' => $request->get('date_to'),
+        ];
+
+        // Remove empty filters
+        $filters = array_filter($filters, function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $matchHistory = $this->userMatchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
 
         return response()->json($matchHistory);
     }
