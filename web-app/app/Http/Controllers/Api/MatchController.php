@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 
 class MatchController extends Controller
 {
-    public function __construct(private readonly UserMatchHistoryService $userMatchHistoryService) {}
+    public function __construct(
+        private readonly UserMatchHistoryService $userMatchHistoryService,
+    ) {}
 
     public function index(Request $request)
     {
