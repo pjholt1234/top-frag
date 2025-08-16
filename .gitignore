@@ -10,3 +10,6 @@ demo.dem
 /parser-service/coverage.html
 /node_modules
 /web-app/.phpbench
+/web-app/coverage.txt
+/web-app/coverage-html
+/web-app/coverage.xml

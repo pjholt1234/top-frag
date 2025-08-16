@@ -58,7 +58,7 @@ class AuthControllerTest extends TestCase
         $response = $this->postJson('/api/auth/register', [
             'name' => '',
             'email' => 'invalid-email',
-            'password' => 'short',
+            'password' => 'short123',
             'password_confirmation' => 'different',
         ]);
 

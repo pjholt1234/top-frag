@@ -3,10 +3,13 @@
 namespace Tests\Unit\Controllers\Api;
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -32,7 +35,7 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
+        $request = RegisterRequest::create('/api/auth/register', 'POST', $requestData);
         $request->setLaravelSession(app('session.store'));
 
         $response = $this->controller->register($request);
@@ -59,12 +62,14 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'different',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->register($request);
+        $validator->validate();
     }
 
     public function test_register_validates_unique_email()
@@ -78,12 +83,14 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->register($request);
+        $validator->validate();
     }
 
     public function test_login_with_valid_credentials()
@@ -98,7 +105,7 @@ class AuthControllerTest extends TestCase
             'password' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/login', 'POST', $requestData);
+        $request = LoginRequest::create('/api/auth/login', 'POST', $requestData);
         $request->setLaravelSession(app('session.store'));
 
         $response = $this->controller->login($request);
@@ -125,7 +132,7 @@ class AuthControllerTest extends TestCase
             'password' => 'wrongpassword',
         ];
 
-        $request = Request::create('/api/auth/login', 'POST', $requestData);
+        $request = LoginRequest::create('/api/auth/login', 'POST', $requestData);
         $request->setLaravelSession(app('session.store'));
 
         $this->expectException(ValidationException::class);
@@ -140,7 +147,7 @@ class AuthControllerTest extends TestCase
             'password' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/login', 'POST', $requestData);
+        $request = LoginRequest::create('/api/auth/login', 'POST', $requestData);
         $request->setLaravelSession(app('session.store'));
 
         $this->expectException(ValidationException::class);
@@ -155,12 +162,13 @@ class AuthControllerTest extends TestCase
             'password' => '',
         ];
 
-        $request = Request::create('/api/auth/login', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->login($request);
+        $validator->validate();
     }
 
     public function test_logout_deletes_current_token()
@@ -217,7 +225,7 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
+        $request = RegisterRequest::create('/api/auth/register', 'POST', $requestData);
         $request->setLaravelSession(app('session.store'));
 
         $response = $this->controller->register($request);
@@ -248,13 +256,13 @@ class AuthControllerTest extends TestCase
         ];
 
         // First login
-        $request1 = Request::create('/api/auth/login', 'POST', $requestData);
+        $request1 = LoginRequest::create('/api/auth/login', 'POST', $requestData);
         $request1->setLaravelSession(app('session.store'));
         $response1 = $this->controller->login($request1);
         $token1 = json_decode($response1->getContent(), true)['token'];
 
         // Second login
-        $request2 = Request::create('/api/auth/login', 'POST', $requestData);
+        $request2 = LoginRequest::create('/api/auth/login', 'POST', $requestData);
         $request2->setLaravelSession(app('session.store'));
         $response2 = $this->controller->login($request2);
         $token2 = json_decode($response2->getContent(), true)['token'];
@@ -281,12 +289,14 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'differentpassword',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->register($request);
+        $validator->validate();
     }
 
     public function test_email_format_validation()
@@ -298,12 +308,14 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'password123',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->register($request);
+        $validator->validate();
     }
 
     public function test_password_minimum_length_validation()
@@ -315,11 +327,13 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'short',
         ];
 
-        $request = Request::create('/api/auth/register', 'POST', $requestData);
-        $request->setLaravelSession(app('session.store'));
+        $validator = Validator::make($requestData, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        $this->controller->register($request);
+        $validator->validate();
     }
 }

@@ -23,7 +23,7 @@ class UploadController extends Controller
         try {
             $file = $request->file('demo');
 
-            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $fileName = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
             $publicPath = $file->storeAs('demos', $fileName, 'public');
             $fullPath = storage_path("app/public/{$publicPath}");
 
