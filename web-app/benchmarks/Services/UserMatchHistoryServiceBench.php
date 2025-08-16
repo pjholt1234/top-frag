@@ -52,7 +52,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
 
     public function setUp(): void
     {
-        $this->service = new UserMatchHistoryService;
+        $this->service = new UserMatchHistoryService(false);
 
         $uniqueId = uniqid();
 

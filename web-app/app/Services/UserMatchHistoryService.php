@@ -6,13 +6,18 @@ use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class UserMatchHistoryService
 {
+    private const CACHE_TTL = 1800;
+
     private ?Player $player;
 
     private ?User $user;
+
+    public function __construct(private readonly bool $cacheEnabled = true) {}
 
     public function setUser(User $user)
     {
@@ -23,7 +28,6 @@ class UserMatchHistoryService
     public function aggregateMatchData(User $user): array
     {
         $this->setUser($user);
-
         if (! $this->player) {
             return [];
         }
@@ -65,18 +69,13 @@ class UserMatchHistoryService
             ];
         }
 
-        // Get completed matches
-        $completedMatches = $this->getCompletedMatches($user, $filters);
-
-        // Get in-progress jobs
+        $completedMatches = $this->getCompletedMatches($filters);
         $inProgressJobs = $this->getInProgressJobs($user, $filters);
 
-        // Merge and sort by created_at (newest first)
         $allMatches = collect([...$completedMatches, ...$inProgressJobs])
             ->sortByDesc('created_at')
             ->values();
 
-        // Apply pagination manually
         $total = $allMatches->count();
         $offset = ($page - 1) * $perPage;
         $paginatedMatches = $allMatches->slice($offset, $perPage);
@@ -97,12 +96,36 @@ class UserMatchHistoryService
     /**
      * Get completed matches with filters
      */
-    private function getCompletedMatches(User $user, array $filters = []): array
+    private function getCompletedMatches(array $filters = []): array
     {
-        // Start with base query
-        $query = $this->player->matches();
+        $matchIds = $this->getFilteredMatchIds($filters);
 
-        // Apply filters
+        $completedMatches = [];
+
+        foreach ($matchIds as $matchId) {
+            $cachedMatch = $this->getCachedMatch($matchId);
+
+            if ($cachedMatch !== null) {
+                $completedMatches[] = $cachedMatch;
+            } else {
+                // Load and cache the match
+                $match = $this->loadAndCacheMatch($matchId);
+                if ($match) {
+                    $completedMatches[] = $match;
+                }
+            }
+        }
+
+        return $completedMatches;
+    }
+
+    /**
+     * Get filtered match IDs without loading full match data
+     */
+    private function getFilteredMatchIds(array $filters = []): array
+    {
+        $query = $this->player->matches()->select('matches.id');
+
         if (! empty($filters['map'])) {
             $query->where('map', 'like', '%'.$filters['map'].'%');
         }
@@ -146,37 +169,67 @@ class UserMatchHistoryService
             $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
-        // Get matches with eager loading
-        $matches = $query
-            ->with([
-                'players',
-                'gunfightEvents',
-                'damageEvents',
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
+    }
 
-        return $matches->map(function (GameMatch $match) {
-            return [
+    /**
+     * Get cached match data for a specific match
+     */
+    private function getCachedMatch(int $matchId): ?array
+    {
+        $cacheKey = $this->getMatchCacheKey($matchId);
+
+        return Cache::get($cacheKey);
+    }
+
+    /**
+     * Load and cache a single match
+     */
+    private function loadAndCacheMatch(int $matchId): ?array
+    {
+        $match = GameMatch::with(['players', 'gunfightEvents', 'damageEvents'])
+            ->find($matchId);
+
+        if (! $match) {
+            return null;
+        }
+
+        $matchData = [
+            'id' => $match->id,
+            'created_at' => $match->created_at,
+            'is_completed' => true,
+            'match_details' => [
                 'id' => $match->id,
+                'map' => $match->map,
+                'winning_team_score' => $match->winning_team_score,
+                'losing_team_score' => $match->losing_team_score,
+                'winning_team' => $match->winning_team,
+                'match_type' => $match->match_type,
                 'created_at' => $match->created_at,
-                'is_completed' => true,
-                'match_details' => [
-                    'id' => $match->id,
-                    'map' => $match->map,
-                    'winning_team_score' => $match->winning_team_score,
-                    'losing_team_score' => $match->losing_team_score,
-                    'winning_team' => $match->winning_team,
-                    'match_type' => $match->match_type,
-                    'created_at' => $match->created_at,
-                ],
-                'player_stats' => $this->getPlayerStatsOptimized($match),
-                'processing_status' => null,
-                'progress_percentage' => null,
-                'current_step' => null,
-                'error_message' => null,
-            ];
-        })->toArray();
+            ],
+            'player_stats' => $this->getPlayerStatsOptimized($match),
+            'processing_status' => null,
+            'progress_percentage' => null,
+            'current_step' => null,
+            'error_message' => null,
+        ];
+
+        if (! $this->cacheEnabled) {
+            return $matchData;
+        }
+
+        $cacheKey = $this->getMatchCacheKey($matchId);
+        Cache::put($cacheKey, $matchData, self::CACHE_TTL);
+
+        return $matchData;
+    }
+
+    /**
+     * Generate cache key for a specific match
+     */
+    private function getMatchCacheKey(int $matchId): string
+    {
+        return "match_data_{$matchId}";
     }
 
     /**

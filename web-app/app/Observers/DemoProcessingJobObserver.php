@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\DemoProcessingJob;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class DemoProcessingJobObserver
@@ -18,6 +17,14 @@ class DemoProcessingJobObserver
 
     public function updated(DemoProcessingJob $job): void
     {
-        Log::info('DemoProcessingJobObserver updated', ['job' => $job->processing_status]);
+        // If job status or progress changed, invalidate match cache
+        if ($job->wasChanged('processing_status') || $job->wasChanged('progress_percentage')) {
+            $job->match->invalidateMatchCache();
+        }
+    }
+
+    public function completed(DemoProcessingJob $job): void
+    {
+        $job->match->invalidateMatchCache();
     }
 }

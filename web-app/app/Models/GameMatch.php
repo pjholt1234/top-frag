@@ -7,6 +7,7 @@ use App\Enums\ProcessingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class GameMatch extends Model
 {
@@ -86,5 +87,10 @@ class GameMatch extends Model
     public function playerWasParticipant(Player $player): bool
     {
         return $this->players->contains($player);
+    }
+
+    public function invalidateMatchCache(): void
+    {
+        Cache::forget("match_data_{$this->id}");
     }
 }

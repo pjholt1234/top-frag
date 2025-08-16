@@ -2,8 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\DamageEvent;
 use App\Models\DemoProcessingJob;
+use App\Models\GrenadeEvent;
+use App\Models\GunfightEvent;
+use App\Observers\DamageEventObserver;
 use App\Observers\DemoProcessingJobObserver;
+use App\Observers\GrenadeEventObserver;
+use App\Observers\GunfightEventObserver;
 use App\Services\DemoParserService;
 use App\Services\ParserServiceConnector;
 use App\Services\UserMatchHistoryService;
@@ -37,5 +43,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         DemoProcessingJob::observe(DemoProcessingJobObserver::class);
+        DamageEvent::observe(DamageEventObserver::class);
+        GunfightEvent::observe(GunfightEventObserver::class);
+        GrenadeEvent::observe(GrenadeEventObserver::class);
     }
 }
