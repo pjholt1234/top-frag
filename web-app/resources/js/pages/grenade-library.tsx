@@ -61,10 +61,7 @@ const GrenadeLibrary = () => {
         setFilterOptions(data);
 
         // Set default selections on initial load
-        if (
-          data.maps.length > 0 &&
-          data.grenadeTypes.length > 0
-        ) {
+        if (data.maps.length > 0 && data.grenadeTypes.length > 0) {
           const firstMap = data.maps[0];
           const firstGrenadeType = data.grenadeTypes[0];
 
@@ -88,7 +85,8 @@ const GrenadeLibrary = () => {
               const initialFilters = {
                 map: firstMap.name,
                 grenadeType: firstGrenadeType.type,
-                matchId: matchData.matches.length > 0 ? matchData.matches[0].id : '',
+                matchId:
+                  matchData.matches.length > 0 ? matchData.matches[0].id : '',
                 roundNumber: 'all',
                 playerSteamId: 'all',
                 playerSide: 'all',
@@ -167,12 +165,7 @@ const GrenadeLibrary = () => {
     };
 
     loadMatchDependentOptions();
-  }, [
-    filters.map,
-    filters.matchId,
-    get,
-    isInitialized,
-  ]);
+  }, [filters.map, filters.matchId, get, isInitialized]);
 
   // Load grenade data when filters change
   useEffect(() => {
@@ -269,7 +262,9 @@ const GrenadeLibrary = () => {
 
           // Auto-select first match when map changes
           if (data.matches.length > 0) {
-            console.log(`Auto-selecting first match: ${data.matches[0].id} for map: ${value}`);
+            console.log(
+              `Auto-selecting first match: ${data.matches[0].id} for map: ${value}`
+            );
             setFilters(prev => ({
               ...prev,
               matchId: data.matches[0].id,
