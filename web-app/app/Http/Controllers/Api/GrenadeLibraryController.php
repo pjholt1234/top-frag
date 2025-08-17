@@ -26,6 +26,7 @@ class GrenadeLibraryController extends Controller
         $roundNumber = $request->get('round_number');
         $grenadeType = $request->get('grenade_type');
         $playerSteamId = $request->get('player_steam_id');
+        $playerSide = $request->get('player_side');
 
         // Start with base query for user's matches
         $query = GrenadeEvent::query()
@@ -65,6 +66,10 @@ class GrenadeLibraryController extends Controller
             $query->where('grenade_events.player_steam_id', $playerSteamId);
         }
 
+        if ($playerSide && $playerSide !== 'all') {
+            $query->where('grenade_events.player_side', $playerSide);
+        }
+
         $grenades = $query->get();
 
         return response()->json([
@@ -75,6 +80,7 @@ class GrenadeLibraryController extends Controller
                 'round_number' => $roundNumber,
                 'grenade_type' => $grenadeType,
                 'player_steam_id' => $playerSteamId,
+                'player_side' => $playerSide,
             ],
         ]);
     }
@@ -109,6 +115,12 @@ class GrenadeLibraryController extends Controller
             ['type' => GrenadeType::HE_GRENADE->value, 'displayName' => 'HE Grenade'],
             ['type' => GrenadeType::FLASHBANG->value, 'displayName' => 'Flashbang'],
             ['type' => GrenadeType::DECOY->value, 'displayName' => 'Decoy Grenade'],
+        ];
+
+        // Hardcoded player sides
+        $playerSides = [
+            ['side' => 'CT', 'displayName' => 'Counter-Terrorist'],
+            ['side' => 'T', 'displayName' => 'Terrorist'],
         ];
 
         // Dynamic matches based on selected map
@@ -170,6 +182,7 @@ class GrenadeLibraryController extends Controller
             'rounds' => $rounds,
             'grenadeTypes' => $grenadeTypes,
             'players' => $players,
+            'playerSides' => $playerSides,
         ]);
     }
 }

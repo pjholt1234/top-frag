@@ -78,6 +78,9 @@ class GrenadeLibraryControllerTest extends TestCase
                     '*' => ['type', 'displayName'],
                 ],
                 'players' => [],
+                'playerSides' => [
+                    '*' => ['side', 'displayName'],
+                ],
             ]);
 
         // Verify hardcoded maps
@@ -104,6 +107,14 @@ class GrenadeLibraryControllerTest extends TestCase
                 ['type' => GrenadeType::HE_GRENADE->value, 'displayName' => 'HE Grenade'],
                 ['type' => GrenadeType::FLASHBANG->value, 'displayName' => 'Flashbang'],
                 ['type' => GrenadeType::DECOY->value, 'displayName' => 'Decoy Grenade'],
+            ],
+        ]);
+
+        // Verify hardcoded player sides
+        $response->assertJson([
+            'playerSides' => [
+                ['side' => 'CT', 'displayName' => 'Counter-Terrorist'],
+                ['side' => 'T', 'displayName' => 'Terrorist'],
             ],
         ]);
     }
@@ -250,7 +261,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value);
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -271,6 +282,7 @@ class GrenadeLibraryControllerTest extends TestCase
                     'round_number',
                     'grenade_type',
                     'player_steam_id',
+                    'player_side',
                 ],
             ]);
 
@@ -292,6 +304,7 @@ class GrenadeLibraryControllerTest extends TestCase
                 'round_number' => null,
                 'grenade_type' => GrenadeType::SMOKE_GRENADE->value,
                 'player_steam_id' => null,
+                'player_side' => null,
             ],
         ]);
 
@@ -362,7 +375,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value.'&round_number=1');
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . '&round_number=1');
 
         $response->assertStatus(200);
 
@@ -387,13 +400,40 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value."&player_steam_id={$this->player->steam_id}");
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . "&player_steam_id={$this->player->steam_id}");
 
         $response->assertStatus(200);
 
         $grenades = $response->json('grenades');
         $this->assertCount(1, $grenades);
         $this->assertEquals($userGrenade->id, $grenades[0]['id']);
+    }
+
+    public function test_index_filters_by_player_side()
+    {
+        // Create grenade events for different player sides
+        $ctGrenade = GrenadeEvent::factory()->create([
+            'match_id' => $this->match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'grenade_type' => GrenadeType::SMOKE_GRENADE,
+            'player_side' => 'CT',
+        ]);
+
+        $tGrenade = GrenadeEvent::factory()->create([
+            'match_id' => $this->match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'grenade_type' => GrenadeType::SMOKE_GRENADE,
+            'player_side' => 'T',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . "&player_side=CT");
+
+        $response->assertStatus(200);
+
+        $grenades = $response->json('grenades');
+        $this->assertCount(1, $grenades);
+        $this->assertEquals($ctGrenade->id, $grenades[0]['id']);
     }
 
     public function test_index_returns_all_rounds_when_round_number_is_all()
@@ -414,7 +454,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value.'&round_number=all');
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . '&round_number=all');
 
         $response->assertStatus(200);
 
@@ -438,7 +478,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value.'&player_steam_id=all');
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . '&player_steam_id=all');
 
         $response->assertStatus(200);
 
@@ -467,7 +507,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value);
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value);
 
         $response->assertStatus(200);
 
@@ -516,7 +556,7 @@ class GrenadeLibraryControllerTest extends TestCase
     public function test_index_returns_empty_array_when_no_matches()
     {
         $response = $this->actingAs($this->user)
-            ->getJson('/api/grenade-library?map=de_dust2&match_id=999&grenade_type='.GrenadeType::SMOKE_GRENADE->value);
+            ->getJson('/api/grenade-library?map=de_dust2&match_id=999&grenade_type=' . GrenadeType::SMOKE_GRENADE->value);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -534,7 +574,7 @@ class GrenadeLibraryControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value);
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value);
 
         $response->assertStatus(200);
 
@@ -559,7 +599,7 @@ class GrenadeLibraryControllerTest extends TestCase
     public function test_index_returns_correct_filter_values_in_response()
     {
         $response = $this->actingAs($this->user)
-            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=".GrenadeType::SMOKE_GRENADE->value."&round_number=1&player_steam_id={$this->player->steam_id}");
+            ->getJson("/api/grenade-library?map=de_mirage&match_id={$this->match->id}&grenade_type=" . GrenadeType::SMOKE_GRENADE->value . "&round_number=1&player_steam_id={$this->player->steam_id}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -569,6 +609,7 @@ class GrenadeLibraryControllerTest extends TestCase
                     'round_number' => '1',
                     'grenade_type' => GrenadeType::SMOKE_GRENADE->value,
                     'player_steam_id' => $this->player->steam_id,
+                    'player_side' => null,
                 ],
             ]);
     }

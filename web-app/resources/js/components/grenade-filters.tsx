@@ -15,6 +15,7 @@ interface GrenadeFiltersProps {
     roundNumber: string;
     grenadeType: string;
     playerSteamId: string;
+    playerSide: string;
   };
   onFilterChange: (filterName: string, value: string) => void;
   maps: Array<{ name: string; displayName: string }>;
@@ -22,6 +23,7 @@ interface GrenadeFiltersProps {
   rounds: Array<{ number: number }>;
   grenadeTypes: Array<{ type: string; displayName: string }>;
   players: Array<{ steam_id: string; name: string }>;
+  playerSides: Array<{ side: string; displayName: string }>;
 }
 
 const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
@@ -32,6 +34,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
   rounds,
   grenadeTypes,
   players,
+  playerSides,
 }) => {
   const handleFilterChange = (key: string, value: string) => {
     onFilterChange(key, value);
@@ -159,6 +162,29 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
               {players.map(player => (
                 <SelectItem key={player.steam_id} value={player.steam_id}>
                   {player.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Player Side Filter - ALLOW "All" option */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="player-side-filter" className="text-xs">
+            Player Side
+          </Label>
+          <Select
+            value={filters.playerSide}
+            onValueChange={value => handleFilterChange('playerSide', value)}
+          >
+            <SelectTrigger id="player-side-filter" className="h-8">
+              <SelectValue placeholder="Select side" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sides</SelectItem>
+              {playerSides.map(side => (
+                <SelectItem key={side.side} value={side.side}>
+                  {side.displayName}
                 </SelectItem>
               ))}
             </SelectContent>

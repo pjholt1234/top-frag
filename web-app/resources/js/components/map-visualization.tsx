@@ -90,11 +90,11 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
 
             // Draw colored circle
             ctx.beginPath();
-            ctx.arc(pixelCoords.x, pixelCoords.y, 15, 0, 2 * Math.PI);
+            ctx.arc(pixelCoords.x, pixelCoords.y, 8, 0, 2 * Math.PI);
             ctx.fillStyle = fillColor;
             ctx.fill();
             ctx.strokeStyle = 'white';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2;
             ctx.stroke();
         });
     }, [grenadePositions, imageLoaded, convertGameToPixelCoords]);
@@ -141,12 +141,12 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
                 alt={`${mapName} map`}
                 onLoad={handleImageLoad}
                 className="block"
-                style={{ width: '1024px', height: '1024px' }}
+                style={{ width: '512px', height: '512px' }}
             />
             <canvas
                 ref={canvasRef}
                 className="absolute top-0 left-0 pointer-events-none"
-                style={{ width: '1024px', height: '1024px' }}
+                style={{ width: '512px', height: '512px' }}
             />
         </div>
     );

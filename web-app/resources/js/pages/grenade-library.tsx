@@ -7,6 +7,8 @@ interface GrenadeData {
   id: number;
   player_x: number;
   player_y: number;
+  grenade_final_x: number;
+  grenade_final_y: number;
   grenade_type: string;
   round_number: number;
   match_id: number;
@@ -21,6 +23,7 @@ interface FilterOptions {
   rounds: Array<{ number: number }>;
   grenadeTypes: Array<{ type: string; displayName: string }>;
   players: Array<{ steam_id: string; name: string }>;
+  playerSides: Array<{ side: string; displayName: string }>;
 }
 
 const GrenadeLibrary = () => {
@@ -30,6 +33,7 @@ const GrenadeLibrary = () => {
     roundNumber: 'all', // Default to "All Rounds"
     grenadeType: '',
     playerSteamId: 'all', // Default to "All Players"
+    playerSide: 'all', // Default to "All Sides"
   });
 
   const [grenades, setGrenades] = useState<GrenadeData[]>([]);
@@ -39,6 +43,7 @@ const GrenadeLibrary = () => {
     rounds: [],
     grenadeTypes: [],
     players: [],
+    playerSides: [],
   });
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -189,6 +194,9 @@ const GrenadeLibrary = () => {
         if (filters.playerSteamId && filters.playerSteamId !== 'all') {
           params.append('player_steam_id', filters.playerSteamId);
         }
+        if (filters.playerSide && filters.playerSide !== 'all') {
+          params.append('player_side', filters.playerSide);
+        }
 
         console.log('Loading grenades with params:', params.toString());
         const response = await get(`/grenade-library?${params.toString()}`);
@@ -212,10 +220,12 @@ const GrenadeLibrary = () => {
         newFilters.matchId = '';
         newFilters.roundNumber = 'all';
         newFilters.playerSteamId = 'all';
+        newFilters.playerSide = 'all';
       } else if (filterName === 'matchId') {
         // Match changed: reset round and player filters
         newFilters.roundNumber = 'all';
         newFilters.playerSteamId = 'all';
+        newFilters.playerSide = 'all';
       }
 
       return newFilters;
@@ -227,8 +237,8 @@ const GrenadeLibrary = () => {
 
   // Convert grenade data to the format expected by MapVisualization
   const grenadePositions = grenades.map(grenade => ({
-    x: grenade.player_x,
-    y: grenade.player_y,
+    x: grenade.grenade_final_x,
+    y: grenade.grenade_final_y,
     grenade_type: grenade.grenade_type,
     player_name: grenade.player_name,
     round_number: grenade.round_number,
@@ -246,6 +256,7 @@ const GrenadeLibrary = () => {
         rounds={filterOptions.rounds}
         grenadeTypes={filterOptions.grenadeTypes}
         players={filterOptions.players}
+        playerSides={filterOptions.playerSides}
       />
 
       <div className="mb-6">
