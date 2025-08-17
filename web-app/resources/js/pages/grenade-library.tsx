@@ -221,6 +221,11 @@ const GrenadeLibrary = () => {
       setIsInitialized(true);
     }
 
+    // Clear grenades immediately when map changes to prevent showing old grenades on new map
+    if (filterName === 'map') {
+      setGrenades([]);
+    }
+
     setFilters(prev => {
       const newFilters = { ...prev, [filterName]: value };
 
