@@ -1,0 +1,172 @@
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+interface GrenadeFiltersProps {
+  filters: {
+    map: string;
+    matchId: string;
+    roundNumber: string;
+    grenadeType: string;
+    playerSteamId: string;
+  };
+  onFilterChange: (filterName: string, value: string) => void;
+  maps: Array<{ name: string; displayName: string }>;
+  matches: Array<{ id: string; name: string }>;
+  rounds: Array<{ number: number }>;
+  grenadeTypes: Array<{ type: string; displayName: string }>;
+  players: Array<{ steam_id: string; name: string }>;
+}
+
+const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
+  filters,
+  onFilterChange,
+  maps,
+  matches,
+  rounds,
+  grenadeTypes,
+  players,
+}) => {
+  const handleFilterChange = (key: string, value: string) => {
+    onFilterChange(key, value);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/50">
+        {/* Map Filter - No "All" option, must be selected */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="map-filter" className="text-xs">
+            Map
+          </Label>
+          <Select
+            value={filters.map}
+            onValueChange={value => handleFilterChange('map', value)}
+          >
+            <SelectTrigger id="map-filter" className="h-8">
+              <SelectValue placeholder="Select map" />
+            </SelectTrigger>
+            <SelectContent>
+              {maps.map(map => (
+                <SelectItem key={map.name} value={map.name}>
+                  {map.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Match Filter - No "All" option, depends on Map */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="match-filter" className="text-xs">
+            Match
+          </Label>
+          <Select
+            value={filters.matchId}
+            onValueChange={value => handleFilterChange('matchId', value)}
+            disabled={!filters.map || matches.length === 0}
+          >
+            <SelectTrigger id="match-filter" className="h-8">
+              <SelectValue
+                placeholder={!filters.map ? 'Select map first' : 'Select match'}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {matches.map(match => (
+                <SelectItem key={match.id} value={match.id}>
+                  {match.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Round Filter - ALLOW "All" option, depends on Match */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="round-filter" className="text-xs">
+            Round
+          </Label>
+          <Select
+            value={filters.roundNumber}
+            onValueChange={value => handleFilterChange('roundNumber', value)}
+            disabled={!filters.matchId || rounds.length === 0}
+          >
+            <SelectTrigger id="round-filter" className="h-8">
+              <SelectValue
+                placeholder={
+                  !filters.matchId ? 'Select match first' : 'Select round'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rounds</SelectItem>
+              {rounds.map(round => (
+                <SelectItem key={round.number} value={round.number.toString()}>
+                  Round {round.number}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Grenade Type Filter - No "All" option, hardcoded with Fire Grenades */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="grenade-type-filter" className="text-xs">
+            Grenade Type
+          </Label>
+          <Select
+            value={filters.grenadeType}
+            onValueChange={value => handleFilterChange('grenadeType', value)}
+          >
+            <SelectTrigger id="grenade-type-filter" className="h-8">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {grenadeTypes.map(type => (
+                <SelectItem key={type.type} value={type.type}>
+                  {type.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Player Filter - ALLOW "All" option, depends on Match */}
+        <div className="space-y-1 min-w-[120px]">
+          <Label htmlFor="player-filter" className="text-xs">
+            Player
+          </Label>
+          <Select
+            value={filters.playerSteamId}
+            onValueChange={value => handleFilterChange('playerSteamId', value)}
+            disabled={!filters.matchId || players.length === 0}
+          >
+            <SelectTrigger id="player-filter" className="h-8">
+              <SelectValue
+                placeholder={
+                  !filters.matchId ? 'Select match first' : 'Select player'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Players</SelectItem>
+              {players.map(player => (
+                <SelectItem key={player.steam_id} value={player.steam_id}>
+                  {player.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GrenadeFilters;

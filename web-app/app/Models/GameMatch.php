@@ -7,6 +7,7 @@ use App\Enums\ProcessingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Cache;
 
 class GameMatch extends Model
@@ -74,9 +75,9 @@ class GameMatch extends Model
         return $this->hasMany(PlayerMatchSummary::class, 'match_id');
     }
 
-    public function demoProcessingJobs(): HasMany
+    public function demoProcessingJob(): HasOne
     {
-        return $this->hasMany(DemoProcessingJob::class, 'match_id');
+        return $this->hasOne(DemoProcessingJob::class, 'match_id');
     }
 
     public function damageEvents(): HasMany

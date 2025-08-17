@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemoParserController;
+use App\Http\Controllers\Api\GrenadeLibraryController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\UploadController;
@@ -30,6 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/matches', [MatchController::class, 'index']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
+
+    // Grenade Library routes
+    Route::get('/grenade-library', [GrenadeLibraryController::class, 'index']);
+    Route::get('/grenade-library/filter-options', [GrenadeLibraryController::class, 'filterOptions']);
 });
 
 Route::middleware('api.key')->group(function () {
