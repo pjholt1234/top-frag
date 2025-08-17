@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import MapVisualization from '../components/map-visualization';
+import MapVisualizationKonva from '../components/map-visualization-konva';
 import GrenadeFilters from '../components/grenade-filters';
 import { useApi } from '../hooks/useApi';
 
@@ -45,12 +45,15 @@ const GrenadeLibrary = () => {
     players: [],
     playerSides: [],
   });
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const { get } = useApi();
 
   // Load initial filter options and set defaults
   useEffect(() => {
+    // Only run this effect once on mount
+    if (isInitialized) return;
+
     const loadInitialOptions = async () => {
       try {
         const response = await get('/grenade-library/filter-options');
@@ -59,20 +62,55 @@ const GrenadeLibrary = () => {
 
         // Set default selections on initial load
         if (
-          !hasInitialized &&
           data.maps.length > 0 &&
           data.grenadeTypes.length > 0
         ) {
           const firstMap = data.maps[0];
           const firstGrenadeType = data.grenadeTypes[0];
 
-          setFilters(prev => ({
-            ...prev,
-            map: firstMap.name,
-            grenadeType: firstGrenadeType.type,
-          }));
+          // Load matches for the first map first, then set all filters at once
+          const loadMatchesForFirstMap = async () => {
+            try {
+              const params = new URLSearchParams();
+              params.append('map', firstMap.name);
 
-          setHasInitialized(true);
+              const matchResponse = await get(
+                `/grenade-library/filter-options?${params.toString()}`
+              );
+              const matchData = matchResponse.data as FilterOptions;
+
+              setFilterOptions(prev => ({
+                ...prev,
+                matches: matchData.matches,
+              }));
+
+              // Set all filters at once to avoid multiple re-renders
+              const initialFilters = {
+                map: firstMap.name,
+                grenadeType: firstGrenadeType.type,
+                matchId: matchData.matches.length > 0 ? matchData.matches[0].id : '',
+                roundNumber: 'all',
+                playerSteamId: 'all',
+                playerSide: 'all',
+              };
+
+              console.log('Setting initial filters:', initialFilters);
+              setFilters(initialFilters);
+              setIsInitialized(true);
+            } catch (error) {
+              console.error('Failed to load matches for first map:', error);
+
+              // Fallback: set filters without match if loading fails
+              setFilters(prev => ({
+                ...prev,
+                map: firstMap.name,
+                grenadeType: firstGrenadeType.type,
+              }));
+              setIsInitialized(true);
+            }
+          };
+
+          loadMatchesForFirstMap();
         }
       } catch (error) {
         console.error('Failed to load initial filter options:', error);
@@ -80,57 +118,17 @@ const GrenadeLibrary = () => {
     };
 
     loadInitialOptions();
-  }, [get, hasInitialized]);
+  }, [get]);
 
-  // Load matches when map changes
-  useEffect(() => {
-    const loadMatches = async () => {
-      if (!filters.map) return;
-
-      try {
-        const params = new URLSearchParams();
-        params.append('map', filters.map);
-
-        const response = await get(
-          `/grenade-library/filter-options?${params.toString()}`
-        );
-        const data = response.data as FilterOptions;
-
-        setFilterOptions(prev => ({
-          ...prev,
-          matches: data.matches,
-          rounds: [], // Reset rounds when map changes
-          players: [], // Reset players when map changes
-        }));
-
-        // Auto-select first match when map changes
-        if (data.matches.length > 0) {
-          setFilters(prev => ({
-            ...prev,
-            matchId: data.matches[0].id,
-            roundNumber: 'all', // Reset to "All Rounds"
-            playerSteamId: 'all', // Reset to "All Players"
-          }));
-        } else {
-          // No matches for this map, reset match-dependent filters
-          setFilters(prev => ({
-            ...prev,
-            matchId: '',
-            roundNumber: 'all',
-            playerSteamId: 'all',
-          }));
-        }
-      } catch (error) {
-        console.error('Failed to load matches:', error);
-      }
-    };
-
-    loadMatches();
-  }, [filters.map, get]);
+  // Load matches when map changes (now handled in handleFilterChange)
+  // This useEffect has been removed to avoid conflicts with the new logic
 
   // Load rounds and players when match changes
   useEffect(() => {
     const loadMatchDependentOptions = async () => {
+      // Don't load match-dependent options until initialized
+      if (!isInitialized) return;
+
       if (!filters.map || !filters.matchId) return;
 
       try {
@@ -172,14 +170,19 @@ const GrenadeLibrary = () => {
   }, [
     filters.map,
     filters.matchId,
-    filters.roundNumber,
-    filters.playerSteamId,
     get,
+    isInitialized,
   ]);
 
   // Load grenade data when filters change
   useEffect(() => {
     const loadGrenades = async () => {
+      // Don't load grenades until initialized
+      if (!isInitialized) {
+        console.log('Skipping grenade load until initialized');
+        return;
+      }
+
       // Only load grenades if we have the required filters
       if (!filters.map || !filters.matchId || !filters.grenadeType) return;
 
@@ -208,9 +211,16 @@ const GrenadeLibrary = () => {
     };
 
     loadGrenades();
-  }, [filters, get]);
+  }, [filters, get, isInitialized]);
 
   const handleFilterChange = (filterName: string, value: string) => {
+    console.log(`Filter change: ${filterName} = ${value}`);
+
+    // Mark that initial loading is complete when user manually changes filters
+    if (!isInitialized) {
+      setIsInitialized(true);
+    }
+
     setFilters(prev => {
       const newFilters = { ...prev, [filterName]: value };
 
@@ -228,8 +238,56 @@ const GrenadeLibrary = () => {
         newFilters.playerSide = 'all';
       }
 
+      console.log('New filters:', newFilters);
       return newFilters;
     });
+
+    // Handle map change with auto-selection of first match
+    if (filterName === 'map') {
+      // Load matches for the new map and auto-select the first one
+      const loadMatchesForMap = async () => {
+        try {
+          const params = new URLSearchParams();
+          params.append('map', value);
+
+          const response = await get(
+            `/grenade-library/filter-options?${params.toString()}`
+          );
+          const data = response.data as FilterOptions;
+
+          setFilterOptions(prev => ({
+            ...prev,
+            matches: data.matches,
+            rounds: [], // Reset rounds when map changes
+            players: [], // Reset players when map changes
+          }));
+
+          // Auto-select first match when map changes
+          if (data.matches.length > 0) {
+            console.log(`Auto-selecting first match: ${data.matches[0].id} for map: ${value}`);
+            setFilters(prev => ({
+              ...prev,
+              matchId: data.matches[0].id,
+              roundNumber: 'all', // Reset to "All Rounds"
+              playerSteamId: 'all', // Reset to "All Players"
+            }));
+          } else {
+            // No matches for this map, reset match-dependent filters
+            console.log(`No matches found for map: ${value}`);
+            setFilters(prev => ({
+              ...prev,
+              matchId: '',
+              roundNumber: 'all',
+              playerSteamId: 'all',
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load matches for map:', error);
+        }
+      };
+
+      loadMatchesForMap();
+    }
   };
 
   // Get the current map from filters
@@ -269,7 +327,7 @@ const GrenadeLibrary = () => {
         <p className="text-sm text-gray-600 mb-2">
           Current map: {currentMap} | Grenades: {grenadePositions.length}
         </p>
-        <MapVisualization
+        <MapVisualizationKonva
           mapName={currentMap}
           grenadePositions={grenadePositions}
         />
