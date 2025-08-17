@@ -67,6 +67,7 @@ class GrenadeEventTest extends TestCase
             'round_time',
             'tick_timestamp',
             'player_steam_id',
+            'player_side',
             'grenade_type',
             'player_x',
             'player_y',

@@ -63,7 +63,9 @@ class GunfightEventTest extends TestCase
             'round_time',
             'tick_timestamp',
             'player_1_steam_id',
+            'player_1_side',
             'player_2_steam_id',
+            'player_2_side',
             'player_1_hp_start',
             'player_2_hp_start',
             'player_1_armor',
@@ -98,6 +100,8 @@ class GunfightEventTest extends TestCase
             'round_number' => 10,
             'round_time' => 180,
             'tick_timestamp' => 987654321,
+            'player_1_side' => 'CT',
+            'player_2_side' => 'T',
             'player_1_hp_start' => 75,
             'player_2_hp_start' => 90,
             'player_1_armor' => 50,
@@ -124,6 +128,8 @@ class GunfightEventTest extends TestCase
         $this->assertIsInt($gunfightEvent->round_number);
         $this->assertIsInt($gunfightEvent->round_time);
         $this->assertIsInt($gunfightEvent->tick_timestamp);
+        $this->assertIsString($gunfightEvent->player_1_side);
+        $this->assertIsString($gunfightEvent->player_2_side);
         $this->assertIsInt($gunfightEvent->player_1_hp_start);
         $this->assertIsInt($gunfightEvent->player_2_hp_start);
         $this->assertIsInt($gunfightEvent->player_1_armor);

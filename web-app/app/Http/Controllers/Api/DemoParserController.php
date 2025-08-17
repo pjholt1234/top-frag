@@ -19,6 +19,7 @@ class DemoParserController extends Controller
         Log::channel('parser')->info('Demo parser event received', [
             'job_id' => $jobId,
             'event_name' => $eventName,
+            'data' => $request->input('data', []),
         ]);
 
         $this->demoParserService->createMatchEvent($jobId, $request->input('data', []), $eventName);

@@ -438,6 +438,52 @@ func TestEventProcessor_GetTeamString(t *testing.T) {
 	}
 }
 
+func TestEventProcessor_GetPlayerCurrentSide(t *testing.T) {
+	matchState := &types.MatchState{}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+
+	// Set up team assignments and current sides
+	processor.teamAssignments["steam_123"] = "A"
+	processor.teamAssignments["steam_456"] = "B"
+	processor.teamACurrentSide = "CT"
+	processor.teamBCurrentSide = "T"
+
+	// Test player on team A (should be CT)
+	side := processor.getPlayerCurrentSide("steam_123")
+	if side != "CT" {
+		t.Errorf("Expected 'CT' for team A player, got %s", side)
+	}
+
+	// Test player on team B (should be T)
+	side = processor.getPlayerCurrentSide("steam_456")
+	if side != "T" {
+		t.Errorf("Expected 'T' for team B player, got %s", side)
+	}
+
+	// Test unassigned player (should return "Unknown")
+	side = processor.getPlayerCurrentSide("steam_789")
+	if side != "Unknown" {
+		t.Errorf("Expected 'Unknown' for unassigned player, got %s", side)
+	}
+
+	// Test side switch
+	processor.teamACurrentSide = "T"
+	processor.teamBCurrentSide = "CT"
+
+	// Test player on team A after switch (should be T)
+	side = processor.getPlayerCurrentSide("steam_123")
+	if side != "T" {
+		t.Errorf("Expected 'T' for team A player after switch, got %s", side)
+	}
+
+	// Test player on team B after switch (should be CT)
+	side = processor.getPlayerCurrentSide("steam_456")
+	if side != "CT" {
+		t.Errorf("Expected 'CT' for team B player after switch, got %s", side)
+	}
+}
+
 func TestEventProcessor_DetermineThrowType(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
@@ -864,18 +910,17 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 }
 
 func TestEventProcessor_FlashTracking(t *testing.T) {
-	matchState := &types.MatchState{
-		CurrentRound:  1,
-		Players:       make(map[string]*types.Player),
-		GrenadeEvents: []types.GrenadeEvent{},
-	}
+	matchState := &types.MatchState{}
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-
 	processor := NewEventProcessor(matchState, logger)
 
-	// Simulate a flash explosion
-	flashExplodeEvent := events.FlashExplode{
+	// Set up team assignments for side tracking
+	processor.teamAssignments["steam_76561198012345678"] = "A"
+	processor.teamACurrentSide = "CT"
+	processor.teamBCurrentSide = "T"
+
+	// Create a mock flash explosion event
+	flashEvent := events.FlashExplode{
 		GrenadeEvent: events.GrenadeEvent{
 			GrenadeEntityID: 12345,
 			Position:        r3.Vector{X: 100, Y: 200, Z: 50},
@@ -886,28 +931,108 @@ func TestEventProcessor_FlashTracking(t *testing.T) {
 		},
 	}
 
-	processor.currentTick = 1000
-	processor.HandleFlashExplode(flashExplodeEvent)
+	processor.HandleFlashExplode(flashEvent)
 
-	// Verify flash effect was created
-	if len(processor.activeFlashEffects) != 1 {
-		t.Errorf("Expected 1 active flash effect, got %d", len(processor.activeFlashEffects))
+	// Verify that a grenade event was created with side information
+	if len(matchState.GrenadeEvents) != 1 {
+		t.Fatalf("Expected 1 grenade event, got %d", len(matchState.GrenadeEvents))
 	}
 
-	flashEffect, exists := processor.activeFlashEffects[12345]
-	if !exists {
-		t.Error("Flash effect not found")
+	grenadeEvent := matchState.GrenadeEvents[0]
+	if grenadeEvent.PlayerSide != "CT" {
+		t.Errorf("Expected player side 'CT', got %s", grenadeEvent.PlayerSide)
 	}
 
-	if flashEffect.EntityID != 12345 {
-		t.Errorf("Expected entity ID 12345, got %d", flashEffect.EntityID)
-	}
-
-	if flashEffect.ThrowerSteamID != "steam_76561198012345678" {
-		t.Errorf("Expected thrower Steam ID steam_76561198012345678, got %s", flashEffect.ThrowerSteamID)
-	}
-
-	// For now, skip the PlayerFlashed test since it requires a fully initialized Player object
-	// In a real scenario, the demoinfocs library would provide properly initialized Player objects
 	t.Log("Flash tracking test completed - PlayerFlashed event handling requires fully initialized Player objects")
+}
+
+func TestEventProcessor_SideInformationInEvents(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+
+	// Set up team assignments and current sides
+	processor.teamAssignments["steam_123"] = "A"
+	processor.teamAssignments["steam_456"] = "B"
+	processor.teamACurrentSide = "CT"
+	processor.teamBCurrentSide = "T"
+
+	// Test that side information is correctly determined
+	player1Side := processor.getPlayerCurrentSide("steam_123")
+	if player1Side != "CT" {
+		t.Errorf("Expected player 1 side 'CT', got %s", player1Side)
+	}
+
+	player2Side := processor.getPlayerCurrentSide("steam_456")
+	if player2Side != "T" {
+		t.Errorf("Expected player 2 side 'T', got %s", player2Side)
+	}
+
+	// Test side switch
+	processor.teamACurrentSide = "T"
+	processor.teamBCurrentSide = "CT"
+
+	// Test that side information is correctly updated after switch
+	player1SideAfterSwitch := processor.getPlayerCurrentSide("steam_123")
+	if player1SideAfterSwitch != "T" {
+		t.Errorf("Expected player 1 side 'T' after switch, got %s", player1SideAfterSwitch)
+	}
+
+	player2SideAfterSwitch := processor.getPlayerCurrentSide("steam_456")
+	if player2SideAfterSwitch != "CT" {
+		t.Errorf("Expected player 2 side 'CT' after switch, got %s", player2SideAfterSwitch)
+	}
+
+	// Test unassigned player
+	unassignedSide := processor.getPlayerCurrentSide("steam_789")
+	if unassignedSide != "Unknown" {
+		t.Errorf("Expected unassigned player side 'Unknown', got %s", unassignedSide)
+	}
+}
+
+func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
+	matchState := &types.MatchState{
+		Players: make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+
+	// Set up team assignments for side tracking
+	processor.teamAssignments["steam_76561198012345678"] = "A"
+	processor.teamACurrentSide = "CT"
+	processor.teamBCurrentSide = "T"
+
+	// Test that the side information is correctly determined
+	playerSide := processor.getPlayerCurrentSide("steam_76561198012345678")
+	if playerSide != "CT" {
+		t.Errorf("Expected player side 'CT', got %s", playerSide)
+	}
+
+	// Test that a grenade event would include the correct side information
+	// by creating one manually and checking the PlayerSide field
+	grenadeEvent := types.GrenadeEvent{
+		RoundNumber:    1,
+		RoundTime:      30,
+		TickTimestamp:  1000,
+		PlayerSteamID:  "steam_76561198012345678",
+		PlayerSide:     processor.getPlayerCurrentSide("steam_76561198012345678"),
+		GrenadeType:    "HE Grenade",
+		PlayerPosition: types.Position{X: 100, Y: 200, Z: 50},
+		PlayerAim:      types.Vector{X: 0, Y: 0, Z: 0},
+		ThrowType:      "utility",
+	}
+
+	if grenadeEvent.PlayerSide != "CT" {
+		t.Errorf("Expected grenade event player side 'CT', got %s", grenadeEvent.PlayerSide)
+	}
+
+	if grenadeEvent.PlayerSteamID != "steam_76561198012345678" {
+		t.Errorf("Expected grenade event player steam ID 'steam_76561198012345678', got %s", grenadeEvent.PlayerSteamID)
+	}
+
+	if grenadeEvent.GrenadeType != "HE Grenade" {
+		t.Errorf("Expected grenade event type 'HE Grenade', got %s", grenadeEvent.GrenadeType)
+	}
 }

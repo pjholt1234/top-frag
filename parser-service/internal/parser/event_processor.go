@@ -294,6 +294,7 @@ func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		RoundTime:      roundTime,
 		TickTimestamp:  tickTimestamp,
 		PlayerSteamID:  playerSteamID,
+		PlayerSide:     ep.getPlayerCurrentSide(playerSteamID),
 		GrenadeType:    e.Projectile.WeaponInstance.Type.String(),
 		PlayerPosition: playerPos,
 		PlayerAim:      playerAim,
@@ -376,6 +377,7 @@ func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) {
 		RoundTime:      ep.getCurrentRoundTime(),
 		TickTimestamp:  ep.currentTick,
 		PlayerSteamID:  flashEffect.ThrowerSteamID,
+		PlayerSide:     ep.getPlayerCurrentSide(flashEffect.ThrowerSteamID),
 		GrenadeType:    "Flashbang",
 		PlayerPosition: playerPos,
 		PlayerAim:      playerAim,
@@ -620,12 +622,17 @@ func (ep *EventProcessor) createGunfightEvent(e events.Kill, isFirstKill bool) t
 
 	distance := types.CalculateDistance(player1Pos, player2Pos)
 
+	player1SteamID := types.SteamIDToString(e.Killer.SteamID64)
+	player2SteamID := types.SteamIDToString(e.Victim.SteamID64)
+
 	gunfightEvent := types.GunfightEvent{
 		RoundNumber:       ep.matchState.CurrentRound,
 		RoundTime:         roundTime,
 		TickTimestamp:     ep.currentTick,
-		Player1SteamID:    types.SteamIDToString(e.Killer.SteamID64),
-		Player2SteamID:    types.SteamIDToString(e.Victim.SteamID64),
+		Player1SteamID:    player1SteamID,
+		Player2SteamID:    player2SteamID,
+		Player1Side:       ep.getPlayerCurrentSide(player1SteamID),
+		Player2Side:       ep.getPlayerCurrentSide(player2SteamID),
 		Player1HPStart:    ep.getPlayerHP(e.Killer),
 		Player2HPStart:    ep.getPlayerHP(e.Victim),
 		Player1Armor:      ep.getPlayerArmor(e.Killer),
@@ -647,8 +654,7 @@ func (ep *EventProcessor) createGunfightEvent(e events.Kill, isFirstKill bool) t
 		IsFirstKill:       isFirstKill,
 	}
 
-	victorSteamID := types.SteamIDToString(e.Killer.SteamID64)
-	gunfightEvent.VictorSteamID = &victorSteamID
+	gunfightEvent.VictorSteamID = &player1SteamID
 
 	gunfightEvent.DamageDealt = 100 - gunfightEvent.Player2HPStart
 
@@ -806,24 +812,46 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 	}
 }
 
-// assignTeamBasedOnRound1To12 assigns a player to team A or B based on their side in rounds 1-12
+// assignTeamBasedOnRound1To12 assigns a player to team A or B based on their side in rounds 0-12
 func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) {
-	// Only assign teams during rounds 1-12
+	ep.logger.WithFields(logrus.Fields{
+		"steam_id":            steamID,
+		"side":                side,
+		"current_round":       ep.currentRound,
+		"assignment_complete": ep.assignmentComplete,
+	}).Debug("Attempting team assignment")
+
+	// Only assign teams during rounds 0-12 (allow round 0 for early events)
 	if ep.currentRound > 12 {
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id":      steamID,
+			"current_round": ep.currentRound,
+		}).Debug("Skipping team assignment - round > 12")
 		return
 	}
 
 	if ep.assignmentComplete {
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id": steamID,
+		}).Debug("Skipping team assignment - already complete")
 		return // Stop assigning once complete
 	}
 
 	if _, assigned := ep.teamAssignments[steamID]; assigned {
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id": steamID,
+		}).Debug("Skipping team assignment - player already assigned")
 		return // Already assigned
 	}
 
-	// Assign based on side in rounds 1-12
+	// Assign based on side in rounds 0-12
 	if side == "CT" {
 		ep.teamAssignments[steamID] = "A"
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id":      steamID,
+			"assigned_team": "A",
+			"side":          side,
+		}).Info("Player assigned to team A (CT)")
 		if ep.teamAStartedAs == "" {
 			ep.teamAStartedAs = "CT"
 			ep.teamBStartedAs = "T"
@@ -832,6 +860,11 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 		}
 	} else if side == "T" {
 		ep.teamAssignments[steamID] = "B"
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id":      steamID,
+			"assigned_team": "B",
+			"side":          side,
+		}).Info("Player assigned to team B (T)")
 		if ep.teamBStartedAs == "" {
 			ep.teamBStartedAs = "T"
 			ep.teamAStartedAs = "CT"
@@ -859,6 +892,29 @@ func (ep *EventProcessor) getAssignedTeam(steamID string) string {
 		return team
 	}
 	return "A" // Default fallback
+}
+
+// getPlayerCurrentSide returns the current side (CT/T) for a player
+func (ep *EventProcessor) getPlayerCurrentSide(steamID string) string {
+	assignedTeam, assigned := ep.teamAssignments[steamID]
+
+	if !assigned {
+		ep.logger.WithFields(logrus.Fields{
+			"steam_id":               steamID,
+			"current_round":          ep.currentRound,
+			"team_assignments_count": len(ep.teamAssignments),
+		}).Debug("Player not assigned to team")
+		return "Unknown"
+	}
+
+	if assignedTeam == "A" {
+		return ep.teamACurrentSide
+	} else if assignedTeam == "B" {
+		return ep.teamBCurrentSide
+	}
+
+	// Default fallback if team assignment hasn't happened yet
+	return "Unknown"
 }
 
 // updateTeamWins updates the win count for the appropriate team based on round winner

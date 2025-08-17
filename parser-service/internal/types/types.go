@@ -59,6 +59,8 @@ type GunfightEvent struct {
 	VictorSteamID *string `json:"victor_steam_id,omitempty"`
 	DamageDealt   int     `json:"damage_dealt"`
 	IsFirstKill   bool    `json:"is_first_kill"`
+	Player1Side   string  `json:"player_1_side"` // "CT" or "T"
+	Player2Side   string  `json:"player_2_side"` // "CT" or "T"
 }
 
 type AffectedPlayer struct {
@@ -73,6 +75,7 @@ type GrenadeEvent struct {
 	TickTimestamp int64 `json:"tick_timestamp"`
 
 	PlayerSteamID string `json:"player_steam_id"`
+	PlayerSide    string `json:"player_side"` // "CT" or "T"
 	GrenadeType   string `json:"grenade_type"`
 
 	PlayerPosition Position `json:"player_position"`

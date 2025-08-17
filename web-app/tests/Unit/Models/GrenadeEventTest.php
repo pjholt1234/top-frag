@@ -66,6 +66,7 @@ class GrenadeEventTest extends TestCase
             'round_time',
             'tick_timestamp',
             'player_steam_id',
+            'player_side',
             'grenade_type',
             'player_x',
             'player_y',
@@ -95,6 +96,7 @@ class GrenadeEventTest extends TestCase
             'round_number' => 7,
             'round_time' => 150,
             'tick_timestamp' => 987654321,
+            'player_side' => 'CT',
             'grenade_type' => GrenadeType::SMOKE_GRENADE,
             'player_x' => 200.0,
             'player_y' => 300.0,
@@ -118,6 +120,7 @@ class GrenadeEventTest extends TestCase
         $this->assertIsInt($grenadeEvent->round_number);
         $this->assertIsInt($grenadeEvent->round_time);
         $this->assertIsInt($grenadeEvent->tick_timestamp);
+        $this->assertIsString($grenadeEvent->player_side);
         $this->assertInstanceOf(GrenadeType::class, $grenadeEvent->grenade_type);
         $this->assertIsFloat($grenadeEvent->player_x);
         $this->assertIsFloat($grenadeEvent->player_y);
