@@ -9,6 +9,8 @@ interface MapVisualizationProps {
         grenade_type?: string;
         player_name?: string;
         round_number?: number;
+        player_x?: number;
+        player_y?: number;
     }>;
 }
 
@@ -19,6 +21,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
     // Get map metadata for coordinate conversion
     const mapMetadata = getMapMetadata(mapName);
@@ -73,7 +76,7 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Draw grenade positions
-        grenadePositions.forEach(position => {
+        grenadePositions.forEach((position, index) => {
             const pixelCoords = convertGameToPixelCoords(position.x, position.y);
 
             // Get color based on grenade type
@@ -88,6 +91,12 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
 
             const fillColor = colors[position.grenade_type || ''] || '#ff0000';
 
+            // Set opacity based on selection
+            const isSelected = selectedMarkerIndex === index;
+            const opacity = isSelected ? 1.0 : (selectedMarkerIndex !== null ? 0.3 : 1.0);
+
+            ctx.globalAlpha = opacity;
+
             // Draw colored circle
             ctx.beginPath();
             ctx.arc(pixelCoords.x, pixelCoords.y, 8, 0, 2 * Math.PI);
@@ -96,8 +105,36 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            // If this marker is selected, draw line to player position
+            if (isSelected && position.player_x !== undefined && position.player_y !== undefined) {
+                const playerPixelCoords = convertGameToPixelCoords(position.player_x, position.player_y);
+
+                // Draw dotted line
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(pixelCoords.x, pixelCoords.y);
+                ctx.lineTo(playerPixelCoords.x, playerPixelCoords.y);
+                ctx.stroke();
+
+                // Draw X at player position
+                ctx.setLineDash([]);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(playerPixelCoords.x - 6, playerPixelCoords.y - 6);
+                ctx.lineTo(playerPixelCoords.x + 6, playerPixelCoords.y + 6);
+                ctx.moveTo(playerPixelCoords.x - 6, playerPixelCoords.y + 6);
+                ctx.lineTo(playerPixelCoords.x + 6, playerPixelCoords.y - 6);
+                ctx.stroke();
+            }
+
+            // Reset global alpha
+            ctx.globalAlpha = 1.0;
         });
-    }, [grenadePositions, imageLoaded, convertGameToPixelCoords]);
+    }, [grenadePositions, imageLoaded, convertGameToPixelCoords, selectedMarkerIndex]);
 
     // Handle image load
     const handleImageLoad = () => {
@@ -118,6 +155,41 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
             drawGrenadePositions();
         }
     }, [drawGrenadePositions, imageLoaded]);
+
+    // Handle click on canvas
+    const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // Scale coordinates to match canvas internal resolution
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const canvasX = x * scaleX;
+        const canvasY = y * scaleY;
+
+        // Check if click is on a marker
+        let clickedMarkerIndex = -1;
+        grenadePositions.forEach((position, index) => {
+            const pixelCoords = convertGameToPixelCoords(position.x, position.y);
+            const distance = Math.sqrt(
+                Math.pow(canvasX - pixelCoords.x, 2) + Math.pow(canvasY - pixelCoords.y, 2)
+            );
+
+            if (distance <= 12) { // Click radius slightly larger than marker radius
+                clickedMarkerIndex = index;
+            }
+        });
+
+        if (clickedMarkerIndex !== -1) {
+            setSelectedMarkerIndex(clickedMarkerIndex);
+        } else {
+            setSelectedMarkerIndex(null);
+        }
+    };
 
     // Handle mouse move to show cursor coordinates
     const handleMouseMove = (_event: React.MouseEvent<HTMLDivElement>) => {
@@ -145,8 +217,9 @@ const MapVisualization: React.FC<MapVisualizationProps> = ({
             />
             <canvas
                 ref={canvasRef}
-                className="absolute top-0 left-0 pointer-events-none"
+                className="absolute top-0 left-0 cursor-pointer"
                 style={{ width: '512px', height: '512px' }}
+                onClick={handleCanvasClick}
             />
         </div>
     );

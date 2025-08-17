@@ -242,6 +242,8 @@ const GrenadeLibrary = () => {
     grenade_type: grenade.grenade_type,
     player_name: grenade.player_name,
     round_number: grenade.round_number,
+    player_x: grenade.player_x,
+    player_y: grenade.player_y,
   }));
 
   return (
