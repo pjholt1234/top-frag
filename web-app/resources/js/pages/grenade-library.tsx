@@ -310,8 +310,13 @@ const GrenadeLibrary = () => {
   }));
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Grenade Library</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Grenade Library</h1>
+        <p className="text-muted-foreground">
+          Discover grenades from your recent matches
+        </p>
+      </div>
 
       <GrenadeFilters
         filters={filters}
@@ -324,14 +329,7 @@ const GrenadeLibrary = () => {
         playerSides={filterOptions.playerSides}
       />
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">
-          {currentMap.replace('de_', '').toUpperCase()} - {grenades.length}{' '}
-          Grenades
-        </h2>
-        <p className="text-sm text-gray-600 mb-2">
-          Current map: {currentMap} | Grenades: {grenadePositions.length}
-        </p>
+      <div className="mt-6">
         <MapVisualizationKonva
           mapName={currentMap}
           grenadePositions={grenadePositions}
