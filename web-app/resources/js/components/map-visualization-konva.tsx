@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Stage, Layer, Image, Circle, Line, Text } from 'react-konva';
 import { getMapMetadata } from '../config/maps';
+import ZoomSlider from './zoom-slider';
 
 interface MapVisualizationProps {
     mapName: string;
@@ -96,7 +97,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
         };
 
         const newScale = e.evt.deltaY > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-        const clampedScale = Math.max(1, Math.min(3, newScale));
+        const clampedScale = Math.max(1, Math.min(5, newScale));
 
         setZoomLevel(clampedScale);
 
@@ -128,26 +129,21 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
         };
     };
 
+    // Handle zoom change from slider
+    const handleZoomChange = (newZoomLevel: number) => {
+        setZoomLevel(newZoomLevel);
+    };
+
     return (
         <div className="flex items-start gap-4">
             {/* Zoom Slider */}
-            <div className="flex flex-col items-center">
-                <input
-                    type="range"
-                    min="1.0"
-                    max="3.0"
-                    step="0.1"
-                    value={zoomLevel}
-                    onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-                    className="w-6 h-64 transform -rotate-90 origin-center"
-                    style={{
-                        transformOrigin: 'center 128px'
-                    }}
-                />
-                <div className="mt-2 text-xs text-gray-600 font-medium">
-                    {Math.round(zoomLevel * 100)}%
-                </div>
-            </div>
+            <ZoomSlider
+                zoomLevel={zoomLevel}
+                onZoomChange={handleZoomChange}
+                minZoom={1.0}
+                maxZoom={5.0}
+                height={490}
+            />
 
             {/* Map Container */}
             <div className="border border-gray-300 rounded-lg overflow-hidden">
