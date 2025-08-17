@@ -52,7 +52,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
             value={filters.map}
             onValueChange={value => handleFilterChange('map', value)}
           >
-            <SelectTrigger id="map-filter" className="h-8">
+            <SelectTrigger id="map-filter" className="h-8 w-full">
               <SelectValue placeholder="Select map" />
             </SelectTrigger>
             <SelectContent>

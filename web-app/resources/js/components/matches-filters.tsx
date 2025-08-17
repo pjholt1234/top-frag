@@ -76,7 +76,7 @@ export function MatchesFilters({
               handleFilterChange('map', value === 'all' ? '' : value)
             }
           >
-            <SelectTrigger id="map-filter" className="h-8">
+            <SelectTrigger id="map-filter" className="h-8 w-full">
               <SelectValue placeholder="All maps" />
             </SelectTrigger>
             <SelectContent>
@@ -100,7 +100,7 @@ export function MatchesFilters({
               handleFilterChange('match_type', value === 'all' ? '' : value)
             }
           >
-            <SelectTrigger id="match-type-filter" className="h-8">
+            <SelectTrigger id="match-type-filter" className="h-8 w-full">
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
@@ -127,7 +127,7 @@ export function MatchesFilters({
               )
             }
           >
-            <SelectTrigger id="participation-filter" className="h-8">
+            <SelectTrigger id="participation-filter" className="h-8 w-full">
               <SelectValue placeholder="All matches" />
             </SelectTrigger>
             <SelectContent>
@@ -152,7 +152,7 @@ export function MatchesFilters({
               )
             }
           >
-            <SelectTrigger id="result-filter" className="h-8">
+            <SelectTrigger id="result-filter" className="h-8 w-full">
               <SelectValue placeholder="All results" />
             </SelectTrigger>
             <SelectContent>
