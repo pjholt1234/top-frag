@@ -50,13 +50,22 @@ const ZoomSlider: React.FC<ZoomSliderProps> = ({
         title={`Zoom: ${Math.round(zoomLevel * 100)}%`}
       >
         {/* Main slider bar */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 w-2 h-full bg-gray-300 rounded-sm"></div>
+        <div
+          className="absolute left-1/2 transform -translate-x-1/2 w-2 h-full rounded-sm"
+          style={{ backgroundColor: 'oklch(1 0 0 / 1)' }}
+        ></div>
 
         {/* Top cap */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-gray-300"></div>
+        <div
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-1"
+          style={{ backgroundColor: 'oklch(1 0 0 / 1)' }}
+        ></div>
 
         {/* Bottom cap */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-gray-300"></div>
+        <div
+          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1"
+          style={{ backgroundColor: 'oklch(1 0 0 / 1)' }}
+        ></div>
 
         {/* Tick marks */}
         {[1, 2, 3, 4, 5].map(tick => {
@@ -64,11 +73,12 @@ const ZoomSlider: React.FC<ZoomSliderProps> = ({
           return (
             <div
               key={tick}
-              className="absolute w-3 h-0.5 bg-gray-300"
+              className="absolute w-3 h-0.5"
               style={{
                 left: '50%',
                 transform: 'translateX(-50%)',
                 top: `${tickPosition}px`,
+                backgroundColor: 'oklch(1 0 0 / 1)',
               }}
             ></div>
           );
@@ -76,7 +86,7 @@ const ZoomSlider: React.FC<ZoomSliderProps> = ({
 
         {/* Slider thumb */}
         <div
-          className="absolute w-4 h-4 bg-white border-2 border-black rounded-full cursor-pointer z-10"
+          className="absolute w-4 h-4 bg-custom-orange border-2 border-black rounded-full cursor-pointer z-10"
           style={{
             left: '50%',
             transform: 'translateX(-50%)',

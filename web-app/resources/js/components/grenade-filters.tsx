@@ -31,7 +31,6 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
   onFilterChange,
   maps,
   matches,
-  rounds,
   grenadeTypes,
   players,
   playerSides,
@@ -84,34 +83,6 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
               {matches.map(match => (
                 <SelectItem key={match.id} value={match.id}>
                   {match.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Round Filter - ALLOW "All" option, depends on Match */}
-        <div className="space-y-1 min-w-[120px]">
-          <Label htmlFor="round-filter" className="text-xs">
-            Round
-          </Label>
-          <Select
-            value={filters.roundNumber}
-            onValueChange={value => handleFilterChange('roundNumber', value)}
-            disabled={!filters.matchId || rounds.length === 0}
-          >
-            <SelectTrigger id="round-filter" className="h-8">
-              <SelectValue
-                placeholder={
-                  !filters.matchId ? 'Select match first' : 'Select round'
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Rounds</SelectItem>
-              {rounds.map(round => (
-                <SelectItem key={round.number} value={round.number.toString()}>
-                  Round {round.number}
                 </SelectItem>
               ))}
             </SelectContent>

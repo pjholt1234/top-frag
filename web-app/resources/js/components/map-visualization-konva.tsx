@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Stage, Layer, Image, Circle, Line } from 'react-konva';
 import { getMapMetadata } from '../config/maps';
 import ZoomSlider from './zoom-slider';
+import RoundSlider from './round-slider';
 
 interface MapVisualizationProps {
   mapName: string;
@@ -26,6 +27,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   // Get map metadata for coordinate conversion
   const mapMetadata = getMapMetadata(mapName);
@@ -140,142 +142,171 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     setZoomLevel(newZoomLevel);
   };
 
+  // Calculate max rounds from grenade positions
+  const maxRounds = useMemo(() => {
+    if (grenadePositions.length === 0) return 30; // Default to 30 rounds
+    return Math.max(...grenadePositions.map(pos => pos.round_number || 0));
+  }, [grenadePositions]);
+
+  // Filter grenade positions based on selected round
+  const filteredGrenadePositions = useMemo(() => {
+    if (selectedRound === null) {
+      return grenadePositions; // Show all rounds
+    }
+    return grenadePositions.filter(pos => pos.round_number === selectedRound);
+  }, [grenadePositions, selectedRound]);
+
   return (
-    <div className="flex items-start gap-4">
-      {/* Zoom Slider */}
-      <ZoomSlider
-        zoomLevel={zoomLevel}
-        onZoomChange={handleZoomChange}
-        minZoom={1.0}
-        maxZoom={5.0}
-        height={490}
-      />
+    <div className="flex flex-col items-start gap-4">
+      <div className="flex items-start gap-4">
+        {/* Zoom Slider */}
+        <ZoomSlider
+          zoomLevel={zoomLevel}
+          onZoomChange={handleZoomChange}
+          minZoom={1.0}
+          maxZoom={5.0}
+          height={490}
+        />
 
-      {/* Map Container */}
-      <div className="border border-gray-300 rounded-lg overflow-hidden">
-        <Stage
-          width={512}
-          height={512}
-          scaleX={zoomLevel}
-          scaleY={zoomLevel}
-          x={stagePosition.x}
-          y={stagePosition.y}
-          onWheel={handleWheel}
-          draggable={zoomLevel > 1.0}
-          onDragEnd={e => {
-            const stage = e.target;
-            const boundedPos = constrainPosition(
-              { x: stage.x(), y: stage.y() },
-              zoomLevel
-            );
-            setStagePosition(boundedPos);
-          }}
+        {/* Map Container */}
+        <div
+          className="border rounded-lg overflow-hidden"
+          style={{ borderColor: 'oklch(1 0 0 / 0.1)' }}
         >
-          <Layer>
-            {/* Map Image */}
-            {image && <Image image={image} width={512} height={512} />}
-
-            {/* Grenade Markers */}
-            {grenadePositions.map((position, index) => {
-              const pixelCoords = convertGameToPixelCoords(
-                position.x,
-                position.y
+          <Stage
+            width={512}
+            height={512}
+            scaleX={zoomLevel}
+            scaleY={zoomLevel}
+            x={stagePosition.x}
+            y={stagePosition.y}
+            onWheel={handleWheel}
+            draggable={zoomLevel > 1.0}
+            onDragEnd={e => {
+              const stage = e.target;
+              const boundedPos = constrainPosition(
+                { x: stage.x(), y: stage.y() },
+                zoomLevel
               );
-              const isSelected = selectedMarkerIndex === index;
-              const opacity = isSelected
-                ? 1.0
-                : selectedMarkerIndex !== null
-                  ? 0.3
-                  : 1.0;
+              setStagePosition(boundedPos);
+            }}
+          >
+            <Layer>
+              {/* Map Image */}
+              {image && <Image image={image} width={512} height={512} />}
 
-              return (
-                <React.Fragment key={index}>
-                  {/* Grenade Marker */}
-                  <Circle
-                    x={pixelCoords.x}
-                    y={pixelCoords.y}
-                    radius={8}
-                    fill={getGrenadeColor(position.grenade_type || '')}
-                    stroke="white"
-                    strokeWidth={2}
-                    opacity={opacity}
-                    onClick={() => handleMarkerClick(index)}
-                    onTap={() => handleMarkerClick(index)}
-                  />
+              {/* Grenade Markers */}
+              {filteredGrenadePositions.map((position, index) => {
+                const pixelCoords = convertGameToPixelCoords(
+                  position.x,
+                  position.y
+                );
+                const isSelected = selectedMarkerIndex === index;
+                const opacity = isSelected
+                  ? 1.0
+                  : selectedMarkerIndex !== null
+                    ? 0.3
+                    : 1.0;
 
-                  {/* Player Position Line and X (when selected) */}
-                  {isSelected &&
-                    position.player_x !== undefined &&
-                    position.player_y !== undefined && (
-                      <>
-                        <Line
-                          points={[
-                            pixelCoords.x,
-                            pixelCoords.y,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).x,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).y,
-                          ]}
-                          stroke="rgba(255, 255, 255, 0.6)"
-                          strokeWidth={2}
-                          dash={[5, 5]}
-                        />
-                        <Line
-                          points={[
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).x - 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).y - 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).x + 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).y + 6,
-                          ]}
-                          stroke="rgba(255, 255, 255, 0.8)"
-                          strokeWidth={3}
-                        />
-                        <Line
-                          points={[
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).x - 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).y + 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).x + 6,
-                            convertGameToPixelCoords(
-                              position.player_x,
-                              position.player_y
-                            ).y - 6,
-                          ]}
-                          stroke="rgba(255, 255, 255, 0.8)"
-                          strokeWidth={3}
-                        />
-                      </>
-                    )}
-                </React.Fragment>
-              );
-            })}
-          </Layer>
-        </Stage>
+                return (
+                  <React.Fragment key={index}>
+                    {/* Grenade Marker */}
+                    <Circle
+                      x={pixelCoords.x}
+                      y={pixelCoords.y}
+                      radius={8}
+                      fill={getGrenadeColor(position.grenade_type || '')}
+                      stroke="white"
+                      strokeWidth={2}
+                      opacity={opacity}
+                      onClick={() => handleMarkerClick(index)}
+                      onTap={() => handleMarkerClick(index)}
+                    />
+
+                    {/* Player Position Line and X (when selected) */}
+                    {isSelected &&
+                      position.player_x !== undefined &&
+                      position.player_y !== undefined && (
+                        <>
+                          <Line
+                            points={[
+                              pixelCoords.x,
+                              pixelCoords.y,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).x,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).y,
+                            ]}
+                            stroke="rgba(255, 255, 255, 0.6)"
+                            strokeWidth={2}
+                            dash={[5, 5]}
+                          />
+                          <Line
+                            points={[
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).x - 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).y - 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).x + 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).y + 6,
+                            ]}
+                            stroke="rgba(255, 255, 255, 0.8)"
+                            strokeWidth={3}
+                          />
+                          <Line
+                            points={[
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).x - 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).y + 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).x + 6,
+                              convertGameToPixelCoords(
+                                position.player_x,
+                                position.player_y
+                              ).y - 6,
+                            ]}
+                            stroke="rgba(255, 255, 255, 0.8)"
+                            strokeWidth={3}
+                          />
+                        </>
+                      )}
+                  </React.Fragment>
+                );
+              })}
+            </Layer>
+          </Stage>
+        </div>
+      </div>
+
+      {/* Round Slider */}
+      <div className="w-full flex justify-start ml-12">
+        <RoundSlider
+          selectedRound={selectedRound}
+          onRoundChange={setSelectedRound}
+          maxRounds={maxRounds}
+          width={512}
+        />
       </div>
     </div>
   );

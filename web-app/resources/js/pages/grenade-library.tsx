@@ -318,7 +318,6 @@ const GrenadeLibrary = () => {
         onFilterChange={handleFilterChange}
         maps={filterOptions.maps}
         matches={filterOptions.matches}
-        rounds={filterOptions.rounds}
         grenadeTypes={filterOptions.grenadeTypes}
         players={filterOptions.players}
         playerSides={filterOptions.playerSides}
