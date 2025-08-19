@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import MapVisualizationKonva from '../components/map-visualization-konva';
 import GrenadeFilters from '../components/grenade-filters';
-import { useGrenadeLibrary, GrenadeLibraryProvider } from '../hooks/useGrenadeLibrary';
+import GrenadeList from '../components/grenade-list';
+import { useGrenadeLibrary, GrenadeLibraryProvider, GrenadeData } from '../hooks/useGrenadeLibrary';
 
 const GrenadeLibraryContent = () => {
   const {
@@ -10,6 +11,8 @@ const GrenadeLibraryContent = () => {
     error,
     currentMap,
   } = useGrenadeLibrary();
+
+  const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(null);
 
   // Convert grenade data to the format expected by MapVisualization
   const grenadePositions = useMemo(() => {
@@ -21,12 +24,23 @@ const GrenadeLibraryContent = () => {
       round_number: grenade.round_number,
       player_x: grenade.player_x,
       player_y: grenade.player_y,
+      id: grenade.id,
     }));
   }, [grenades]);
 
+  // Handle grenade selection from map
+  const handleMapGrenadeSelect = (grenadeId: number | null) => {
+    setSelectedGrenadeId(grenadeId);
+  };
+
+  // Handle grenade selection from list
+  const handleListGrenadeClick = (grenade: GrenadeData) => {
+    setSelectedGrenadeId(selectedGrenadeId === grenade.id ? null : grenade.id);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="mt-4">
         <h1 className="text-3xl font-bold tracking-tight">Grenade Library</h1>
         <p className="text-muted-foreground">
           Discover grenades from your recent matches
@@ -41,16 +55,24 @@ const GrenadeLibraryContent = () => {
 
       <GrenadeFilters />
 
-      <div className="mt-6">
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center h-64 border rounded-lg bg-muted/50">
             <div className="text-muted-foreground">Loading grenades...</div>
           </div>
         ) : (
-          <MapVisualizationKonva
-            mapName={currentMap}
-            grenadePositions={grenadePositions}
-          />
+          <div className="flex gap-6 flex items-center justify-center">
+            <MapVisualizationKonva
+              mapName={currentMap}
+              grenadePositions={grenadePositions}
+              onGrenadeSelect={handleMapGrenadeSelect}
+              selectedGrenadeId={selectedGrenadeId}
+            />
+            <GrenadeList
+              onGrenadeClick={handleListGrenadeClick}
+              selectedGrenadeId={selectedGrenadeId}
+            />
+          </div>
         )}
       </div>
     </div>

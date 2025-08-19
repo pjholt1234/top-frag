@@ -6,14 +6,28 @@ export interface GrenadeData {
     id: number;
     player_x: number;
     player_y: number;
+    player_z?: number;
+    player_aim_x?: number;
+    player_aim_y?: number;
+    player_aim_z?: number;
     grenade_final_x: number;
     grenade_final_y: number;
+    grenade_final_z?: number;
     grenade_type: string;
     round_number: number;
     match_id: number;
     map: string;
     player_name: string;
     player_steam_id: string | null;
+    player_side?: string;
+    throw_type?: string;
+    damage_dealt?: number;
+    friendly_players_affected?: number;
+    enemy_players_affected?: number;
+    enemy_flash_duration?: number;
+    friendly_flash_duration?: number;
+    flash_duration?: number;
+    effectiveness_rating?: number;
 }
 
 export interface FilterOptions {

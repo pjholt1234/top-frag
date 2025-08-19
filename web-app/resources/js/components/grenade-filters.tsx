@@ -35,7 +35,7 @@ const GrenadeFilters: React.FC = () => {
             <SelectTrigger id="map-filter" className="h-8 w-full">
               <SelectValue placeholder="Select map" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-full">
               {filterOptions.maps.map(map => (
                 <SelectItem key={map.name} value={map.name}>
                   {map.displayName}
@@ -55,7 +55,7 @@ const GrenadeFilters: React.FC = () => {
             onValueChange={value => handleFilterChange('matchId', value)}
             disabled={!filters.map || filterOptions.matches.length === 0}
           >
-            <SelectTrigger id="match-filter" className="h-8">
+            <SelectTrigger id="match-filter" className="h-8 w-full">
               <SelectValue
                 placeholder={!filters.map ? 'Select map first' : 'Select match'}
               />
@@ -102,7 +102,7 @@ const GrenadeFilters: React.FC = () => {
             onValueChange={value => handleFilterChange('playerSteamId', value)}
             disabled={!filters.matchId || filterOptions.players.length === 0}
           >
-            <SelectTrigger id="player-filter" className="h-8">
+            <SelectTrigger id="player-filter" className="h-8 w-full">
               <SelectValue
                 placeholder={
                   !filters.matchId ? 'Select match first' : 'Select player'

@@ -15,12 +15,17 @@ interface MapVisualizationProps {
     round_number?: number;
     player_x?: number;
     player_y?: number;
+    id?: number;
   }>;
+  onGrenadeSelect?: (grenadeId: number | null) => void;
+  selectedGrenadeId?: number | null;
 }
 
 const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   mapName,
   grenadePositions = [],
+  onGrenadeSelect,
+  selectedGrenadeId,
 }) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(
     null
@@ -87,8 +92,19 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
 
   // Handle marker click
   const handleMarkerClick = (index: number) => {
-    setSelectedMarkerIndex(selectedMarkerIndex === index ? null : index);
+    const newSelectedIndex = selectedMarkerIndex === index ? null : index;
+    setSelectedMarkerIndex(newSelectedIndex);
+
+    // Call the callback with the grenade ID
+    if (onGrenadeSelect) {
+      const grenadeId = newSelectedIndex !== null && filteredGrenadePositions[newSelectedIndex]?.id
+        ? filteredGrenadePositions[newSelectedIndex].id
+        : null;
+      onGrenadeSelect(grenadeId);
+    }
   };
+
+
 
   // Handle stage wheel for zoom
   const handleWheel = (e: any) => {
@@ -154,6 +170,18 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     return grenadePositions.filter(pos => pos.round_number === selectedRound);
   }, [grenadePositions, filters.roundNumber]);
 
+  // Update selected marker index when selectedGrenadeId changes from external source
+  React.useEffect(() => {
+    if (selectedGrenadeId !== null) {
+      const index = filteredGrenadePositions.findIndex(pos => pos.id === selectedGrenadeId);
+      if (index !== -1) {
+        setSelectedMarkerIndex(index);
+      }
+    } else {
+      setSelectedMarkerIndex(null);
+    }
+  }, [selectedGrenadeId, filteredGrenadePositions]);
+
   // Handle round change from slider
   const handleRoundChange = useCallback((round: number | null) => {
     const roundValue = round === null ? 'all' : round.toString();
@@ -173,7 +201,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   }, [filters.roundNumber]);
 
   return (
-    <div className="flex flex-col items-start gap-4">
+    <div className="flex flex-col items-start">
       <div className="flex items-start gap-4">
         {/* Zoom Slider */}
         <ZoomSlider
@@ -217,10 +245,10 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                   position.x,
                   position.y
                 );
-                const isSelected = selectedMarkerIndex === index;
+                const isSelected = selectedMarkerIndex === index || selectedGrenadeId === position.id;
                 const opacity = isSelected
                   ? 1.0
-                  : selectedMarkerIndex !== null
+                  : selectedMarkerIndex !== null || selectedGrenadeId !== null
                     ? 0.3
                     : 1.0;
 

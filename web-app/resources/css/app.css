@@ -151,4 +151,22 @@
     .active-menu-custom-orange[data-active="true"] {
         color: var(--custom-orange) !important;
     }
+
+    .scrollbar-thin {
+        scrollbar-width: thin;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: white !important;
+        border-radius: 3px;
+    }
 }
