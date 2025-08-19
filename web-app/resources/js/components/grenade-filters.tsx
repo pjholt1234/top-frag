@@ -7,36 +7,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
 
-interface GrenadeFiltersProps {
-  filters: {
-    map: string;
-    matchId: string;
-    roundNumber: string;
-    grenadeType: string;
-    playerSteamId: string;
-    playerSide: string;
-  };
-  onFilterChange: (filterName: string, value: string) => void;
-  maps: Array<{ name: string; displayName: string }>;
-  matches: Array<{ id: string; name: string }>;
-  rounds: Array<{ number: number }>;
-  grenadeTypes: Array<{ type: string; displayName: string }>;
-  players: Array<{ steam_id: string; name: string }>;
-  playerSides: Array<{ side: string; displayName: string }>;
-}
+const GrenadeFilters: React.FC = () => {
+  const {
+    filters,
+    filterOptions,
+    setFilter,
+  } = useGrenadeLibrary();
 
-const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
-  filters,
-  onFilterChange,
-  maps,
-  matches,
-  grenadeTypes,
-  players,
-  playerSides,
-}) => {
   const handleFilterChange = (key: string, value: string) => {
-    onFilterChange(key, value);
+    setFilter(key as keyof typeof filters, value);
   };
 
   return (
@@ -55,7 +36,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
               <SelectValue placeholder="Select map" />
             </SelectTrigger>
             <SelectContent>
-              {maps.map(map => (
+              {filterOptions.maps.map(map => (
                 <SelectItem key={map.name} value={map.name}>
                   {map.displayName}
                 </SelectItem>
@@ -72,7 +53,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
           <Select
             value={filters.matchId}
             onValueChange={value => handleFilterChange('matchId', value)}
-            disabled={!filters.map || matches.length === 0}
+            disabled={!filters.map || filterOptions.matches.length === 0}
           >
             <SelectTrigger id="match-filter" className="h-8">
               <SelectValue
@@ -80,7 +61,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
               />
             </SelectTrigger>
             <SelectContent>
-              {matches.map(match => (
+              {filterOptions.matches.map(match => (
                 <SelectItem key={match.id} value={match.id}>
                   {match.name}
                 </SelectItem>
@@ -102,7 +83,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
-              {grenadeTypes.map(type => (
+              {filterOptions.grenadeTypes.map(type => (
                 <SelectItem key={type.type} value={type.type}>
                   {type.displayName}
                 </SelectItem>
@@ -119,7 +100,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
           <Select
             value={filters.playerSteamId}
             onValueChange={value => handleFilterChange('playerSteamId', value)}
-            disabled={!filters.matchId || players.length === 0}
+            disabled={!filters.matchId || filterOptions.players.length === 0}
           >
             <SelectTrigger id="player-filter" className="h-8">
               <SelectValue
@@ -130,7 +111,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Players</SelectItem>
-              {players.map(player => (
+              {filterOptions.players.map(player => (
                 <SelectItem key={player.steam_id} value={player.steam_id}>
                   {player.name}
                 </SelectItem>
@@ -153,7 +134,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sides</SelectItem>
-              {playerSides.map(side => (
+              {filterOptions.playerSides.map(side => (
                 <SelectItem key={side.side} value={side.side}>
                   {side.displayName}
                 </SelectItem>

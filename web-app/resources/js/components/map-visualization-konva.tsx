@@ -3,6 +3,7 @@ import { Stage, Layer, Image, Circle, Line } from 'react-konva';
 import { getMapMetadata } from '../config/maps';
 import ZoomSlider from './zoom-slider';
 import RoundSlider from './round-slider';
+import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
 
 interface MapVisualizationProps {
   mapName: string;
@@ -27,7 +28,9 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+
+  // Use the grenade library hook for round state
+  const { filters, setFilter, filterOptions } = useGrenadeLibrary();
 
   // Get map metadata for coordinate conversion
   const mapMetadata = getMapMetadata(mapName);
@@ -142,19 +145,32 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     setZoomLevel(newZoomLevel);
   };
 
-  // Calculate max rounds from grenade positions
-  const maxRounds = useMemo(() => {
-    if (grenadePositions.length === 0) return 30; // Default to 30 rounds
-    return Math.max(...grenadePositions.map(pos => pos.round_number || 0));
-  }, [grenadePositions]);
-
   // Filter grenade positions based on selected round
   const filteredGrenadePositions = useMemo(() => {
-    if (selectedRound === null) {
+    if (filters.roundNumber === 'all') {
       return grenadePositions; // Show all rounds
     }
+    const selectedRound = parseInt(filters.roundNumber);
     return grenadePositions.filter(pos => pos.round_number === selectedRound);
-  }, [grenadePositions, selectedRound]);
+  }, [grenadePositions, filters.roundNumber]);
+
+  // Handle round change from slider
+  const handleRoundChange = useCallback((round: number | null) => {
+    const roundValue = round === null ? 'all' : round.toString();
+    setFilter('roundNumber', roundValue);
+  }, [setFilter]);
+
+  // Calculate max rounds from available rounds
+  const maxRounds = useMemo(() => {
+    if (filterOptions.rounds.length === 0) return 30; // Default fallback
+    return Math.max(...filterOptions.rounds.map(r => r.number));
+  }, [filterOptions.rounds]);
+
+  // Convert round filter to number for slider
+  const selectedRoundForSlider = useMemo(() => {
+    if (filters.roundNumber === 'all') return null;
+    return parseInt(filters.roundNumber);
+  }, [filters.roundNumber]);
 
   return (
     <div className="flex flex-col items-start gap-4">
@@ -237,7 +253,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                                 position.player_y
                               ).x,
                               convertGameToPixelCoords(
-                                position.player_x,
+                                position.player_y,
                                 position.player_y
                               ).y,
                             ]}
@@ -252,7 +268,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                                 position.player_y
                               ).x - 6,
                               convertGameToPixelCoords(
-                                position.player_x,
+                                position.player_y,
                                 position.player_y
                               ).y - 6,
                               convertGameToPixelCoords(
@@ -260,7 +276,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                                 position.player_y
                               ).x + 6,
                               convertGameToPixelCoords(
-                                position.player_x,
+                                position.player_y,
                                 position.player_y
                               ).y + 6,
                             ]}
@@ -274,7 +290,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                                 position.player_y
                               ).x - 6,
                               convertGameToPixelCoords(
-                                position.player_x,
+                                position.player_y,
                                 position.player_y
                               ).y + 6,
                               convertGameToPixelCoords(
@@ -282,7 +298,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                                 position.player_y
                               ).x + 6,
                               convertGameToPixelCoords(
-                                position.player_x,
+                                position.player_y,
                                 position.player_y
                               ).y - 6,
                             ]}
@@ -302,8 +318,8 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
       {/* Round Slider */}
       <div className="w-full flex justify-start ml-12">
         <RoundSlider
-          selectedRound={selectedRound}
-          onRoundChange={setSelectedRound}
+          selectedRound={selectedRoundForSlider}
+          onRoundChange={handleRoundChange}
           maxRounds={maxRounds}
           width={512}
         />
