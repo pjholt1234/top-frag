@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import MapVisualizationKonva from '../components/map-visualization-konva';
+import MapVisualizationSkeleton from '../components/map-visualization-skeleton';
 import GrenadeFilters from '../components/grenade-filters';
 import GrenadeList from '../components/grenade-list';
+import GrenadeListSkeleton from '../components/grenade-list-skeleton';
 import { useGrenadeLibrary, GrenadeLibraryProvider, GrenadeData } from '../hooks/useGrenadeLibrary';
 
 const GrenadeLibraryContent = () => {
@@ -55,24 +57,31 @@ const GrenadeLibraryContent = () => {
 
       <GrenadeFilters />
 
-      <div>
+      <div className="flex gap-6 items-start justify-center">
+        {/* Map - Always visible, shows skeleton when loading */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-64 border rounded-lg bg-muted/50">
-            <div className="text-muted-foreground">Loading grenades...</div>
-          </div>
+          <MapVisualizationSkeleton
+            mapName={currentMap}
+            onGrenadeSelect={handleMapGrenadeSelect}
+            selectedGrenadeId={selectedGrenadeId}
+          />
         ) : (
-          <div className="flex gap-6 flex items-center justify-center">
-            <MapVisualizationKonva
-              mapName={currentMap}
-              grenadePositions={grenadePositions}
-              onGrenadeSelect={handleMapGrenadeSelect}
-              selectedGrenadeId={selectedGrenadeId}
-            />
-            <GrenadeList
-              onGrenadeClick={handleListGrenadeClick}
-              selectedGrenadeId={selectedGrenadeId}
-            />
-          </div>
+          <MapVisualizationKonva
+            mapName={currentMap}
+            grenadePositions={grenadePositions}
+            onGrenadeSelect={handleMapGrenadeSelect}
+            selectedGrenadeId={selectedGrenadeId}
+          />
+        )}
+
+        {/* Grenade List - Shows skeleton when loading */}
+        {isLoading ? (
+          <GrenadeListSkeleton />
+        ) : (
+          <GrenadeList
+            onGrenadeClick={handleListGrenadeClick}
+            selectedGrenadeId={selectedGrenadeId}
+          />
         )}
       </div>
     </div>
