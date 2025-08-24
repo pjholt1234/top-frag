@@ -13,6 +13,7 @@ import GrenadeLibrary from '@/pages/grenade-library';
 import MatchDetail from '@/pages/match-detail';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
+import { Toaster } from '@/components/ui/sonner';
 
 const App: React.FC = () => {
   return (
@@ -57,6 +58,7 @@ const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        <Toaster />
       </AuthProvider>
     </ThemeProvider>
   );

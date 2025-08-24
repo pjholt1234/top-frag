@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { useApi } from './useApi';
 
 // Types
@@ -77,6 +78,7 @@ export interface UseGrenadeLibraryReturn {
     // Actions
     refreshData: () => Promise<void>;
     loadFilterOptions: () => Promise<void>;
+    removeFavourite: (favouriteId: number) => void;
 
     // Grenade selection state
     grenadeStates: Map<number, GrenadeState>;
@@ -119,7 +121,7 @@ interface GrenadeLibraryProviderProps {
 }
 
 export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ children, initialFilters = {} }) => {
-    const { get } = useApi();
+    const { get, delete: deleteRequest } = useApi();
 
     // State
     const [grenades, setGrenades] = useState<FavouritedGrenadeData[]>([]);
@@ -315,6 +317,40 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
         }
     }, [get, isInitialized, hasValidFilters, filters]);
 
+    // Remove a favourite by ID
+    const removeFavourite = useCallback((favouriteId: number): void => {
+        toast.promise(
+            (async () => {
+                try {
+                    setError(null);
+                    await deleteRequest(`/grenade-favourites/${favouriteId}`);
+
+                    // Remove the grenade from the local state
+                    setGrenades(prev => prev.filter(grenade => grenade.id !== favouriteId));
+
+                    // Remove from grenade states
+                    setGrenadeStates(prev => {
+                        const newStates = new Map(prev);
+                        newStates.delete(favouriteId);
+                        return newStates;
+                    });
+
+                    return true;
+                } catch (err) {
+                    const errorMessage = err instanceof Error ? err.message : 'Failed to remove favourite';
+                    setError(errorMessage);
+                    console.error('Failed to remove favourite:', err);
+                    throw err;
+                }
+            })(),
+            {
+                loading: 'Removing grenade from favourites...',
+                success: 'Grenade removed from favourites!',
+                error: 'Failed to remove grenade from favourites',
+            }
+        );
+    }, [deleteRequest]);
+
     // Refresh all data
     const refreshData = useCallback(async () => {
         await Promise.all([
@@ -478,6 +514,7 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
         // Actions
         refreshData,
         loadFilterOptions,
+        removeFavourite,
 
         // Grenade selection state
         grenadeStates,

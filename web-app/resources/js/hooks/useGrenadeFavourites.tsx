@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { GrenadeData } from './useMatchGrenades';
 
@@ -40,68 +41,78 @@ export const useGrenadeFavourites = () => {
     }, [getGrenadeKey]);
 
     // Add a grenade to favourites
-    const addToFavourites = useCallback(async (grenade: GrenadeData): Promise<boolean> => {
+    const addToFavourites = useCallback((grenade: GrenadeData): void => {
         const key = getGrenadeKey(grenade);
 
         if (loading.get(key)) return false;
 
         setLoading(prev => new Map(prev).set(key, true));
 
-        try {
-            // Convert GrenadeData to the format expected by the API
-            const favouriteData = {
-                match_id: grenade.match_id,
-                round_number: grenade.round_number,
-                round_time: grenade.round_time || 0,
-                tick_timestamp: grenade.tick_timestamp || 0,
-                player_steam_id: grenade.player_steam_id || '',
-                player_side: grenade.player_side || 'CT',
-                grenade_type: grenade.grenade_type,
-                player_x: grenade.player_x,
-                player_y: grenade.player_y,
-                player_z: grenade.player_z || 0,
-                player_aim_x: grenade.player_aim_x || 0,
-                player_aim_y: grenade.player_aim_y || 0,
-                player_aim_z: grenade.player_aim_z || 0,
-                grenade_final_x: grenade.grenade_final_x,
-                grenade_final_y: grenade.grenade_final_y,
-                grenade_final_z: grenade.grenade_final_z || 0,
-                damage_dealt: grenade.damage_dealt || 0,
-                flash_duration: grenade.flash_duration,
-                friendly_flash_duration: grenade.friendly_flash_duration,
-                enemy_flash_duration: grenade.enemy_flash_duration,
-                friendly_players_affected: grenade.friendly_players_affected,
-                enemy_players_affected: grenade.enemy_players_affected,
-                throw_type: grenade.throw_type || 'utility',
-                effectiveness_rating: grenade.effectiveness_rating,
-            };
+        return toast.promise(
+            (async () => {
+                try {
+                    // Convert GrenadeData to the format expected by the API
+                    const favouriteData = {
+                        match_id: grenade.match_id,
+                        round_number: grenade.round_number,
+                        round_time: grenade.round_time || 0,
+                        tick_timestamp: grenade.tick_timestamp || 0,
+                        player_steam_id: grenade.player_steam_id || '',
+                        player_side: grenade.player_side || 'CT',
+                        grenade_type: grenade.grenade_type,
+                        player_x: grenade.player_x,
+                        player_y: grenade.player_y,
+                        player_z: grenade.player_z || 0,
+                        player_aim_x: grenade.player_aim_x || 0,
+                        player_aim_y: grenade.player_aim_y || 0,
+                        player_aim_z: grenade.player_aim_z || 0,
+                        grenade_final_x: grenade.grenade_final_x,
+                        grenade_final_y: grenade.grenade_final_y,
+                        grenade_final_z: grenade.grenade_final_z || 0,
+                        damage_dealt: grenade.damage_dealt || 0,
+                        flash_duration: grenade.flash_duration,
+                        friendly_flash_duration: grenade.friendly_flash_duration,
+                        enemy_flash_duration: grenade.enemy_flash_duration,
+                        friendly_players_affected: grenade.friendly_players_affected,
+                        enemy_players_affected: grenade.enemy_players_affected,
+                        throw_type: grenade.throw_type || 'utility',
+                        effectiveness_rating: grenade.effectiveness_rating,
+                    };
 
-            const response = await api.post('/grenade-favourites', favouriteData, {
-                requireAuth: true,
-            });
+                    const response = await api.post('/grenade-favourites', favouriteData, {
+                        requireAuth: true,
+                    });
 
-            setFavouritedGrenades(prev => new Set(prev).add(key));
-            setFavouriteIds(prev => new Map(prev).set(key, response.data.favourite.id));
+                    setFavouritedGrenades(prev => new Set(prev).add(key));
+                    setFavouriteIds(prev => new Map(prev).set(key, response.data.favourite.id));
 
-            return true;
-        } catch (error: any) {
-            console.error('Error adding to favourites:', error);
-            if (error.response?.status === 409) {
-                // Already favourited, update state
-                setFavouritedGrenades(prev => new Set(prev).add(key));
+                    return true;
+                } catch (error: any) {
+                    console.error('Error adding to favourites:', error);
+                    if (error.response?.status === 409) {
+                        // Already favourited, update state
+                        setFavouritedGrenades(prev => new Set(prev).add(key));
+                        return true;
+                    }
+                    throw error;
+                } finally {
+                    setLoading(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(key);
+                        return newMap;
+                    });
+                }
+            })(),
+            {
+                loading: 'Adding grenade to favourites...',
+                success: 'Grenade added to favourites!',
+                error: 'Failed to add grenade to favourites',
             }
-            return false;
-        } finally {
-            setLoading(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(key);
-                return newMap;
-            });
-        }
+        );
     }, [getGrenadeKey, loading]);
 
     // Remove a grenade from favourites
-    const removeFromFavourites = useCallback(async (grenade: GrenadeData): Promise<boolean> => {
+    const removeFromFavourites = useCallback((grenade: GrenadeData): void => {
         const key = getGrenadeKey(grenade);
         const favouriteId = favouriteIds.get(key);
 
@@ -109,44 +120,53 @@ export const useGrenadeFavourites = () => {
 
         setLoading(prev => new Map(prev).set(key, true));
 
-        try {
-            await api.delete(`/grenade-favourites/${favouriteId}`, {
-                requireAuth: true,
-            });
+        return toast.promise(
+            (async () => {
+                try {
+                    await api.delete(`/grenade-favourites/${favouriteId}`, {
+                        requireAuth: true,
+                    });
 
-            setFavouritedGrenades(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(key);
-                return newSet;
-            });
-            setFavouriteIds(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(key);
-                return newMap;
-            });
+                    setFavouritedGrenades(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(key);
+                        return newSet;
+                    });
+                    setFavouriteIds(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(key);
+                        return newMap;
+                    });
 
-            return true;
-        } catch (error) {
-            console.error('Error removing from favourites:', error);
-            return false;
-        } finally {
-            setLoading(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(key);
-                return newMap;
-            });
-        }
+                    return true;
+                } catch (error) {
+                    console.error('Error removing from favourites:', error);
+                    throw error;
+                } finally {
+                    setLoading(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(key);
+                        return newMap;
+                    });
+                }
+            })(),
+            {
+                loading: 'Removing grenade from favourites...',
+                success: 'Grenade removed from favourites!',
+                error: 'Failed to remove grenade from favourites',
+            }
+        );
     }, [getGrenadeKey, favouriteIds, loading]);
 
     // Toggle favourite status
-    const toggleFavourite = useCallback(async (grenade: GrenadeData): Promise<boolean> => {
+    const toggleFavourite = useCallback((grenade: GrenadeData): void => {
         const key = getGrenadeKey(grenade);
         const isFavourited = favouritedGrenades.has(key);
 
         if (isFavourited) {
-            return await removeFromFavourites(grenade);
+            removeFromFavourites(grenade);
         } else {
-            return await addToFavourites(grenade);
+            addToFavourites(grenade);
         }
     }, [getGrenadeKey, favouritedGrenades, addToFavourites, removeFromFavourites]);
 

@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, Zap, Eye, Users, Star } from 'lucide-react';
-import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
+import { useGrenadeLibrary, FavouritedGrenadeData } from '../hooks/useGrenadeLibrary';
 import { useMatchGrenades, GrenadeData } from '../hooks/useMatchGrenades';
 import { useGrenadeFavourites } from '../hooks/useGrenadeFavourites';
 
 interface GrenadeListProps {
-    onGrenadeClick: (grenade: GrenadeData) => void;
+    onGrenadeClick: (grenade: GrenadeData | FavouritedGrenadeData) => void;
     selectedGrenadeId?: number | null;
     showFavourites?: boolean;
     useFavouritesContext?: boolean;
@@ -24,12 +24,14 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
     hideRoundNumber = false
 }) => {
     // Try to use the appropriate context based on the prop
-    let grenades: GrenadeData[] = [];
+    let grenades: (GrenadeData | FavouritedGrenadeData)[] = [];
+    let removeFavourite: ((favouriteId: number) => void) | null = null;
 
     try {
         if (useFavouritesContext) {
             const favouritesContext = useGrenadeLibrary();
             grenades = favouritesContext.grenades;
+            removeFavourite = favouritesContext.removeFavourite;
         } else {
             const libraryContext = useMatchGrenades();
             grenades = libraryContext.grenades;
@@ -54,7 +56,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         }
     }, [grenades, showFavourites, initializeFavouriteStatus, useFavouritesContext]);
 
-    const generatePositionString = (grenade: GrenadeData): string => {
+    const generatePositionString = (grenade: GrenadeData | FavouritedGrenadeData): string => {
         const playerZ = grenade.player_z ?? 0.000000;
         const aimX = grenade.player_aim_x ?? 0.000000;
         const aimY = grenade.player_aim_y ?? 0.000000;
@@ -63,7 +65,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         return `setpos ${grenade.player_x} ${grenade.player_y} ${playerZ};setang ${aimY} ${aimX} 0.000000`;
     };
 
-    const copyPositionToClipboard = async (grenade: GrenadeData) => {
+    const copyPositionToClipboard = async (grenade: GrenadeData | FavouritedGrenadeData) => {
         try {
             const positionString = generatePositionString(grenade);
             await navigator.clipboard.writeText(positionString);
@@ -117,7 +119,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         );
     }
 
-    const getGrenadeTypeBadge = (grenade: GrenadeData) => {
+    const getGrenadeTypeBadge = (grenade: GrenadeData | FavouritedGrenadeData) => {
         return (
             <Badge className={`${getGrenadeColor(grenade.grenade_type)} border-2 bg-transparent text-white`}>
                 {grenade.grenade_type}
@@ -125,7 +127,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         );
     };
 
-    const getSideBadge = (grenade: GrenadeData) => {
+    const getSideBadge = (grenade: GrenadeData | FavouritedGrenadeData) => {
         let sideColour = 'border-blue';
 
         if (grenade.player_side === 'T') {
@@ -181,9 +183,9 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="h-6 w-6 p-0"
-                                                                onClick={async (e) => {
+                                                                onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    await toggleFavourite(grenade as GrenadeData);
+                                                                    toggleFavourite(grenade as GrenadeData);
                                                                 }}
                                                                 disabled={isLoading(grenade as GrenadeData)}
                                                             >
@@ -195,6 +197,30 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
                                                         <TooltipContent className="border-custom-orange border-2 bg-background">
                                                             <p className="font-semibold text-white">
                                                                 {isFavourited(grenade as GrenadeData) ? 'Remove from favourites' : 'Add to favourites'}
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                                {useFavouritesContext && removeFavourite && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    removeFavourite(grenade.id);
+                                                                }}
+                                                            >
+                                                                <Star
+                                                                    className="h-3 w-3 fill-yellow-400 text-yellow-400"
+                                                                />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="border-custom-orange border-2 bg-background">
+                                                            <p className="font-semibold text-white">
+                                                                Remove from favourites
                                                             </p>
                                                         </TooltipContent>
                                                     </Tooltip>
