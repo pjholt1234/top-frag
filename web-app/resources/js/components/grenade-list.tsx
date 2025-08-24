@@ -1,18 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Copy, Zap, Eye, Users } from 'lucide-react';
+import { Copy, Zap, Eye, Users, Star } from 'lucide-react';
 import { useGrenadeLibrary, GrenadeData } from '../hooks/useGrenadeLibrary';
+import { useGrenadeFavourites } from '../hooks/useGrenadeFavourites';
 
 interface GrenadeListProps {
     onGrenadeClick: (grenade: GrenadeData) => void;
     selectedGrenadeId?: number | null;
+    showFavourites?: boolean;
 }
 
-const GrenadeList: React.FC<GrenadeListProps> = ({ onGrenadeClick, selectedGrenadeId }) => {
+const GrenadeList: React.FC<GrenadeListProps> = ({ onGrenadeClick, selectedGrenadeId, showFavourites = false }) => {
     const { grenades } = useGrenadeLibrary();
+    const { isFavourited, isLoading, toggleFavourite, initializeFavouriteStatus } = useGrenadeFavourites();
+
+    // Initialize favourite status when grenades change
+    useEffect(() => {
+        if (showFavourites && grenades.length > 0) {
+            initializeFavouriteStatus(grenades);
+        }
+    }, [grenades, showFavourites, initializeFavouriteStatus]);
 
     const generatePositionString = (grenade: GrenadeData): string => {
         const playerZ = grenade.player_z ?? 0.000000;
@@ -131,24 +141,51 @@ const GrenadeList: React.FC<GrenadeListProps> = ({ onGrenadeClick, selectedGrena
                                         </div>
                                         <div className="flex items-start justify-between mb-1">
                                             <span className="text-xs text-muted-foreground">{getThrowTypeDisplay(grenade.throw_type || 'Run throw')}</span>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-6 w-6 p-0"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            copyPositionToClipboard(grenade);
-                                                        }}
-                                                    >
-                                                        <Copy className="h-3 w-3" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="border-custom-orange border-2 bg-background">
-                                                    <p className="font-semibold text-white">Copy grenade throw location to clipboard</p>
-                                                </TooltipContent>
-                                            </Tooltip>
+                                            <div className="flex items-center gap-1">
+                                                {showFavourites && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0"
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    await toggleFavourite(grenade);
+                                                                }}
+                                                                disabled={isLoading(grenade)}
+                                                            >
+                                                                <Star
+                                                                    className={`h-3 w-3 ${isFavourited(grenade) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
+                                                                />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="border-custom-orange border-2 bg-background">
+                                                            <p className="font-semibold text-white">
+                                                                {isFavourited(grenade) ? 'Remove from favourites' : 'Add to favourites'}
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                copyPositionToClipboard(grenade);
+                                                            }}
+                                                        >
+                                                            <Copy className="h-3 w-3" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="border-custom-orange border-2 bg-background">
+                                                        <p className="font-semibold text-white">Copy grenade throw location to clipboard</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>

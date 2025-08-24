@@ -280,6 +280,7 @@ const MatchDetail = () => {
                                     <GrenadeLibraryView
                                         hideMapAndMatchFilters={true}
                                         showHeader={false}
+                                        showFavourites={true}
                                         initialFilters={{
                                             map: match?.match_details?.map || '',
                                             matchId: match?.id?.toString() || '',

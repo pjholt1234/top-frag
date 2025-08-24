@@ -9,6 +9,7 @@ import { useGrenadeLibrary, GrenadeLibraryProvider, GrenadeData } from '../hooks
 interface GrenadeLibraryViewProps {
   hideMapAndMatchFilters?: boolean;
   showHeader?: boolean;
+  showFavourites?: boolean;
   className?: string;
   initialFilters?: {
     map?: string;
@@ -25,6 +26,7 @@ interface GrenadeLibraryViewProps {
 const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
   hideMapAndMatchFilters = false,
   showHeader = true,
+  showFavourites = false,
   className = '',
   initialFilters = {},
 }) => {
@@ -106,6 +108,7 @@ const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
           <GrenadeList
             onGrenadeClick={handleListGrenadeClick}
             selectedGrenadeId={selectedGrenadeId}
+            showFavourites={showFavourites}
           />
         )}
       </div>

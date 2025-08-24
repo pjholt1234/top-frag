@@ -64,4 +64,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(DemoProcessingJob::class, 'user_id');
     }
+
+    public function grenadeFavourites(): HasMany
+    {
+        return $this->hasMany(GrenadeFavourite::class, 'user_id');
+    }
 }

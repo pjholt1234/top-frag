@@ -15,6 +15,8 @@ export interface GrenadeData {
     grenade_final_z?: number;
     grenade_type: string;
     round_number: number;
+    round_time?: number;
+    tick_timestamp?: number;
     match_id: number;
     map: string;
     player_name: string;
