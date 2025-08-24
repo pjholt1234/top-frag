@@ -1,7 +1,7 @@
-import GrenadeLibraryView from '../components/grenade-library-view';
+import GrenadeFavouritesView from '../components/grenade-favourites-view';
 
 const GrenadeLibrary = () => {
-  return <GrenadeLibraryView />;
+  return <GrenadeFavouritesView />;
 };
 
 export default GrenadeLibrary;

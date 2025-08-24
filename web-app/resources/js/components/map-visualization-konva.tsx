@@ -4,6 +4,7 @@ import { getMapMetadata } from '../config/maps';
 import ZoomSlider from './zoom-slider';
 import RoundSlider from './round-slider';
 import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
+import { useGrenadeFavouritesLibrary } from '../hooks/useGrenadeFavouritesLibrary';
 
 interface MapVisualizationProps {
   mapName: string;
@@ -19,6 +20,8 @@ interface MapVisualizationProps {
   }>;
   onGrenadeSelect?: (grenadeId: number | null) => void;
   selectedGrenadeId?: number | null;
+  useFavouritesContext?: boolean;
+  hideRoundSlider?: boolean;
 }
 
 const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
@@ -26,6 +29,8 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   grenadePositions = [],
   onGrenadeSelect,
   selectedGrenadeId,
+  useFavouritesContext = false,
+  hideRoundSlider = false,
 }) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(
     null
@@ -34,8 +39,36 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
-  // Use the grenade library hook for round state
-  const { filters, setFilter, filterOptions } = useGrenadeLibrary();
+  // Try to use the appropriate context based on the prop
+  let filters, setFilter, filterOptions;
+
+  try {
+    if (useFavouritesContext) {
+      const favouritesContext = useGrenadeFavouritesLibrary();
+      filters = favouritesContext.filters;
+      setFilter = favouritesContext.setFilter;
+      filterOptions = favouritesContext.filterOptions;
+    } else {
+      const libraryContext = useGrenadeLibrary();
+      filters = libraryContext.filters;
+      setFilter = libraryContext.setFilter;
+      filterOptions = libraryContext.filterOptions;
+    }
+  } catch (error) {
+    // If one context fails, try the other
+    try {
+      const libraryContext = useGrenadeLibrary();
+      filters = libraryContext.filters;
+      setFilter = libraryContext.setFilter;
+      filterOptions = libraryContext.filterOptions;
+    } catch (fallbackError) {
+      console.error('Failed to load map visualization context:', fallbackError);
+      // Provide fallback values
+      filters = { roundNumber: 'all' };
+      setFilter = () => { };
+      filterOptions = { rounds: [] };
+    }
+  }
 
   // Get map metadata for coordinate conversion
   const mapMetadata = getMapMetadata(mapName);
@@ -344,14 +377,16 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
       </div>
 
       {/* Round Slider */}
-      <div className="w-full flex justify-start ml-12">
-        <RoundSlider
-          selectedRound={selectedRoundForSlider}
-          onRoundChange={handleRoundChange}
-          maxRounds={maxRounds}
-          width={512}
-        />
-      </div>
+      {!hideRoundSlider && (
+        <div className="w-full flex justify-start ml-12">
+          <RoundSlider
+            selectedRound={selectedRoundForSlider}
+            onRoundChange={handleRoundChange}
+            maxRounds={maxRounds}
+            width={512}
+          />
+        </div>
+      )}
     </div>
   );
 };

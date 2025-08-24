@@ -8,17 +8,44 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
+import { useGrenadeFavouritesLibrary } from '../hooks/useGrenadeFavouritesLibrary';
 
 interface GrenadeFiltersProps {
   hideMapAndMatchFilters?: boolean;
+  useFavouritesContext?: boolean;
 }
 
-const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({ hideMapAndMatchFilters = false }) => {
-  const {
-    filters,
-    filterOptions,
-    setFilter,
-  } = useGrenadeLibrary();
+const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
+  hideMapAndMatchFilters = false,
+  useFavouritesContext = false
+}) => {
+  // Try to use the appropriate context based on the prop
+  let filters, filterOptions, setFilter;
+
+  try {
+    if (useFavouritesContext) {
+      const favouritesContext = useGrenadeFavouritesLibrary();
+      filters = favouritesContext.filters;
+      filterOptions = favouritesContext.filterOptions;
+      setFilter = favouritesContext.setFilter;
+    } else {
+      const libraryContext = useGrenadeLibrary();
+      filters = libraryContext.filters;
+      filterOptions = libraryContext.filterOptions;
+      setFilter = libraryContext.setFilter;
+    }
+  } catch (error) {
+    // If one context fails, try the other
+    try {
+      const libraryContext = useGrenadeLibrary();
+      filters = libraryContext.filters;
+      filterOptions = libraryContext.filterOptions;
+      setFilter = libraryContext.setFilter;
+    } catch (fallbackError) {
+      console.error('Failed to load grenade filters context:', fallbackError);
+      return <div>Error loading filters</div>;
+    }
+  }
 
   const handleFilterChange = (key: string, value: string) => {
     setFilter(key as keyof typeof filters, value);
