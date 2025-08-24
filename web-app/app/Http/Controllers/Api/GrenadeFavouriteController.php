@@ -6,7 +6,6 @@ use App\Enums\GrenadeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateGrenadeFavouriteRequest;
 use App\Models\GameMatch;
-use App\Models\GrenadeEvent;
 use App\Models\GrenadeFavourite;
 use App\Models\Player;
 use Illuminate\Http\JsonResponse;
@@ -142,6 +141,14 @@ class GrenadeFavouriteController extends Controller
                 ->toArray();
         }
 
+        // Add "All Matches" option if map is selected and there are matches
+        if ($map && ! empty($matches)) {
+            array_unshift($matches, [
+                'id' => 'all',
+                'name' => 'All Matches',
+            ]);
+        }
+
         // Dynamic rounds based on selected match and user's favourited grenades
         $rounds = [];
         if ($matchId) {
@@ -239,7 +246,7 @@ class GrenadeFavouriteController extends Controller
 
         $favourite = $user->grenadeFavourites()->find($id);
 
-        if (!$favourite) {
+        if (! $favourite) {
             return response()->json([
                 'message' => 'Favourite not found',
             ], 404);

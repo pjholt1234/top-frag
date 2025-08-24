@@ -4,7 +4,11 @@ import MapVisualizationSkeleton from './map-visualization-skeleton';
 import GrenadeFilters from './grenade-filters';
 import GrenadeList from './grenade-list';
 import GrenadeListSkeleton from './grenade-list-skeleton';
-import { useGrenadeLibrary, GrenadeLibraryProvider, FavouritedGrenadeData } from '../hooks/useGrenadeLibrary';
+import {
+  useGrenadeLibrary,
+  GrenadeLibraryProvider,
+  FavouritedGrenadeData,
+} from '../hooks/useGrenadeLibrary';
 
 interface GrenadeLibraryViewProps {
   hideMapAndMatchFilters?: boolean;
@@ -24,16 +28,12 @@ const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
   hideMapAndMatchFilters = false,
   showHeader = true,
   className = '',
-  initialFilters = {},
 }) => {
-  const {
-    grenades,
-    isLoading,
-    error,
-    currentMap,
-  } = useGrenadeLibrary();
+  const { grenades, isLoading, error, currentMap } = useGrenadeLibrary();
 
-  const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(null);
+  const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(
+    null
+  );
 
   // Convert grenade data to the format expected by MapVisualization
   const grenadePositions = useMemo(() => {
@@ -76,7 +76,10 @@ const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
         </div>
       )}
 
-      <GrenadeFilters hideMapAndMatchFilters={hideMapAndMatchFilters} useFavouritesContext={true} />
+      <GrenadeFilters
+        hideMapAndMatchFilters={hideMapAndMatchFilters}
+        useFavouritesContext={true}
+      />
 
       <div className="flex gap-6 items-start justify-center">
         {/* Map - Always visible, shows skeleton when loading */}
@@ -116,7 +119,7 @@ const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
   );
 };
 
-const GrenadeLibraryView: React.FC<GrenadeLibraryViewProps> = (props) => {
+const GrenadeLibraryView: React.FC<GrenadeLibraryViewProps> = props => {
   return (
     <GrenadeLibraryProvider initialFilters={props.initialFilters}>
       <GrenadeLibraryViewContent {...props} />

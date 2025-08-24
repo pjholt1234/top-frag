@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import {
-  IconChevronDown,
-  IconChevronRight,
-  IconChevronUp,
-} from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
-import { getAdrColor } from '@/lib/utils';
 import { PlayerStatsTable } from '@/components/player-stats-table';
 import {
   Table,
@@ -118,83 +113,6 @@ export function MatchesTable({
         },
       }));
     }
-  };
-
-  const sortPlayers = (
-    players: PlayerStats[],
-    matchId: number
-  ): PlayerStats[] => {
-    const sortState = matchSortStates[matchId];
-    if (!sortState) {
-      // Default sort by ADR descending if no sort state exists
-      return [...players].sort((a, b) => b.player_adr - a.player_adr);
-    }
-
-    const { column, direction } = sortState;
-
-    return [...players].sort((a, b) => {
-      let aValue: string | number;
-      let bValue: string | number;
-
-      switch (column) {
-        case 'player_name':
-          aValue = a.player_name.toLowerCase();
-          bValue = b.player_name.toLowerCase();
-          break;
-        case 'player_kill_death_ratio':
-          aValue = a.player_kill_death_ratio;
-          bValue = b.player_kill_death_ratio;
-          break;
-        case 'player_kills':
-          aValue = a.player_kills;
-          bValue = b.player_kills;
-          break;
-        case 'player_deaths':
-          aValue = a.player_deaths;
-          bValue = b.player_deaths;
-          break;
-        case 'player_first_kill_differential':
-          aValue = a.player_first_kill_differential;
-          bValue = b.player_first_kill_differential;
-          break;
-        case 'player_adr':
-          aValue = a.player_adr;
-          bValue = b.player_adr;
-          break;
-        default:
-          return 0;
-      }
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        if (direction === 'asc') {
-          return aValue.localeCompare(bValue);
-        } else {
-          return bValue.localeCompare(aValue);
-        }
-      } else {
-        if (direction === 'asc') {
-          return (aValue as number) - (bValue as number);
-        } else {
-          return (bValue as number) - (aValue as number);
-        }
-      }
-    });
-  };
-
-  const getSortIcon = (matchId: number, column: SortColumn) => {
-    const sortState = matchSortStates[matchId];
-    if (!sortState || sortState.column !== column) {
-      return null;
-    }
-    return sortState.direction === 'asc' ? (
-      <IconChevronUp className="h-4 w-4 ml-1" />
-    ) : (
-      <IconChevronDown className="h-4 w-4 ml-1" />
-    );
-  };
-
-  const createSortHandler = (matchId: number, column: SortColumn) => {
-    return () => handleSort(matchId, column);
   };
 
   const formatDate = (dateString: string) => {
@@ -311,13 +229,6 @@ export function MatchesTable({
             const matchId = match.match_details.id || match.id;
             const isExpanded = expandedRows.has(matchId);
             const allPlayers = match.player_stats || [];
-            const sortedPlayers = sortPlayers(allPlayers, matchId);
-            const teamAPlayers = sortedPlayers.filter(
-              player => player.team === 'A'
-            );
-            const teamBPlayers = sortedPlayers.filter(
-              player => player.team === 'B'
-            );
 
             return (
               <React.Fragment key={matchId}>
@@ -338,7 +249,9 @@ export function MatchesTable({
                   </TableCell>
                   <TableCell className="font-medium">
                     <button
-                      onClick={() => window.location.href = `/matches/${matchId}`}
+                      onClick={() =>
+                        (window.location.href = `/matches/${matchId}`)
+                      }
                       className="text-left hover:text-blue-400 hover:underline cursor-pointer transition-colors"
                     >
                       {match.match_details.map}
@@ -365,7 +278,9 @@ export function MatchesTable({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.location.href = `/matches/${matchId}`}
+                        onClick={() =>
+                          (window.location.href = `/matches/${matchId}`)
+                        }
                         className="ml-2 h-6 px-2 text-xs"
                       >
                         View
@@ -381,7 +296,7 @@ export function MatchesTable({
                         variant="expanded"
                         sortColumn={matchSortStates[matchId]?.column}
                         sortDirection={matchSortStates[matchId]?.direction}
-                        onSort={(column) => handleSort(matchId, column)}
+                        onSort={column => handleSort(matchId, column)}
                         match={match}
                       />
                     </TableCell>

@@ -15,42 +15,60 @@ interface GrenadeFiltersProps {
   useFavouritesContext?: boolean;
 }
 
-const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
-  hideMapAndMatchFilters = false,
-  useFavouritesContext = false
-}) => {
-  // Try to use the appropriate context based on the prop
-  let filters, filterOptions, setFilter;
-
-  try {
-    if (useFavouritesContext) {
-      const favouritesContext = useGrenadeLibrary();
-      filters = favouritesContext.filters;
-      filterOptions = favouritesContext.filterOptions;
-      setFilter = favouritesContext.setFilter;
-    } else {
-      const libraryContext = useMatchGrenades();
-      filters = libraryContext.filters;
-      filterOptions = libraryContext.filterOptions;
-      setFilter = libraryContext.setFilter;
-    }
-  } catch (error) {
-    // If one context fails, try the other
-    try {
-      const libraryContext = useMatchGrenades();
-      filters = libraryContext.filters;
-      filterOptions = libraryContext.filterOptions;
-      setFilter = libraryContext.setFilter;
-    } catch (fallbackError) {
-      console.error('Failed to load grenade filters context:', fallbackError);
-      return <div>Error loading filters</div>;
-    }
-  }
+// Component for favourites context
+const GrenadeFiltersWithFavourites: React.FC<
+  Omit<GrenadeFiltersProps, 'useFavouritesContext'>
+> = ({ hideMapAndMatchFilters = false }) => {
+  const { filters, filterOptions, setFilter } = useGrenadeLibrary();
 
   const handleFilterChange = (key: string, value: string) => {
     setFilter(key as keyof typeof filters, value);
   };
 
+  return (
+    <GrenadeFiltersContent
+      hideMapAndMatchFilters={hideMapAndMatchFilters}
+      filters={filters}
+      filterOptions={filterOptions}
+      handleFilterChange={handleFilterChange}
+    />
+  );
+};
+
+// Component for match grenades context
+const GrenadeFiltersWithMatchGrenades: React.FC<
+  Omit<GrenadeFiltersProps, 'useFavouritesContext'>
+> = ({ hideMapAndMatchFilters = false }) => {
+  const { filters, filterOptions, setFilter } = useMatchGrenades();
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilter(key as keyof typeof filters, value);
+  };
+
+  return (
+    <GrenadeFiltersContent
+      hideMapAndMatchFilters={hideMapAndMatchFilters}
+      filters={filters}
+      filterOptions={filterOptions}
+      handleFilterChange={handleFilterChange}
+    />
+  );
+};
+
+// Shared content component
+interface GrenadeFiltersContentProps {
+  hideMapAndMatchFilters: boolean;
+  filters: any;
+  filterOptions: any;
+  handleFilterChange: (key: string, value: string) => void;
+}
+
+const GrenadeFiltersContent: React.FC<GrenadeFiltersContentProps> = ({
+  hideMapAndMatchFilters,
+  filters,
+  filterOptions,
+  handleFilterChange,
+}) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/50">
@@ -78,7 +96,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
           </div>
         )}
 
-        {/* Match Filter - No "All" option, depends on Map */}
+        {/* Match Filter - Now includes "All Matches" option, depends on Map */}
         {!hideMapAndMatchFilters && (
           <div className="space-y-1 min-w-[120px]">
             <Label htmlFor="match-filter" className="text-xs">
@@ -91,7 +109,9 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
             >
               <SelectTrigger id="match-filter" className="h-8 w-full">
                 <SelectValue
-                  placeholder={!filters.map ? 'Select map first' : 'Select match'}
+                  placeholder={
+                    !filters.map ? 'Select map first' : 'Select match'
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
@@ -179,6 +199,26 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+// Main component that chooses which implementation to use
+const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
+  hideMapAndMatchFilters = false,
+  useFavouritesContext = false,
+}) => {
+  if (useFavouritesContext) {
+    return (
+      <GrenadeFiltersWithFavourites
+        hideMapAndMatchFilters={hideMapAndMatchFilters}
+      />
+    );
+  }
+
+  return (
+    <GrenadeFiltersWithMatchGrenades
+      hideMapAndMatchFilters={hideMapAndMatchFilters}
+    />
   );
 };
 

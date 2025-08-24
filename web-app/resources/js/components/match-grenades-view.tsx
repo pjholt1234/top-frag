@@ -4,7 +4,11 @@ import MapVisualizationSkeleton from './map-visualization-skeleton';
 import GrenadeFilters from './grenade-filters';
 import GrenadeList from './grenade-list';
 import GrenadeListSkeleton from './grenade-list-skeleton';
-import { useMatchGrenades, MatchGrenadesProvider, GrenadeData } from '../hooks/useMatchGrenades';
+import {
+  useMatchGrenades,
+  MatchGrenadesProvider,
+  GrenadeData,
+} from '../hooks/useMatchGrenades';
 
 interface MatchGrenadesViewProps {
   hideMapAndMatchFilters?: boolean;
@@ -21,23 +25,17 @@ interface MatchGrenadesViewProps {
   };
 }
 
-
-
 const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
   hideMapAndMatchFilters = false,
   showHeader = true,
   showFavourites = false,
   className = '',
-  initialFilters = {},
 }) => {
-  const {
-    grenades,
-    isLoading,
-    error,
-    currentMap,
-  } = useMatchGrenades();
+  const { grenades, isLoading, error, currentMap } = useMatchGrenades();
 
-  const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(null);
+  const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(
+    null
+  );
 
   // Convert grenade data to the format expected by MapVisualization
   const grenadePositions = useMemo(() => {
@@ -65,8 +63,6 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-
-
       {showHeader && (
         <div className="mt-4">
           <h1 className="text-3xl font-bold tracking-tight">Match Grenades</h1>
@@ -82,7 +78,10 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
         </div>
       )}
 
-      <GrenadeFilters hideMapAndMatchFilters={hideMapAndMatchFilters} useFavouritesContext={false} />
+      <GrenadeFilters
+        hideMapAndMatchFilters={hideMapAndMatchFilters}
+        useFavouritesContext={false}
+      />
 
       <div className="flex gap-6 items-start justify-center">
         {/* Map - Always visible, shows skeleton when loading */}
@@ -119,7 +118,7 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
   );
 };
 
-const MatchGrenadesView: React.FC<MatchGrenadesViewProps> = (props) => {
+const MatchGrenadesView: React.FC<MatchGrenadesViewProps> = props => {
   return (
     <MatchGrenadesProvider initialFilters={props.initialFilters}>
       <MatchGrenadesViewContent {...props} />

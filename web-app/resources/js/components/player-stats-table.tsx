@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   IconChevronDown,
   IconChevronRight,
@@ -75,14 +75,23 @@ export function PlayerStatsTable({
   sortColumn: externalSortColumn,
   sortDirection: externalSortDirection,
   onSort,
-  match
+  match,
 }: PlayerStatsTableProps) {
-  const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>('player_kill_death_ratio');
-  const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>('desc');
+  const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>(
+    'player_kill_death_ratio'
+  );
+  const [internalSortDirection, setInternalSortDirection] =
+    useState<SortDirection>('desc');
 
   // Use external state for expanded variant, internal state for full variant
-  const sortColumn = variant === 'expanded' ? externalSortColumn || internalSortColumn : internalSortColumn;
-  const sortDirection = variant === 'expanded' ? externalSortDirection || internalSortDirection : internalSortDirection;
+  const sortColumn =
+    variant === 'expanded'
+      ? externalSortColumn || internalSortColumn
+      : internalSortColumn;
+  const sortDirection =
+    variant === 'expanded'
+      ? externalSortDirection || internalSortDirection
+      : internalSortDirection;
 
   const handleSort = (column: SortColumn) => {
     if (variant === 'expanded' && onSort) {
@@ -91,7 +100,9 @@ export function PlayerStatsTable({
     } else {
       // Use internal sort state for full variant
       if (internalSortColumn === column) {
-        setInternalSortDirection(internalSortDirection === 'asc' ? 'desc' : 'asc');
+        setInternalSortDirection(
+          internalSortDirection === 'asc' ? 'desc' : 'asc'
+        );
       } else {
         setInternalSortColumn(column);
         setInternalSortDirection('desc');
@@ -131,7 +142,7 @@ export function PlayerStatsTable({
     return team === 'A' ? 'bg-blue-500' : 'bg-orange-500';
   };
 
-  const sortPlayers = (players: PlayerStats[], matchId: number) => {
+  const sortPlayers = (players: PlayerStats[], _matchId: number) => {
     return players.sort((a, b) => {
       const aValue = a[sortColumn];
       const bValue = b[sortColumn];
@@ -157,13 +168,6 @@ export function PlayerStatsTable({
     const teamBPlayers = sortedPlayers.filter(player => player.team === 'B');
 
     // Get team scores and determine winner
-    const teamAScore = match?.match_details?.winning_team === 'A'
-      ? match.match_details.winning_team_score
-      : match?.match_details?.losing_team_score || 0;
-    const teamBScore = match?.match_details?.winning_team === 'B'
-      ? match.match_details.winning_team_score
-      : match?.match_details?.losing_team_score || 0;
-
     const teamAWon = match?.match_details?.winning_team === 'A';
     const teamBWon = match?.match_details?.winning_team === 'B';
 
@@ -173,14 +177,24 @@ export function PlayerStatsTable({
           {/* Team A */}
           <div className="lg:flex-1 lg:border-r lg:border-border lg:border-b lg:border-border">
             {/* Team A Header */}
-            <div className={`border-b border-border px-6 py-3 ${teamAWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+            <div
+              className={`border-b border-border px-6 py-3 ${teamAWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${teamAWon ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className={`font-semibold ${teamAWon ? 'text-green-500' : 'text-red-500'}`}>Team A</span>
+                  <div
+                    className={`w-3 h-3 rounded-full ${teamAWon ? 'bg-green-500' : 'bg-red-500'}`}
+                  ></div>
+                  <span
+                    className={`font-semibold ${teamAWon ? 'text-green-500' : 'text-red-500'}`}
+                  >
+                    Team A
+                  </span>
                   {match?.match_details && (
-                    <span className={`text-sm font-medium ${teamAWon ? 'text-green-500' : 'text-red-500'}`}>
-                      {teamAWon ? "WIN" : "LOSS"}
+                    <span
+                      className={`text-sm font-medium ${teamAWon ? 'text-green-500' : 'text-red-500'}`}
+                    >
+                      {teamAWon ? 'WIN' : 'LOSS'}
                     </span>
                   )}
                 </div>
@@ -248,10 +262,7 @@ export function PlayerStatsTable({
               </TableHeader>
               <TableBody className="border-b border-border">
                 {teamAPlayers.map((player, index) => (
-                  <TableRow
-                    key={index}
-                    className="border-b border-border"
-                  >
+                  <TableRow key={index} className="border-b border-border">
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
                       {player.player_name || `Player ${index + 1}`}
                     </TableCell>
@@ -302,14 +313,24 @@ export function PlayerStatsTable({
           {/* Team B */}
           <div className="lg:flex-1 lg:border-b lg:border-border">
             {/* Team B Header */}
-            <div className={`border-b border-border px-6 py-3 ${teamBWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+            <div
+              className={`border-b border-border px-6 py-3 ${teamBWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${teamBWon ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className={`font-semibold ${teamBWon ? 'text-green-500' : 'text-red-500'}`}>Team B</span>
+                  <div
+                    className={`w-3 h-3 rounded-full ${teamBWon ? 'bg-green-500' : 'bg-red-500'}`}
+                  ></div>
+                  <span
+                    className={`font-semibold ${teamBWon ? 'text-green-500' : 'text-red-500'}`}
+                  >
+                    Team B
+                  </span>
                   {match?.match_details && (
-                    <span className={`text-sm font-medium ${teamBWon ? 'text-green-500' : 'text-red-500'}`}>
-                      {teamBWon ? "WIN" : "LOSS"}
+                    <span
+                      className={`text-sm font-medium ${teamBWon ? 'text-green-500' : 'text-red-500'}`}
+                    >
+                      {teamBWon ? 'WIN' : 'LOSS'}
                     </span>
                   )}
                 </div>
@@ -377,10 +398,7 @@ export function PlayerStatsTable({
               </TableHeader>
               <TableBody className="border-b border-border">
                 {teamBPlayers.map((player, index) => (
-                  <TableRow
-                    key={index}
-                    className="border-b border-border"
-                  >
+                  <TableRow key={index} className="border-b border-border">
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
                       {player.player_name || `Player ${index + 1}`}
                     </TableCell>
@@ -446,14 +464,8 @@ export function PlayerStatsTable({
               {getSortIcon('player_name')}
             </div>
           </TableHead>
-          <TableHead
-            className="cursor-pointer hover:bg-gray-700"
-            onClick={() => handleSort('team')}
-          >
-            <div className="flex items-center">
-              Team
-              {getSortIcon('player_name')} {/* Using player_name for team sorting */}
-            </div>
+          <TableHead className="cursor-pointer hover:bg-gray-700">
+            <div className="flex items-center">Team</div>
           </TableHead>
           <TableHead
             className="cursor-pointer hover:bg-gray-700"
@@ -515,8 +527,15 @@ export function PlayerStatsTable({
             <TableCell>{player.player_deaths}</TableCell>
             <TableCell>{player.player_kill_death_ratio}</TableCell>
             <TableCell>
-              <span className={player.player_first_kill_differential >= 0 ? 'text-green-400' : 'text-red-400'}>
-                {player.player_first_kill_differential >= 0 ? '+' : ''}{player.player_first_kill_differential}
+              <span
+                className={
+                  player.player_first_kill_differential >= 0
+                    ? 'text-green-400'
+                    : 'text-red-400'
+                }
+              >
+                {player.player_first_kill_differential >= 0 ? '+' : ''}
+                {player.player_first_kill_differential}
               </span>
             </TableCell>
             <TableCell>

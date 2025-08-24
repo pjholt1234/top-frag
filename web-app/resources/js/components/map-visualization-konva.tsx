@@ -39,36 +39,15 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
-  // Try to use the appropriate context based on the prop
-  let filters, setFilter, filterOptions;
+  // Call hooks unconditionally at the top level
+  const favouritesContext = useGrenadeLibrary();
+  const matchGrenadesContext = useMatchGrenades();
 
-  try {
-    if (useFavouritesContext) {
-      const favouritesContext = useGrenadeLibrary();
-      filters = favouritesContext.filters;
-      setFilter = favouritesContext.setFilter;
-      filterOptions = favouritesContext.filterOptions;
-    } else {
-      const libraryContext = useMatchGrenades();
-      filters = libraryContext.filters;
-      setFilter = libraryContext.setFilter;
-      filterOptions = libraryContext.filterOptions;
-    }
-  } catch (error) {
-    // If one context fails, try the other
-    try {
-      const libraryContext = useGrenadeLibrary();
-      filters = libraryContext.filters;
-      setFilter = libraryContext.setFilter;
-      filterOptions = libraryContext.filterOptions;
-    } catch (fallbackError) {
-      console.error('Failed to load map visualization context:', fallbackError);
-      // Provide fallback values
-      filters = { roundNumber: 'all' };
-      setFilter = () => { };
-      filterOptions = { rounds: [] };
-    }
-  }
+  // Determine which context to use based on the prop
+  const context = useFavouritesContext
+    ? favouritesContext
+    : matchGrenadesContext;
+  const { filters, setFilter, filterOptions } = context;
 
   // Get map metadata for coordinate conversion
   const mapMetadata = getMapMetadata(mapName);
@@ -130,17 +109,29 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
 
     // Call the callback with the grenade ID
     if (onGrenadeSelect) {
-      const grenadeId = newSelectedIndex !== null && filteredGrenadePositions[newSelectedIndex]?.id
-        ? filteredGrenadePositions[newSelectedIndex].id
-        : null;
+      const grenadeId =
+        newSelectedIndex !== null &&
+        filteredGrenadePositions[newSelectedIndex]?.id
+          ? filteredGrenadePositions[newSelectedIndex].id
+          : null;
       onGrenadeSelect(grenadeId);
     }
   };
 
-
-
   // Handle stage wheel for zoom
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: {
+    evt: WheelEvent;
+    target: {
+      getStage: () => {
+        scaleX: () => number;
+        scaleY: () => number;
+        x: () => number;
+        y: () => number;
+        getPointerPosition: () => { x: number; y: number };
+      };
+      getPointerPosition: () => { x: number; y: number };
+    };
+  }) => {
     e.evt.preventDefault();
 
     const scaleBy = 1.02;
@@ -206,7 +197,9 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   // Update selected marker index when selectedGrenadeId changes from external source
   React.useEffect(() => {
     if (selectedGrenadeId !== null) {
-      const index = filteredGrenadePositions.findIndex(pos => pos.id === selectedGrenadeId);
+      const index = filteredGrenadePositions.findIndex(
+        pos => pos.id === selectedGrenadeId
+      );
       if (index !== -1) {
         setSelectedMarkerIndex(index);
       }
@@ -216,10 +209,13 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   }, [selectedGrenadeId, filteredGrenadePositions]);
 
   // Handle round change from slider
-  const handleRoundChange = useCallback((round: number | null) => {
-    const roundValue = round === null ? 'all' : round.toString();
-    setFilter('roundNumber', roundValue);
-  }, [setFilter]);
+  const handleRoundChange = useCallback(
+    (round: number | null) => {
+      const roundValue = round === null ? 'all' : round.toString();
+      setFilter('roundNumber', roundValue);
+    },
+    [setFilter]
+  );
 
   // Calculate max rounds from available rounds
   const maxRounds = useMemo(() => {
@@ -278,7 +274,9 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                   position.x,
                   position.y
                 );
-                const isSelected = selectedMarkerIndex === index || selectedGrenadeId === position.id;
+                const isSelected =
+                  selectedMarkerIndex === index ||
+                  selectedGrenadeId === position.id;
                 const opacity = isSelected
                   ? 1.0
                   : selectedMarkerIndex !== null || selectedGrenadeId !== null

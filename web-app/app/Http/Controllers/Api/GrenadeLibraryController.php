@@ -143,6 +143,14 @@ class GrenadeLibraryController extends Controller
                 ->toArray();
         }
 
+        // Add "All Matches" option if map is selected and there are matches
+        if ($map && ! empty($matches)) {
+            array_unshift($matches, [
+                'id' => 'all',
+                'name' => 'All Matches',
+            ]);
+        }
+
         // Dynamic rounds based on selected match
         $rounds = [];
         if ($matchId) {

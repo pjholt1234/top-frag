@@ -24,7 +24,7 @@ class GrenadeFavouriteFactory extends Factory
             'round_number' => $this->faker->numberBetween(1, 30),
             'round_time' => $this->faker->randomFloat(2, 0, 300),
             'tick_timestamp' => $this->faker->numberBetween(0, 1000000),
-            'player_steam_id' => 'STEAM_' . $this->faker->numberBetween(100000000, 999999999),
+            'player_steam_id' => 'STEAM_'.$this->faker->numberBetween(100000000, 999999999),
             'player_side' => $this->faker->randomElement(['T', 'CT']),
             'grenade_type' => $this->faker->randomElement(['flashbang', 'smoke', 'hegrenade', 'molotov', 'incendiary']),
             'player_x' => $this->faker->randomFloat(2, -2000, 2000),

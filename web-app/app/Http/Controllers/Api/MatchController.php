@@ -72,7 +72,7 @@ class MatchController extends Controller
 
         $match = $this->userMatchHistoryService->getMatchById($user, $matchId);
 
-        if (!$match) {
+        if (! $match) {
             return response()->json(['message' => 'Match not found'], 404);
         }
 

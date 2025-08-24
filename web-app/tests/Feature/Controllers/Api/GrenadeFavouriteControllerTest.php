@@ -13,6 +13,7 @@ class GrenadeFavouriteControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private GameMatch $match;
 
     protected function setUp(): void
@@ -30,10 +31,17 @@ class GrenadeFavouriteControllerTest extends TestCase
 
     public function test_index_returns_user_favourites(): void
     {
+        // Create a player record for the steam_id that will be used in the factory
+        $player = \App\Models\Player::factory()->create([
+            'steam_id' => 'STEAM_123456789',
+            'name' => 'Test Player',
+        ]);
+
         // Create some favourites for the user
         GrenadeFavourite::factory()->create([
             'user_id' => $this->user->id,
             'match_id' => $this->match->id,
+            'player_steam_id' => $player->steam_id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -41,7 +49,7 @@ class GrenadeFavouriteControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'favourites' => [
+                'grenades' => [
                     '*' => [
                         'id',
                         'match_id',
@@ -52,12 +60,8 @@ class GrenadeFavouriteControllerTest extends TestCase
                         'player_steam_id',
                         'player_side',
                         'grenade_type',
-                        'match' => [
-                            'id',
-                            'map',
-                            'start_timestamp',
-                            'end_timestamp',
-                        ],
+                        'map',
+                        'player_name',
                     ],
                 ],
             ]);
@@ -67,22 +71,30 @@ class GrenadeFavouriteControllerTest extends TestCase
     {
         $match2 = GameMatch::factory()->create();
 
+        // Create a player record for the steam_id that will be used in the factory
+        $player = \App\Models\Player::factory()->create([
+            'steam_id' => 'STEAM_123456789',
+            'name' => 'Test Player',
+        ]);
+
         GrenadeFavourite::factory()->create([
             'user_id' => $this->user->id,
             'match_id' => $this->match->id,
+            'player_steam_id' => $player->steam_id,
         ]);
 
         GrenadeFavourite::factory()->create([
             'user_id' => $this->user->id,
             'match_id' => $match2->id,
+            'player_steam_id' => $player->steam_id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson('/api/grenade-favourites?match_id=' . $this->match->id);
+            ->getJson('/api/grenade-favourites?map=de_dust2&match_id='.$this->match->id);
 
         $response->assertStatus(200);
-        $this->assertCount(1, $response->json('favourites'));
-        $this->assertEquals($this->match->id, $response->json('favourites.0.match_id'));
+        $this->assertCount(1, $response->json('grenades'));
+        $this->assertEquals($this->match->id, $response->json('grenades.0.match_id'));
     }
 
     public function test_create_adds_new_favourite(): void
@@ -193,7 +205,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
+            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -225,7 +237,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
+            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
 
         $response->assertStatus(404)
             ->assertJson([

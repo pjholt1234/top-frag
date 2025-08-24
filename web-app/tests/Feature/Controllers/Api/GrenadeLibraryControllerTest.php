@@ -146,6 +146,10 @@ class GrenadeLibraryControllerTest extends TestCase
         $response->assertJson([
             'matches' => [
                 [
+                    'id' => 'all',
+                    'name' => 'All Matches',
+                ],
+                [
                     'id' => $this->match->id,
                     'name' => "Match #{$this->match->id} - de_mirage",
                 ],
@@ -532,8 +536,9 @@ class GrenadeLibraryControllerTest extends TestCase
         $response->assertStatus(200);
 
         $matches = $response->json('matches');
-        $this->assertCount(1, $matches);
-        $this->assertEquals($this->match->id, $matches[0]['id']);
+        $this->assertCount(2, $matches); // "All Matches" + the actual match
+        $this->assertEquals('all', $matches[0]['id']); // First should be "All Matches"
+        $this->assertEquals($this->match->id, $matches[1]['id']); // Second should be the actual match
 
         // Should not include matches the user is not part of
         $matchIds = collect($matches)->pluck('id')->toArray();
@@ -612,5 +617,47 @@ class GrenadeLibraryControllerTest extends TestCase
                     'player_side' => null,
                 ],
             ]);
+    }
+
+    public function test_index_returns_grenades_from_all_matches_when_match_id_not_provided()
+    {
+        // Create another match on the same map
+        $otherMatch = GameMatch::factory()->create([
+            'map' => 'de_mirage',
+            'match_type' => MatchType::MATCHMAKING,
+        ]);
+
+        MatchPlayer::factory()->create([
+            'match_id' => $otherMatch->id,
+            'player_id' => $this->player->id,
+            'team' => Team::TEAM_A,
+        ]);
+
+        // Create grenade events for both matches
+        $grenade1 = GrenadeEvent::factory()->create([
+            'match_id' => $this->match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'grenade_type' => GrenadeType::SMOKE_GRENADE,
+        ]);
+
+        $grenade2 = GrenadeEvent::factory()->create([
+            'match_id' => $otherMatch->id,
+            'player_steam_id' => $this->player->steam_id,
+            'grenade_type' => GrenadeType::SMOKE_GRENADE,
+        ]);
+
+        // Query without match_id (equivalent to "All Matches")
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/grenade-library?map=de_mirage&grenade_type='.GrenadeType::SMOKE_GRENADE->value);
+
+        $response->assertStatus(200);
+
+        $grenades = $response->json('grenades');
+        $this->assertCount(2, $grenades);
+
+        // Should include grenades from both matches
+        $grenadeIds = collect($grenades)->pluck('id')->toArray();
+        $this->assertContains($grenade1->id, $grenadeIds);
+        $this->assertContains($grenade2->id, $grenadeIds);
     }
 }
