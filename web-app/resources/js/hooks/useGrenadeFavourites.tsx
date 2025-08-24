@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
-import { GrenadeData } from './useGrenadeLibrary';
+import { GrenadeData } from './useMatchGrenades';
 
 interface FavouriteStatus {
     is_favourited: boolean;

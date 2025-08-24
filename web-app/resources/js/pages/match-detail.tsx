@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { IconArrowLeft, IconMapPin, IconCalendar, IconUsers, IconTrophy } from '@tabler/icons-react';
 import { PlayerStatsTable } from '@/components/player-stats-table';
-import GrenadeLibraryView from '../components/grenade-library-view';
+import MatchGrenadesView from '../components/match-grenades-view';
 
 interface PlayerStats {
     player_name: string;
@@ -277,7 +277,7 @@ const MatchDetail = () => {
 
                             <TabsContent value="grenades" className="mt-0">
                                 <CardContent>
-                                    <GrenadeLibraryView
+                                    <MatchGrenadesView
                                         hideMapAndMatchFilters={true}
                                         showHeader={false}
                                         showFavourites={true}

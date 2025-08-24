@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, createContext, useContext, R
 import { useApi } from './useApi';
 
 // Types
-export interface FavouritedGrenadeData {
+export interface GrenadeData {
     id: number;
     player_x: number;
     player_y: number;
@@ -58,9 +58,9 @@ export interface GrenadeState {
     isHighlighted: boolean;
 }
 
-export interface UseGrenadeFavouritesLibraryReturn {
+export interface UseMatchGrenadesReturn {
     // Data
-    grenades: FavouritedGrenadeData[];
+    grenades: GrenadeData[];
     filterOptions: FilterOptions;
 
     // Filters
@@ -83,7 +83,7 @@ export interface UseGrenadeFavouritesLibraryReturn {
     selectGrenade: (grenadeId: number, selected?: boolean) => void;
     selectGrenades: (grenadeIds: number[], selected?: boolean) => void;
     clearSelection: () => void;
-    getSelectedGrenades: () => FavouritedGrenadeData[];
+    getSelectedGrenades: () => GrenadeData[];
 
     // Computed values
     selectedGrenadeCount: number;
@@ -110,19 +110,19 @@ const DEFAULT_FILTER_OPTIONS: FilterOptions = {
 };
 
 // Context
-const GrenadeFavouritesLibraryContext = createContext<UseGrenadeFavouritesLibraryReturn | null>(null);
+const MatchGrenadesContext = createContext<UseMatchGrenadesReturn | null>(null);
 
 // Provider component
-interface GrenadeFavouritesLibraryProviderProps {
+interface MatchGrenadesProviderProps {
     children: ReactNode;
     initialFilters?: Partial<GrenadeFilters>;
 }
 
-export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibraryProviderProps> = ({ children, initialFilters = {} }) => {
+export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({ children, initialFilters = {} }) => {
     const { get } = useApi();
 
     // State
-    const [grenades, setGrenades] = useState<FavouritedGrenadeData[]>([]);
+    const [grenades, setGrenades] = useState<GrenadeData[]>([]);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>(DEFAULT_FILTER_OPTIONS);
     const [filters, setFiltersState] = useState<GrenadeFilters>({ ...DEFAULT_FILTERS, ...initialFilters });
     const [isLoading, setIsLoading] = useState(false);
@@ -147,7 +147,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
     const loadFilterOptions = useCallback(async () => {
         try {
             setError(null);
-            const response = await get<FilterOptions>('/grenade-favourites/filter-options');
+            const response = await get<FilterOptions>('/grenade-library/filter-options');
             const data = response.data;
             setFilterOptions(data);
         } catch (err) {
@@ -162,7 +162,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
         if (isInitialized) return;
 
         try {
-            const response = await get<FilterOptions>('/grenade-favourites/filter-options');
+            const response = await get<FilterOptions>('/grenade-library/filter-options');
             const data = response.data;
 
             if (data.maps.length > 0 && data.grenadeTypes.length > 0) {
@@ -176,7 +176,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
                 if (hasInitialFilters) {
                     // If we have initial filters, we need to load the appropriate matches
                     if (currentFilters.map) {
-                        const matchResponse = await get<FilterOptions>('/grenade-favourites/filter-options', {
+                        const matchResponse = await get<FilterOptions>('/grenade-library/filter-options', {
                             params: { map: currentFilters.map }
                         });
                         const matchData = matchResponse.data;
@@ -197,7 +197,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
                     }
                 } else {
                     // No initial filters, use defaults
-                    const matchResponse = await get<FilterOptions>('/grenade-favourites/filter-options', {
+                    const matchResponse = await get<FilterOptions>('/grenade-library/filter-options', {
                         params: { map: firstMap.name }
                     });
                     const matchData = matchResponse.data;
@@ -239,7 +239,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
 
         try {
             setError(null);
-            const response = await get<FilterOptions>('/grenade-favourites/filter-options', {
+            const response = await get<FilterOptions>('/grenade-library/filter-options', {
                 params: {
                     map: filters.map,
                     match_id: filters.matchId,
@@ -289,7 +289,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
                 params.player_side = filters.playerSide;
             }
 
-            const response = await get<{ grenades: FavouritedGrenadeData[] }>('/grenade-favourites', { params });
+            const response = await get<{ grenades: GrenadeData[] }>('/grenade-library', { params });
             setGrenades(response.data.grenades);
 
             // Initialize grenade states for new grenades
@@ -430,7 +430,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
         if (filters.map && !filters.matchId && isInitialized && !hasInitialFilters) {
             const loadMatchesForMap = async () => {
                 try {
-                    const response = await get<FilterOptions>('/grenade-favourites/filter-options', {
+                    const response = await get<FilterOptions>('/grenade-library/filter-options', {
                         params: { map: filters.map }
                     });
                     const data = response.data;
@@ -459,7 +459,7 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
         }
     }, [filters.map, filters.matchId, get, isInitialized, initialFilters]);
 
-    const contextValue: UseGrenadeFavouritesLibraryReturn = {
+    const contextValue: UseMatchGrenadesReturn = {
         // Data
         grenades,
         filterOptions,
@@ -493,17 +493,17 @@ export const GrenadeFavouritesLibraryProvider: React.FC<GrenadeFavouritesLibrary
     };
 
     return (
-        <GrenadeFavouritesLibraryContext.Provider value={contextValue}>
+        <MatchGrenadesContext.Provider value={contextValue}>
             {children}
-        </GrenadeFavouritesLibraryContext.Provider>
+        </MatchGrenadesContext.Provider>
     );
 };
 
 // Hook to use the context
-export const useGrenadeFavouritesLibrary = (): UseGrenadeFavouritesLibraryReturn => {
-    const context = useContext(GrenadeFavouritesLibraryContext);
+export const useMatchGrenades = (): UseMatchGrenadesReturn => {
+    const context = useContext(MatchGrenadesContext);
     if (!context) {
-        throw new Error('useGrenadeFavouritesLibrary must be used within a GrenadeFavouritesLibraryProvider');
+        throw new Error('useMatchGrenades must be used within a MatchGrenadesProvider');
     }
     return context;
 };

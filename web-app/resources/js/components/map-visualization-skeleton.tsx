@@ -4,7 +4,7 @@ import { getMapMetadata } from '../config/maps';
 import ZoomSlider from './zoom-slider';
 import RoundSlider from './round-slider';
 import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
-import { useGrenadeFavouritesLibrary } from '../hooks/useGrenadeFavouritesLibrary';
+import { useMatchGrenades } from '../hooks/useMatchGrenades';
 
 interface MapVisualizationSkeletonProps {
     mapName: string;
@@ -31,12 +31,12 @@ const MapVisualizationSkeleton: React.FC<MapVisualizationSkeletonProps> = ({
 
     try {
         if (useFavouritesContext) {
-            const favouritesContext = useGrenadeFavouritesLibrary();
+            const favouritesContext = useGrenadeLibrary();
             filters = favouritesContext.filters;
             setFilter = favouritesContext.setFilter;
             filterOptions = favouritesContext.filterOptions;
         } else {
-            const libraryContext = useGrenadeLibrary();
+            const libraryContext = useMatchGrenades();
             filters = libraryContext.filters;
             setFilter = libraryContext.setFilter;
             filterOptions = libraryContext.filterOptions;

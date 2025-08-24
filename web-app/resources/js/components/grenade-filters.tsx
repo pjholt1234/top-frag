@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
-import { useGrenadeFavouritesLibrary } from '../hooks/useGrenadeFavouritesLibrary';
+import { useMatchGrenades } from '../hooks/useMatchGrenades';
 
 interface GrenadeFiltersProps {
   hideMapAndMatchFilters?: boolean;
@@ -24,12 +24,12 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
 
   try {
     if (useFavouritesContext) {
-      const favouritesContext = useGrenadeFavouritesLibrary();
+      const favouritesContext = useGrenadeLibrary();
       filters = favouritesContext.filters;
       filterOptions = favouritesContext.filterOptions;
       setFilter = favouritesContext.setFilter;
     } else {
-      const libraryContext = useGrenadeLibrary();
+      const libraryContext = useMatchGrenades();
       filters = libraryContext.filters;
       filterOptions = libraryContext.filterOptions;
       setFilter = libraryContext.setFilter;
@@ -37,7 +37,7 @@ const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({
   } catch (error) {
     // If one context fails, try the other
     try {
-      const libraryContext = useGrenadeLibrary();
+      const libraryContext = useMatchGrenades();
       filters = libraryContext.filters;
       filterOptions = libraryContext.filterOptions;
       setFilter = libraryContext.setFilter;

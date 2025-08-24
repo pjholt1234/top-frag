@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, Zap, Eye, Users, Star } from 'lucide-react';
-import { useGrenadeLibrary, GrenadeData } from '../hooks/useGrenadeLibrary';
-import { useGrenadeFavouritesLibrary, FavouritedGrenadeData } from '../hooks/useGrenadeFavouritesLibrary';
+import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
+import { useMatchGrenades, GrenadeData } from '../hooks/useMatchGrenades';
 import { useGrenadeFavourites } from '../hooks/useGrenadeFavourites';
 
 interface GrenadeListProps {
-    onGrenadeClick: (grenade: GrenadeData | FavouritedGrenadeData) => void;
+    onGrenadeClick: (grenade: GrenadeData) => void;
     selectedGrenadeId?: number | null;
     showFavourites?: boolean;
     useFavouritesContext?: boolean;
@@ -24,20 +24,20 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
     hideRoundNumber = false
 }) => {
     // Try to use the appropriate context based on the prop
-    let grenades: (GrenadeData | FavouritedGrenadeData)[] = [];
+    let grenades: GrenadeData[] = [];
 
     try {
         if (useFavouritesContext) {
-            const favouritesContext = useGrenadeFavouritesLibrary();
+            const favouritesContext = useGrenadeLibrary();
             grenades = favouritesContext.grenades;
         } else {
-            const libraryContext = useGrenadeLibrary();
+            const libraryContext = useMatchGrenades();
             grenades = libraryContext.grenades;
         }
     } catch (error) {
         // If one context fails, try the other
         try {
-            const libraryContext = useGrenadeLibrary();
+            const libraryContext = useMatchGrenades();
             grenades = libraryContext.grenades;
         } catch (fallbackError) {
             console.error('Failed to load grenade list context:', fallbackError);
@@ -54,7 +54,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         }
     }, [grenades, showFavourites, initializeFavouriteStatus, useFavouritesContext]);
 
-    const generatePositionString = (grenade: GrenadeData | FavouritedGrenadeData): string => {
+    const generatePositionString = (grenade: GrenadeData): string => {
         const playerZ = grenade.player_z ?? 0.000000;
         const aimX = grenade.player_aim_x ?? 0.000000;
         const aimY = grenade.player_aim_y ?? 0.000000;
@@ -63,7 +63,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         return `setpos ${grenade.player_x} ${grenade.player_y} ${playerZ};setang ${aimY} ${aimX} 0.000000`;
     };
 
-    const copyPositionToClipboard = async (grenade: GrenadeData | FavouritedGrenadeData) => {
+    const copyPositionToClipboard = async (grenade: GrenadeData) => {
         try {
             const positionString = generatePositionString(grenade);
             await navigator.clipboard.writeText(positionString);
@@ -117,7 +117,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         );
     }
 
-    const getGrenadeTypeBadge = (grenade: GrenadeData | FavouritedGrenadeData) => {
+    const getGrenadeTypeBadge = (grenade: GrenadeData) => {
         return (
             <Badge className={`${getGrenadeColor(grenade.grenade_type)} border-2 bg-transparent text-white`}>
                 {grenade.grenade_type}
@@ -125,7 +125,7 @@ const GrenadeList: React.FC<GrenadeListProps> = ({
         );
     };
 
-    const getSideBadge = (grenade: GrenadeData | FavouritedGrenadeData) => {
+    const getSideBadge = (grenade: GrenadeData) => {
         let sideColour = 'border-blue';
 
         if (grenade.player_side === 'T') {
