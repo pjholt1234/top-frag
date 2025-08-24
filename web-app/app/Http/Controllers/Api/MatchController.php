@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\UserMatchHistoryService;
@@ -56,5 +56,34 @@ class MatchController extends Controller
         ];
 
         return response()->json($matchHistory);
+    }
+
+    public function show(Request $request, int $matchId)
+    {
+        // todo auth policies
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $match = $this->userMatchHistoryService->getMatchById($user, $matchId);
+
+        if (!$match) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        // Add debug info to response
+        $match['debug'] = [
+            'user_id' => $user->id,
+            'steam_id' => $user->steam_id,
+            'has_player' => $user->player ? 'yes' : 'no',
+            'match_id' => $matchId,
+        ];
+
+        return response()->json($match);
     }
 }

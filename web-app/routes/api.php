@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemoParserController;
+use App\Http\Controllers\Api\GrenadeFavouriteController;
 use App\Http\Controllers\Api\GrenadeLibraryController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MatchController;
@@ -30,11 +31,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/matches', [MatchController::class, 'index']);
+    Route::get('/matches/{matchId}', [MatchController::class, 'show']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
 
     // Grenade Library routes
     Route::get('/grenade-library', [GrenadeLibraryController::class, 'index']);
     Route::get('/grenade-library/filter-options', [GrenadeLibraryController::class, 'filterOptions']);
+
+    // Grenade Favourites routes
+    Route::get('/grenade-favourites', [GrenadeFavouriteController::class, 'index']);
+    Route::post('/grenade-favourites', [GrenadeFavouriteController::class, 'create']);
+    Route::delete('/grenade-favourites/{id}', [GrenadeFavouriteController::class, 'delete']);
 });
 
 Route::middleware('api.key')->group(function () {

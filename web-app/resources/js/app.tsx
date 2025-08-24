@@ -10,6 +10,7 @@ import Layout from '@/components/Layout';
 import Dashboard from '@/pages/dashboard';
 import YourMatches from '@/pages/your-matches';
 import GrenadeLibrary from '@/pages/grenade-library';
+import MatchDetail from '@/pages/match-detail';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
 
@@ -49,6 +50,7 @@ const App: React.FC = () => {
               <Route index element={<YourMatches />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="grenade-library" element={<GrenadeLibrary />} />
+              <Route path="matches/:id" element={<MatchDetail />} />
             </Route>
 
             {/* Catch all route - redirect to root if authenticated, login if not */}

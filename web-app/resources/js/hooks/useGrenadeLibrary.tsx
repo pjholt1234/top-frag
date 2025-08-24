@@ -111,24 +111,27 @@ const GrenadeLibraryContext = createContext<UseGrenadeLibraryReturn | null>(null
 // Provider component
 interface GrenadeLibraryProviderProps {
     children: ReactNode;
+    initialFilters?: Partial<GrenadeFilters>;
 }
 
-export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ children }) => {
+export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ children, initialFilters = {} }) => {
     const { get } = useApi();
 
     // State
     const [grenades, setGrenades] = useState<GrenadeData[]>([]);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>(DEFAULT_FILTER_OPTIONS);
-    const [filters, setFiltersState] = useState<GrenadeFilters>(DEFAULT_FILTERS);
+    const [filters, setFiltersState] = useState<GrenadeFilters>({ ...DEFAULT_FILTERS, ...initialFilters });
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [grenadeStates, setGrenadeStates] = useState<Map<number, GrenadeState>>(new Map());
 
+
+
     // Computed values
     const hasValidFilters = useMemo(() => {
-        return !!(filters.map && filters.matchId && filters.grenadeType);
-    }, [filters.map, filters.matchId, filters.grenadeType]);
+        return !!(filters.map && filters.matchId);
+    }, [filters.map, filters.matchId]);
 
     const currentMap = useMemo(() => {
         return filters.map || 'de_ancient';
@@ -164,32 +167,61 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
                 const firstMap = data.maps[0];
                 const firstGrenadeType = data.grenadeTypes[0];
 
-                // Load matches for the first map
-                const matchResponse = await get<FilterOptions>('/grenade-library/filter-options', {
-                    params: { map: firstMap.name }
-                });
-                const matchData = matchResponse.data;
+                // Check if we have initial filters that should override defaults
+                const currentFilters = { ...DEFAULT_FILTERS, ...initialFilters };
+                const hasInitialFilters = currentFilters.map || currentFilters.matchId;
 
-                // Update filter options with matches FIRST
-                setFilterOptions(prev => ({
-                    ...prev,
-                    matches: matchData.matches,
-                }));
+                if (hasInitialFilters) {
+                    // If we have initial filters, we need to load the appropriate matches
+                    if (currentFilters.map) {
+                        const matchResponse = await get<FilterOptions>('/grenade-library/filter-options', {
+                            params: { map: currentFilters.map }
+                        });
+                        const matchData = matchResponse.data;
 
-                // Small delay to ensure state update is processed
-                await new Promise(resolve => setTimeout(resolve, 0));
+                        // Update filter options with matches for the initial map
+                        setFilterOptions(prev => ({
+                            ...prev,
+                            matches: matchData.matches,
+                        }));
+                    }
 
-                // Then set initial filters
-                const initialFilters: GrenadeFilters = {
-                    map: firstMap.name,
-                    grenadeType: firstGrenadeType.type,
-                    matchId: matchData.matches.length > 0 ? matchData.matches[0].id : '',
-                    roundNumber: 'all',
-                    playerSteamId: 'all',
-                    playerSide: 'all',
-                };
+                    // Set grenade type if not already set
+                    if (!currentFilters.grenadeType) {
+                        setFiltersState(prev => ({
+                            ...prev,
+                            grenadeType: firstGrenadeType.type,
+                        }));
+                    }
+                } else {
+                    // No initial filters, use defaults
+                    const matchResponse = await get<FilterOptions>('/grenade-library/filter-options', {
+                        params: { map: firstMap.name }
+                    });
+                    const matchData = matchResponse.data;
 
-                setFiltersState(initialFilters);
+                    // Update filter options with matches FIRST
+                    setFilterOptions(prev => ({
+                        ...prev,
+                        matches: matchData.matches,
+                    }));
+
+                    // Small delay to ensure state update is processed
+                    await new Promise(resolve => setTimeout(resolve, 0));
+
+                    // Then set initial filters
+                    const defaultFilters: GrenadeFilters = {
+                        map: firstMap.name,
+                        grenadeType: firstGrenadeType.type,
+                        matchId: matchData.matches.length > 0 ? matchData.matches[0].id : '',
+                        roundNumber: 'all',
+                        playerSteamId: 'all',
+                        playerSide: 'all',
+                    };
+
+                    setFiltersState(defaultFilters);
+                }
+
                 setIsInitialized(true);
             }
         } catch (err) {
@@ -197,7 +229,7 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
             setError(errorMessage);
             console.error('Failed to initialize with defaults:', err);
         }
-    }, [get, isInitialized]);
+    }, [get, isInitialized, initialFilters]);
 
     // Load match-dependent options (rounds and players)
     const loadMatchDependentOptions = useCallback(async () => {
@@ -238,8 +270,12 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
             const params: Record<string, string> = {
                 map: filters.map,
                 match_id: filters.matchId,
-                grenade_type: filters.grenadeType,
             };
+
+            // Only add grenade_type if it's set
+            if (filters.grenadeType) {
+                params.grenade_type = filters.grenadeType;
+            }
 
             if (filters.roundNumber && filters.roundNumber !== 'all') {
                 params.round_number = filters.roundNumber;
@@ -387,7 +423,9 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
 
     // Handle map change with auto-selection of first match
     useEffect(() => {
-        if (filters.map && !filters.matchId && isInitialized) {
+        // Don't auto-select match if we have initial filters
+        const hasInitialFilters = initialFilters.map || initialFilters.matchId;
+        if (filters.map && !filters.matchId && isInitialized && !hasInitialFilters) {
             const loadMatchesForMap = async () => {
                 try {
                     const response = await get<FilterOptions>('/grenade-library/filter-options', {
@@ -417,7 +455,7 @@ export const GrenadeLibraryProvider: React.FC<GrenadeLibraryProviderProps> = ({ 
 
             loadMatchesForMap();
         }
-    }, [filters.map, filters.matchId, get, isInitialized]);
+    }, [filters.map, filters.matchId, get, isInitialized, initialFilters]);
 
     const contextValue: UseGrenadeLibraryReturn = {
         // Data

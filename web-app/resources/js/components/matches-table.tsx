@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { getAdrColor } from '@/lib/utils';
+import { PlayerStatsTable } from '@/components/player-stats-table';
 import {
   Table,
   TableBody,
@@ -336,7 +337,12 @@ export function MatchesTable({
                     </Button>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {match.match_details.map}
+                    <button
+                      onClick={() => window.location.href = `/matches/${matchId}`}
+                      className="text-left hover:text-blue-400 hover:underline cursor-pointer transition-colors"
+                    >
+                      {match.match_details.map}
+                    </button>
                   </TableCell>
                   <TableCell>
                     <span className="font-mono">
@@ -354,315 +360,30 @@ export function MatchesTable({
                       'Unknown'}
                   </TableCell>
                   <TableCell>
-                    {formatDate(match.match_details.created_at)}
+                    <div className="flex items-center justify-between">
+                      <span>{formatDate(match.match_details.created_at)}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.location.href = `/matches/${matchId}`}
+                        className="ml-2 h-6 px-2 text-xs"
+                      >
+                        View
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
                 {isExpanded && (
                   <TableRow>
                     <TableCell colSpan={6} className="p-0">
-                      <div className="bg-muted/50">
-                        <div className="flex flex-col lg:flex-row">
-                          {/* Team A */}
-                          <div className="lg:flex-1 lg:border-r lg:border-border lg:border-b lg:border-border">
-                            <Table className="border-0 w-full table-fixed">
-                              <TableHeader>
-                                <TableRow className="border-b border-border">
-                                  <TableHead
-                                    className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_name'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Player
-                                      {getSortIcon(matchId, 'player_name')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_kill_death_ratio'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      K/D
-                                      {getSortIcon(
-                                        matchId,
-                                        'player_kill_death_ratio'
-                                      )}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_kills'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Kills
-                                      {getSortIcon(matchId, 'player_kills')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_deaths'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Deaths
-                                      {getSortIcon(matchId, 'player_deaths')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_first_kill_differential'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      FK +/-
-                                      {getSortIcon(
-                                        matchId,
-                                        'player_first_kill_differential'
-                                      )}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_adr'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      ADR
-                                      {getSortIcon(matchId, 'player_adr')}
-                                    </div>
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody className="border-b border-border">
-                                {teamAPlayers.map((player, index) => (
-                                  <TableRow
-                                    key={index}
-                                    className="border-b border-border"
-                                  >
-                                    <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
-                                      {player.player_name ||
-                                        `Player ${index + 1}`}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      <span
-                                        className={
-                                          player.player_kill_death_ratio > 1
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : player.player_kill_death_ratio < 1
-                                              ? 'text-red-600 dark:text-red-400'
-                                              : ''
-                                        }
-                                      >
-                                        {player.player_kill_death_ratio.toFixed(
-                                          2
-                                        )}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      {player.player_kills}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      {player.player_deaths}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      <span
-                                        className={
-                                          player.player_first_kill_differential >
-                                          0
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : player.player_first_kill_differential <
-                                                0
-                                              ? 'text-red-600 dark:text-red-400'
-                                              : ''
-                                        }
-                                      >
-                                        {player.player_first_kill_differential >
-                                        0
-                                          ? '+'
-                                          : ''}
-                                        {player.player_first_kill_differential}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-sm font-bold py-2 px-3 border-0">
-                                      <span
-                                        className={getAdrColor(
-                                          player.player_adr
-                                        )}
-                                      >
-                                        {player.player_adr.toFixed(0)}
-                                      </span>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-
-                          {/* Team B */}
-                          <div className="lg:flex-1 lg:border-b lg:border-border">
-                            <Table className="border-0 w-full table-fixed">
-                              <TableHeader>
-                                <TableRow className="border-b border-border">
-                                  <TableHead
-                                    className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_name'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Player
-                                      {getSortIcon(matchId, 'player_name')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_kill_death_ratio'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      K/D
-                                      {getSortIcon(
-                                        matchId,
-                                        'player_kill_death_ratio'
-                                      )}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_kills'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Kills
-                                      {getSortIcon(matchId, 'player_kills')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_deaths'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      Deaths
-                                      {getSortIcon(matchId, 'player_deaths')}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_first_kill_differential'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      FK +/-
-                                      {getSortIcon(
-                                        matchId,
-                                        'player_first_kill_differential'
-                                      )}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead
-                                    className="text-sm py-2 px-3 border-0 w-1/6 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={createSortHandler(
-                                      matchId,
-                                      'player_adr'
-                                    )}
-                                  >
-                                    <div className="flex items-center">
-                                      ADR
-                                      {getSortIcon(matchId, 'player_adr')}
-                                    </div>
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody className="border-b border-border">
-                                {teamBPlayers.map((player, index) => (
-                                  <TableRow
-                                    key={index}
-                                    className="border-b border-border"
-                                  >
-                                    <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
-                                      {player.player_name ||
-                                        `Player ${index + 1}`}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      <span
-                                        className={
-                                          player.player_kill_death_ratio > 1
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : player.player_kill_death_ratio < 1
-                                              ? 'text-red-600 dark:text-red-400'
-                                              : ''
-                                        }
-                                      >
-                                        {player.player_kill_death_ratio.toFixed(
-                                          2
-                                        )}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      {player.player_kills}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      {player.player_deaths}
-                                    </TableCell>
-                                    <TableCell className="text-sm py-2 px-3 border-0">
-                                      <span
-                                        className={
-                                          player.player_first_kill_differential >
-                                          0
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : player.player_first_kill_differential <
-                                                0
-                                              ? 'text-red-600 dark:text-red-400'
-                                              : ''
-                                        }
-                                      >
-                                        {player.player_first_kill_differential >
-                                        0
-                                          ? '+'
-                                          : ''}
-                                        {player.player_first_kill_differential}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-sm font-bold py-2 px-3 border-0">
-                                      <span
-                                        className={getAdrColor(
-                                          player.player_adr
-                                        )}
-                                      >
-                                        {player.player_adr.toFixed(0)}
-                                      </span>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </div>
+                      <PlayerStatsTable
+                        players={allPlayers}
+                        variant="expanded"
+                        sortColumn={matchSortStates[matchId]?.column}
+                        sortDirection={matchSortStates[matchId]?.direction}
+                        onSort={(column) => handleSort(matchId, column)}
+                        match={match}
+                      />
                     </TableCell>
                   </TableRow>
                 )}

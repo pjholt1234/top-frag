@@ -94,6 +94,38 @@ class UserMatchHistoryService
     }
 
     /**
+     * Get a single match by ID
+     */
+    public function getMatchById(User $user, int $matchId): ?array
+    {
+        $this->setUser($user);
+
+        if (! $this->player) {
+            return null;
+        }
+
+        // First check if it's a completed match
+        $cachedMatch = $this->getCachedMatch($matchId);
+        if ($cachedMatch !== null) {
+            return $cachedMatch;
+        }
+
+        // Try to load and cache the match
+        $match = $this->loadAndCacheMatch($matchId);
+        if ($match) {
+            return $match;
+        }
+
+        // Check if it's an in-progress job
+        $inProgressJob = $this->getInProgressJobById($user, $matchId);
+        if ($inProgressJob) {
+            return $inProgressJob;
+        }
+
+        return null;
+    }
+
+    /**
      * Get completed matches with filters
      */
     private function getCompletedMatches(array $filters = []): array
@@ -127,7 +159,7 @@ class UserMatchHistoryService
         $query = $this->player->matches()->select('matches.id');
 
         if (! empty($filters['map'])) {
-            $query->where('map', 'like', '%'.$filters['map'].'%');
+            $query->where('map', 'like', '%' . $filters['map'] . '%');
         }
 
         if (! empty($filters['match_type'])) {
@@ -166,7 +198,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
@@ -245,7 +277,7 @@ class UserMatchHistoryService
         // Apply filters that work for in-progress jobs
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
-                $q->where('map', 'like', '%'.$filters['map'].'%');
+                $q->where('map', 'like', '%' . $filters['map'] . '%');
             });
         }
 
@@ -260,7 +292,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         $jobs = $query->orderBy('created_at', 'desc')->get();
@@ -293,6 +325,50 @@ class UserMatchHistoryService
                 'error_message' => $job->error_message,
             ];
         })->toArray();
+    }
+
+    /**
+     * Get a single in-progress job by ID
+     */
+    private function getInProgressJobById(User $user, int $jobId): ?array
+    {
+        $job = $user->demoProcessingJobs()
+            ->where('id', $jobId)
+            ->where('progress_percentage', '<', 100)
+            ->where('processing_status', '!=', \App\Enums\ProcessingStatus::COMPLETED->value)
+            ->with('match')
+            ->first();
+
+        if (! $job) {
+            return null;
+        }
+
+        $match = $job->match;
+
+        $matchDetails = null;
+        if ($match) {
+            $matchDetails = [
+                'id' => $match->id,
+                'map' => $match->map,
+                'winning_team_score' => $match->winning_team_score,
+                'losing_team_score' => $match->losing_team_score,
+                'winning_team' => $match->winning_team,
+                'match_type' => $match->match_type,
+                'created_at' => $match->created_at,
+            ];
+        }
+
+        return [
+            'id' => $job->id,
+            'created_at' => $job->created_at,
+            'is_completed' => false,
+            'match_details' => $matchDetails,
+            'player_stats' => null, // Not available for in-progress jobs
+            'processing_status' => $job->processing_status,
+            'progress_percentage' => $job->progress_percentage,
+            'current_step' => $job->current_step,
+            'error_message' => $job->error_message,
+        ];
     }
 
     private function getMatchDetails(GameMatch $match): array

@@ -9,7 +9,11 @@ import {
 } from '@/components/ui/select';
 import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
 
-const GrenadeFilters: React.FC = () => {
+interface GrenadeFiltersProps {
+  hideMapAndMatchFilters?: boolean;
+}
+
+const GrenadeFilters: React.FC<GrenadeFiltersProps> = ({ hideMapAndMatchFilters = false }) => {
   const {
     filters,
     filterOptions,
@@ -24,51 +28,55 @@ const GrenadeFilters: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/50">
         {/* Map Filter - No "All" option, must be selected */}
-        <div className="space-y-1 min-w-[120px]">
-          <Label htmlFor="map-filter" className="text-xs">
-            Map
-          </Label>
-          <Select
-            value={filters.map}
-            onValueChange={value => handleFilterChange('map', value)}
-          >
-            <SelectTrigger id="map-filter" className="h-8 w-full">
-              <SelectValue placeholder="Select map" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              {filterOptions.maps.map(map => (
-                <SelectItem key={map.name} value={map.name}>
-                  {map.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!hideMapAndMatchFilters && (
+          <div className="space-y-1 min-w-[120px]">
+            <Label htmlFor="map-filter" className="text-xs">
+              Map
+            </Label>
+            <Select
+              value={filters.map}
+              onValueChange={value => handleFilterChange('map', value)}
+            >
+              <SelectTrigger id="map-filter" className="h-8 w-full">
+                <SelectValue placeholder="Select map" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                {filterOptions.maps.map(map => (
+                  <SelectItem key={map.name} value={map.name}>
+                    {map.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Match Filter - No "All" option, depends on Map */}
-        <div className="space-y-1 min-w-[120px]">
-          <Label htmlFor="match-filter" className="text-xs">
-            Match
-          </Label>
-          <Select
-            value={filters.matchId}
-            onValueChange={value => handleFilterChange('matchId', value)}
-            disabled={!filters.map || filterOptions.matches.length === 0}
-          >
-            <SelectTrigger id="match-filter" className="h-8 w-full">
-              <SelectValue
-                placeholder={!filters.map ? 'Select map first' : 'Select match'}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {filterOptions.matches.map(match => (
-                <SelectItem key={match.id} value={match.id}>
-                  {match.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!hideMapAndMatchFilters && (
+          <div className="space-y-1 min-w-[120px]">
+            <Label htmlFor="match-filter" className="text-xs">
+              Match
+            </Label>
+            <Select
+              value={filters.matchId}
+              onValueChange={value => handleFilterChange('matchId', value)}
+              disabled={!filters.map || filterOptions.matches.length === 0}
+            >
+              <SelectTrigger id="match-filter" className="h-8 w-full">
+                <SelectValue
+                  placeholder={!filters.map ? 'Select map first' : 'Select match'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {filterOptions.matches.map(match => (
+                  <SelectItem key={match.id} value={match.id}>
+                    {match.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Grenade Type Filter - No "All" option, hardcoded with Fire Grenades */}
         <div className="space-y-1 min-w-[120px]">
