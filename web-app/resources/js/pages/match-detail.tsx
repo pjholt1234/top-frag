@@ -176,14 +176,12 @@ const MatchDetail = () => {
                 {/* Match Details Card */}
                 {match.match_details && (
                     <Card className="mb-6">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <IconMapPin className="w-5 h-5" />
-                                {match.match_details.map}
-                            </CardTitle>
-                        </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <CardTitle className="flex items-center gap-2">
+                                    <IconMapPin className="w-5 h-5" />
+                                    {match.match_details.map}
+                                </CardTitle>
                                 <div className="flex items-center gap-2">
                                     <IconCalendar className="w-4 h-4 text-gray-400" />
                                     <span className="text-sm text-gray-400">
