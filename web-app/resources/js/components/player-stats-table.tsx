@@ -77,6 +77,7 @@ export function PlayerStatsTable({
   onSort,
   match,
 }: PlayerStatsTableProps) {
+  console.log('PlayerStatsTable received match:', match);
   const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>(
     'player_kill_death_ratio'
   );
@@ -171,6 +172,9 @@ export function PlayerStatsTable({
     const teamAWon = match?.match_details?.winning_team === 'A';
     const teamBWon = match?.match_details?.winning_team === 'B';
 
+    // Check if match details are available
+    const hasMatchDetails = match?.match_details != null;
+
     return (
       <div className={`bg-muted/50 ${className}`}>
         <div className="flex flex-col lg:flex-row">
@@ -178,23 +182,27 @@ export function PlayerStatsTable({
           <div className="lg:flex-1 lg:border-r lg:border-border lg:border-b lg:border-border">
             {/* Team A Header */}
             <div
-              className={`border-b border-border px-6 py-3 ${teamAWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}
+              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamAWon ? 'bg-green-500/10' : 'bg-red-500/10') : 'bg-gray-500/10'}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${teamAWon ? 'bg-green-500' : 'bg-red-500'}`}
+                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamAWon ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-500'}`}
                   ></div>
                   <span
-                    className={`font-semibold ${teamAWon ? 'text-green-500' : 'text-red-500'}`}
+                    className={`font-semibold ${hasMatchDetails ? (teamAWon ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}
                   >
                     Team A
                   </span>
-                  {match?.match_details && (
+                  {hasMatchDetails ? (
                     <span
                       className={`text-sm font-medium ${teamAWon ? 'text-green-500' : 'text-red-500'}`}
                     >
                       {teamAWon ? 'WIN' : 'LOSS'}
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-500">
+                      Processing...
                     </span>
                   )}
                 </div>
@@ -314,23 +322,27 @@ export function PlayerStatsTable({
           <div className="lg:flex-1 lg:border-b lg:border-border">
             {/* Team B Header */}
             <div
-              className={`border-b border-border px-6 py-3 ${teamBWon ? 'bg-green-500/10' : 'bg-red-500/10'}`}
+              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamBWon ? 'bg-green-500/10' : 'bg-red-500/10') : 'bg-gray-500/10'}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${teamBWon ? 'bg-green-500' : 'bg-red-500'}`}
+                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamBWon ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-500'}`}
                   ></div>
                   <span
-                    className={`font-semibold ${teamBWon ? 'text-green-500' : 'text-red-500'}`}
+                    className={`font-semibold ${hasMatchDetails ? (teamBWon ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}
                   >
                     Team B
                   </span>
-                  {match?.match_details && (
+                  {hasMatchDetails ? (
                     <span
                       className={`text-sm font-medium ${teamBWon ? 'text-green-500' : 'text-red-500'}`}
                     >
                       {teamBWon ? 'WIN' : 'LOSS'}
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-500">
+                      Processing...
                     </span>
                   )}
                 </div>

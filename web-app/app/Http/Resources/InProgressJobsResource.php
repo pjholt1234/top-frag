@@ -26,17 +26,23 @@ class InProgressJobsResource extends JsonResource
         if (! empty($match)) {
             $player = $this->user->player;
 
+            // Check if player participated in this match
+            $playerTeam = $match->players->where('steam_id', $player?->steam_id)->first()?->pivot->team;
+            $playerWasParticipant = $playerTeam !== null;
+            $playerWonMatch = $playerWasParticipant && $match->winning_team === $playerTeam;
+
             $data = [
                 ...$data,
                 'match_id' => $match->id,
                 'map' => $match->map,
                 'winning_team_score' => $match->winning_team_score,
                 'losing_team_score' => $match->losing_team_score,
-                'winning_team_name' => $match->winning_team,
-                'player_won_match' => empty($player) ? false : $player->playerWonMatch($match),
+                'winning_team' => $match->winning_team,
+                'player_won_match' => $playerWonMatch,
+                'player_was_participant' => $playerWasParticipant,
+                'player_team' => $playerTeam,
                 'match_type' => $match->match_type,
-                'match_date' => $match->created_at,
-                'player_was_participant' => true,
+                'created_at' => $match->created_at,
             ];
         }
 

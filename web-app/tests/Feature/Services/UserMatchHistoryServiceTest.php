@@ -65,11 +65,11 @@ class UserMatchHistoryServiceTest extends TestCase
 
         // Check match details
         $matchDetails = $result[0]['match_details'];
-        $this->assertEquals($match->id, $matchDetails['match_id']);
+        $this->assertEquals($match->id, $matchDetails['id']);
         $this->assertEquals('de_dust2', $matchDetails['map']);
         $this->assertEquals(16, $matchDetails['winning_team_score']);
         $this->assertEquals(14, $matchDetails['losing_team_score']);
-        $this->assertEquals('A', $matchDetails['winning_team_name']);
+        $this->assertEquals('A', $matchDetails['winning_team']);
         $this->assertTrue($matchDetails['player_won_match']);
         $this->assertEquals(MatchType::MATCHMAKING, $matchDetails['match_type']);
         $this->assertTrue($matchDetails['player_was_participant']);
@@ -434,5 +434,35 @@ class UserMatchHistoryServiceTest extends TestCase
         $this->assertArrayHasKey('per_page', $result['pagination']);
         $this->assertArrayHasKey('total', $result['pagination']);
         $this->assertArrayHasKey('last_page', $result['pagination']);
+    }
+
+    #[Test]
+    public function it_correctly_identifies_player_did_not_participate_in_match()
+    {
+        // Create a match where the player is not participating
+        $match = GameMatch::factory()->create([
+            'map' => 'de_dust2',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+        ]);
+
+        // Don't attach the player to the match - they didn't participate
+
+        $result = $this->service->getMatchById($this->user, $match->id);
+
+        $this->assertNotNull($result);
+        $this->assertArrayHasKey('match_details', $result);
+
+        // Check match details
+        $matchDetails = $result['match_details'];
+        $this->assertEquals($match->id, $matchDetails['id']);
+        $this->assertEquals('de_dust2', $matchDetails['map']);
+        $this->assertEquals(16, $matchDetails['winning_team_score']);
+        $this->assertEquals(14, $matchDetails['losing_team_score']);
+        $this->assertEquals('A', $matchDetails['winning_team']);
+        $this->assertFalse($matchDetails['player_won_match']);
+        $this->assertFalse($matchDetails['player_was_participant']);
+        $this->assertNull($matchDetails['player_team']);
     }
 }

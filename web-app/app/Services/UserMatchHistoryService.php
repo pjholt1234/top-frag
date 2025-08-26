@@ -159,7 +159,7 @@ class UserMatchHistoryService
         $query = $this->player->matches()->select('matches.id');
 
         if (! empty($filters['map'])) {
-            $query->where('map', 'like', '%'.$filters['map'].'%');
+            $query->where('map', 'like', '%' . $filters['map'] . '%');
         }
 
         if (! empty($filters['match_type'])) {
@@ -198,7 +198,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
@@ -230,15 +230,7 @@ class UserMatchHistoryService
             'id' => $match->id,
             'created_at' => $match->created_at,
             'is_completed' => true,
-            'match_details' => [
-                'id' => $match->id,
-                'map' => $match->map,
-                'winning_team_score' => $match->winning_team_score,
-                'losing_team_score' => $match->losing_team_score,
-                'winning_team' => $match->winning_team,
-                'match_type' => $match->match_type,
-                'created_at' => $match->created_at,
-            ],
+            'match_details' => $this->getMatchDetails($match),
             'player_stats' => $this->getPlayerStatsOptimized($match),
             'processing_status' => null,
             'progress_percentage' => null,
@@ -277,7 +269,7 @@ class UserMatchHistoryService
         // Apply filters that work for in-progress jobs
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
-                $q->where('map', 'like', '%'.$filters['map'].'%');
+                $q->where('map', 'like', '%' . $filters['map'] . '%');
             });
         }
 
@@ -292,7 +284,7 @@ class UserMatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
         }
 
         $jobs = $query->orderBy('created_at', 'desc')->get();
@@ -373,16 +365,22 @@ class UserMatchHistoryService
 
     private function getMatchDetails(GameMatch $match): array
     {
+        // Check if player participated in this match
+        $playerTeam = $match->players->where('steam_id', $this->player->steam_id)->first()?->pivot->team;
+        $playerWasParticipant = $playerTeam !== null;
+        $playerWonMatch = $playerWasParticipant && $match->winning_team === $playerTeam;
+
         return [
-            'match_id' => $match->id,
+            'id' => $match->id,
             'map' => $match->map,
             'winning_team_score' => $match->winning_team_score,
             'losing_team_score' => $match->losing_team_score,
-            'winning_team_name' => $match->winning_team,
-            'player_won_match' => $this->player->playerWonMatch($match),
+            'winning_team' => $match->winning_team,
+            'player_won_match' => $playerWonMatch,
+            'player_was_participant' => $playerWasParticipant,
+            'player_team' => $playerTeam,
             'match_type' => $match->match_type,
-            'match_date' => $match->created_at,
-            'player_was_participant' => true,
+            'created_at' => $match->created_at,
         ];
     }
 

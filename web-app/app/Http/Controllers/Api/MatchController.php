@@ -47,14 +47,6 @@ class MatchController extends Controller
 
         $matchHistory = $this->userMatchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
 
-        // Add debug info to response
-        $matchHistory['debug'] = [
-            'user_id' => $user->id,
-            'steam_id' => $user->steam_id,
-            'has_player' => $user->player ? 'yes' : 'no',
-            'filters' => $filters,
-        ];
-
         return response()->json($matchHistory);
     }
 

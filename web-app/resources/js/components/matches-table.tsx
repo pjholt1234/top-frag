@@ -31,6 +31,9 @@ interface MatchDetails {
   winning_team: string;
   match_type: string;
   created_at: string;
+  player_won_match?: boolean;
+  player_was_participant?: boolean;
+  player_team?: string;
 }
 
 interface UnifiedMatch {
@@ -79,8 +82,6 @@ export function MatchesTable({
     Record<number, { column: SortColumn; direction: SortDirection }>
   >({});
 
-  console.log('MatchesTable received matches:', matches);
-
   const toggleRow = (matchId: number) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(matchId)) {
@@ -120,7 +121,13 @@ export function MatchesTable({
       return 'Unknown';
     }
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const date = new Date(dateString);
+      console.log('Parsed date:', date, 'isValid:', !isNaN(date.getTime()));
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateString);
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -149,6 +156,32 @@ export function MatchesTable({
   const capitalizeFirst = (str: string) => {
     const [first, ...rest] = str;
     return first.toUpperCase() + rest.join('');
+  };
+
+  const getMatchResult = (match: UnifiedMatch) => {
+    if (!match.is_completed || !match.match_details) {
+      return { text: 'Processing...', color: 'text-muted-foreground' };
+    }
+
+    const { player_was_participant, player_won_match } = match.match_details;
+
+    // For backward compatibility, if the new fields don't exist, assume participation
+    if (player_was_participant === undefined) {
+      // Fallback to old behavior - assume player participated and won
+      return { text: 'Win', color: 'text-green-600 dark:text-green-400' };
+    }
+
+    // If player didn't participate, show "Unknown"
+    if (!player_was_participant) {
+      return { text: 'Unknown', color: 'text-muted-foreground' };
+    }
+
+    // If player participated, show Win/Loss
+    if (player_won_match) {
+      return { text: 'Win', color: 'text-green-600 dark:text-green-400' };
+    } else {
+      return { text: 'Loss', color: 'text-red-600 dark:text-red-400' };
+    }
   };
 
   return (
@@ -254,27 +287,36 @@ export function MatchesTable({
                       }
                       className="text-left hover:text-blue-400 hover:underline cursor-pointer transition-colors"
                     >
-                      {match.match_details.map}
+                      {match.match_details?.map || 'Unknown Map'}
                     </button>
                   </TableCell>
                   <TableCell>
                     <span className="font-mono">
-                      {match.match_details.winning_team_score} -{' '}
-                      {match.match_details.losing_team_score}
+                      {match.match_details ?
+                        `${match.match_details.winning_team_score} - ${match.match_details.losing_team_score}` :
+                        'Processing...'
+                      }
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-green-600 dark:text-green-400">
-                      Win
-                    </span>
+                    {(() => {
+                      const result = getMatchResult(match);
+                      return (
+                        <span className={result.color}>
+                          {result.text}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
-                    {capitalizeFirst(match.match_details.match_type) ||
-                      'Unknown'}
+                    {match.match_details ?
+                      capitalizeFirst(match.match_details.match_type) || 'Unknown' :
+                      'Processing...'
+                    }
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-between">
-                      <span>{formatDate(match.match_details.created_at)}</span>
+                      <span>{formatDate(match.match_details?.created_at || match.created_at)}</span>
                       <Button
                         variant="ghost"
                         size="sm"
