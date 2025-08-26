@@ -292,31 +292,32 @@ export function MatchesTable({
                   </TableCell>
                   <TableCell>
                     <span className="font-mono">
-                      {match.match_details ?
-                        `${match.match_details.winning_team_score} - ${match.match_details.losing_team_score}` :
-                        'Processing...'
-                      }
+                      {match.match_details
+                        ? `${match.match_details.winning_team_score} - ${match.match_details.losing_team_score}`
+                        : 'Processing...'}
                     </span>
                   </TableCell>
                   <TableCell>
                     {(() => {
                       const result = getMatchResult(match);
                       return (
-                        <span className={result.color}>
-                          {result.text}
-                        </span>
+                        <span className={result.color}>{result.text}</span>
                       );
                     })()}
                   </TableCell>
                   <TableCell>
-                    {match.match_details ?
-                      capitalizeFirst(match.match_details.match_type) || 'Unknown' :
-                      'Processing...'
-                    }
+                    {match.match_details
+                      ? capitalizeFirst(match.match_details.match_type) ||
+                        'Unknown'
+                      : 'Processing...'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-between">
-                      <span>{formatDate(match.match_details?.created_at || match.created_at)}</span>
+                      <span>
+                        {formatDate(
+                          match.match_details?.created_at || match.created_at
+                        )}
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"

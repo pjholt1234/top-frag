@@ -67,9 +67,16 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
       let offsetY = gameY + mapMetadata.offset.y;
 
       // Apply floor-specific offset if Z coordinate is provided and map has multiple floors
-      if (gameZ !== undefined && mapMetadata.includesMultipleFloors && mapMetadata.floors) {
+      if (
+        gameZ !== undefined &&
+        mapMetadata.includesMultipleFloors &&
+        mapMetadata.floors
+      ) {
         for (const floor of mapMetadata.floors) {
-          if (gameZ >= floor.heightBounds.min && gameZ <= floor.heightBounds.max) {
+          if (
+            gameZ >= floor.heightBounds.min &&
+            gameZ <= floor.heightBounds.max
+          ) {
             // Apply floor-specific offset as percentage of the base offset
             offsetX += (mapMetadata.offset.x * floor.offset.x) / 100;
             offsetY += (mapMetadata.offset.y * floor.offset.y) / 100;
@@ -125,7 +132,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     if (onGrenadeSelect) {
       const grenadeId =
         newSelectedIndex !== null &&
-          filteredGrenadePositions[newSelectedIndex]?.id
+        filteredGrenadePositions[newSelectedIndex]?.id
           ? filteredGrenadePositions[newSelectedIndex].id
           : null;
       onGrenadeSelect(grenadeId);
@@ -154,12 +161,8 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     setZoomLevel(clampedScale);
 
     const newPos = {
-      x:
-        -(mousePointTo.x - pointerPos.x / clampedScale) *
-        clampedScale,
-      y:
-        -(mousePointTo.y - pointerPos.y / clampedScale) *
-        clampedScale,
+      x: -(mousePointTo.x - pointerPos.x / clampedScale) * clampedScale,
+      y: -(mousePointTo.y - pointerPos.y / clampedScale) * clampedScale,
     };
 
     // Apply bounds checking

@@ -75,12 +75,12 @@ export const mapsConfig: Record<string, MapMetadata> = {
       {
         heightBounds: {
           min: -2500,
-          max: -480
+          max: -480,
         },
         offset: {
           x: 0,
-          y: -46
-        }
+          y: -46,
+        },
       },
     ],
   },
@@ -138,12 +138,12 @@ export const mapsConfig: Record<string, MapMetadata> = {
       {
         heightBounds: {
           min: 0,
-          max: 11680
+          max: 11680,
         },
         offset: {
           x: 0.2,
-          y: -57
-        }
+          y: -57,
+        },
       },
     ],
   },

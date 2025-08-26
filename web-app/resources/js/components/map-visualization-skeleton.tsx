@@ -83,12 +83,8 @@ const MapVisualizationSkeleton: React.FC<MapVisualizationSkeletonProps> = ({
     setZoomLevel(clampedScale);
 
     const newPos = {
-      x:
-        -(mousePointTo.x - pointerPos.x / clampedScale) *
-        clampedScale,
-      y:
-        -(mousePointTo.y - pointerPos.y / clampedScale) *
-        clampedScale,
+      x: -(mousePointTo.x - pointerPos.x / clampedScale) * clampedScale,
+      y: -(mousePointTo.y - pointerPos.y / clampedScale) * clampedScale,
     };
 
     // Apply bounds checking
