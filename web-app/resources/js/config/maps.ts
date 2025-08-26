@@ -7,6 +7,17 @@ export interface MapMetadata {
     x: number;
     y: number;
   };
+  includesMultipleFloors?: boolean;
+  floors?: Array<{
+    heightBounds: {
+      min: number;
+      max: number;
+    };
+    offset: {
+      x: number;
+      y: number;
+    };
+  }>;
 }
 
 export const mapsConfig: Record<string, MapMetadata> = {
@@ -59,6 +70,19 @@ export const mapsConfig: Record<string, MapMetadata> = {
       x: 3290,
       y: 5990,
     },
+    includesMultipleFloors: true,
+    floors: [
+      {
+        heightBounds: {
+          min: -2500,
+          max: -480
+        },
+        offset: {
+          x: 0,
+          y: -46
+        }
+      },
+    ],
   },
   de_overpass: {
     name: 'de_overpass',
@@ -109,6 +133,19 @@ export const mapsConfig: Record<string, MapMetadata> = {
       x: 3890,
       y: 3800,
     },
+    includesMultipleFloors: true,
+    floors: [
+      {
+        heightBounds: {
+          min: 0,
+          max: 11680
+        },
+        offset: {
+          x: 0.2,
+          y: -57
+        }
+      },
+    ],
   },
 };
 

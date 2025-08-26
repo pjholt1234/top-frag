@@ -62,22 +62,19 @@ const MapVisualizationSkeleton: React.FC<MapVisualizationSkeletonProps> = ({
   }, [zoomLevel]);
 
   // Handle stage wheel for zoom
-  const handleWheel = (e: {
-    evt: WheelEvent;
-    target: {
-      getStage: () => any;
-      getPointerPosition: () => { x: number; y: number };
-    };
-  }) => {
+  const handleWheel = (e: any) => {
     e.evt.preventDefault();
 
     const scaleBy = 1.02;
     const stage = e.target.getStage();
     const oldScale = stage.scaleX();
+    const pointerPos = stage.getPointerPosition();
+
+    if (!pointerPos) return;
 
     const mousePointTo = {
-      x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
-      y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+      x: pointerPos.x / oldScale - stage.x() / oldScale,
+      y: pointerPos.y / oldScale - stage.y() / oldScale,
     };
 
     const newScale = e.evt.deltaY > 0 ? oldScale * scaleBy : oldScale / scaleBy;
@@ -87,10 +84,10 @@ const MapVisualizationSkeleton: React.FC<MapVisualizationSkeletonProps> = ({
 
     const newPos = {
       x:
-        -(mousePointTo.x - stage.getPointerPosition().x / clampedScale) *
+        -(mousePointTo.x - pointerPos.x / clampedScale) *
         clampedScale,
       y:
-        -(mousePointTo.y - stage.getPointerPosition().y / clampedScale) *
+        -(mousePointTo.y - pointerPos.y / clampedScale) *
         clampedScale,
     };
 

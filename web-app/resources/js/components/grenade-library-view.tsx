@@ -40,11 +40,13 @@ const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
     return grenades.map(grenade => ({
       x: grenade.grenade_final_x,
       y: grenade.grenade_final_y,
+      z: grenade.grenade_final_z,
       grenade_type: grenade.grenade_type,
       player_name: grenade.player_name,
       round_number: grenade.round_number,
       player_x: grenade.player_x,
       player_y: grenade.player_y,
+      player_z: grenade.player_z,
       id: grenade.id,
     }));
   }, [grenades]);

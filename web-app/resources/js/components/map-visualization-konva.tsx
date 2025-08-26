@@ -11,11 +11,13 @@ interface MapVisualizationProps {
   grenadePositions?: Array<{
     x: number;
     y: number;
+    z?: number;
     grenade_type?: string;
     player_name?: string;
     round_number?: number;
     player_x?: number;
     player_y?: number;
+    player_z?: number;
     id?: number;
   }>;
   onGrenadeSelect?: (grenadeId: number | null) => void;
@@ -54,15 +56,27 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
 
   // Convert in-game coordinates to pixel coordinates
   const convertGameToPixelCoords = useCallback(
-    (gameX: number, gameY: number) => {
+    (gameX: number, gameY: number, gameZ?: number) => {
       if (!mapMetadata) {
         console.error(`Map metadata not found for: ${mapName}`);
         return { x: 0, y: 0 };
       }
 
-      // Apply offset to get coordinates relative to radar origin
-      const offsetX = gameX + mapMetadata.offset.x;
-      const offsetY = gameY + mapMetadata.offset.y;
+      // Apply base offset to get coordinates relative to radar origin
+      let offsetX = gameX + mapMetadata.offset.x;
+      let offsetY = gameY + mapMetadata.offset.y;
+
+      // Apply floor-specific offset if Z coordinate is provided and map has multiple floors
+      if (gameZ !== undefined && mapMetadata.includesMultipleFloors && mapMetadata.floors) {
+        for (const floor of mapMetadata.floors) {
+          if (gameZ >= floor.heightBounds.min && gameZ <= floor.heightBounds.max) {
+            // Apply floor-specific offset as percentage of the base offset
+            offsetX += (mapMetadata.offset.x * floor.offset.x) / 100;
+            offsetY += (mapMetadata.offset.y * floor.offset.y) / 100;
+            break;
+          }
+        }
+      }
 
       // Convert to pixel coordinates (scale to 512x512)
       const pixelX = (offsetX / mapMetadata.resolution) * 0.5; // Scale from 1024 to 512
@@ -111,7 +125,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     if (onGrenadeSelect) {
       const grenadeId =
         newSelectedIndex !== null &&
-        filteredGrenadePositions[newSelectedIndex]?.id
+          filteredGrenadePositions[newSelectedIndex]?.id
           ? filteredGrenadePositions[newSelectedIndex].id
           : null;
       onGrenadeSelect(grenadeId);
@@ -119,28 +133,19 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
   };
 
   // Handle stage wheel for zoom
-  const handleWheel = (e: {
-    evt: WheelEvent;
-    target: {
-      getStage: () => {
-        scaleX: () => number;
-        scaleY: () => number;
-        x: () => number;
-        y: () => number;
-        getPointerPosition: () => { x: number; y: number };
-      };
-      getPointerPosition: () => { x: number; y: number };
-    };
-  }) => {
+  const handleWheel = (e: any) => {
     e.evt.preventDefault();
 
     const scaleBy = 1.02;
     const stage = e.target.getStage();
     const oldScale = stage.scaleX();
+    const pointerPos = stage.getPointerPosition();
+
+    if (!pointerPos) return;
 
     const mousePointTo = {
-      x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
-      y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+      x: pointerPos.x / oldScale - stage.x() / oldScale,
+      y: pointerPos.y / oldScale - stage.y() / oldScale,
     };
 
     const newScale = e.evt.deltaY > 0 ? oldScale * scaleBy : oldScale / scaleBy;
@@ -150,10 +155,10 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
 
     const newPos = {
       x:
-        -(mousePointTo.x - stage.getPointerPosition().x / clampedScale) *
+        -(mousePointTo.x - pointerPos.x / clampedScale) *
         clampedScale,
       y:
-        -(mousePointTo.y - stage.getPointerPosition().y / clampedScale) *
+        -(mousePointTo.y - pointerPos.y / clampedScale) *
         clampedScale,
     };
 
@@ -272,7 +277,8 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
               {filteredGrenadePositions.map((position, index) => {
                 const pixelCoords = convertGameToPixelCoords(
                   position.x,
-                  position.y
+                  position.y,
+                  position.z
                 );
                 const isSelected =
                   selectedMarkerIndex === index ||
@@ -309,11 +315,13 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                               pixelCoords.y,
                               convertGameToPixelCoords(
                                 position.player_x,
-                                position.player_y
+                                position.player_y,
+                                position.player_z
                               ).x,
                               convertGameToPixelCoords(
+                                position.player_x,
                                 position.player_y,
-                                position.player_y
+                                position.player_z
                               ).y,
                             ]}
                             stroke="rgba(255, 255, 255, 0.6)"
@@ -324,19 +332,23 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                             points={[
                               convertGameToPixelCoords(
                                 position.player_x,
-                                position.player_y
+                                position.player_y,
+                                position.player_z
                               ).x - 6,
                               convertGameToPixelCoords(
+                                position.player_x,
                                 position.player_y,
-                                position.player_y
+                                position.player_z
                               ).y - 6,
                               convertGameToPixelCoords(
                                 position.player_x,
-                                position.player_y
+                                position.player_y,
+                                position.player_z
                               ).x + 6,
                               convertGameToPixelCoords(
+                                position.player_x,
                                 position.player_y,
-                                position.player_y
+                                position.player_z
                               ).y + 6,
                             ]}
                             stroke="rgba(255, 255, 255, 0.8)"
@@ -346,19 +358,23 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                             points={[
                               convertGameToPixelCoords(
                                 position.player_x,
-                                position.player_y
+                                position.player_y,
+                                position.player_z
                               ).x - 6,
                               convertGameToPixelCoords(
+                                position.player_x,
                                 position.player_y,
-                                position.player_y
+                                position.player_z
                               ).y + 6,
                               convertGameToPixelCoords(
                                 position.player_x,
-                                position.player_y
+                                position.player_y,
+                                position.player_z
                               ).x + 6,
                               convertGameToPixelCoords(
+                                position.player_x,
                                 position.player_y,
-                                position.player_y
+                                position.player_z
                               ).y - 6,
                             ]}
                             stroke="rgba(255, 255, 255, 0.8)"
