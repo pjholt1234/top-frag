@@ -77,7 +77,6 @@ export function PlayerStatsTable({
   onSort,
   match,
 }: PlayerStatsTableProps) {
-  console.log('PlayerStatsTable received match:', match);
   const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>(
     'player_kill_death_ratio'
   );
