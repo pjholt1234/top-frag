@@ -168,6 +168,10 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 		eventProcessor.HandlePlayerHurt(e)
 	})
 
+	parser.RegisterEventHandler(func(e events.GrenadeProjectileThrow) {
+		eventProcessor.HandleGrenadeProjectileThrow(e)
+	})
+
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileDestroy) {
 		eventProcessor.HandleGrenadeProjectileDestroy(e)
 	})

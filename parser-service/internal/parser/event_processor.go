@@ -110,6 +110,10 @@ func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) {
 	ep.damageHandler.HandlePlayerHurt(e)
 }
 
+func (ep *EventProcessor) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {
+	ep.grenadeHandler.HandleGrenadeProjectileThrow(e)
+}
+
 func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) {
 	ep.grenadeHandler.HandleGrenadeProjectileDestroy(e)
 }

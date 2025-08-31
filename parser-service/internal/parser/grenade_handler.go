@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"parser-service/internal/types"
 
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
@@ -8,17 +9,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GrenadeMovementInfo stores movement information about a grenade throw
+type GrenadeMovementInfo struct {
+	Tick      int64
+	RoundTime int
+	PlayerPos types.Position
+	PlayerAim types.Vector
+	ThrowType string // Movement state at time of throw
+}
+
 // GrenadeHandler handles all grenade-related events
 type GrenadeHandler struct {
-	processor *EventProcessor
-	logger    *logrus.Logger
+	processor       *EventProcessor
+	logger          *logrus.Logger
+	movementService *MovementStateService
+	grenadeThrows   map[string]*GrenadeMovementInfo // Map projectile ID to throw info
 }
 
 // NewGrenadeHandler creates a new grenade handler
 func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *GrenadeHandler {
 	return &GrenadeHandler{
-		processor: processor,
-		logger:    logger,
+		processor:       processor,
+		logger:          logger,
+		movementService: NewMovementStateService(logger),
+		grenadeThrows:   make(map[string]*GrenadeMovementInfo),
 	}
 }
 
@@ -82,6 +96,32 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		"found_throw":  true,
 	}).Debug("Using stored grenade throw info")
 
+	// Get stored throw information including movement state captured at throw time
+	projectileID := fmt.Sprintf("%p", e.Projectile)
+	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
+	var movementThrowType string
+
+	if hasMovementInfo {
+		// Use movement state captured at throw time
+		movementThrowType = movementInfo.ThrowType
+		gh.logger.WithFields(logrus.Fields{
+			"projectile_id": projectileID,
+			"throw_tick":    movementInfo.Tick,
+			"destroy_tick":  gh.processor.currentTick,
+			"movement":      movementInfo.ThrowType,
+		}).Debug("Using stored throw movement state")
+
+		// Clean up the stored info
+		delete(gh.grenadeThrows, projectileID)
+	} else {
+		// Fallback to current movement state if no throw info stored
+		movementThrowType = gh.movementService.GetPlayerThrowType(e.Projectile.Thrower)
+		gh.logger.WithFields(logrus.Fields{
+			"projectile_id": projectileID,
+			"player":        e.Projectile.Thrower.Name,
+		}).Warn("No stored throw info found, using current movement state")
+	}
+
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:    gh.processor.matchState.CurrentRound,
 		RoundTime:      roundTime,
@@ -91,7 +131,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		GrenadeType:    e.Projectile.WeaponInstance.Type.String(),
 		PlayerPosition: playerPos,
 		PlayerAim:      playerAim,
-		ThrowType:      gh.determineThrowType(e.Projectile),
+		ThrowType:      movementThrowType,
 	}
 
 	position := e.Projectile.Position()
@@ -166,6 +206,14 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 		playerAim = gh.processor.getPlayerAim(e.Thrower)
 	}
 
+	// Capture movement state for flash grenade
+	var movementThrowType string
+	if e.Thrower != nil {
+		movementThrowType = gh.movementService.GetPlayerThrowType(e.Thrower)
+	} else {
+		movementThrowType = "Unknown"
+	}
+
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:    gh.processor.matchState.CurrentRound,
 		RoundTime:      gh.processor.getCurrentRoundTime(),
@@ -175,7 +223,7 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 		GrenadeType:    "Flashbang",
 		PlayerPosition: playerPos,
 		PlayerAim:      playerAim,
-		ThrowType:      "utility", // Default throw type for flashbangs
+		ThrowType:      movementThrowType,
 	}
 
 	// Set the grenade final position
@@ -295,6 +343,37 @@ func (gh *GrenadeHandler) HandleHeExplode(e events.HeExplode) {
 	gh.logger.Debug("HE grenade exploded")
 }
 
+// HandleGrenadeProjectileThrow handles grenade throw events to capture movement state
+func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {
+	if e.Projectile.Thrower == nil {
+		return
+	}
+
+	// Capture movement state at the exact moment of throw
+	movementThrowType := gh.movementService.GetPlayerThrowType(e.Projectile.Thrower)
+
+	// Store throw information with movement state
+	projectileID := fmt.Sprintf("%p", e.Projectile)
+	throwInfo := &GrenadeMovementInfo{
+		Tick:      gh.processor.currentTick,
+		RoundTime: gh.processor.getCurrentRoundTime(),
+		PlayerPos: gh.processor.getPlayerPosition(e.Projectile.Thrower),
+		PlayerAim: gh.processor.getPlayerAim(e.Projectile.Thrower),
+		ThrowType: movementThrowType,
+	}
+
+	gh.grenadeThrows[projectileID] = throwInfo
+
+	gh.logger.WithFields(logrus.Fields{
+		"projectile_id": projectileID,
+		"player":        e.Projectile.Thrower.Name,
+		"grenade_type":  e.Projectile.WeaponInstance.Type.String(),
+		"throw_tick":    gh.processor.currentTick,
+		"movement_type": movementThrowType,
+		"round":         gh.processor.matchState.CurrentRound,
+	}).Debug("Captured grenade throw movement state")
+}
+
 // HandleSmokeStart handles smoke grenade start events
 func (gh *GrenadeHandler) HandleSmokeStart(e events.SmokeStart) {
 	gh.logger.Debug("Smoke grenade started")
@@ -331,9 +410,14 @@ func (gh *GrenadeHandler) TrackGrenadeThrow(e events.WeaponFire) {
 	}).Debug("Tracked grenade throw")
 }
 
-// determineThrowType determines the throw type for a grenade
+// determineThrowType determines the throw type for a grenade using movement state
 func (gh *GrenadeHandler) determineThrowType(projectile *common.GrenadeProjectile) string {
-	return types.ThrowTypeUtility
+	if projectile == nil || projectile.Thrower == nil {
+		return "Unknown"
+	}
+
+	// Use movement state service to determine throw type
+	return gh.movementService.GetPlayerThrowType(projectile.Thrower)
 }
 
 // updateGrenadeEventWithFlashData updates the corresponding grenade event with flash tracking data
