@@ -14,12 +14,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
 	"parser-service/internal/types"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type ParseDemoHandler struct {

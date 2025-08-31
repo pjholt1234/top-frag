@@ -286,7 +286,11 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"team_a_started_as":  eventProcessor.teamAStartedAs,
 		"team_b_started_as":  eventProcessor.teamBStartedAs,
 		"playback_ticks":     match.PlaybackTicks,
-	}).Info("Match data built")
+		"gunfight_events":    len(matchState.GunfightEvents),
+		"grenade_events":     len(matchState.GrenadeEvents),
+		"damage_events":      len(matchState.DamageEvents),
+		"round_events":       len(matchState.RoundEvents),
+	}).Info("Match data built with event counts")
 
 	return &types.ParsedDemoData{
 		Match:          match,

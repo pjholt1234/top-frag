@@ -354,25 +354,27 @@ func TestEventProcessor_GetPlayerAim(t *testing.T) {
 	}
 }
 
-func TestEventProcessor_GetPlayerHP(t *testing.T) {
+func TestGunfightHandler_GetPlayerHP(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
+	handler := NewGunfightHandler(processor, logger)
 
 	// Test with nil player
-	hp := processor.getPlayerHP(nil)
+	hp := handler.getPlayerHP(nil)
 	if hp != 0 {
 		t.Errorf("Expected 0 HP for nil player, got %d", hp)
 	}
 }
 
-func TestEventProcessor_GetPlayerArmor(t *testing.T) {
+func TestGunfightHandler_GetPlayerArmor(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
+	handler := NewGunfightHandler(processor, logger)
 
 	// Test with nil player
-	armor := processor.getPlayerArmor(nil)
+	armor := handler.getPlayerArmor(nil)
 	if armor != 0 {
 		t.Errorf("Expected 0 armor for nil player, got %d", armor)
 	}
