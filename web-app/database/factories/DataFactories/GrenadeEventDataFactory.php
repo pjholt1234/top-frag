@@ -75,7 +75,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'player_z' => $playerZ,
             'round_number' => $faker->numberBetween(1, 30),
             'round_time' => $faker->numberBetween(0, 115),
-            'throw_type' => $faker->randomElement(['utility', 'offensive', 'defensive']),
+            'throw_type' => $faker->randomElement(['lineup', 'reaction', 'pre_aim', 'utility']),
             'tick_timestamp' => $faker->numberBetween(0, 999999999),
         ];
 

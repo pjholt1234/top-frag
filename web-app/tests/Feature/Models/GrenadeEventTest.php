@@ -3,7 +3,6 @@
 namespace Tests\Feature\Models;
 
 use App\Enums\GrenadeType;
-use App\Enums\ThrowType;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\Player;
@@ -38,7 +37,7 @@ class GrenadeEventTest extends TestCase
             'enemy_flash_duration' => 2.5,
             'friendly_players_affected' => 1,
             'enemy_players_affected' => 2,
-            'throw_type' => ThrowType::LINEUP,
+            'throw_type' => 'lineup',
             'effectiveness_rating' => 8,
         ]);
 
@@ -46,7 +45,7 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals(3, $grenadeEvent->round_number);
         $this->assertEquals(90, $grenadeEvent->round_time);
         $this->assertEquals(GrenadeType::FLASHBANG, $grenadeEvent->grenade_type);
-        $this->assertEquals(ThrowType::LINEUP, $grenadeEvent->throw_type);
+        $this->assertEquals('lineup', $grenadeEvent->throw_type);
         $this->assertEquals(25, $grenadeEvent->damage_dealt);
         $this->assertEquals(2.5, $grenadeEvent->flash_duration);
         $this->assertEquals(1.5, $grenadeEvent->friendly_flash_duration);
@@ -113,7 +112,7 @@ class GrenadeEventTest extends TestCase
             'enemy_flash_duration' => 0.0,
             'friendly_players_affected' => 0,
             'enemy_players_affected' => 0,
-            'throw_type' => ThrowType::UTILITY,
+            'throw_type' => 'utility',
             'effectiveness_rating' => 9,
         ]);
 
@@ -136,7 +135,7 @@ class GrenadeEventTest extends TestCase
         $this->assertIsFloat($grenadeEvent->enemy_flash_duration);
         $this->assertIsInt($grenadeEvent->friendly_players_affected);
         $this->assertIsInt($grenadeEvent->enemy_players_affected);
-        $this->assertInstanceOf(ThrowType::class, $grenadeEvent->throw_type);
+        $this->assertIsString($grenadeEvent->throw_type);
         $this->assertIsInt($grenadeEvent->effectiveness_rating);
     }
 

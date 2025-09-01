@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\GrenadeType;
-use App\Enums\ThrowType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -62,7 +61,7 @@ class GrenadeEvent extends Model
         'enemy_flash_duration' => 'float',
         'friendly_players_affected' => 'integer',
         'enemy_players_affected' => 'integer',
-        'throw_type' => ThrowType::class,
+        'throw_type' => 'string',
         'effectiveness_rating' => 'integer',
     ];
 

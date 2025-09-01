@@ -134,11 +134,6 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
     }
   };
 
-  // Get throw type display name
-  const getThrowTypeDisplay = (_type: string): string => {
-    return _type;
-  };
-
   // Get player side display name
   const getPlayerSideDisplay = (side: string): string => {
     return side === 'T' ? 'Terrorist' : 'Counter-Terrorist';
@@ -189,8 +184,9 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
             return (
               <Card
                 key={grenade.id}
-                className={`cursor-pointer transition-all hover:shadow-md py-2 ${isSelected ? 'ring-2 ring-orange-500' : ''
-                  }`}
+                className={`cursor-pointer transition-all hover:shadow-md py-2 ${
+                  isSelected ? 'ring-2 ring-orange-500' : ''
+                }`}
                 onClick={() => onGrenadeClick(grenade)}
               >
                 <CardContent className="px-3">
@@ -210,7 +206,7 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
                     </div>
                     <div className="flex items-start justify-between mb-1">
                       <span className="text-xs text-muted-foreground">
-                        {getThrowTypeDisplay(grenade.throw_type || 'Run throw')}
+                        {grenade.throw_type || 'Standing'}
                       </span>
                       <div className="flex items-center gap-1">
                         {showFavourites && !useFavouritesContext && (

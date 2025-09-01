@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\GrenadeType;
-use App\Enums\ThrowType;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\Player;
@@ -51,7 +50,7 @@ class GrenadeEventFactory extends Factory
             'enemy_flash_duration' => $this->faker->randomFloat(2, 0, 5),
             'friendly_players_affected' => $this->faker->numberBetween(0, 5),
             'enemy_players_affected' => $this->faker->numberBetween(0, 5),
-            'throw_type' => $this->faker->randomElement(ThrowType::cases()),
+            'throw_type' => $this->faker->randomElement(['lineup', 'reaction', 'pre_aim', 'utility']),
             'effectiveness_rating' => $this->faker->numberBetween(1, 10),
         ];
     }

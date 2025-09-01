@@ -5,7 +5,6 @@ namespace Tests\Feature\Models;
 use App\Enums\GrenadeType;
 use App\Enums\MatchType;
 use App\Enums\Team;
-use App\Enums\ThrowType;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
@@ -78,7 +77,7 @@ class ModelRelationshipsTest extends TestCase
             'match_id' => $match->id,
             'player_steam_id' => $player1->steam_id,
             'grenade_type' => GrenadeType::FLASHBANG,
-            'throw_type' => ThrowType::LINEUP,
+            'throw_type' => 'lineup',
             'damage_dealt' => 25,
             'flash_duration' => 2.5,
             'friendly_flash_duration' => 0.0,
@@ -90,7 +89,7 @@ class ModelRelationshipsTest extends TestCase
             'match_id' => $match->id,
             'player_steam_id' => $player2->steam_id,
             'grenade_type' => GrenadeType::SMOKE_GRENADE,
-            'throw_type' => ThrowType::UTILITY,
+            'throw_type' => 'utility',
             'damage_dealt' => 0,
             'flash_duration' => 0.0,
             'friendly_flash_duration' => 0.0,
