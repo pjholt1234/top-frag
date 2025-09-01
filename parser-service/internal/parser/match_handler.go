@@ -29,8 +29,14 @@ func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) {
 	mh.processor.matchState.RoundStartTick = mh.processor.currentTick
 	mh.processor.matchState.CurrentRoundKills = 0
 	mh.processor.matchState.CurrentRoundDeaths = 0
+
+	// Update movement service with new round number
+	mh.processor.grenadeHandler.movementService.SetCurrentRound(mh.processor.matchState.CurrentRound)
 	mh.processor.matchState.FirstKillPlayer = nil
 	mh.processor.matchState.FirstDeathPlayer = nil
+
+	// Clear position history at start of each round
+	mh.processor.grenadeHandler.movementService.ClearPositionHistory()
 
 	for _, playerState := range mh.processor.playerStates {
 		playerState.CurrentHP = 100

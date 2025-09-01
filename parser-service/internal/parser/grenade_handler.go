@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"parser-service/internal/types"
 
-	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
 )
@@ -115,7 +114,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		delete(gh.grenadeThrows, projectileID)
 	} else {
 		// Fallback to current movement state if no throw info stored
-		movementThrowType = gh.movementService.GetPlayerThrowType(e.Projectile.Thrower)
+		movementThrowType = gh.movementService.GetPlayerThrowType(e.Projectile.Thrower, gh.processor.currentTick)
 		gh.logger.WithFields(logrus.Fields{
 			"projectile_id": projectileID,
 			"player":        e.Projectile.Thrower.Name,
@@ -209,7 +208,7 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	// Capture movement state for flash grenade
 	var movementThrowType string
 	if e.Thrower != nil {
-		movementThrowType = gh.movementService.GetPlayerThrowType(e.Thrower)
+		movementThrowType = gh.movementService.GetPlayerThrowType(e.Thrower, gh.processor.currentTick)
 	} else {
 		movementThrowType = "Unknown"
 	}
@@ -350,7 +349,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectil
 	}
 
 	// Capture movement state at the exact moment of throw
-	movementThrowType := gh.movementService.GetPlayerThrowType(e.Projectile.Thrower)
+	movementThrowType := gh.movementService.GetPlayerThrowType(e.Projectile.Thrower, gh.processor.currentTick)
 
 	// Store throw information with movement state
 	projectileID := fmt.Sprintf("%p", e.Projectile)
@@ -408,16 +407,6 @@ func (gh *GrenadeHandler) TrackGrenadeThrow(e events.WeaponFire) {
 		"round":        gh.processor.matchState.CurrentRound,
 		"round_time":   roundTime,
 	}).Debug("Tracked grenade throw")
-}
-
-// determineThrowType determines the throw type for a grenade using movement state
-func (gh *GrenadeHandler) determineThrowType(projectile *common.GrenadeProjectile) string {
-	if projectile == nil || projectile.Thrower == nil {
-		return "Unknown"
-	}
-
-	// Use movement state service to determine throw type
-	return gh.movementService.GetPlayerThrowType(projectile.Thrower)
 }
 
 // updateGrenadeEventWithFlashData updates the corresponding grenade event with flash tracking data

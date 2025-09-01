@@ -78,9 +78,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		// Register event handlers for the demo parser
 		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
 
-		// Register frame handler to update current tick
+		// Register frame handler to update current tick and player positions
 		parser.RegisterEventHandler(func(e events.FrameDone) {
-			eventProcessor.UpdateCurrentTick(int64(parser.CurrentFrame()))
+			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.CurrentFrame()), parser.GameState())
 		})
 
 		// Get final game state after parsing
@@ -116,12 +116,51 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		CurrentStep: "Processing final data",
 	})
 
+	// Post-process grenade movement data using collected position records
+	dp.postProcessGrenadeMovement(eventProcessor)
+
 	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor)
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
 		Info("Demo parsing completed")
 
 	return parsedData, nil
+}
+
+// postProcessGrenadeMovement calculates movement for all grenade events using position data
+func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor) {
+	dp.logger.Info("Starting grenade movement post-processing", logrus.Fields{
+		"total_grenades": len(eventProcessor.matchState.GrenadeEvents),
+	})
+
+	movementService := eventProcessor.grenadeHandler.movementService
+	processedCount := 0
+
+	for i := range eventProcessor.matchState.GrenadeEvents {
+		grenadeEvent := &eventProcessor.matchState.GrenadeEvents[i]
+
+		// Parse steam ID from string
+		steamID := types.StringToSteamID(grenadeEvent.PlayerSteamID)
+
+		// Calculate movement using post-processing approach
+		// Note: We don't have the player object here, so we'll need to work around this
+		newMovementType := movementService.CalculateGrenadeMovementSimple(
+			steamID,
+			grenadeEvent.RoundNumber,
+			grenadeEvent.TickTimestamp,
+		)
+
+		// Update the grenade event with the new movement type
+		if newMovementType != "" {
+			grenadeEvent.ThrowType = newMovementType
+			processedCount++
+		}
+	}
+
+	dp.logger.Info("Completed grenade movement post-processing", logrus.Fields{
+		"processed_count": processedCount,
+		"total_grenades":  len(eventProcessor.matchState.GrenadeEvents),
+	})
 }
 
 func (dp *DemoParser) validateDemoFile(demoPath string) error {

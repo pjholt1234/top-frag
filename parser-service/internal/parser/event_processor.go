@@ -1,7 +1,9 @@
 package parser
 
 import (
+	"fmt"
 	"parser-service/internal/types"
+	"reflect"
 
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
@@ -377,6 +379,48 @@ func (ep *EventProcessor) UpdateCurrentTick(tick int64) {
 	ep.currentTick = tick
 }
 
+// UpdateCurrentTickAndPlayers updates the current tick and tracks all player positions
+func (ep *EventProcessor) UpdateCurrentTickAndPlayers(tick int64, gameState interface{}) {
+	ep.currentTick = tick
+
+	// Debug: Log frame processing every 1000 ticks
+	if tick%1000 == 0 {
+		ep.logger.WithFields(logrus.Fields{
+			"tick": tick,
+		}).Debug("Processing frame for position tracking")
+	}
+
+	// Update position history for all active players
+	// Use reflection to access the game state methods dynamically
+	if gameState != nil {
+		// Try different approaches to get players
+		playerCount := 0
+
+		// Approach 1: Try direct method call using reflection
+		if participants := ep.callMethod(gameState, "Participants"); participants != nil {
+			if players := ep.callMethod(participants, "Playing"); players != nil {
+				if playerSlice, ok := players.([]*common.Player); ok {
+					for _, player := range playerSlice {
+						if player != nil {
+							ep.grenadeHandler.movementService.UpdatePlayerPosition(player, tick)
+							playerCount++
+						}
+					}
+				}
+			}
+		}
+
+		// Debug: Log player count every 1000 ticks
+		if tick%1000 == 0 {
+			ep.logger.WithFields(logrus.Fields{
+				"tick":           tick,
+				"player_count":   playerCount,
+				"gamestate_type": fmt.Sprintf("%T", gameState),
+			}).Debug("Updated positions for players")
+		}
+	}
+}
+
 // getCurrentRoundTime calculates the current time in seconds since the round started
 // Subtracts freeze time to get actual gameplay time
 func (ep *EventProcessor) getCurrentRoundTime() int {
@@ -403,4 +447,35 @@ func (ep *EventProcessor) isGrenadeWeapon(weapon common.Equipment) bool {
 	weaponType := weapon.Type
 	return weaponType == common.EqHE || weaponType == common.EqFlash || weaponType == common.EqSmoke ||
 		weaponType == common.EqMolotov || weaponType == common.EqIncendiary || weaponType == common.EqDecoy
+}
+
+// callMethod uses reflection to call a method on an object
+func (ep *EventProcessor) callMethod(obj interface{}, methodName string) interface{} {
+	if obj == nil {
+		return nil
+	}
+
+	val := reflect.ValueOf(obj)
+	if !val.IsValid() {
+		return nil
+	}
+
+	method := val.MethodByName(methodName)
+	if !method.IsValid() {
+		return nil
+	}
+
+	// Call the method with no arguments
+	results := method.Call(nil)
+	if len(results) == 0 {
+		return nil
+	}
+
+	// Return the first result
+	result := results[0]
+	if !result.IsValid() || result.IsNil() {
+		return nil
+	}
+
+	return result.Interface()
 }
