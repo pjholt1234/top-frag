@@ -52,6 +52,8 @@ class GrenadeEventFactory extends Factory
             'enemy_players_affected' => $this->faker->numberBetween(0, 5),
             'throw_type' => $this->faker->randomElement(['lineup', 'reaction', 'pre_aim', 'utility']),
             'effectiveness_rating' => $this->faker->numberBetween(1, 10),
+            'flash_leads_to_kill' => $this->faker->boolean(20), // 20% chance of leading to kill
+            'flash_leads_to_death' => $this->faker->boolean(10), // 10% chance of leading to death
         ];
     }
 }

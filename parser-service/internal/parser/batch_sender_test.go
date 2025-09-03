@@ -339,19 +339,25 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 	// Create test events
 	events := []types.GrenadeEvent{
 		{
-			RoundNumber:   1,
-			PlayerSteamID: "steam_123",
-			GrenadeType:   "flash",
+			RoundNumber:       1,
+			PlayerSteamID:     "steam_123",
+			GrenadeType:       "flash",
+			FlashLeadsToKill:  false,
+			FlashLeadsToDeath: false,
 		},
 		{
-			RoundNumber:   1,
-			PlayerSteamID: "steam_456",
-			GrenadeType:   "smoke",
+			RoundNumber:       1,
+			PlayerSteamID:     "steam_456",
+			GrenadeType:       "smoke",
+			FlashLeadsToKill:  false,
+			FlashLeadsToDeath: false,
 		},
 		{
-			RoundNumber:   2,
-			PlayerSteamID: "steam_789",
-			GrenadeType:   "he",
+			RoundNumber:       2,
+			PlayerSteamID:     "steam_789",
+			GrenadeType:       "he",
+			FlashLeadsToKill:  false,
+			FlashLeadsToDeath: false,
 		},
 	}
 

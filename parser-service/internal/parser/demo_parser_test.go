@@ -174,8 +174,10 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		},
 		GrenadeEvents: []types.GrenadeEvent{
 			{
-				RoundNumber:   1,
-				PlayerSteamID: "steam_123",
+				RoundNumber:       1,
+				PlayerSteamID:     "steam_123",
+				FlashLeadsToKill:  false,
+				FlashLeadsToDeath: false,
 			},
 		},
 		DamageEvents: []types.DamageEvent{

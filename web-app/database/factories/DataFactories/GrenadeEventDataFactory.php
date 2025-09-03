@@ -69,7 +69,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'player_aim_x' => $playerAimX,
             'player_aim_y' => $playerAimY,
             'player_aim_z' => $playerAimZ,
-            'player_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
+            'player_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
             'player_x' => $playerX,
             'player_y' => $playerY,
             'player_z' => $playerZ,
@@ -77,6 +77,8 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'round_time' => $faker->numberBetween(0, 115),
             'throw_type' => $faker->randomElement(['lineup', 'reaction', 'pre_aim', 'utility']),
             'tick_timestamp' => $faker->numberBetween(0, 999999999),
+            'flash_leads_to_kill' => $faker->boolean(20), // 20% chance of leading to kill
+            'flash_leads_to_death' => $faker->boolean(10), // 10% chance of leading to death
         ];
 
         return array_merge($defaultAttributes, $attributes);

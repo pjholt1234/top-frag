@@ -360,6 +360,8 @@ class DemoParserService
                     'enemy_players_affected' => $grenadeEvent['enemy_players_affected'] ?? 0,
                     'throw_type' => $grenadeEvent['throw_type'] ?? 'utility',
                     'effectiveness_rating' => $grenadeEvent['effectiveness_rating'] ?? null,
+                    'flash_leads_to_kill' => $grenadeEvent['flash_leads_to_kill'] ?? false,
+                    'flash_leads_to_death' => $grenadeEvent['flash_leads_to_death'] ?? false,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

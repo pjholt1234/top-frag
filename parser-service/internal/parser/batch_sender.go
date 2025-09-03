@@ -211,6 +211,8 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 			}
 			flatEvent["friendly_players_affected"] = event.FriendlyPlayersAffected
 			flatEvent["enemy_players_affected"] = event.EnemyPlayersAffected
+			flatEvent["flash_leads_to_kill"] = event.FlashLeadsToKill
+			flatEvent["flash_leads_to_death"] = event.FlashLeadsToDeath
 			if len(event.AffectedPlayers) > 0 {
 				flatEvent["affected_players"] = event.AffectedPlayers
 			}

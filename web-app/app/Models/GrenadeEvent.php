@@ -38,6 +38,8 @@ class GrenadeEvent extends Model
         'enemy_players_affected',
         'throw_type',
         'effectiveness_rating',
+        'flash_leads_to_kill',
+        'flash_leads_to_death',
     ];
 
     protected $casts = [
@@ -63,6 +65,8 @@ class GrenadeEvent extends Model
         'enemy_players_affected' => 'integer',
         'throw_type' => 'string',
         'effectiveness_rating' => 'integer',
+        'flash_leads_to_kill' => 'boolean',
+        'flash_leads_to_death' => 'boolean',
     ];
 
     // Relationships

@@ -93,6 +93,10 @@ type GrenadeEvent struct {
 	FriendlyPlayersAffected int      `json:"friendly_players_affected"`
 	EnemyPlayersAffected    int      `json:"enemy_players_affected"`
 
+	// Flash effectiveness tracking
+	FlashLeadsToKill  bool `json:"flash_leads_to_kill"`  // Whether this flash blinded an enemy who was then killed
+	FlashLeadsToDeath bool `json:"flash_leads_to_death"` // Whether this flash blinded a teammate who then died
+
 	ThrowType string `json:"throw_type"`
 }
 

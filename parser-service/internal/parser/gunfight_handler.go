@@ -64,6 +64,11 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 	gunfightEvent := gh.createGunfightEvent(e, isFirstKill)
 	gh.processor.matchState.GunfightEvents = append(gh.processor.matchState.GunfightEvents, gunfightEvent)
 
+	// Check if any active flash effects contributed to this kill
+	killerSteamID := types.SteamIDToString(e.Killer.SteamID64)
+	victimSteamID := types.SteamIDToString(e.Victim.SteamID64)
+	gh.processor.grenadeHandler.CheckFlashEffectiveness(killerSteamID, victimSteamID, gh.processor.currentTick)
+
 	gh.logger.WithFields(logrus.Fields{
 		"killer":        e.Killer.Name,
 		"victim":        e.Victim.Name,

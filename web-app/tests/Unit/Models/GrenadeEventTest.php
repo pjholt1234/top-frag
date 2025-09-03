@@ -84,6 +84,8 @@ class GrenadeEventTest extends TestCase
             'enemy_players_affected',
             'throw_type',
             'effectiveness_rating',
+            'flash_leads_to_kill',
+            'flash_leads_to_death',
         ];
         $this->assertEquals($expectedFillable, $grenadeEvent->getFillable());
     }

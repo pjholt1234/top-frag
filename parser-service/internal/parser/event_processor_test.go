@@ -1015,15 +1015,17 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 	// Test that a grenade event would include the correct side information
 	// by creating one manually and checking the PlayerSide field
 	grenadeEvent := types.GrenadeEvent{
-		RoundNumber:    1,
-		RoundTime:      30,
-		TickTimestamp:  1000,
-		PlayerSteamID:  "steam_76561198012345678",
-		PlayerSide:     processor.getPlayerCurrentSide("steam_76561198012345678"),
-		GrenadeType:    "HE Grenade",
-		PlayerPosition: types.Position{X: 100, Y: 200, Z: 50},
-		PlayerAim:      types.Vector{X: 0, Y: 0, Z: 0},
-		ThrowType:      "utility",
+		RoundNumber:       1,
+		RoundTime:         30,
+		TickTimestamp:    1000,
+		PlayerSteamID:     "steam_76561198012345678",
+		PlayerSide:        processor.getPlayerCurrentSide("steam_76561198012345678"),
+		GrenadeType:       "HE Grenade",
+		PlayerPosition:    types.Position{X: 100, Y: 200, Z: 50},
+		PlayerAim:         types.Vector{X: 0, Y: 0, Z: 0},
+		ThrowType:         "utility",
+		FlashLeadsToKill:  false,
+		FlashLeadsToDeath: false,
 	}
 
 	if grenadeEvent.PlayerSide != "CT" {
