@@ -56,11 +56,12 @@ type GunfightEvent struct {
 	Wallbang          bool    `json:"wallbang"`
 	PenetratedObjects int     `json:"penetrated_objects"`
 
-	VictorSteamID *string `json:"victor_steam_id,omitempty"`
-	DamageDealt   int     `json:"damage_dealt"`
-	IsFirstKill   bool    `json:"is_first_kill"`
-	Player1Side   string  `json:"player_1_side"` // "CT" or "T"
-	Player2Side   string  `json:"player_2_side"` // "CT" or "T"
+	VictorSteamID        *string `json:"victor_steam_id,omitempty"`
+	DamageDealt          int     `json:"damage_dealt"`
+	IsFirstKill          bool    `json:"is_first_kill"`
+	Player1Side          string  `json:"player_1_side"` // "CT" or "T"
+	Player2Side          string  `json:"player_2_side"` // "CT" or "T"
+	FlashAssisterSteamID *string `json:"flash_assister_steam_id,omitempty"`
 }
 
 type AffectedPlayer struct {

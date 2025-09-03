@@ -366,7 +366,7 @@ func (gh *GrenadeHandler) updateGrenadeEventWithFlashData(flashEffect *FlashEffe
 	targetGrenadeEvent.EnemyPlayersAffected = flashEffect.EnemyCount
 }
 
-func (gh *GrenadeHandler) CheckFlashEffectiveness(killerSteamID, victimSteamID string, killTick int64) {
+func (gh *GrenadeHandler) CheckFlashEffectiveness(killerSteamID, victimSteamID string, killTick int64) *string {
 	// Check if the victim was flashed at the time of death
 	// We'll look for active flash effects that could have affected the victim
 	for _, flashEffect := range gh.processor.activeFlashEffects {
@@ -384,9 +384,13 @@ func (gh *GrenadeHandler) CheckFlashEffectiveness(killerSteamID, victimSteamID s
 				if isKillerAndThrowerSameTeam && !victimInfo.IsFriendly {
 					gh.markFlashLeadsToKill(flashEffect)
 				}
+
+				return &flashEffect.ThrowerSteamID
 			}
 		}
 	}
+
+	return nil
 }
 
 func (gh *GrenadeHandler) markFlashLeadsToKill(flashEffect *FlashEffect) {
