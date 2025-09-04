@@ -46,6 +46,7 @@ class GunfightEvent extends Model
         'is_first_kill',
         'flash_assister_steam_id',
         'damage_assist_steam_id',
+        'round_scenario',
     ];
 
     protected $casts = [
@@ -74,6 +75,7 @@ class GunfightEvent extends Model
         'penetrated_objects' => 'integer',
         'damage_dealt' => 'integer',
         'is_first_kill' => 'boolean',
+        'round_scenario' => 'string',
     ];
 
     // Relationships

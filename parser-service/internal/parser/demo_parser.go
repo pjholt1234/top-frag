@@ -69,6 +69,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		// Store parser reference for later use
 		demoParser = parser
 
+		// Set parser reference in event processor for round scenario calculation
+		eventProcessor.SetDemoParser(parser)
+
 		// Register handler for demo file header to get map name
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()

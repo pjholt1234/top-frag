@@ -5,6 +5,7 @@ import (
 	"parser-service/internal/types"
 	"reflect"
 
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,9 @@ type EventProcessor struct {
 	assignmentComplete bool              // Whether all players have been assigned teams
 	currentRound       int               // Current round number for team assignment
 	currentTick        int64             // Current tick timestamp
+
+	// Demo parser reference for accessing current game state
+	demoParser demoinfocs.Parser
 
 	// Grenade tracking by entity ID
 	grenadeThrows map[int]*types.GrenadeThrowInfo // entityID -> throw info
@@ -94,6 +98,11 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	ep.matchHandler = NewMatchHandler(ep, logger)
 
 	return ep
+}
+
+// SetDemoParser sets the demo parser reference for accessing current game state
+func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
+	ep.demoParser = parser
 }
 
 func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
@@ -440,6 +449,53 @@ func (ep *EventProcessor) getCurrentRoundTime() int {
 	}
 
 	return actualRoundTime
+}
+
+// getRoundScenario calculates the current team scenario before a kill happens
+// Returns a string in format "XvY" where X is killer's team alive count and Y is victim's team alive count
+func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string {
+	if ep.demoParser == nil {
+		ep.logger.Warn("Demo parser not available for round scenario calculation")
+		return "0v0"
+	}
+
+	gameState := ep.demoParser.GameState()
+	if gameState == nil {
+		ep.logger.Warn("Game state not available for round scenario calculation")
+		return "0v0"
+	}
+
+	// Get alive players directly from game state
+	killerTeamAlive := 0
+	victimTeamAlive := 0
+
+	participants := gameState.Participants()
+	if participants == nil {
+		ep.logger.Warn("Participants not available for round scenario calculation")
+		return "0v0"
+	}
+
+	players := participants.Playing()
+	for _, player := range players {
+		if player != nil && player.IsAlive() {
+			playerSide := ep.getTeamString(player.Team)
+			if playerSide == killerSide {
+				killerTeamAlive++
+			} else if playerSide == victimSide {
+				victimTeamAlive++
+			}
+		}
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"killer_side":       killerSide,
+		"victim_side":       victimSide,
+		"killer_team_alive": killerTeamAlive,
+		"victim_team_alive": victimTeamAlive,
+		"round_scenario":    fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive),
+	}).Debug("Calculated round scenario")
+
+	return fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive)
 }
 
 // isGrenadeWeapon checks if a weapon is a grenade type

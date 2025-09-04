@@ -63,6 +63,7 @@ type GunfightEvent struct {
 	Player2Side          string  `json:"player_2_side"` // "CT" or "T"
 	FlashAssisterSteamID *string `json:"flash_assister_steam_id,omitempty"`
 	DamageAssistSteamID  *string `json:"damage_assist_steam_id,omitempty"`
+	RoundScenario        string  `json:"round_scenario"` // e.g., "5v4" (killer's team vs victim's team)
 }
 
 type AffectedPlayer struct {

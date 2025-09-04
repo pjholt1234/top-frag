@@ -61,7 +61,13 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 		victimState.Deaths++
 	}
 
+	// Calculate round scenario BEFORE the victim dies (while they're still counted as alive)
+	killerSide := gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Killer.SteamID64))
+	victimSide := gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Victim.SteamID64))
+	roundScenario := gh.processor.getRoundScenario(killerSide, victimSide)
+
 	gunfightEvent := gh.createGunfightEvent(e, isFirstKill)
+	gunfightEvent.RoundScenario = roundScenario
 
 	// Check if any active flash effects contributed to this kill
 	killerSteamID := types.SteamIDToString(e.Killer.SteamID64)
