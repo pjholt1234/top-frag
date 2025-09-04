@@ -312,6 +312,7 @@ class DemoParserService
                     'damage_dealt' => $gunFightEvent['damage_dealt'],
                     'is_first_kill' => $gunFightEvent['is_first_kill'] ?? false,
                     'flash_assister_steam_id' => $gunFightEvent['flash_assister_steam_id'] ?? null,
+                    'damage_assist_steam_id' => $gunFightEvent['damage_assist_steam_id'] ?? null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

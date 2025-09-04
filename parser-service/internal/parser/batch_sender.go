@@ -119,6 +119,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 				"damage_dealt":             event.DamageDealt,
 				"is_first_kill":            event.IsFirstKill,
 				"flash_assister_steam_id":  event.FlashAssisterSteamID,
+				"damage_assist_steam_id":   event.DamageAssistSteamID,
 			}
 		}
 

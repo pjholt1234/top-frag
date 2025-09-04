@@ -119,6 +119,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	// Post-process grenade movement data using collected position records
 	dp.postProcessGrenadeMovement(eventProcessor)
 
+	// Post-process damage assists after all events have been processed
+	dp.postProcessDamageAssists(eventProcessor)
+
 	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor)
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
@@ -160,6 +163,57 @@ func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor)
 	dp.logger.Info("Completed grenade movement post-processing", logrus.Fields{
 		"processed_count": processedCount,
 		"total_grenades":  len(eventProcessor.matchState.GrenadeEvents),
+	})
+}
+
+// postProcessDamageAssists recalculates damage assists for all gunfight events
+// This is necessary because damage events might be processed after kill events
+func (dp *DemoParser) postProcessDamageAssists(eventProcessor *EventProcessor) {
+	dp.logger.Info("Starting damage assist post-processing", logrus.Fields{
+		"total_gunfights": len(eventProcessor.matchState.GunfightEvents),
+	})
+
+	processedCount := 0
+	updatedCount := 0
+
+	for i := range eventProcessor.matchState.GunfightEvents {
+		gunfightEvent := &eventProcessor.matchState.GunfightEvents[i]
+
+		// Only process if victor exists (i.e., this was a kill, not a trade)
+		if gunfightEvent.VictorSteamID == nil {
+			continue
+		}
+
+		processedCount++
+
+		// Recalculate damage assist using complete damage event data
+		originalAssist := gunfightEvent.DamageAssistSteamID
+		newAssist := eventProcessor.gunfightHandler.findDamageAssist(
+			gunfightEvent.Player2SteamID, // victim
+			*gunfightEvent.VictorSteamID, // killer
+		)
+
+		// Update if different
+		if (originalAssist == nil && newAssist != nil) ||
+			(originalAssist != nil && newAssist == nil) ||
+			(originalAssist != nil && newAssist != nil && *originalAssist != *newAssist) {
+			gunfightEvent.DamageAssistSteamID = newAssist
+			updatedCount++
+
+			dp.logger.WithFields(logrus.Fields{
+				"round_number":    gunfightEvent.RoundNumber,
+				"victim_steam_id": gunfightEvent.Player2SteamID,
+				"killer_steam_id": *gunfightEvent.VictorSteamID,
+				"original_assist": originalAssist,
+				"new_assist":      newAssist,
+			}).Debug("Updated damage assist")
+		}
+	}
+
+	dp.logger.Info("Completed damage assist post-processing", logrus.Fields{
+		"processed_count": processedCount,
+		"updated_count":   updatedCount,
+		"total_gunfights": len(eventProcessor.matchState.GunfightEvents),
 	})
 }
 

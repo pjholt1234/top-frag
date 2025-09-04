@@ -62,6 +62,7 @@ type GunfightEvent struct {
 	Player1Side          string  `json:"player_1_side"` // "CT" or "T"
 	Player2Side          string  `json:"player_2_side"` // "CT" or "T"
 	FlashAssisterSteamID *string `json:"flash_assister_steam_id,omitempty"`
+	DamageAssistSteamID  *string `json:"damage_assist_steam_id,omitempty"`
 }
 
 type AffectedPlayer struct {
@@ -310,6 +311,11 @@ const (
 // Game timing constants
 const (
 	CS2FreezeTime = 20 // Freeze time duration in seconds for CS2
+)
+
+// Damage assist constants
+const (
+	DamageAssistThreshold = 41
 )
 
 // Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants

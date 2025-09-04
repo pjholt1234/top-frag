@@ -115,6 +115,9 @@ func (gh *GunfightHandler) createGunfightEvent(e events.Kill, isFirstKill bool) 
 	gunfightEvent.VictorSteamID = &player1SteamID
 	gunfightEvent.DamageDealt = 100 - gunfightEvent.Player2HPStart
 
+	// Find damage assist
+	gunfightEvent.DamageAssistSteamID = gh.findDamageAssist(player2SteamID, player1SteamID)
+
 	return gunfightEvent
 }
 
@@ -182,4 +185,32 @@ func (gh *GunfightHandler) getPlayerEquipmentValue(player *common.Player) int {
 	}
 
 	return equipmentValue
+}
+
+func (gh *GunfightHandler) findDamageAssist(victimSteamID, killerSteamID string) *string {
+	damageByPlayer := make(map[string]int)
+
+	for _, damageEvent := range gh.processor.matchState.DamageEvents {
+		if damageEvent.RoundNumber == gh.processor.matchState.CurrentRound &&
+			damageEvent.VictimSteamID == victimSteamID &&
+			damageEvent.AttackerSteamID != killerSteamID {
+			damageByPlayer[damageEvent.AttackerSteamID] += damageEvent.HealthDamage
+		}
+	}
+
+	var assistSteamID string
+	maxDamage := 0
+
+	for playerSteamID, totalDamage := range damageByPlayer {
+		if totalDamage >= types.DamageAssistThreshold && totalDamage > maxDamage {
+			maxDamage = totalDamage
+			assistSteamID = playerSteamID
+		}
+	}
+
+	if assistSteamID != "" {
+		return &assistSteamID
+	}
+
+	return nil
 }

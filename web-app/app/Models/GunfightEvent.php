@@ -45,6 +45,7 @@ class GunfightEvent extends Model
         'damage_dealt',
         'is_first_kill',
         'flash_assister_steam_id',
+        'damage_assist_steam_id',
     ];
 
     protected $casts = [
@@ -99,5 +100,10 @@ class GunfightEvent extends Model
     public function flashAssister(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'flash_assister_steam_id', 'steam_id');
+    }
+
+    public function damageAssister(): BelongsTo
+    {
+        return $this->belongsTo(Player::class, 'damage_assist_steam_id', 'steam_id');
     }
 }
