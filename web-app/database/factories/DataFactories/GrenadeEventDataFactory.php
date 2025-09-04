@@ -69,7 +69,7 @@ class GrenadeEventDataFactory implements DataFactoryInterface
             'player_aim_x' => $playerAimX,
             'player_aim_y' => $playerAimY,
             'player_aim_z' => $playerAimZ,
-            'player_steam_id' => 'steam_' . $faker->numberBetween(76561198000000000, 76561198999999999),
+            'player_steam_id' => 'steam_'.$faker->numberBetween(76561198000000000, 76561198999999999),
             'player_x' => $playerX,
             'player_y' => $playerY,
             'player_z' => $playerZ,
