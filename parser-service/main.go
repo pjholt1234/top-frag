@@ -9,13 +9,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"parser-service/internal/api"
 	"parser-service/internal/api/handlers"
 	"parser-service/internal/api/middleware"
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
