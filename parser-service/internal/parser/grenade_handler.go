@@ -261,7 +261,12 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 }
 
 func (gh *GrenadeHandler) HandleHeExplode(e events.HeExplode) {
-
+	// For now, HE damage is better tracked through the damage events system
+	// This event can be used for other HE-specific tracking in the future
+	gh.logger.WithFields(logrus.Fields{
+		"round": gh.processor.matchState.CurrentRound,
+		"tick":  gh.processor.currentTick,
+	}).Debug("HE grenade exploded")
 }
 
 func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {

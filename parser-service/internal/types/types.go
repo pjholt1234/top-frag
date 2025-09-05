@@ -126,6 +126,64 @@ type DamageEvent struct {
 	Weapon       string `json:"weapon"`
 }
 
+type PlayerRoundEvent struct {
+	// Basic fields
+	PlayerSteamID string `json:"player_steam_id"`
+	RoundNumber   int    `json:"round_number"`
+
+	// Gun Fights
+	Kills            int  `json:"kills"`
+	Assists          int  `json:"assists"`
+	Died             bool `json:"died"`
+	Damage           int  `json:"damage"`
+	Headshots        int  `json:"headshots"`
+	FirstKill        bool `json:"first_kill"`
+	FirstDeath       bool `json:"first_death"`
+	RoundTimeOfDeath *int `json:"round_time_of_death,omitempty"`
+	KillsWithAWP     int  `json:"kills_with_awp"`
+
+	// Grenades
+	DamageDealt             int     `json:"damage_dealt"`
+	FlashesThrown           int     `json:"flashes_thrown"`
+	FriendlyFlashDuration   float64 `json:"friendly_flash_duration"`
+	EnemyFlashDuration      float64 `json:"enemy_flash_duration"`
+	FriendlyPlayersAffected int     `json:"friendly_players_affected"`
+	EnemyPlayersAffected    int     `json:"enemy_players_affected"`
+	FlashesLeadingToKill    int     `json:"flashes_leading_to_kill"`
+	FlashesLeadingToDeath   int     `json:"flashes_leading_to_death"`
+	GrenadeEffectiveness    float64 `json:"grenade_effectiveness"`
+
+	// Details
+	SuccessfulTrades          int `json:"successful_trades"`
+	TotalPossibleTrades       int `json:"total_possible_trades"`
+	SuccessfulTradedDeaths    int `json:"successful_traded_deaths"`
+	TotalPossibleTradedDeaths int `json:"total_possible_traded_deaths"`
+
+	// Clutch attempts and wins (1v1, 1v2, 1v3, 1v4, 1v5)
+	ClutchAttempts1v1 int `json:"clutch_attempts_1v1"`
+	ClutchAttempts1v2 int `json:"clutch_attempts_1v2"`
+	ClutchAttempts1v3 int `json:"clutch_attempts_1v3"`
+	ClutchAttempts1v4 int `json:"clutch_attempts_1v4"`
+	ClutchAttempts1v5 int `json:"clutch_attempts_1v5"`
+
+	ClutchWins1v1 int `json:"clutch_wins_1v1"`
+	ClutchWins1v2 int `json:"clutch_wins_1v2"`
+	ClutchWins1v3 int `json:"clutch_wins_1v3"`
+	ClutchWins1v4 int `json:"clutch_wins_1v4"`
+	ClutchWins1v5 int `json:"clutch_wins_1v5"`
+
+	TimeToContact float64 `json:"time_to_contact"`
+
+	// Economy
+	IsEco                   bool `json:"is_eco"`
+	IsForceBuy              bool `json:"is_force_buy"`
+	IsFullBuy               bool `json:"is_full_buy"`
+	KillsVsEco              int  `json:"kills_vs_eco"`
+	KillsVsForceBuy         int  `json:"kills_vs_force_buy"`
+	KillsVsFullBuy          int  `json:"kills_vs_full_buy"`
+	GrenadeValueLostOnDeath int  `json:"grenade_value_lost_on_death"`
+}
+
 // GrenadeThrowInfo stores information about a grenade throw
 type GrenadeThrowInfo struct {
 	PlayerSteamID  string
@@ -150,12 +208,13 @@ type Match struct {
 }
 
 type ParsedDemoData struct {
-	Match          Match           `json:"match"`
-	Players        []Player        `json:"players"`
-	GunfightEvents []GunfightEvent `json:"gunfight_events"`
-	GrenadeEvents  []GrenadeEvent  `json:"grenade_events"`
-	RoundEvents    []RoundEvent    `json:"round_events"`
-	DamageEvents   []DamageEvent   `json:"damage_events"`
+	Match             Match              `json:"match"`
+	Players           []Player           `json:"players"`
+	GunfightEvents    []GunfightEvent    `json:"gunfight_events"`
+	GrenadeEvents     []GrenadeEvent     `json:"grenade_events"`
+	RoundEvents       []RoundEvent       `json:"round_events"`
+	DamageEvents      []DamageEvent      `json:"damage_events"`
+	PlayerRoundEvents []PlayerRoundEvent `json:"player_round_events"`
 }
 
 // ParseDemoRequest represents a request with an uploaded demo file
@@ -213,6 +272,7 @@ type MatchState struct {
 	GunfightEvents     []GunfightEvent
 	GrenadeEvents      []GrenadeEvent
 	DamageEvents       []DamageEvent
+	PlayerRoundEvents  []PlayerRoundEvent
 	CurrentRoundKills  int
 	CurrentRoundDeaths int
 	FirstKillPlayer    *string
@@ -317,6 +377,19 @@ const (
 // Damage assist constants
 const (
 	DamageAssistThreshold = 41
+)
+
+// Trade constants
+const (
+	TradeTimeWindowSeconds = 3.0   // 3 seconds window for trades
+	TradeDistanceThreshold = 250.0 // 250 in-game units distance for trade eligibility
+)
+
+// Economy constants
+const (
+	EcoThreshold      = 2000 // Below or equal to this value = eco round
+	ForceBuyThreshold = 4000 // Between eco and this value = force buy round
+	// Above ForceBuyThreshold = full buy round
 )
 
 // Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants

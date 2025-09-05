@@ -45,11 +45,12 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	}
 
 	matchState := &types.MatchState{
-		Players:        make(map[string]*types.Player),
-		RoundEvents:    make([]types.RoundEvent, 0),
-		GunfightEvents: make([]types.GunfightEvent, 0),
-		GrenadeEvents:  make([]types.GrenadeEvent, 0),
-		DamageEvents:   make([]types.DamageEvent, 0),
+		Players:           make(map[string]*types.Player),
+		RoundEvents:       make([]types.RoundEvent, 0),
+		GunfightEvents:    make([]types.GunfightEvent, 0),
+		GrenadeEvents:     make([]types.GrenadeEvent, 0),
+		DamageEvents:      make([]types.DamageEvent, 0),
+		PlayerRoundEvents: make([]types.PlayerRoundEvent, 0),
 	}
 
 	eventProcessor := NewEventProcessor(matchState, dp.logger)
@@ -376,28 +377,30 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	match.EndTimestamp = &now
 
 	dp.logger.WithFields(logrus.Fields{
-		"map_name":           mapName,
-		"total_rounds":       match.TotalRounds,
-		"winning_team":       match.WinningTeam,
-		"winning_team_score": match.WinningTeamScore,
-		"losing_team_score":  match.LosingTeamScore,
-		"team_a_wins":        teamAWins,
-		"team_b_wins":        teamBWins,
-		"team_a_started_as":  eventProcessor.teamAStartedAs,
-		"team_b_started_as":  eventProcessor.teamBStartedAs,
-		"playback_ticks":     match.PlaybackTicks,
-		"gunfight_events":    len(matchState.GunfightEvents),
-		"grenade_events":     len(matchState.GrenadeEvents),
-		"damage_events":      len(matchState.DamageEvents),
-		"round_events":       len(matchState.RoundEvents),
+		"map_name":            mapName,
+		"total_rounds":        match.TotalRounds,
+		"winning_team":        match.WinningTeam,
+		"winning_team_score":  match.WinningTeamScore,
+		"losing_team_score":   match.LosingTeamScore,
+		"team_a_wins":         teamAWins,
+		"team_b_wins":         teamBWins,
+		"team_a_started_as":   eventProcessor.teamAStartedAs,
+		"team_b_started_as":   eventProcessor.teamBStartedAs,
+		"playback_ticks":      match.PlaybackTicks,
+		"gunfight_events":     len(matchState.GunfightEvents),
+		"grenade_events":      len(matchState.GrenadeEvents),
+		"damage_events":       len(matchState.DamageEvents),
+		"round_events":        len(matchState.RoundEvents),
+		"player_round_events": len(matchState.PlayerRoundEvents),
 	}).Info("Match data built with event counts")
 
 	return &types.ParsedDemoData{
-		Match:          match,
-		Players:        players,
-		GunfightEvents: matchState.GunfightEvents,
-		GrenadeEvents:  matchState.GrenadeEvents,
-		RoundEvents:    matchState.RoundEvents,
-		DamageEvents:   matchState.DamageEvents,
+		Match:             match,
+		Players:           players,
+		GunfightEvents:    matchState.GunfightEvents,
+		GrenadeEvents:     matchState.GrenadeEvents,
+		RoundEvents:       matchState.RoundEvents,
+		DamageEvents:      matchState.DamageEvents,
+		PlayerRoundEvents: matchState.PlayerRoundEvents,
 	}
 }

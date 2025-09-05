@@ -365,6 +365,125 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 	return nil
 }
 
+func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, completionURL string, events []types.PlayerRoundEvent) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
+
+	batchSize := bs.config.Batch.GunfightEventsSize // Reuse gunfight batch size for player round events
+	totalBatches := (len(events) + batchSize - 1) / batchSize
+
+	bs.logger.WithFields(logrus.Fields{
+		"job_id":        jobID,
+		"total_events":  len(events),
+		"batch_size":    batchSize,
+		"total_batches": totalBatches,
+	}).Info("Sending player round events")
+
+	for i := 0; i < totalBatches; i++ {
+		start := i * batchSize
+		end := start + batchSize
+		if end > len(events) {
+			end = len(events)
+		}
+
+		batch := events[start:end]
+		isLast := i == totalBatches-1
+
+		flatEvents := make([]map[string]interface{}, len(batch))
+		for j, event := range batch {
+			flatEvent := map[string]interface{}{
+				"player_steam_id": event.PlayerSteamID,
+				"round_number":    event.RoundNumber,
+
+				// Gun Fights
+				"kills":          event.Kills,
+				"assists":        event.Assists,
+				"died":           event.Died,
+				"damage":         event.Damage,
+				"headshots":      event.Headshots,
+				"first_kill":     event.FirstKill,
+				"first_death":    event.FirstDeath,
+				"kills_with_awp": event.KillsWithAWP,
+
+				// Grenades
+				"damage_dealt":              event.DamageDealt,
+				"friendly_flash_duration":   event.FriendlyFlashDuration,
+				"enemy_flash_duration":      event.EnemyFlashDuration,
+				"friendly_players_affected": event.FriendlyPlayersAffected,
+				"enemy_players_affected":    event.EnemyPlayersAffected,
+				"flashes_leading_to_kill":   event.FlashesLeadingToKill,
+				"flashes_leading_to_death":  event.FlashesLeadingToDeath,
+				"grenade_effectiveness":     event.GrenadeEffectiveness,
+
+				// Trade Details
+				"successful_trades":            event.SuccessfulTrades,
+				"total_possible_trades":        event.TotalPossibleTrades,
+				"successful_traded_deaths":     event.SuccessfulTradedDeaths,
+				"total_possible_traded_deaths": event.TotalPossibleTradedDeaths,
+
+				// Clutch attempts and wins
+				"clutch_attempts_1v1": event.ClutchAttempts1v1,
+				"clutch_attempts_1v2": event.ClutchAttempts1v2,
+				"clutch_attempts_1v3": event.ClutchAttempts1v3,
+				"clutch_attempts_1v4": event.ClutchAttempts1v4,
+				"clutch_attempts_1v5": event.ClutchAttempts1v5,
+				"clutch_wins_1v1":     event.ClutchWins1v1,
+				"clutch_wins_1v2":     event.ClutchWins1v2,
+				"clutch_wins_1v3":     event.ClutchWins1v3,
+				"clutch_wins_1v4":     event.ClutchWins1v4,
+				"clutch_wins_1v5":     event.ClutchWins1v5,
+
+				"time_to_contact": event.TimeToContact,
+
+				// Economy
+				"is_eco":                      event.IsEco,
+				"is_force_buy":                event.IsForceBuy,
+				"is_full_buy":                 event.IsFullBuy,
+				"kills_vs_eco":                event.KillsVsEco,
+				"kills_vs_force_buy":          event.KillsVsForceBuy,
+				"kills_vs_full_buy":           event.KillsVsFullBuy,
+				"grenade_value_lost_on_death": event.GrenadeValueLostOnDeath,
+			}
+
+			// Handle optional fields
+			if event.RoundTimeOfDeath != nil {
+				flatEvent["round_time_of_death"] = *event.RoundTimeOfDeath
+			}
+
+			flatEvents[j] = flatEvent
+		}
+
+		payload := map[string]interface{}{
+			"batch_index":   i + 1,
+			"is_last":       isLast,
+			"total_batches": totalBatches,
+			"data":          flatEvents,
+		}
+
+		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypePlayerRound)
+		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+			return fmt.Errorf("failed to send player round events batch %d: %w", i+1, err)
+		}
+
+		bs.logger.WithFields(logrus.Fields{
+			"job_id":        jobID,
+			"batch":         i + 1,
+			"total_batches": totalBatches,
+			"events":        len(batch),
+		}).Debug("Sent player round events batch")
+	}
+
+	return nil
+}
+
 func (bs *BatchSender) SendCompletion(ctx context.Context, jobID string, completionURL string) error {
 	bs.logger.WithField("job_id", jobID).Info("Sending completion signal")
 

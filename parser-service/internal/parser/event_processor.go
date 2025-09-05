@@ -44,6 +44,7 @@ type EventProcessor struct {
 	gunfightHandler *GunfightHandler
 	damageHandler   *DamageHandler
 	matchHandler    *MatchHandler
+	roundHandler    *RoundHandler
 }
 
 // FlashEffect tracks information about an active flash effect
@@ -96,6 +97,7 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	ep.gunfightHandler = NewGunfightHandler(ep, logger)
 	ep.damageHandler = NewDamageHandler(ep, logger)
 	ep.matchHandler = NewMatchHandler(ep, logger)
+	ep.roundHandler = NewRoundHandler(ep, logger)
 
 	return ep
 }
@@ -111,6 +113,9 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
 
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.matchHandler.HandleRoundEnd(e)
+
+	// Process round-level player statistics after all other events
+	ep.roundHandler.ProcessRoundEnd()
 }
 
 func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {

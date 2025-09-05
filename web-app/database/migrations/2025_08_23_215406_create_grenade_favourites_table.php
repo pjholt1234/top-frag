@@ -40,7 +40,7 @@ return new class extends Migration
             $table->float('flash_duration')->nullable();
             $table->json('affected_players')->nullable();
 
-            $table->string('throw_type', 20)->default('utility');
+            $table->string('throw_type')->default('Standing');
             $table->integer('effectiveness_rating')->nullable();
 
             $table->timestamps();

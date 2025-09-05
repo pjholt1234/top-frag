@@ -41,7 +41,7 @@ return new class extends Migration
             $table->float('flash_duration')->nullable(); // Seconds of flash
             $table->json('affected_players')->nullable(); // Array of affected player IDs and their effects
 
-            $table->string('throw_type', 20)->default('utility'); // 'lineup', 'reaction', 'pre_aim', 'utility'
+            $table->string('throw_type')->default('Standing'); // 'lineup', 'reaction', 'pre_aim', 'utility'
             $table->integer('effectiveness_rating')->nullable(); // 1-10 scale, calculated later
 
             $table->timestamps();

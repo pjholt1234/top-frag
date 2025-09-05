@@ -12,6 +12,7 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\Player;
+use App\Models\PlayerRoundEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -127,6 +128,7 @@ class DemoParserService
                 MatchEventType::DAMAGE->value => $this->createDamageEvent($match, $eventData),
                 MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
+                MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
                 default => Log::error('Invalid event name', ['job_id' => $jobId, 'event_name' => $eventName]),
             };
         });
@@ -372,6 +374,86 @@ class DemoParserService
 
             // Use bulk insert for better performance
             GrenadeEvent::insert($records);
+        }
+    }
+
+    private function createPlayerRoundEvent(GameMatch $match, array $playerRoundEvents): void
+    {
+        if (empty($playerRoundEvents)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues with large datasets
+        $chunks = array_chunk($playerRoundEvents, 1000);
+
+        foreach ($chunks as $chunk) {
+            $records = [];
+            $now = now();
+
+            foreach ($chunk as $playerRoundEvent) {
+                $records[] = [
+                    'match_id' => $match->id,
+                    'player_steam_id' => $playerRoundEvent['player_steam_id'],
+                    'round_number' => $playerRoundEvent['round_number'],
+
+                    // Gun Fight fields
+                    'kills' => $playerRoundEvent['kills'] ?? 0,
+                    'assists' => $playerRoundEvent['assists'] ?? 0,
+                    'died' => $playerRoundEvent['died'] ?? false,
+                    'damage' => $playerRoundEvent['damage'] ?? 0,
+                    'headshots' => $playerRoundEvent['headshots'] ?? 0,
+                    'first_kill' => $playerRoundEvent['first_kill'] ?? false,
+                    'first_death' => $playerRoundEvent['first_death'] ?? false,
+                    'round_time_of_death' => $playerRoundEvent['round_time_of_death'] ?? null,
+                    'kills_with_awp' => $playerRoundEvent['kills_with_awp'] ?? 0,
+
+                    // Grenade fields
+                    'damage_dealt' => $playerRoundEvent['damage_dealt'] ?? 0,
+                    'flashes_thrown' => $playerRoundEvent['flashes_thrown'] ?? 0,
+                    'friendly_flash_duration' => $playerRoundEvent['friendly_flash_duration'] ?? 0,
+                    'enemy_flash_duration' => $playerRoundEvent['enemy_flash_duration'] ?? 0,
+                    'friendly_players_affected' => $playerRoundEvent['friendly_players_affected'] ?? 0,
+                    'enemy_players_affected' => $playerRoundEvent['enemy_players_affected'] ?? 0,
+                    'flashes_leading_to_kill' => $playerRoundEvent['flashes_leading_to_kill'] ?? 0,
+                    'flashes_leading_to_death' => $playerRoundEvent['flashes_leading_to_death'] ?? 0,
+                    'grenade_effectiveness' => $playerRoundEvent['grenade_effectiveness'] ?? 0,
+
+                    // Trade fields
+                    'successful_trades' => $playerRoundEvent['successful_trades'] ?? 0,
+                    'total_possible_trades' => $playerRoundEvent['total_possible_trades'] ?? 0,
+                    'successful_traded_deaths' => $playerRoundEvent['successful_traded_deaths'] ?? 0,
+                    'total_possible_traded_deaths' => $playerRoundEvent['total_possible_traded_deaths'] ?? 0,
+
+                    // Clutch fields
+                    'clutch_attempts_1v1' => $playerRoundEvent['clutch_attempts_1v1'] ?? 0,
+                    'clutch_attempts_1v2' => $playerRoundEvent['clutch_attempts_1v2'] ?? 0,
+                    'clutch_attempts_1v3' => $playerRoundEvent['clutch_attempts_1v3'] ?? 0,
+                    'clutch_attempts_1v4' => $playerRoundEvent['clutch_attempts_1v4'] ?? 0,
+                    'clutch_attempts_1v5' => $playerRoundEvent['clutch_attempts_1v5'] ?? 0,
+                    'clutch_wins_1v1' => $playerRoundEvent['clutch_wins_1v1'] ?? 0,
+                    'clutch_wins_1v2' => $playerRoundEvent['clutch_wins_1v2'] ?? 0,
+                    'clutch_wins_1v3' => $playerRoundEvent['clutch_wins_1v3'] ?? 0,
+                    'clutch_wins_1v4' => $playerRoundEvent['clutch_wins_1v4'] ?? 0,
+                    'clutch_wins_1v5' => $playerRoundEvent['clutch_wins_1v5'] ?? 0,
+
+                    'time_to_contact' => $playerRoundEvent['time_to_contact'] ?? 0,
+
+                    // Economy fields
+                    'is_eco' => $playerRoundEvent['is_eco'] ?? false,
+                    'is_force_buy' => $playerRoundEvent['is_force_buy'] ?? false,
+                    'is_full_buy' => $playerRoundEvent['is_full_buy'] ?? false,
+                    'kills_vs_eco' => $playerRoundEvent['kills_vs_eco'] ?? 0,
+                    'kills_vs_force_buy' => $playerRoundEvent['kills_vs_force_buy'] ?? 0,
+                    'kills_vs_full_buy' => $playerRoundEvent['kills_vs_full_buy'] ?? 0,
+                    'grenade_value_lost_on_death' => $playerRoundEvent['grenade_value_lost_on_death'] ?? 0,
+
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // Use bulk insert for better performance
+            PlayerRoundEvent::insert($records);
         }
     }
 }

@@ -8,4 +8,5 @@ enum MatchEventType: string
     case GUNFIGHT = 'gunfight';
     case GRENADE = 'grenade';
     case ROUND = 'round';
+    case PLAYER_ROUND = 'player-round';
 }

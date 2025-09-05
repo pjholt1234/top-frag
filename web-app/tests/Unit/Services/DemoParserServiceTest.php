@@ -13,6 +13,7 @@ use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\Player;
+use App\Models\PlayerRoundEvent;
 use App\Services\DemoParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -637,5 +638,326 @@ class DemoParserServiceTest extends TestCase
         $matchPlayers = $job->match->matchPlayers;
         $this->assertEquals(2, $matchPlayers->count());
         $this->assertTrue($matchPlayers->where('team', Team::TEAM_A)->count() >= 1); // At least one should have default team
+    }
+
+    public function test_it_can_create_player_round_event()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        $playerRoundEventData = [
+            [
+                'player_steam_id' => 'steam_12345',
+                'round_number' => 1,
+                'kills' => 2,
+                'assists' => 1,
+                'died' => false,
+                'damage' => 150,
+                'headshots' => 1,
+                'first_kill' => true,
+                'first_death' => false,
+                'round_time_of_death' => null,
+                'kills_with_awp' => 0,
+                'damage_dealt' => 25,
+                'flash_duration' => 1.2,
+                'friendly_flash_duration' => 0.5,
+                'enemy_flash_duration' => 2.1,
+                'friendly_players_affected' => 0,
+                'enemy_players_affected' => 2,
+                'flashes_leading_to_kill' => 1,
+                'flashes_leading_to_death' => 0,
+                'grenade_effectiveness' => 0.75,
+                'successful_trades' => 1,
+                'total_possible_trades' => 2,
+                'successful_traded_deaths' => 0,
+                'total_possible_traded_deaths' => 1,
+                'clutch_attempts_1v1' => 0,
+                'clutch_attempts_1v2' => 1,
+                'clutch_attempts_1v3' => 0,
+                'clutch_attempts_1v4' => 0,
+                'clutch_attempts_1v5' => 0,
+                'clutch_wins_1v1' => 0,
+                'clutch_wins_1v2' => 1,
+                'clutch_wins_1v3' => 0,
+                'clutch_wins_1v4' => 0,
+                'clutch_wins_1v5' => 0,
+                'time_to_contact' => 15.3,
+                'is_eco' => false,
+                'is_force_buy' => true,
+                'is_full_buy' => false,
+                'kills_vs_eco' => 1,
+                'kills_vs_force_buy' => 1,
+                'kills_vs_full_buy' => 0,
+                'grenade_value_lost_on_death' => 0,
+            ],
+        ];
+
+        $this->service->createMatchEvent($job->uuid, $playerRoundEventData, MatchEventType::PLAYER_ROUND->value);
+
+        $this->assertEquals(1, PlayerRoundEvent::count());
+        $playerRoundEvent = PlayerRoundEvent::first();
+        $this->assertEquals($match->id, $playerRoundEvent->match_id);
+        $this->assertEquals('steam_12345', $playerRoundEvent->player_steam_id);
+        $this->assertEquals(1, $playerRoundEvent->round_number);
+        $this->assertEquals(2, $playerRoundEvent->kills);
+        $this->assertEquals(1, $playerRoundEvent->assists);
+        $this->assertFalse($playerRoundEvent->died);
+        $this->assertEquals(150, $playerRoundEvent->damage);
+        $this->assertEquals(1, $playerRoundEvent->headshots);
+        $this->assertTrue($playerRoundEvent->first_kill);
+        $this->assertFalse($playerRoundEvent->first_death);
+        $this->assertNull($playerRoundEvent->round_time_of_death);
+        $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
+        $this->assertEquals(25, $playerRoundEvent->damage_dealt);
+        $this->assertEquals(1.2, $playerRoundEvent->flash_duration);
+        $this->assertEquals(0.5, $playerRoundEvent->friendly_flash_duration);
+        $this->assertEquals(2.1, $playerRoundEvent->enemy_flash_duration);
+        $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);
+        $this->assertEquals(2, $playerRoundEvent->enemy_players_affected);
+        $this->assertEquals(1, $playerRoundEvent->flashes_leading_to_kill);
+        $this->assertEquals(0, $playerRoundEvent->flashes_leading_to_death);
+        $this->assertEquals(0.75, $playerRoundEvent->grenade_effectiveness);
+        $this->assertEquals(1, $playerRoundEvent->successful_trades);
+        $this->assertEquals(2, $playerRoundEvent->total_possible_trades);
+        $this->assertEquals(0, $playerRoundEvent->successful_traded_deaths);
+        $this->assertEquals(1, $playerRoundEvent->total_possible_traded_deaths);
+        $this->assertEquals(0, $playerRoundEvent->clutch_attempts_1v1);
+        $this->assertEquals(1, $playerRoundEvent->clutch_attempts_1v2);
+        $this->assertEquals(0, $playerRoundEvent->clutch_attempts_1v3);
+        $this->assertEquals(0, $playerRoundEvent->clutch_attempts_1v4);
+        $this->assertEquals(0, $playerRoundEvent->clutch_attempts_1v5);
+        $this->assertEquals(0, $playerRoundEvent->clutch_wins_1v1);
+        $this->assertEquals(1, $playerRoundEvent->clutch_wins_1v2);
+        $this->assertEquals(0, $playerRoundEvent->clutch_wins_1v3);
+        $this->assertEquals(0, $playerRoundEvent->clutch_wins_1v4);
+        $this->assertEquals(0, $playerRoundEvent->clutch_wins_1v5);
+        $this->assertEquals(15.3, $playerRoundEvent->time_to_contact);
+        $this->assertFalse($playerRoundEvent->is_eco);
+        $this->assertTrue($playerRoundEvent->is_force_buy);
+        $this->assertFalse($playerRoundEvent->is_full_buy);
+        $this->assertEquals(1, $playerRoundEvent->kills_vs_eco);
+        $this->assertEquals(1, $playerRoundEvent->kills_vs_force_buy);
+        $this->assertEquals(0, $playerRoundEvent->kills_vs_full_buy);
+        $this->assertEquals(0, $playerRoundEvent->grenade_value_lost_on_death);
+    }
+
+    public function test_it_can_create_multiple_player_round_events_in_single_call()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        $playerRoundEvents = [
+            [
+                'player_steam_id' => 'steam_12345',
+                'round_number' => 1,
+                'kills' => 2,
+                'assists' => 1,
+                'died' => false,
+                'damage' => 150,
+                'headshots' => 1,
+                'first_kill' => true,
+                'first_death' => false,
+                'kills_with_awp' => 0,
+                'damage_dealt' => 25,
+                'flash_duration' => 1.2,
+                'successful_trades' => 1,
+                'clutch_wins_1v2' => 1,
+                'time_to_contact' => 15.3,
+                'is_eco' => false,
+                'is_force_buy' => true,
+                'kills_vs_eco' => 1,
+            ],
+            [
+                'player_steam_id' => 'steam_67890',
+                'round_number' => 1,
+                'kills' => 1,
+                'assists' => 0,
+                'died' => true,
+                'damage' => 75,
+                'headshots' => 0,
+                'first_kill' => false,
+                'first_death' => true,
+                'round_time_of_death' => 45,
+                'kills_with_awp' => 1,
+                'damage_dealt' => 0,
+                'flash_duration' => 2.5,
+                'successful_trades' => 0,
+                'clutch_attempts_1v1' => 1,
+                'time_to_contact' => 8.7,
+                'is_eco' => true,
+                'is_force_buy' => false,
+                'kills_vs_full_buy' => 1,
+                'grenade_value_lost_on_death' => 500,
+            ],
+        ];
+
+        $this->service->createMatchEvent($job->uuid, $playerRoundEvents, MatchEventType::PLAYER_ROUND->value);
+
+        $this->assertEquals(2, PlayerRoundEvent::count());
+
+        $firstEvent = PlayerRoundEvent::where('player_steam_id', 'steam_12345')->first();
+        $this->assertNotNull($firstEvent);
+        $this->assertEquals(2, $firstEvent->kills);
+        $this->assertEquals(1, $firstEvent->assists);
+        $this->assertFalse($firstEvent->died);
+        $this->assertTrue($firstEvent->first_kill);
+        $this->assertFalse($firstEvent->first_death);
+        $this->assertEquals(0, $firstEvent->kills_with_awp);
+        $this->assertEquals(1, $firstEvent->successful_trades);
+        $this->assertEquals(1, $firstEvent->clutch_wins_1v2);
+        $this->assertFalse($firstEvent->is_eco);
+        $this->assertTrue($firstEvent->is_force_buy);
+
+        $secondEvent = PlayerRoundEvent::where('player_steam_id', 'steam_67890')->first();
+        $this->assertNotNull($secondEvent);
+        $this->assertEquals(1, $secondEvent->kills);
+        $this->assertEquals(0, $secondEvent->assists);
+        $this->assertTrue($secondEvent->died);
+        $this->assertFalse($secondEvent->first_kill);
+        $this->assertTrue($secondEvent->first_death);
+        $this->assertEquals(45, $secondEvent->round_time_of_death);
+        $this->assertEquals(1, $secondEvent->kills_with_awp);
+        $this->assertEquals(0, $secondEvent->successful_trades);
+        $this->assertEquals(1, $secondEvent->clutch_attempts_1v1);
+        $this->assertTrue($secondEvent->is_eco);
+        $this->assertFalse($secondEvent->is_force_buy);
+        $this->assertEquals(500, $secondEvent->grenade_value_lost_on_death);
+    }
+
+    public function test_it_handles_empty_player_round_event_data()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        $this->service->createMatchEvent($job->uuid, [], MatchEventType::PLAYER_ROUND->value);
+
+        $this->assertEquals(0, PlayerRoundEvent::count());
+    }
+
+    public function test_it_handles_player_round_event_data_with_defaults()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        $minimalPlayerRoundEventData = [
+            [
+                'player_steam_id' => 'steam_12345',
+                'round_number' => 1,
+                // Most fields missing - should use defaults
+            ],
+        ];
+
+        $this->service->createMatchEvent($job->uuid, $minimalPlayerRoundEventData, MatchEventType::PLAYER_ROUND->value);
+
+        $this->assertEquals(1, PlayerRoundEvent::count());
+        $playerRoundEvent = PlayerRoundEvent::first();
+
+        // Check that defaults are applied
+        $this->assertEquals(0, $playerRoundEvent->kills);
+        $this->assertEquals(0, $playerRoundEvent->assists);
+        $this->assertFalse($playerRoundEvent->died);
+        $this->assertEquals(0, $playerRoundEvent->damage);
+        $this->assertEquals(0, $playerRoundEvent->headshots);
+        $this->assertFalse($playerRoundEvent->first_kill);
+        $this->assertFalse($playerRoundEvent->first_death);
+        $this->assertNull($playerRoundEvent->round_time_of_death);
+        $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
+        $this->assertEquals(0, $playerRoundEvent->damage_dealt);
+        $this->assertEquals(0.0, $playerRoundEvent->flash_duration);
+        $this->assertEquals(0.0, $playerRoundEvent->friendly_flash_duration);
+        $this->assertEquals(0.0, $playerRoundEvent->enemy_flash_duration);
+        $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);
+        $this->assertEquals(0, $playerRoundEvent->enemy_players_affected);
+        $this->assertEquals(0, $playerRoundEvent->flashes_leading_to_kill);
+        $this->assertEquals(0, $playerRoundEvent->flashes_leading_to_death);
+        $this->assertEquals(0.0, $playerRoundEvent->grenade_effectiveness);
+        $this->assertEquals(0, $playerRoundEvent->successful_trades);
+        $this->assertEquals(0, $playerRoundEvent->total_possible_trades);
+        $this->assertEquals(0, $playerRoundEvent->successful_traded_deaths);
+        $this->assertEquals(0, $playerRoundEvent->total_possible_traded_deaths);
+        $this->assertEquals(0, $playerRoundEvent->clutch_attempts_1v1);
+        $this->assertEquals(0, $playerRoundEvent->clutch_wins_1v1);
+        $this->assertEquals(0.0, $playerRoundEvent->time_to_contact);
+        $this->assertFalse($playerRoundEvent->is_eco);
+        $this->assertFalse($playerRoundEvent->is_force_buy);
+        $this->assertFalse($playerRoundEvent->is_full_buy);
+        $this->assertEquals(0, $playerRoundEvent->kills_vs_eco);
+        $this->assertEquals(0, $playerRoundEvent->kills_vs_force_buy);
+        $this->assertEquals(0, $playerRoundEvent->kills_vs_full_buy);
+        $this->assertEquals(0, $playerRoundEvent->grenade_value_lost_on_death);
+    }
+
+    public function test_it_handles_large_player_round_event_batches()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        // Create 1500 events to test chunking (chunk size is 1000)
+        $playerRoundEvents = [];
+        for ($i = 1; $i <= 1500; $i++) {
+            $playerRoundEvents[] = [
+                'player_steam_id' => 'steam_' . ($i % 10), // 10 different players
+                'round_number' => ($i % 30) + 1, // Rounds 1-30
+                'kills' => $i % 5,
+                'damage' => $i * 10,
+                'assists' => $i % 3,
+            ];
+        }
+
+        $this->service->createMatchEvent($job->uuid, $playerRoundEvents, MatchEventType::PLAYER_ROUND->value);
+
+        $this->assertEquals(1500, PlayerRoundEvent::count());
+
+        // Verify some records were created correctly
+        $firstEvent = PlayerRoundEvent::where('player_steam_id', 'steam_1')->first();
+        $this->assertNotNull($firstEvent);
+
+        $lastEvent = PlayerRoundEvent::where('player_steam_id', 'steam_9')->first();
+        $this->assertNotNull($lastEvent);
+    }
+
+    public function test_player_round_event_includes_match_event_type()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+
+        $playerRoundEventData = [
+            [
+                'player_steam_id' => 'steam_12345',
+                'round_number' => 1,
+                'kills' => 1,
+            ],
+        ];
+
+        // Test that PLAYER_ROUND event type is handled
+        $this->service->createMatchEvent($job->uuid, $playerRoundEventData, MatchEventType::PLAYER_ROUND->value);
+        $this->assertEquals(1, PlayerRoundEvent::count());
+
+        // Test that it doesn't interfere with other event types
+        $damageEventData = [
+            [
+                'armor_damage' => 25,
+                'attacker_steam_id' => 'steam_123',
+                'damage' => 45,
+                'headshot' => true,
+                'health_damage' => 45,
+                'round_number' => 1,
+                'round_time' => 30,
+                'tick_timestamp' => 1000,
+                'victim_steam_id' => 'steam_456',
+                'weapon' => 'AK-47',
+            ],
+        ];
+
+        $this->service->createMatchEvent($job->uuid, $damageEventData, MatchEventType::DAMAGE->value);
+
+        $this->assertEquals(1, PlayerRoundEvent::count());
+        $this->assertEquals(1, DamageEvent::count());
     }
 }
