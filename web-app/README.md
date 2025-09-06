@@ -1,101 +1,213 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Top Frag Web Application
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern Laravel/React web application for CS2 demo analysis, providing a comprehensive dashboard for match history, grenade library, and user authentication. Built with Laravel 12 backend and React 19 frontend with TypeScript.
 
-## About Laravel
+## 🎯 Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The Web Application is the user-facing component of the Top Frag platform, providing:
+- **User Authentication**: Secure registration and login with Laravel Sanctum
+- **Match Management**: Upload, track, and analyze CS2 demo files
+- **Grenade Library**: Browse and favorite grenade throws from matches
+- **Dashboard**: Comprehensive analytics and match statistics
+- **Real-time Updates**: Live progress tracking for demo processing
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🏗️ Architecture Overview
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The application follows a modern full-stack architecture with clear separation between backend and frontend:
 
-## Learning Laravel
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React SPA     │    │  Laravel API    │    │ Parser Service  │
+│   (Frontend)    │◀──▶│   (Backend)     │◀──▶│   (Go)          │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Browser       │    │   Database      │    │ Demo Files      │
+│   (UI/UX)       │    │   (MySQL)       │    │ (.dem)          │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 📁 Project Structure
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```
+web-app/
+├── app/                    # Laravel application code
+│   ├── Console/           # Artisan commands
+│   ├── Enums/             # PHP enumerations
+│   ├── Exceptions/        # Custom exceptions
+│   ├── Http/              # HTTP layer
+│   │   ├── Controllers/   # API controllers
+│   │   ├── Middleware/    # HTTP middleware
+│   │   ├── Requests/      # Form request validation
+│   │   └── Resources/     # API resource transformers
+│   ├── Jobs/              # Background job processing
+│   ├── Models/            # Eloquent models
+│   ├── Observers/         # Model observers
+│   ├── Providers/         # Service providers
+│   └── Services/          # Business logic services
+├── resources/             # Frontend resources
+│   ├── js/               # React/TypeScript code
+│   │   ├── components/   # React components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utility libraries
+│   │   └── pages/        # Page components
+│   └── views/            # Blade templates
+├── routes/                # Route definitions
+├── tests/                 # Test suites
+├── composer.json          # PHP dependencies
+├── package.json           # Node.js dependencies
+└── vite.config.js         # Vite build configuration
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Features
 
-## Laravel Sponsors
+### User Authentication
+- **Registration**: User account creation with email validation
+- **Login**: Secure authentication with Laravel Sanctum
+- **Protected Routes**: Route protection for authenticated users
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Match Management
+- **Demo Upload**: Upload CS2 demo files for processing
+- **Match History**: View and browse your match history
+- **Match Details**: Detailed match analysis and statistics
 
-### Premium Partners
+### Grenade Library
+- **Browse Grenades**: Filter and search grenade throws
+- **Favorites System**: Save and manage favorite grenades
+- **Advanced Filtering**: Filter by map, grenade type, effectiveness
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🛠️ Development Setup
 
-## Contributing
+### Prerequisites
+- PHP 8.3 or higher
+- Node.js 18+ and npm
+- MySQL 8.0+ or PostgreSQL 13+
+- Composer for PHP dependencies
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Installation
+```bash
+# Install PHP dependencies
+composer install
 
-## Code of Conduct
+# Install Node.js dependencies
+npm install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Copy environment file
+cp .env.example .env
 
-## Security Vulnerabilities
+# Generate application key
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Run database migrations
+php artisan migrate
 
-## License
+# Build frontend assets
+npm run build
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Development Workflow
+```bash
+# Start development servers
+composer run dev
 
-# Web App
+# Or start individually:
+php artisan serve    # Backend (Laravel)
+npm run dev         # Frontend (Vite)
+php artisan queue:work  # Queue worker
+```
 
-## TypeScript Linting and Formatting
+## 🧪 Testing
 
-This project uses ESLint and Prettier for code quality and formatting:
+### Running Tests
+```bash
+# Run all tests
+php artisan test
 
-### Available Scripts
+# Run specific test suite
+php artisan test --testsuite=Feature
 
-- `npm run lint` - Check TypeScript/React code for linting issues
-- `npm run lint:fix` - Automatically fix linting issues where possible
-- `npm run format` - Format TypeScript/React files with Prettier
-- `npm run format:check` - Check if TypeScript/React files are properly formatted
+# Frontend tests
+npm run test
+```
 
-### Configuration Files
+## 🌐 API Endpoints
 
-- `.eslintrc.cjs` - ESLint configuration for TypeScript and React
-- `.prettierrc` - Prettier formatting rules
-- `.eslintignore` - Files and directories to exclude from linting
-- `.prettierignore` - Files and directories to exclude from formatting
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/user` - Get current user
+- `POST /api/auth/logout` - User logout
 
-### Pre-commit Hooks
+### Matches
+- `GET /api/matches` - List user matches
+- `GET /api/matches/{id}` - Get match details
+- `POST /api/user/upload/demo` - Upload demo file
 
-This project uses pre-commit hooks to automatically format and lint TypeScript files before each commit:
+### Grenade Library
+- `GET /api/grenade-library` - Browse grenades
+- `GET /api/grenade-favourites` - List user favorites
+- `POST /api/grenade-favourites` - Add favorite
+- `DELETE /api/grenade-favourites/{id}` - Remove favorite
 
-- **Automatic Formatting**: Prettier automatically formats staged TypeScript/React files
-- **Automatic Linting**: ESLint automatically fixes linting issues where possible
-- **No Manual Steps**: Simply commit your changes and the hooks will handle formatting
+## 🔒 Security
 
-The pre-commit hooks are configured in the root `package.json` and run via Husky.
+### Authentication & Authorization
+- **Laravel Sanctum**: Token-based API authentication
+- **Protected Routes**: Middleware protection for authenticated endpoints
+- **API Key Authentication**: Secure communication with parser service
 
-### CI Integration
+### Data Protection
+- **Input Validation**: Form request validation for all inputs
+- **SQL Injection Prevention**: Eloquent ORM with parameterized queries
+- **XSS Protection**: Blade template escaping and React sanitization
 
-The GitHub Actions workflow (`.github/workflows/format.yml`) automatically runs:
-- TypeScript linting checks
-- Prettier formatting checks
-- PHP code formatting (Pint)
-- Go code formatting (gofmt)
+## 🚀 Deployment
 
-All checks must pass before code can be merged to the main branch.
+### Production Build
+```bash
+# Install production dependencies
+composer install --optimize-autoloader --no-dev
+
+# Build frontend assets
+npm run build
+
+# Cache configuration
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Run migrations
+php artisan migrate --force
+```
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### Issue: Frontend Build Fails
+**Symptoms**: Vite build errors or TypeScript compilation issues
+**Solution**: Check TypeScript configuration and dependencies
+```bash
+# Clear node modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### Issue: API Authentication Fails
+**Symptoms**: 401 Unauthorized errors on API requests
+**Solution**: Check Sanctum configuration and token handling
+```bash
+# Clear application cache
+php artisan config:clear
+php artisan cache:clear
+```
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+---
+
+*Last updated: September 6, 2025*
+*Version: 1.0.0*

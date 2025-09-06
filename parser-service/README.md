@@ -1,6 +1,15 @@
-# CS:GO Demo Parser Service
+# CS2 Demo Parser Service
 
-A high-performance Go microservice for parsing CS:GO demo files and extracting detailed game events including gunfights, grenade usage, damage events, and round statistics.
+A high-performance Go microservice for parsing CS2 demo files and extracting detailed game events including gunfights, grenade usage, damage events, and round statistics. This service processes demo files asynchronously and provides real-time progress updates via HTTP callbacks.
+
+## 🎯 Overview
+
+The Parser Service is the core component of the Top Frag platform, responsible for:
+- **Demo File Processing**: Parsing CS2 demo files using the demoinfocs-golang library
+- **Event Extraction**: Extracting detailed game events in real-time
+- **Data Structuring**: Converting raw game data into structured JSON format
+- **Batch Processing**: Sending processed data to external services in configurable batches
+- **Progress Tracking**: Providing real-time progress updates via HTTP callbacks
 
 ## 🏗️ Architecture Overview
 
@@ -31,7 +40,7 @@ This service is built using Go's concurrency primitives and follows a clean arch
 - Client receives job ID immediately (non-blocking)
 
 ### 2. **Demo Parsing**
-- Uses `demoinfocs-golang` library to parse CS:GO demo files
+- Uses `demoinfocs-golang` library to parse CS2 demo files
 - Processes events in real-time as they occur in the demo
 - Temporary files are automatically cleaned up after processing (success, error, or panic)
 - Maintains game state throughout the parsing process
@@ -57,24 +66,152 @@ This service is built using Go's concurrency primitives and follows a clean arch
 
 ```
 parser-service/
-├── main.go                 # Application entry point
-├── config.yaml            # Configuration file
-├── go.mod                 # Go dependencies
+├── main.go                 # Application entry point and server setup
+├── config.yaml            # Service configuration file
+├── config.yaml.backup     # Configuration template
+├── go.mod                 # Go module dependencies
+├── go.sum                 # Dependency checksums
+├── Dockerfile             # Container configuration
+├── docker-compose.yml     # Local development setup
+├── Makefile              # Build and development commands
 ├── internal/              # Private application code
 │   ├── config/           # Configuration management
-│   │   └── config.go     # Config structs and loading
-│   ├── types/            # Data structures
-│   │   ├── types.go      # Event types and structs
-│   │   └── types_test.go # Type validation tests
+│   │   └── config.go     # Config structs and loading logic
+│   ├── types/            # Data structures and type definitions
+│   │   ├── types.go      # Event types, structs, and interfaces
+│   │   └── types_test.go # Type validation and unit tests
 │   ├── api/              # HTTP API layer
-│   │   └── handlers/     # Request handlers
-│   │       ├── parse_demo.go  # Demo parsing endpoint
-│   │       └── health.go      # Health check endpoint
+│   │   ├── endpoints.go  # Route definitions and middleware
+│   │   ├── endpoints_test.go # API endpoint tests
+│   │   ├── handlers/     # Request handlers
+│   │   │   ├── parse_demo.go  # Demo parsing endpoint handler
+│   │   │   └── health.go      # Health check endpoint handler
+│   │   └── middleware/   # HTTP middleware
+│   │       └── auth.go   # Authentication middleware
 │   └── parser/           # Core parsing logic
-│       ├── demo_parser.go     # Main parser orchestration
-│       ├── event_processor.go # Event handling logic
-│       └── batch_sender.go    # External API communication
-└── Dockerfile            # Container configuration
+│       ├── demo_parser.go     # Main parser orchestration and file handling
+│       ├── demo_parser_test.go # Parser unit tests
+│       ├── event_processor.go # Event handling and game state management
+│       ├── event_processor_test.go # Event processor tests
+│       ├── batch_sender.go    # External API communication and batching
+│       ├── batch_sender_test.go # Batch sender tests
+│       ├── damage_handler.go  # Damage event processing
+│       ├── grenade_handler.go # Grenade event processing
+│       ├── gunfight_handler.go # Gunfight event processing
+│       ├── match_handler.go   # Match-level event processing
+│       ├── round_handler.go   # Round event processing
+│       └── movement_state_service.go # Player movement tracking
+└── README.md             # This documentation file
+```
+
+### Key Components Explained
+
+#### **Main Application (`main.go`)**
+- **Purpose**: Application entry point, server setup, and graceful shutdown
+- **Responsibilities**: 
+  - Load configuration and setup logging
+  - Initialize parser and batch sender components
+  - Setup HTTP server with Gin router
+  - Handle graceful shutdown with OS signals
+  - Manage concurrent demo processing with goroutines
+
+#### **Configuration (`internal/config/`)**
+- **Purpose**: Centralized configuration management
+- **Features**:
+  - YAML-based configuration with environment variable overrides
+  - Server settings (port, timeouts, CORS)
+  - Parser settings (concurrency, file size limits, temp directories)
+  - Batch processing settings (sizes, retry logic, timeouts)
+  - Logging configuration (level, format)
+
+#### **Data Types (`internal/types/`)**
+- **Purpose**: Type definitions and data structures
+- **Key Types**:
+  - `GunfightEvent`: Player combat encounters with detailed metrics
+  - `GrenadeEvent`: Grenade throws, explosions, and effects
+  - `DamageEvent`: Individual damage instances with weapon info
+  - `RoundEvent`: Round start/end with winners and duration
+  - `PlayerRoundEvent`: Per-player round statistics
+  - `MatchState`: Game state management during parsing
+  - `ProgressUpdate`: Real-time progress tracking
+
+#### **API Layer (`internal/api/`)**
+- **Purpose**: HTTP API endpoints and request handling
+- **Endpoints**:
+  - `POST /api/parse-demo`: Upload and process demo files
+  - `GET /health`: Health check endpoint
+  - `GET /ready`: Readiness check endpoint
+- **Features**:
+  - Multipart file upload handling
+  - Request validation and error handling
+  - Authentication middleware support
+  - CORS configuration
+
+#### **Parser Core (`internal/parser/`)**
+- **Purpose**: Core demo parsing and event processing logic
+- **Components**:
+  - `DemoParser`: Main orchestration and file handling
+  - `EventProcessor`: Game state management and event processing
+  - `BatchSender`: External API communication with retry logic
+  - Event Handlers: Specialized handlers for different event types
+  - `MovementStateService`: Player position and movement tracking
+
+### Event Processing Flow
+
+The parser service processes CS2 demo files through a sophisticated event-driven architecture:
+
+#### **1. Demo File Processing**
+```
+Demo File Upload → Validation → Temporary Storage → Background Processing
+```
+
+#### **2. Event Extraction Pipeline**
+```
+Raw Demo Events → Event Handlers → Game State Updates → Structured Data
+```
+
+#### **3. Event Handler Specialization**
+
+**Gunfight Handler (`gunfight_handler.go`)**
+- **Purpose**: Processes player combat encounters
+- **Extracts**: Player positions, health, armor, weapons, damage dealt, headshots, wallbangs
+- **Calculates**: Distance between players, equipment values, combat scenarios
+- **Tracks**: First kills, flash assists, damage assists
+
+**Grenade Handler (`grenade_handler.go`)**
+- **Purpose**: Processes grenade throws and explosions
+- **Extracts**: Grenade type, throw position, aim direction, final position
+- **Calculates**: Flash duration, damage dealt, affected players
+- **Tracks**: Throw types (pop, bounce, line), effectiveness metrics
+
+**Damage Handler (`damage_handler.go`)**
+- **Purpose**: Processes individual damage instances
+- **Extracts**: Attacker/victim info, weapon used, damage amount, hit location
+- **Calculates**: Headshot detection, wallbang detection, penetration count
+- **Tracks**: Damage over time, weapon effectiveness
+
+**Round Handler (`round_handler.go`)**
+- **Purpose**: Processes round-level events
+- **Extracts**: Round start/end times, winners, round scenarios
+- **Calculates**: Round duration, team performance
+- **Tracks**: Round progression, match state
+
+**Match Handler (`match_handler.go`)**
+- **Purpose**: Processes match-level events
+- **Extracts**: Map information, match type, team compositions
+- **Calculates**: Match statistics, player performance
+- **Tracks**: Match progression, final results
+
+#### **4. Game State Management**
+The `EventProcessor` maintains comprehensive game state throughout parsing:
+- **Player Tracking**: Current positions, health, armor, weapons, equipment
+- **Round State**: Current round, round time, team scores
+- **Match State**: Map name, match type, total rounds
+- **Event Context**: Provides context for accurate event processing
+
+#### **5. Data Flow Architecture**
+```
+Demo File → demoinfocs Parser → Event Handlers → Game State → Structured Events → Batch Sender → External APIs
 ```
 
 ## 🔧 Configuration
@@ -370,3 +507,8 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string) {
 ## 📝 License
 
 [Add your license information here]
+
+---
+
+*Last updated: September 6, 2025*
+*Version: 1.0.0*
