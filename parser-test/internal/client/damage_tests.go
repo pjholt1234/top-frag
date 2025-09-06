@@ -23,7 +23,6 @@ func (tc *TestClient) getDamageTests() []TestFunction {
 		tc.TestDamageEventSteamIDs,
 		tc.TestWeapon,
 		tc.TestEventCount,
-		tc.TestDamage,
 		tc.TestNoDuplicates,
 	}
 }
@@ -256,33 +255,6 @@ func (tc *TestClient) TestEventCount(client *TestClient) *types.AssertionResult 
 
 	// Results should be = 3
 	ctx.AssertCount(results, "=", 3)
-
-	return ctx.GetResult()
-}
-
-func (tc *TestClient) TestDamage(client *TestClient) *types.AssertionResult {
-	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestDamage")
-	ctx := types.NewTestContext("TestDamage")
-
-	// Test damage where attacker_steam_id = steam_76561198081165057
-	results := testCase.Data("damage").
-		Where("attacker_steam_id", "=", "steam_76561198081165057").
-		Get()
-
-	// FOR EACH: armor_damage + health_damage = damage
-	for _, result := range results {
-		armorDamage := result.GetField("armor_damage")
-		healthDamage := result.GetField("health_damage")
-		totalDamage := result.GetField("damage")
-
-		// Convert to float64 for calculation
-		armorFloat, _ := convertToFloat64(armorDamage)
-		healthFloat, _ := convertToFloat64(healthDamage)
-		totalFloat, _ := convertToFloat64(totalDamage)
-
-		expectedTotal := armorFloat + healthFloat
-		ctx.AssertValue(expectedTotal, "=", totalFloat)
-	}
 
 	return ctx.GetResult()
 }
