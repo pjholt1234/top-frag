@@ -660,7 +660,7 @@ class DemoParserServiceTest extends TestCase
                 'round_time_of_death' => null,
                 'kills_with_awp' => 0,
                 'damage_dealt' => 25,
-                'flash_duration' => 1.2,
+                'flashes_thrown' => 1,
                 'friendly_flash_duration' => 0.5,
                 'enemy_flash_duration' => 2.1,
                 'friendly_players_affected' => 0,
@@ -710,7 +710,7 @@ class DemoParserServiceTest extends TestCase
         $this->assertNull($playerRoundEvent->round_time_of_death);
         $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
         $this->assertEquals(25, $playerRoundEvent->damage_dealt);
-        $this->assertEquals(1.2, $playerRoundEvent->flash_duration);
+        $this->assertEquals(1, $playerRoundEvent->flashes_thrown);
         $this->assertEquals(0.5, $playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(2.1, $playerRoundEvent->enemy_flash_duration);
         $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);
@@ -761,7 +761,7 @@ class DemoParserServiceTest extends TestCase
                 'first_death' => false,
                 'kills_with_awp' => 0,
                 'damage_dealt' => 25,
-                'flash_duration' => 1.2,
+                'flashes_thrown' => 1,
                 'successful_trades' => 1,
                 'clutch_wins_1v2' => 1,
                 'time_to_contact' => 15.3,
@@ -782,7 +782,7 @@ class DemoParserServiceTest extends TestCase
                 'round_time_of_death' => 45,
                 'kills_with_awp' => 1,
                 'damage_dealt' => 0,
-                'flash_duration' => 2.5,
+                'flashes_thrown' => 2,
                 'successful_trades' => 0,
                 'clutch_attempts_1v1' => 1,
                 'time_to_contact' => 8.7,
@@ -867,7 +867,7 @@ class DemoParserServiceTest extends TestCase
         $this->assertNull($playerRoundEvent->round_time_of_death);
         $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
         $this->assertEquals(0, $playerRoundEvent->damage_dealt);
-        $this->assertEquals(0.0, $playerRoundEvent->flash_duration);
+        $this->assertEquals(0, $playerRoundEvent->flashes_thrown);
         $this->assertEquals(0.0, $playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(0.0, $playerRoundEvent->enemy_flash_duration);
         $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);

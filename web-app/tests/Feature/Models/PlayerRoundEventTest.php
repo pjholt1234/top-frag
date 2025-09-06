@@ -32,7 +32,7 @@ class PlayerRoundEventTest extends TestCase
             'first_death' => false,
             'kills_with_awp' => 0,
             'damage_dealt' => 25,
-            'flash_duration' => 1.2,
+            'flashes_thrown' => 1,
             'friendly_flash_duration' => 0.5,
             'enemy_flash_duration' => 2.1,
             'successful_trades' => 1,
@@ -60,7 +60,7 @@ class PlayerRoundEventTest extends TestCase
         $this->assertFalse($playerRoundEvent->first_death);
         $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
         $this->assertEquals(25, $playerRoundEvent->damage_dealt);
-        $this->assertEquals(1.2, $playerRoundEvent->flash_duration);
+        $this->assertEquals(1, $playerRoundEvent->flashes_thrown);
         $this->assertEquals(0.5, $playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(2.1, $playerRoundEvent->enemy_flash_duration);
         $this->assertEquals(1, $playerRoundEvent->successful_trades);
@@ -97,7 +97,7 @@ class PlayerRoundEventTest extends TestCase
 
             // Grenade fields
             'damage_dealt',
-            'flash_duration',
+            'flashes_thrown',
             'friendly_flash_duration',
             'enemy_flash_duration',
             'friendly_players_affected',
@@ -146,7 +146,7 @@ class PlayerRoundEventTest extends TestCase
             'died' => true,
             'first_kill' => true,
             'first_death' => false,
-            'flash_duration' => 1.234,
+            'flashes_thrown' => 2,
             'friendly_flash_duration' => 0.567,
             'enemy_flash_duration' => 2.890,
             'grenade_effectiveness' => 0.7891,
@@ -165,8 +165,8 @@ class PlayerRoundEventTest extends TestCase
         $this->assertIsBool($playerRoundEvent->first_death);
         $this->assertFalse($playerRoundEvent->first_death);
 
-        $this->assertIsNumeric($playerRoundEvent->flash_duration);
-        $this->assertEquals(1.234, (float)$playerRoundEvent->flash_duration);
+        $this->assertIsNumeric($playerRoundEvent->flashes_thrown);
+        $this->assertEquals(2, (int)$playerRoundEvent->flashes_thrown);
 
         $this->assertIsNumeric($playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(0.567, (float)$playerRoundEvent->friendly_flash_duration);
@@ -341,7 +341,7 @@ class PlayerRoundEventTest extends TestCase
         $this->assertEquals(0, $playerRoundEvent->first_death); // Database defaults to 0, not false
         $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
         $this->assertEquals(0, $playerRoundEvent->damage_dealt);
-        $this->assertEquals(0.0, $playerRoundEvent->flash_duration);
+        $this->assertEquals(0, $playerRoundEvent->flashes_thrown);
         $this->assertEquals(0.0, $playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(0.0, $playerRoundEvent->enemy_flash_duration);
         $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);

@@ -44,7 +44,7 @@ class PlayerRoundEventFactory extends Factory
 
             // Grenade fields
             'damage_dealt' => $this->faker->numberBetween(0, 300),
-            'flash_duration' => $this->faker->randomFloat(3, 0, 5),
+            'flashes_thrown' => $this->faker->numberBetween(0, 5),
             'friendly_flash_duration' => $this->faker->randomFloat(3, 0, 2),
             'enemy_flash_duration' => $this->faker->randomFloat(3, 0, 5),
             'friendly_players_affected' => $this->faker->numberBetween(0, 4),
