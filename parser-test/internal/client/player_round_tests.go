@@ -151,7 +151,7 @@ func (tc *TestClient) TestDamageValidation(client *TestClient) *types.AssertionR
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("damage"), "=", 480)
+		ctx.AssertValue(result.GetField("damage"), "=", 267)
 	}
 
 	// Test that damage never exceeds 500 across all records (this will fail as expected)

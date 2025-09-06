@@ -81,7 +81,6 @@ func (rh *RoundHandler) createPlayerRoundEvent(playerSteamID string, roundNumber
 	return playerRoundEvent
 }
 
-// aggregateGunfightMetrics aggregates basic gun fight statistics from gunfight and damage events
 func (rh *RoundHandler) aggregateGunfightMetrics(event *types.PlayerRoundEvent, playerSteamID string, roundNumber int) {
 	kills := 0
 	assists := 0
@@ -93,16 +92,13 @@ func (rh *RoundHandler) aggregateGunfightMetrics(event *types.PlayerRoundEvent, 
 	var roundTimeOfDeath *int
 	killsWithAWP := 0
 
-	// Process gunfight events
 	for _, gunfightEvent := range rh.processor.matchState.GunfightEvents {
 		if gunfightEvent.RoundNumber != roundNumber {
 			continue
 		}
 
-		// Check if this player was the killer
 		if gunfightEvent.Player1SteamID == playerSteamID && gunfightEvent.VictorSteamID != nil && *gunfightEvent.VictorSteamID == playerSteamID {
 			kills++
-			damage += gunfightEvent.DamageDealt
 
 			if gunfightEvent.Headshot {
 				headshots++
@@ -112,35 +108,36 @@ func (rh *RoundHandler) aggregateGunfightMetrics(event *types.PlayerRoundEvent, 
 				firstKill = true
 			}
 
-			// Check if kill was with AWP - check multiple possible weapon strings
 			weaponName := gunfightEvent.Player1Weapon
 			if weaponName == types.WeaponAWP || weaponName == "AWP" || weaponName == "weapon_awp" {
 				killsWithAWP++
 			}
 		}
 
-		// Check if this player was the victim
 		if gunfightEvent.Player2SteamID == playerSteamID && gunfightEvent.VictorSteamID != nil && *gunfightEvent.VictorSteamID != playerSteamID {
 			died = true
 			timeOfDeath := gunfightEvent.RoundTime
 			roundTimeOfDeath = &timeOfDeath
 
-			// Check if this was the first death
 			if rh.processor.matchState.FirstDeathPlayer != nil && *rh.processor.matchState.FirstDeathPlayer == playerSteamID {
 				firstDeath = true
 			}
 		}
 
-		// Check for damage assists
 		if gunfightEvent.DamageAssistSteamID != nil && *gunfightEvent.DamageAssistSteamID == playerSteamID {
 			assists++
 		}
 	}
 
-	// Process damage events to get total damage dealt
 	for _, damageEvent := range rh.processor.matchState.DamageEvents {
 		if damageEvent.RoundNumber == roundNumber && damageEvent.AttackerSteamID == playerSteamID {
-			damage += damageEvent.HealthDamage
+			// Only count damage dealt to enemies, not teammates
+			attackerTeam := rh.processor.getAssignedTeam(playerSteamID)
+			victimTeam := rh.processor.getAssignedTeam(damageEvent.VictimSteamID)
+
+			if attackerTeam != victimTeam {
+				damage += damageEvent.HealthDamage
+			}
 		}
 	}
 

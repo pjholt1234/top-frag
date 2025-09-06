@@ -33,15 +33,21 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) {
 
 	roundTime := dh.processor.getCurrentRoundTime()
 
+	// Calculate actual damage inflicted, capped at victim's remaining health
+	actualHealthDamage := e.HealthDamage
+	if e.Player.Health() < e.HealthDamage {
+		actualHealthDamage = e.Player.Health()
+	}
+
 	damageEvent := types.DamageEvent{
 		RoundNumber:     dh.processor.matchState.CurrentRound,
 		RoundTime:       roundTime,
 		TickTimestamp:   dh.processor.currentTick,
 		AttackerSteamID: types.SteamIDToString(e.Attacker.SteamID64),
 		VictimSteamID:   types.SteamIDToString(e.Player.SteamID64),
-		Damage:          e.HealthDamage + e.ArmorDamage,
+		Damage:          actualHealthDamage,
 		ArmorDamage:     e.ArmorDamage,
-		HealthDamage:    e.HealthDamage,
+		HealthDamage:    actualHealthDamage,
 		Headshot:        false,
 		Weapon:          e.Weapon.String(),
 	}

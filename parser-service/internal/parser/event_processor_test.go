@@ -1017,7 +1017,7 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:       1,
 		RoundTime:         30,
-		TickTimestamp:    1000,
+		TickTimestamp:     1000,
 		PlayerSteamID:     "steam_76561198012345678",
 		PlayerSide:        processor.getPlayerCurrentSide("steam_76561198012345678"),
 		GrenadeType:       "HE Grenade",

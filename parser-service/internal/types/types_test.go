@@ -293,7 +293,7 @@ func TestGrenadeEvent_Validate(t *testing.T) {
 			event: GrenadeEvent{
 				RoundNumber:       1,
 				RoundTime:         30,
-				TickTimestamp:    12345,
+				TickTimestamp:     12345,
 				PlayerSteamID:     "steam_123",
 				GrenadeType:       GrenadeTypeFlash,
 				PlayerPosition:    Position{X: 100, Y: 200, Z: 50},
@@ -309,7 +309,7 @@ func TestGrenadeEvent_Validate(t *testing.T) {
 			event: GrenadeEvent{
 				RoundNumber:       1,
 				RoundTime:         30,
-				TickTimestamp:    12345,
+				TickTimestamp:     12345,
 				GrenadeType:       GrenadeTypeFlash,
 				PlayerPosition:    Position{X: 100, Y: 200, Z: 50},
 				PlayerAim:         Vector{X: 0.8, Y: 0.2, Z: 0.1},
@@ -324,7 +324,7 @@ func TestGrenadeEvent_Validate(t *testing.T) {
 			event: GrenadeEvent{
 				RoundNumber:       1,
 				RoundTime:         30,
-				TickTimestamp:    12345,
+				TickTimestamp:     12345,
 				PlayerSteamID:     "steam_123",
 				GrenadeType:       "invalid_type",
 				PlayerPosition:    Position{X: 100, Y: 200, Z: 50},
@@ -340,7 +340,7 @@ func TestGrenadeEvent_Validate(t *testing.T) {
 			event: GrenadeEvent{
 				RoundNumber:       -1,
 				RoundTime:         30,
-				TickTimestamp:    12345,
+				TickTimestamp:     12345,
 				PlayerSteamID:     "steam_123",
 				GrenadeType:       GrenadeTypeFlash,
 				PlayerPosition:    Position{X: 100, Y: 200, Z: 50},
@@ -356,7 +356,7 @@ func TestGrenadeEvent_Validate(t *testing.T) {
 			event: GrenadeEvent{
 				RoundNumber:       1,
 				RoundTime:         30,
-				TickTimestamp:    12345,
+				TickTimestamp:     12345,
 				PlayerSteamID:     "steam_123",
 				GrenadeType:       GrenadeTypeHE,
 				PlayerPosition:    Position{X: 100, Y: 200, Z: 50},
