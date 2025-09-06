@@ -166,19 +166,19 @@ class PlayerRoundEventTest extends TestCase
         $this->assertFalse($playerRoundEvent->first_death);
 
         $this->assertIsNumeric($playerRoundEvent->flashes_thrown);
-        $this->assertEquals(2, (int)$playerRoundEvent->flashes_thrown);
+        $this->assertEquals(2, (int) $playerRoundEvent->flashes_thrown);
 
         $this->assertIsNumeric($playerRoundEvent->friendly_flash_duration);
-        $this->assertEquals(0.567, (float)$playerRoundEvent->friendly_flash_duration);
+        $this->assertEquals(0.567, (float) $playerRoundEvent->friendly_flash_duration);
 
         $this->assertIsNumeric($playerRoundEvent->enemy_flash_duration);
-        $this->assertEquals(2.890, (float)$playerRoundEvent->enemy_flash_duration);
+        $this->assertEquals(2.890, (float) $playerRoundEvent->enemy_flash_duration);
 
         $this->assertIsNumeric($playerRoundEvent->grenade_effectiveness);
-        $this->assertEquals(0.7891, (float)$playerRoundEvent->grenade_effectiveness);
+        $this->assertEquals(0.7891, (float) $playerRoundEvent->grenade_effectiveness);
 
         $this->assertIsNumeric($playerRoundEvent->time_to_contact);
-        $this->assertEquals(15.678, (float)$playerRoundEvent->time_to_contact);
+        $this->assertEquals(15.678, (float) $playerRoundEvent->time_to_contact);
 
         $this->assertIsBool($playerRoundEvent->is_eco);
         $this->assertTrue($playerRoundEvent->is_eco);
