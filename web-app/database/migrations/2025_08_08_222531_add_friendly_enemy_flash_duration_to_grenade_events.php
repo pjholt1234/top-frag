@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('grenade_events', function (Blueprint $table) {
-            $table->float('friendly_flash_duration')->nullable()->after('flash_duration'); // Total flash duration on teammates
+            $table->dropColumn('flash_duration');
+            $table->float('friendly_flash_duration')->nullable()->after('damage_dealt'); // Total flash duration on teammates
             $table->float('enemy_flash_duration')->nullable()->after('friendly_flash_duration'); // Total flash duration on enemies
         });
     }
@@ -24,6 +25,7 @@ return new class extends Migration
     {
         Schema::table('grenade_events', function (Blueprint $table) {
             $table->dropColumn(['friendly_flash_duration', 'enemy_flash_duration']);
+            $table->float('flash_duration')->nullable()->after('damage_dealt'); // Total flash duration on enemies
         });
     }
 };

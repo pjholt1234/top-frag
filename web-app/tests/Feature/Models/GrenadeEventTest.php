@@ -32,7 +32,6 @@ class GrenadeEventTest extends TestCase
             'grenade_final_y' => 275.5,
             'grenade_final_z' => 50.0,
             'damage_dealt' => 25,
-            'flash_duration' => 2.5,
             'friendly_flash_duration' => 1.5,
             'enemy_flash_duration' => 2.5,
             'friendly_players_affected' => 1,
@@ -47,7 +46,6 @@ class GrenadeEventTest extends TestCase
         $this->assertEquals(GrenadeType::FLASHBANG, $grenadeEvent->grenade_type);
         $this->assertEquals('lineup', $grenadeEvent->throw_type);
         $this->assertEquals(25, $grenadeEvent->damage_dealt);
-        $this->assertEquals(2.5, $grenadeEvent->flash_duration);
         $this->assertEquals(1.5, $grenadeEvent->friendly_flash_duration);
         $this->assertEquals(2.5, $grenadeEvent->enemy_flash_duration);
         $this->assertEquals(1, $grenadeEvent->friendly_players_affected);
@@ -78,7 +76,6 @@ class GrenadeEventTest extends TestCase
             'grenade_final_y',
             'grenade_final_z',
             'damage_dealt',
-            'flash_duration',
             'friendly_flash_duration',
             'enemy_flash_duration',
             'friendly_players_affected',
@@ -109,7 +106,6 @@ class GrenadeEventTest extends TestCase
             'grenade_final_y' => 375.0,
             'grenade_final_z' => 75.0,
             'damage_dealt' => 0,
-            'flash_duration' => 0.0,
             'friendly_flash_duration' => 0.0,
             'enemy_flash_duration' => 0.0,
             'friendly_players_affected' => 0,
@@ -132,7 +128,6 @@ class GrenadeEventTest extends TestCase
         $this->assertIsFloat($grenadeEvent->grenade_final_y);
         $this->assertIsFloat($grenadeEvent->grenade_final_z);
         $this->assertIsInt($grenadeEvent->damage_dealt);
-        $this->assertIsFloat($grenadeEvent->flash_duration);
         $this->assertIsFloat($grenadeEvent->friendly_flash_duration);
         $this->assertIsFloat($grenadeEvent->enemy_flash_duration);
         $this->assertIsInt($grenadeEvent->friendly_players_affected);
@@ -197,13 +192,11 @@ class GrenadeEventTest extends TestCase
     {
         $grenadeEvent = GrenadeEvent::factory()->create([
             'damage_dealt' => 0,
-            'flash_duration' => 0.0,
             'friendly_flash_duration' => 0.0,
             'enemy_flash_duration' => 0.0,
         ]);
 
         $this->assertEquals(0, $grenadeEvent->damage_dealt);
-        $this->assertEquals(0.0, $grenadeEvent->flash_duration);
         $this->assertEquals(0.0, $grenadeEvent->friendly_flash_duration);
         $this->assertEquals(0.0, $grenadeEvent->enemy_flash_duration);
     }
