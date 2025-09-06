@@ -21,8 +21,6 @@ func NewRoundHandler(processor *EventProcessor, logger *logrus.Logger) *RoundHan
 	}
 }
 
-// ProcessRoundEnd processes all round-level statistics after a round ends
-// This is called after all other events have been processed for the round
 func (rh *RoundHandler) ProcessRoundEnd() {
 	roundNumber := rh.processor.matchState.CurrentRound
 
@@ -30,10 +28,8 @@ func (rh *RoundHandler) ProcessRoundEnd() {
 		"round": roundNumber,
 	}).Debug("Processing round-level player statistics")
 
-	// Get all unique players that participated in this round
 	playersInRound := rh.getPlayersInRound(roundNumber)
 
-	// Generate player round events for each player
 	for _, playerSteamID := range playersInRound {
 		playerRoundEvent := rh.createPlayerRoundEvent(playerSteamID, roundNumber)
 		rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
@@ -45,37 +41,12 @@ func (rh *RoundHandler) ProcessRoundEnd() {
 	}).Debug("Completed round-level player statistics processing")
 }
 
-// getPlayersInRound returns all unique players that participated in events during the round
+// getPlayersInRound returns all players that are in the match, regardless of event participation
 func (rh *RoundHandler) getPlayersInRound(roundNumber int) []string {
-	playersSet := make(map[string]bool)
-
-	// Add players from gunfight events
-	for _, event := range rh.processor.matchState.GunfightEvents {
-		if event.RoundNumber == roundNumber {
-			playersSet[event.Player1SteamID] = true
-			playersSet[event.Player2SteamID] = true
-		}
-	}
-
-	// Add players from grenade events
-	for _, event := range rh.processor.matchState.GrenadeEvents {
-		if event.RoundNumber == roundNumber {
-			playersSet[event.PlayerSteamID] = true
-		}
-	}
-
-	// Add players from damage events
-	for _, event := range rh.processor.matchState.DamageEvents {
-		if event.RoundNumber == roundNumber {
-			playersSet[event.AttackerSteamID] = true
-			playersSet[event.VictimSteamID] = true
-		}
-	}
-
-	// Convert set to slice
-	players := make([]string, 0, len(playersSet))
-	for player := range playersSet {
-		players = append(players, player)
+	// Get all players from match state - these are all players who connected to the match
+	players := make([]string, 0, len(rh.processor.matchState.Players))
+	for steamID := range rh.processor.matchState.Players {
+		players = append(players, steamID)
 	}
 
 	return players

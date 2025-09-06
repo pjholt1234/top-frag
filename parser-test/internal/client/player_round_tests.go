@@ -9,7 +9,7 @@ import (
 func (tc *TestClient) getPlayerRoundTests() []TestFunction {
 	return []TestFunction{
 		tc.TestPlayerRoundEventsExist,
-		// tc.TestTotalRoundsConsistency,
+		tc.TestTotalRoundsConsistency,
 		tc.TestKillsValidation,
 		tc.TestAssistsValidation,
 		tc.TestDiedValidation,
@@ -43,34 +43,38 @@ func (tc *TestClient) TestPlayerRoundEventsExist(client *TestClient) *types.Asse
 }
 
 // TestTotalRoundsConsistency - Total number of rounds should be the same for each unique player_steam_id (should all equal 20)
-// func (tc *TestClient) TestTotalRoundsConsistency(client *TestClient) *types.AssertionResult {
-// 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestTotalRoundsConsistency")
-// 	ctx := types.NewTestContext("TestTotalRoundsConsistency")
+//
+//	func (tc *TestClient) TestTotalRoundsConsistency(client *TestClient) *types.AssertionResult {
+//		testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestTotalRoundsConsistency")
+//		ctx := types.NewTestContext("TestTotalRoundsConsistency")
+func (tc *TestClient) TestTotalRoundsConsistency(client *TestClient) *types.AssertionResult {
+	// Get all player round events
+	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestTotalRoundsConsistency")
+	ctx := types.NewTestContext("TestTotalRoundsConsistency")
 
-// 	// Get all player round events
-// 	results := testCase.Data("player-round").Get()
-// 	ctx.AssertExists(results)
+	results := testCase.Data("player-round").Get()
+	ctx.AssertExists(results)
 
-// 	if len(results) > 0 {
-// 		// Group by player_steam_id and count rounds
-// 		playerRoundCounts := make(map[string]int)
-// 		for _, result := range results {
-// 			playerSteamID := result.GetString("player_steam_id")
-// 			playerRoundCounts[playerSteamID]++
-// 		}
+	if len(results) > 0 {
+		// Group by player_steam_id and count rounds
+		playerRoundCounts := make(map[string]int)
+		for _, result := range results {
+			playerSteamID := result.GetString("player_steam_id")
+			playerRoundCounts[playerSteamID]++
+		}
 
-// 		// Check that all players have exactly 20 rounds
-// 		expectedRounds := 20
-// 		for playerSteamID, count := range playerRoundCounts {
-// 			ctx.AssertValue(count, "=", expectedRounds)
-// 			if count != expectedRounds {
-// 				ctx.AssertValue(fmt.Sprintf("Player %s has %d rounds, expected %d", playerSteamID, count, expectedRounds), "=", "consistency check")
-// 			}
-// 		}
-// 	}
+		// Check that all players have exactly 20 rounds
+		expectedRounds := 20
+		for playerSteamID, count := range playerRoundCounts {
+			ctx.AssertValue(count, "=", expectedRounds)
+			if count != expectedRounds {
+				ctx.AssertValue(fmt.Sprintf("Player %s has %d rounds, expected %d", playerSteamID, count, expectedRounds), "=", "consistency check")
+			}
+		}
+	}
 
-// 	return ctx.GetResult()
-// }
+	return ctx.GetResult()
+}
 
 // TestKillsValidation - Kills can never exceed 5, and specific player assertions
 func (tc *TestClient) TestKillsValidation(client *TestClient) *types.AssertionResult {
