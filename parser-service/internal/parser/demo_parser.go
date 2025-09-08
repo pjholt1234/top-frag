@@ -285,10 +285,6 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 		eventProcessor.HandlePlayerFlashed(e)
 	})
 
-	parser.RegisterEventHandler(func(e events.HeExplode) {
-		eventProcessor.HandleHeExplode(e)
-	})
-
 	parser.RegisterEventHandler(func(e events.SmokeStart) {
 		eventProcessor.HandleSmokeStart(e)
 	})

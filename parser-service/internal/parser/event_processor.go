@@ -49,14 +49,16 @@ type EventProcessor struct {
 
 // FlashEffect tracks information about an active flash effect
 type FlashEffect struct {
-	EntityID         int
-	ThrowerSteamID   string
-	ExplosionTick    int64
-	AffectedPlayers  map[uint64]*PlayerFlashInfo
-	FriendlyDuration float64
-	EnemyDuration    float64
-	FriendlyCount    int
-	EnemyCount       int
+	EntityID          int
+	ThrowerSteamID    string
+	ExplosionTick     int64
+	RoundNumber       int
+	ExplosionPosition types.Position
+	AffectedPlayers   map[uint64]*PlayerFlashInfo
+	FriendlyDuration  float64
+	EnemyDuration     float64
+	FriendlyCount     int
+	EnemyCount        int
 }
 
 // PlayerFlashInfo tracks individual player flash information
@@ -139,10 +141,6 @@ func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) {
 
 func (ep *EventProcessor) HandlePlayerFlashed(e events.PlayerFlashed) {
 	ep.grenadeHandler.HandlePlayerFlashed(e)
-}
-
-func (ep *EventProcessor) HandleHeExplode(e events.HeExplode) {
-	ep.grenadeHandler.HandleHeExplode(e)
 }
 
 func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) {

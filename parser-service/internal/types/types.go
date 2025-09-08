@@ -80,6 +80,7 @@ type GrenadeEvent struct {
 	PlayerSteamID string `json:"player_steam_id"`
 	PlayerSide    string `json:"player_side"` // "CT" or "T"
 	GrenadeType   string `json:"grenade_type"`
+	EntityID      int    `json:"entity_id,omitempty"` // For flashbang matching
 
 	PlayerPosition Position `json:"player_position"`
 	PlayerAim      Vector   `json:"player_aim"`
