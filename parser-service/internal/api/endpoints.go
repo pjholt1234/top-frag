@@ -20,4 +20,5 @@ const (
 	EventTypeGrenade     = "grenade"
 	EventTypeDamage      = "damage"
 	EventTypePlayerRound = "player-round"
+	EventTypePlayerMatch = "player-match"
 )

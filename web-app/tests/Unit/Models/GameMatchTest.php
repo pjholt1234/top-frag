@@ -152,17 +152,6 @@ class GameMatchTest extends TestCase
     }
 
     #[Test]
-    public function it_has_many_player_match_summaries()
-    {
-        $match = GameMatch::factory()->create();
-        $summary1 = PlayerMatchSummary::factory()->create(['match_id' => $match->id]);
-        $summary2 = PlayerMatchSummary::factory()->create(['match_id' => $match->id]);
-
-        $this->assertCount(2, $match->playerMatchSummaries);
-        $this->assertInstanceOf(PlayerMatchSummary::class, $match->playerMatchSummaries->first());
-    }
-
-    #[Test]
     public function it_uses_correct_table_name()
     {
         $match = new GameMatch;

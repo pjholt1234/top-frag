@@ -388,7 +388,11 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"damage_events":       len(matchState.DamageEvents),
 		"round_events":        len(matchState.RoundEvents),
 		"player_round_events": len(matchState.PlayerRoundEvents),
+		"player_match_events": len(matchState.PlayerMatchEvents),
 	}).Info("Match data built with event counts")
+
+	//Aggregate player match events
+	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
 	return &types.ParsedDemoData{
 		Match:             match,
@@ -398,5 +402,6 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		RoundEvents:       matchState.RoundEvents,
 		DamageEvents:      matchState.DamageEvents,
 		PlayerRoundEvents: matchState.PlayerRoundEvents,
+		PlayerMatchEvents: matchState.PlayerMatchEvents,
 	}
 }

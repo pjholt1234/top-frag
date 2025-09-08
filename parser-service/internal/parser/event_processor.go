@@ -40,11 +40,12 @@ type EventProcessor struct {
 	activeFlashEffects map[int]*FlashEffect // entityID -> flash effect info
 
 	// Event handlers
-	grenadeHandler  *GrenadeHandler
-	gunfightHandler *GunfightHandler
-	damageHandler   *DamageHandler
-	matchHandler    *MatchHandler
-	roundHandler    *RoundHandler
+	grenadeHandler     *GrenadeHandler
+	gunfightHandler    *GunfightHandler
+	damageHandler      *DamageHandler
+	matchHandler       *MatchHandler
+	roundHandler       *RoundHandler
+	playerMatchHandler *PlayerMatchHandler
 }
 
 // FlashEffect tracks information about an active flash effect
@@ -100,6 +101,7 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	ep.damageHandler = NewDamageHandler(ep, logger)
 	ep.matchHandler = NewMatchHandler(ep, logger)
 	ep.roundHandler = NewRoundHandler(ep, logger)
+	ep.playerMatchHandler = NewPlayerMatchHandler(ep, logger)
 
 	return ep
 }

@@ -468,5 +468,9 @@ func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.Process
 		return fmt.Errorf("failed to send player round events: %w", err)
 	}
 
+	if err := h.batchSender.SendPlayerMatchEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.PlayerMatchEvents); err != nil {
+		return fmt.Errorf("failed to send player match events: %w", err)
+	}
+
 	return nil
 }

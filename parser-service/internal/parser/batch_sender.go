@@ -377,7 +377,7 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 	}
 	bs.baseURL = baseURL
 
-	batchSize := bs.config.Batch.GunfightEventsSize // Reuse gunfight batch size for player round events
+	batchSize := 12 // Reuse gunfight batch size for player round events
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
 	bs.logger.WithFields(logrus.Fields{
@@ -470,6 +470,109 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 		}
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypePlayerRound)
+		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+			return fmt.Errorf("failed to send player round events batch %d: %w", i+1, err)
+		}
+
+		bs.logger.WithFields(logrus.Fields{
+			"job_id":        jobID,
+			"batch":         i + 1,
+			"total_batches": totalBatches,
+			"events":        len(batch),
+		}).Debug("Sent player round events batch")
+	}
+
+	return nil
+}
+
+func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, completionURL string, events []types.PlayerMatchEvent) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		return fmt.Errorf("failed to extract base URL: %w", err)
+	}
+	bs.baseURL = baseURL
+
+	batchSize := 10
+	totalBatches := (len(events) + batchSize - 1) / batchSize
+
+	bs.logger.WithFields(logrus.Fields{
+		"job_id":        jobID,
+		"total_events":  len(events),
+		"batch_size":    batchSize,
+		"total_batches": totalBatches,
+	}).Info("Sending player round events")
+
+	for i := 0; i < totalBatches; i++ {
+		start := i * batchSize
+		end := start + batchSize
+		if end > len(events) {
+			end = len(events)
+		}
+
+		batch := events[start:end]
+		isLast := i == totalBatches-1
+
+		flatEvents := make([]map[string]interface{}, len(batch))
+		for j, event := range batch {
+			flatEvent := map[string]interface{}{
+				"player_steam_id":               event.PlayerSteamID,
+				"kills":                         event.Kills,
+				"assists":                       event.Assists,
+				"deaths":                        event.Deaths,
+				"damage":                        event.Damage,
+				"adr":                           event.ADR,
+				"headshots":                     event.Headshots,
+				"first_kills":                   event.FirstKills,
+				"first_deaths":                  event.FirstDeaths,
+				"average_round_time_of_death":   event.AverageRoundTimeOfDeath,
+				"kills_with_awp":                event.KillsWithAWP,
+				"damage_dealt":                  event.DamageDealt,
+				"flashes_thrown":                event.FlashesThrown,
+				"friendly_flash_duration":       event.FriendlyFlashDuration,
+				"enemy_flash_duration":          event.EnemyFlashDuration,
+				"friendly_players_affected":     event.FriendlyPlayersAffected,
+				"enemy_players_affected":        event.EnemyPlayersAffected,
+				"flashes_leading_to_kills":      event.FlashesLeadingToKills,
+				"flashes_leading_to_deaths":     event.FlashesLeadingToDeaths,
+				"average_grenade_effectiveness": event.AverageGrenadeEffectiveness,
+				"average_grenade_value_lost":    event.AverageGrenadeValueLost,
+				"total_successful_trades":       event.TotalSuccessfulTrades,
+				"total_possible_trades":         event.TotalPossibleTrades,
+				"total_traded_deaths":           event.TotalTradedDeaths,
+				"total_possible_traded_deaths":  event.TotalPossibleTradedDeaths,
+				"clutch_wins_1v1":               event.ClutchWins1v1,
+				"clutch_wins_1v2":               event.ClutchWins1v2,
+				"clutch_wins_1v3":               event.ClutchWins1v3,
+				"clutch_wins_1v4":               event.ClutchWins1v4,
+				"clutch_wins_1v5":               event.ClutchWins1v5,
+				"clutch_attempts_1v1":           event.ClutchAttempts1v1,
+				"clutch_attempts_1v2":           event.ClutchAttempts1v2,
+				"clutch_attempts_1v3":           event.ClutchAttempts1v3,
+				"clutch_attempts_1v4":           event.ClutchAttempts1v4,
+				"clutch_attempts_1v5":           event.ClutchAttempts1v5,
+				"average_time_to_contact":       event.AverageTimeToContact,
+				"kills_vs_eco":                  event.KillsVsEco,
+				"kills_vs_force_buy":            event.KillsVsForceBuy,
+				"kills_vs_full_buy":             event.KillsVsFullBuy,
+				//"matchmaking_rank":              nil,
+			}
+
+			flatEvents[j] = flatEvent
+		}
+
+		payload := map[string]interface{}{
+			"batch_index":   i + 1,
+			"is_last":       isLast,
+			"total_batches": totalBatches,
+			"data":          flatEvents,
+		}
+
+		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypePlayerMatch)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
 			return fmt.Errorf("failed to send player round events batch %d: %w", i+1, err)
 		}

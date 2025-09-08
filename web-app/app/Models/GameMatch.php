@@ -70,11 +70,6 @@ class GameMatch extends Model
         return $this->hasOne(MatchSummary::class, 'match_id');
     }
 
-    public function playerMatchSummaries(): HasMany
-    {
-        return $this->hasMany(PlayerMatchSummary::class, 'match_id');
-    }
-
     public function demoProcessingJob(): HasOne
     {
         return $this->hasOne(DemoProcessingJob::class, 'match_id');
@@ -88,6 +83,11 @@ class GameMatch extends Model
     public function playerRoundEvents(): HasMany
     {
         return $this->hasMany(PlayerRoundEvent::class, 'match_id');
+    }
+
+    public function playerMatchEvents(): HasMany
+    {
+        return $this->hasMany(PlayerMatchEvent::class, 'match_id');
     }
 
     public function playerWasParticipant(Player $player): bool

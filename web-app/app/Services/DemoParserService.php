@@ -12,6 +12,7 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\Player;
+use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRoundEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -129,6 +130,7 @@ class DemoParserService
                 MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
                 MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
+                MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
                 default => Log::error('Invalid event name', ['job_id' => $jobId, 'event_name' => $eventName]),
             };
         });
@@ -454,5 +456,65 @@ class DemoParserService
             // Use bulk insert for better performance
             PlayerRoundEvent::insert($records);
         }
+    }
+
+    private function createPlayerMatchEvent(GameMatch $match, array $playerMatchEvents): void
+    {
+        if (empty($playerMatchEvents)) {
+            return;
+        }
+
+        $records = [];
+        $now = now();
+
+        foreach ($playerMatchEvents as $playerMatchEvent) {
+            $records[] = [
+                'match_id' => $match->id,
+                'player_steam_id' => $playerMatchEvent['player_steam_id'],
+                'kills' => $playerMatchEvent['kills'],
+                'assists' => $playerMatchEvent['assists'],
+                'deaths' => $playerMatchEvent['deaths'],
+                'damage' => $playerMatchEvent['damage'],
+                'adr' => $playerMatchEvent['adr'],
+                'headshots' => $playerMatchEvent['headshots'],
+                'first_kills' => $playerMatchEvent['first_kills'],
+                'first_deaths' => $playerMatchEvent['first_deaths'],
+                'average_round_time_of_death' => $playerMatchEvent['average_round_time_of_death'],
+                'kills_with_awp' => $playerMatchEvent['kills_with_awp'],
+                'damage_dealt' => $playerMatchEvent['damage_dealt'],
+                'flashes_thrown' => $playerMatchEvent['flashes_thrown'],
+                'friendly_flash_duration' => $playerMatchEvent['friendly_flash_duration'],
+                'enemy_flash_duration' => $playerMatchEvent['enemy_flash_duration'],
+                'friendly_players_affected' => $playerMatchEvent['friendly_players_affected'],
+                'enemy_players_affected' => $playerMatchEvent['enemy_players_affected'],
+                'flashes_leading_to_kills' => $playerMatchEvent['flashes_leading_to_kills'],
+                'flashes_leading_to_deaths' => $playerMatchEvent['flashes_leading_to_deaths'],
+                'average_grenade_effectiveness' => $playerMatchEvent['average_grenade_effectiveness'],
+                'total_successful_trades' => $playerMatchEvent['total_successful_trades'],
+                'total_possible_trades' => $playerMatchEvent['total_possible_trades'],
+                'total_traded_deaths' => $playerMatchEvent['total_traded_deaths'],
+                'total_possible_traded_deaths' => $playerMatchEvent['total_possible_traded_deaths'],
+                'clutch_wins_1v1' => $playerMatchEvent['clutch_wins_1v1'],
+                'clutch_wins_1v2' => $playerMatchEvent['clutch_wins_1v2'],
+                'clutch_wins_1v3' => $playerMatchEvent['clutch_wins_1v3'],
+                'clutch_wins_1v4' => $playerMatchEvent['clutch_wins_1v4'],
+                'clutch_wins_1v5' => $playerMatchEvent['clutch_wins_1v5'],
+                'clutch_attempts_1v1' => $playerMatchEvent['clutch_attempts_1v1'],
+                'clutch_attempts_1v2' => $playerMatchEvent['clutch_attempts_1v2'],
+                'clutch_attempts_1v3' => $playerMatchEvent['clutch_attempts_1v3'],
+                'clutch_attempts_1v4' => $playerMatchEvent['clutch_attempts_1v4'],
+                'clutch_attempts_1v5' => $playerMatchEvent['clutch_attempts_1v5'],
+                'average_time_to_contact' => $playerMatchEvent['average_time_to_contact'],
+                'kills_vs_eco' => $playerMatchEvent['kills_vs_eco'],
+                'kills_vs_force_buy' => $playerMatchEvent['kills_vs_force_buy'],
+                'kills_vs_full_buy' => $playerMatchEvent['kills_vs_full_buy'],
+                'average_grenade_value_lost' => $playerMatchEvent['average_grenade_value_lost'],
+                'matchmaking_rank' => $playerMatchEvent['matchmaking_rank'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        PlayerMatchEvent::insert($records);
     }
 }

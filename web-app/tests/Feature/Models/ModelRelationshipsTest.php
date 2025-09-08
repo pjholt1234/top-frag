@@ -123,72 +123,6 @@ class ModelRelationshipsTest extends TestCase
             'total_clutches_1v5_successful' => 0,
         ]);
 
-        // Create player match summaries
-        $playerSummary1 = PlayerMatchSummary::factory()->create([
-            'match_id' => $match->id,
-            'player_id' => $player1->id,
-            'kills' => 15,
-            'deaths' => 10,
-            'assists' => 5,
-            'headshots' => 8,
-            'wallbangs' => 2,
-            'first_kills' => 3,
-            'first_deaths' => 2,
-            'total_damage' => 2500,
-            'average_damage_per_round' => 83.33,
-            'damage_taken' => 2000,
-            'he_damage' => 200,
-            'effective_flashes' => 4,
-            'smokes_used' => 3,
-            'molotovs_used' => 2,
-            'flashbangs_used' => 5,
-            'clutches_1v1_attempted' => 2,
-            'clutches_1v1_successful' => 1,
-            'clutches_1v2_attempted' => 1,
-            'clutches_1v2_successful' => 0,
-            'clutches_1v3_attempted' => 0,
-            'clutches_1v3_successful' => 0,
-            'clutches_1v4_attempted' => 0,
-            'clutches_1v4_successful' => 0,
-            'clutches_1v5_attempted' => 0,
-            'clutches_1v5_successful' => 0,
-            'kd_ratio' => 1.5,
-            'headshot_percentage' => 53.33,
-            'clutch_success_rate' => 33.33,
-        ]);
-
-        $playerSummary2 = PlayerMatchSummary::factory()->create([
-            'match_id' => $match->id,
-            'player_id' => $player2->id,
-            'kills' => 10,
-            'deaths' => 12,
-            'assists' => 6,
-            'headshots' => 3,
-            'wallbangs' => 1,
-            'first_kills' => 2,
-            'first_deaths' => 3,
-            'total_damage' => 2000,
-            'average_damage_per_round' => 66.67,
-            'damage_taken' => 2400,
-            'he_damage' => 150,
-            'effective_flashes' => 2,
-            'smokes_used' => 2,
-            'molotovs_used' => 1,
-            'flashbangs_used' => 3,
-            'clutches_1v1_attempted' => 1,
-            'clutches_1v1_successful' => 1,
-            'clutches_1v2_attempted' => 1,
-            'clutches_1v2_successful' => 1,
-            'clutches_1v3_attempted' => 1,
-            'clutches_1v3_successful' => 0,
-            'clutches_1v4_attempted' => 0,
-            'clutches_1v4_successful' => 0,
-            'clutches_1v5_attempted' => 0,
-            'clutches_1v5_successful' => 0,
-            'kd_ratio' => 0.83,
-            'headshot_percentage' => 30.0,
-            'clutch_success_rate' => 66.67,
-        ]);
 
         // Test relationships from match perspective
         $this->assertCount(3, $match->matchPlayers);
@@ -196,7 +130,6 @@ class ModelRelationshipsTest extends TestCase
         $this->assertCount(2, $match->gunfightEvents);
         $this->assertCount(2, $match->grenadeEvents);
         $this->assertInstanceOf(MatchSummary::class, $match->matchSummary);
-        $this->assertCount(2, $match->playerMatchSummaries);
 
         // Test relationships from player perspective
         $this->assertCount(1, $player1->matchPlayers);
@@ -205,7 +138,6 @@ class ModelRelationshipsTest extends TestCase
         $this->assertCount(0, $player1->gunfightEventsAsPlayer2);
         $this->assertCount(1, $player1->gunfightEventsAsVictor);
         $this->assertCount(1, $player1->grenadeEvents);
-        $this->assertCount(1, $player1->playerMatchSummaries);
 
         // Test relationships from match player perspective
         $this->assertInstanceOf(GameMatch::class, $matchPlayer1->match);
@@ -232,12 +164,6 @@ class ModelRelationshipsTest extends TestCase
         // Test relationships from match summary perspective
         $this->assertInstanceOf(GameMatch::class, $matchSummary->match);
         $this->assertEquals($match->id, $matchSummary->match->id);
-
-        // Test relationships from player match summary perspective
-        $this->assertInstanceOf(GameMatch::class, $playerSummary1->match);
-        $this->assertInstanceOf(Player::class, $playerSummary1->player);
-        $this->assertEquals($match->id, $playerSummary1->match->id);
-        $this->assertEquals($player1->id, $playerSummary1->player->id);
 
         // Test pivot data
         $this->assertEquals('A', $match->players->first()->pivot->team);

@@ -186,6 +186,61 @@ type PlayerRoundEvent struct {
 	GrenadeValueLostOnDeath int  `json:"grenade_value_lost_on_death"`
 }
 
+// Player Match Event
+type PlayerMatchEvent struct {
+	// Basic fields
+	PlayerSteamID string `json:"player_steam_id"`
+
+	// Gun Fights
+	Kills                   int     `json:"kills"`
+	Assists                 int     `json:"assists"`
+	Deaths                  int     `json:"deaths"`
+	Damage                  int     `json:"damage"`
+	ADR                     float64 `json:"adr"`
+	Headshots               int     `json:"headshots"`
+	FirstKills              int     `json:"first_kills"`
+	FirstDeaths             int     `json:"first_deaths"`
+	AverageRoundTimeOfDeath float64 `json:"average_round_time_of_death"`
+	KillsWithAWP            int     `json:"kills_with_awp"`
+
+	// Grenades
+	DamageDealt                 int     `json:"damage_dealt"`
+	FlashesThrown               int     `json:"flashes_thrown"`
+	FriendlyFlashDuration       float64 `json:"friendly_flash_duration"`
+	EnemyFlashDuration          float64 `json:"enemy_flash_duration"`
+	FriendlyPlayersAffected     int     `json:"friendly_players_affected"`
+	EnemyPlayersAffected        int     `json:"enemy_players_affected"`
+	FlashesLeadingToKills       int     `json:"flashes_leading_to_kills"`
+	FlashesLeadingToDeaths      int     `json:"flashes_leading_to_deaths"`
+	AverageGrenadeEffectiveness float64 `json:"average_grenade_effectiveness"`
+
+	// Details
+	TotalSuccessfulTrades     int     `json:"total_successful_trades"`
+	TotalPossibleTrades       int     `json:"total_possible_trades"`
+	TotalTradedDeaths         int     `json:"total_traded_deaths"`
+	TotalPossibleTradedDeaths int     `json:"total_possible_traded_deaths"`
+	ClutchWins1v1             int     `json:"clutch_wins_1v1"`
+	ClutchWins1v2             int     `json:"clutch_wins_1v2"`
+	ClutchWins1v3             int     `json:"clutch_wins_1v3"`
+	ClutchWins1v4             int     `json:"clutch_wins_1v4"`
+	ClutchWins1v5             int     `json:"clutch_wins_1v5"`
+	ClutchAttempts1v1         int     `json:"clutch_attempts_1v1"`
+	ClutchAttempts1v2         int     `json:"clutch_attempts_1v2"`
+	ClutchAttempts1v3         int     `json:"clutch_attempts_1v3"`
+	ClutchAttempts1v4         int     `json:"clutch_attempts_1v4"`
+	ClutchAttempts1v5         int     `json:"clutch_attempts_1v5"`
+	AverageTimeToContact      float64 `json:"average_time_to_contact"`
+
+	// Economy
+	KillsVsEco              int     `json:"kills_vs_eco"`
+	KillsVsForceBuy         int     `json:"kills_vs_force_buy"`
+	KillsVsFullBuy          int     `json:"kills_vs_full_buy"`
+	AverageGrenadeValueLost float64 `json:"average_grenade_value_lost"`
+
+	// Ranking
+	MatchmakingRank *string `json:"matchmaking_rank"`
+}
+
 // GrenadeThrowInfo stores information about a grenade throw
 type GrenadeThrowInfo struct {
 	PlayerSteamID  string
@@ -217,6 +272,7 @@ type ParsedDemoData struct {
 	RoundEvents       []RoundEvent       `json:"round_events"`
 	DamageEvents      []DamageEvent      `json:"damage_events"`
 	PlayerRoundEvents []PlayerRoundEvent `json:"player_round_events"`
+	PlayerMatchEvents []PlayerMatchEvent `json:"player_match_events"`
 }
 
 // ParseDemoRequest represents a request with an uploaded demo file
@@ -275,6 +331,7 @@ type MatchState struct {
 	GrenadeEvents      []GrenadeEvent
 	DamageEvents       []DamageEvent
 	PlayerRoundEvents  []PlayerRoundEvent
+	PlayerMatchEvents  []PlayerMatchEvent
 	CurrentRoundKills  int
 	CurrentRoundDeaths int
 	FirstKillPlayer    *string

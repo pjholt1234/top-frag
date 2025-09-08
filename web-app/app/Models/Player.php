@@ -57,11 +57,6 @@ class Player extends Model
         return $this->hasMany(GrenadeEvent::class, 'player_steam_id', 'steam_id');
     }
 
-    public function playerMatchSummaries(): HasMany
-    {
-        return $this->hasMany(PlayerMatchSummary::class, 'player_id');
-    }
-
     public function damageEventsAsAttacker(): HasMany
     {
         return $this->hasMany(DamageEvent::class, 'attacker_steam_id', 'steam_id');
@@ -75,6 +70,11 @@ class Player extends Model
     public function playerRoundEvents(): HasMany
     {
         return $this->hasMany(PlayerRoundEvent::class, 'player_steam_id', 'steam_id');
+    }
+
+    public function playerMatchEvents(): HasMany
+    {
+        return $this->hasMany(PlayerMatchEvent::class, 'player_steam_id', 'steam_id');
     }
 
     public function playerWonMatch(GameMatch $match): bool

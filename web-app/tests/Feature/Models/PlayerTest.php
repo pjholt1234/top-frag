@@ -133,15 +133,6 @@ class PlayerTest extends TestCase
         $this->assertInstanceOf(GrenadeEvent::class, $player->grenadeEvents->first());
     }
 
-    #[Test]
-    public function it_has_player_match_summaries()
-    {
-        $player = Player::factory()->create();
-        $summary = PlayerMatchSummary::factory()->create(['player_id' => $player->id]);
-
-        $this->assertCount(1, $player->playerMatchSummaries);
-        $this->assertInstanceOf(PlayerMatchSummary::class, $player->playerMatchSummaries->first());
-    }
 
     #[Test]
     public function it_can_be_created_with_factory()
