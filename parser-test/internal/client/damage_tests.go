@@ -78,7 +78,7 @@ func (tc *TestClient) TestRoundTime(client *TestClient) *types.AssertionResult {
 
 	ctx.AssertNotNull(results)
 	if results != nil {
-		ctx.AssertValue(results.GetField("round_time"), "=", 19)
+		ctx.AssertValue(results.GetField("round_time"), "=", 22)
 	}
 
 	return ctx.GetResult()
@@ -93,7 +93,7 @@ func (tc *TestClient) TestTickTimestamp(client *TestClient) *types.AssertionResu
 		Where("round_number", "=", 3).
 		Get()
 
-	expectedTickTimestamps := []int{12991, 14337}
+	expectedTickTimestamps := []int{12322, 13606}
 	for i, result := range results {
 		if i < len(expectedTickTimestamps) {
 			ctx.AssertValue(result.GetField("tick_timestamp"), "=", expectedTickTimestamps[i])

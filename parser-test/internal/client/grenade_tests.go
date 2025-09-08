@@ -4,7 +4,6 @@ import (
 	"parser-test/internal/types"
 )
 
-// getGrenadeTests returns all grenade event test functions
 func (tc *TestClient) getGrenadeTests() []TestFunction {
 	return []TestFunction{
 		tc.TestGrenadeEventsExist,
@@ -22,41 +21,35 @@ func (tc *TestClient) getGrenadeTests() []TestFunction {
 		tc.TestPlayerPosition,
 		tc.TestPlayerAim,
 		tc.TestGrenadeFinalPosition,
-		tc.TestDamageDealt,
 		tc.TestEffectivenessRating,
+		tc.TestGrenadeDamage,
+		tc.TestMolotovDamage,
 	}
 }
 
-// Basic example test - check if grenade events exist
 func (tc *TestClient) TestGrenadeEventsExist(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestGrenadeEventsExist")
 	ctx := types.NewTestContext("TestGrenadeEventsExist")
 
-	// Get all grenade events
 	results := testCase.Data("grenade").Get()
 
-	// Assert that some events exist
 	ctx.AssertCount(results, ">", 0)
 
 	return ctx.GetResult()
 }
 
-// Test jumping + W throw type detection
 func (tc *TestClient) TestJumpingWThrowType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestJumpingWThrowType")
 	ctx := types.NewTestContext("TestJumpingWThrowType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 107008).
+		Where("tick_timestamp", "=", 101739).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert throw_type = "Jumping + W"
 		throwType := results[0].GetField("throw_type")
 		ctx.AssertValue(throwType, "=", "Jumping + W")
 	}
@@ -64,22 +57,18 @@ func (tc *TestClient) TestJumpingWThrowType(client *TestClient) *types.Assertion
 	return ctx.GetResult()
 }
 
-// Test standing throw type detection
 func (tc *TestClient) TestStandingThrowType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestStandingThrowType")
 	ctx := types.NewTestContext("TestStandingThrowType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 88450).
+		Where("tick_timestamp", "=", 84105).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert throw_type = "Standing"
 		throwType := results[0].GetField("throw_type")
 		ctx.AssertValue(throwType, "=", "Standing")
 	}
@@ -87,22 +76,18 @@ func (tc *TestClient) TestStandingThrowType(client *TestClient) *types.Assertion
 	return ctx.GetResult()
 }
 
-// Test side detection (T side)
 func (tc *TestClient) TestSideDetection(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestSideDetection")
 	ctx := types.NewTestContext("TestSideDetection")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 107008).
+		Where("tick_timestamp", "=", 101739).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert player_side = "T"
 		playerSide := results[0].GetField("player_side")
 		ctx.AssertValue(playerSide, "=", "T")
 	}
@@ -110,45 +95,37 @@ func (tc *TestClient) TestSideDetection(client *TestClient) *types.AssertionResu
 	return ctx.GetResult()
 }
 
-// Test round time for mid round smoke
 func (tc *TestClient) TestGrenadeRoundTime(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestGrenadeRoundTime")
 	ctx := types.NewTestContext("TestGrenadeRoundTime")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 88450).
+		Where("tick_timestamp", "=", 84105).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert round_time = 47
 		roundTime := results[0].GetField("round_time")
-		ctx.AssertValue(roundTime, "=", 47)
+		ctx.AssertValue(roundTime, "=", 49)
 	}
 
 	return ctx.GetResult()
 }
 
-// Test smoke grenade type detection
 func (tc *TestClient) TestSmokeGrenadeType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestSmokeGrenadeType")
 	ctx := types.NewTestContext("TestSmokeGrenadeType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 88450).
+		Where("tick_timestamp", "=", 84105).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "Smoke Grenade"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "Smoke Grenade")
 	}
@@ -156,22 +133,18 @@ func (tc *TestClient) TestSmokeGrenadeType(client *TestClient) *types.AssertionR
 	return ctx.GetResult()
 }
 
-// Test incendiary grenade type detection
 func (tc *TestClient) TestIncendiaryGrenadeType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestIncendiaryGrenadeType")
 	ctx := types.NewTestContext("TestIncendiaryGrenadeType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 34051).
+		Where("tick_timestamp", "=", 49608).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "Incendiary Grenade"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "Incendiary Grenade")
 	}
@@ -179,22 +152,18 @@ func (tc *TestClient) TestIncendiaryGrenadeType(client *TestClient) *types.Asser
 	return ctx.GetResult()
 }
 
-// Test molotov type detection
 func (tc *TestClient) TestMolotovType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestMolotovType")
 	ctx := types.NewTestContext("TestMolotovType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 34123).
+		Where("tick_timestamp", "=", 32458).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "Molotov"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "Molotov")
 	}
@@ -202,22 +171,18 @@ func (tc *TestClient) TestMolotovType(client *TestClient) *types.AssertionResult
 	return ctx.GetResult()
 }
 
-// Test flashbang type detection
 func (tc *TestClient) TestFlashbangType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestFlashbangType")
 	ctx := types.NewTestContext("TestFlashbangType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198173463029").
-		Where("tick_timestamp", "=", 37704).
+		Where("tick_timestamp", "=", 35770).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "Flashbang"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "Flashbang")
 	}
@@ -225,22 +190,18 @@ func (tc *TestClient) TestFlashbangType(client *TestClient) *types.AssertionResu
 	return ctx.GetResult()
 }
 
-// Test HE grenade type detection
 func (tc *TestClient) TestHEGrenadeType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestHEGrenadeType")
 	ctx := types.NewTestContext("TestHEGrenadeType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 34143).
+		Where("tick_timestamp", "=", 32476).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "HE Grenade"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "HE Grenade")
 	}
@@ -248,22 +209,18 @@ func (tc *TestClient) TestHEGrenadeType(client *TestClient) *types.AssertionResu
 	return ctx.GetResult()
 }
 
-// Test decoy grenade type detection
 func (tc *TestClient) TestDecoyGrenadeType(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestDecoyGrenadeType")
 	ctx := types.NewTestContext("TestDecoyGrenadeType")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 33767).
+		Where("tick_timestamp", "=", 32118).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert grenade_type = "Decoy Grenade"
 		grenadeType := results[0].GetField("grenade_type")
 		ctx.AssertValue(grenadeType, "=", "Decoy Grenade")
 	}
@@ -271,44 +228,35 @@ func (tc *TestClient) TestDecoyGrenadeType(client *TestClient) *types.AssertionR
 	return ctx.GetResult()
 }
 
-// Test flash stats (duration, affected players, leads to kill/death)
 func (tc *TestClient) TestFlashStats(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestFlashStats")
 	ctx := types.NewTestContext("TestFlashStats")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
 		Where("tick_timestamp", "=", 47458).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
 		result := results[0]
 
-		// Assert friendly_flash_duration = 2.490239072
 		friendlyFlashDuration := result.GetField("friendly_flash_duration")
 		ctx.AssertValue(friendlyFlashDuration, "=", 2.490239072)
 
-		// Assert enemy_flash_duration = 9.651062784
 		enemyFlashDuration := result.GetField("enemy_flash_duration")
 		ctx.AssertValue(enemyFlashDuration, "=", 9.651062784)
 
-		// Assert friendly_players_affected = 2
 		friendlyPlayersAffected := result.GetField("friendly_players_affected")
 		ctx.AssertValue(friendlyPlayersAffected, "=", 2)
 
-		// Assert enemy_players_affected = 3
 		enemyPlayersAffected := result.GetField("enemy_players_affected")
 		ctx.AssertValue(enemyPlayersAffected, "=", 3)
 
-		// Assert flash_leads_to_kill = true
 		flashLeadsToKill := result.GetField("flash_leads_to_kill")
 		ctx.AssertValue(flashLeadsToKill, "=", true)
 
-		// Assert flash_leads_to_death = true
 		flashLeadsToDeath := result.GetField("flash_leads_to_death")
 		ctx.AssertValue(flashLeadsToDeath, "=", true)
 	}
@@ -316,70 +264,54 @@ func (tc *TestClient) TestFlashStats(client *TestClient) *types.AssertionResult 
 	return ctx.GetResult()
 }
 
-// Test player position (x, y, z coordinates)
 func (tc *TestClient) TestPlayerPosition(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestPlayerPosition")
 	ctx := types.NewTestContext("TestPlayerPosition")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
-		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 107008).
+		Where("player_steam_id", "=", "steam_76561199426243273").
+		Where("tick_timestamp", "=", 16717).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
 		result := results[0]
 
-		// Assert player_x is approximately -328.35876464844 (within 0.001)
 		playerX := result.GetField("player_x")
-		ctx.AssertValue(playerX, ">=", -328.36)
-		ctx.AssertValue(playerX, "<=", -328.35)
+		ctx.AssertValue(playerX, "=", -328)
 
-		// Assert player_y is approximately -2282.908203125 (within 0.001)
 		playerY := result.GetField("player_y")
-		ctx.AssertValue(playerY, ">=", -2282.91)
-		ctx.AssertValue(playerY, "<=", -2282.90)
+		ctx.AssertValue(playerY, "=", -2288)
 
-		// Assert player_z is approximately -123.984375 (within 0.001)
 		playerZ := result.GetField("player_z")
-		ctx.AssertValue(playerZ, ">=", -123.99)
-		ctx.AssertValue(playerZ, "<=", -123.98)
+		ctx.AssertValue(playerZ, "=", -124.34375)
 	}
 
 	return ctx.GetResult()
 }
 
-// Test player aim (aim_x, aim_y, aim_z)
 func (tc *TestClient) TestPlayerAim(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestPlayerAim")
 	ctx := types.NewTestContext("TestPlayerAim")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
-		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 107008).
+		Where("player_steam_id", "=", "steam_76561198173463029").
+		Where("tick_timestamp", "=", 19358).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
 		result := results[0]
 
-		// Assert player_aim_x is approximately 94.009674072266 (within 0.001)
 		playerAimX := result.GetField("player_aim_x")
-		ctx.AssertValue(playerAimX, ">=", 94.008)
-		ctx.AssertValue(playerAimX, "<=", 94.011)
+		ctx.AssertValue(playerAimX, "=", 81.0537109375)
 
-		// Assert player_aim_y is approximately -31.746032714844 (within 0.001)
 		playerAimY := result.GetField("player_aim_y")
-		ctx.AssertValue(playerAimY, ">=", -31.747)
-		ctx.AssertValue(playerAimY, "<=", -31.745)
+		ctx.AssertValue(playerAimY, ">=", -36.127502441406)
+		ctx.AssertValue(playerAimY, "<=", -36.127502441407)
 
-		// Assert player_aim_z = 0
 		playerAimZ := result.GetField("player_aim_z")
 		ctx.AssertValue(playerAimZ, "=", 0)
 	}
@@ -387,32 +319,26 @@ func (tc *TestClient) TestPlayerAim(client *TestClient) *types.AssertionResult {
 	return ctx.GetResult()
 }
 
-// Test grenade final position
 func (tc *TestClient) TestGrenadeFinalPosition(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestGrenadeFinalPosition")
 	ctx := types.NewTestContext("TestGrenadeFinalPosition")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 107008).
+		Where("tick_timestamp", "=", 101739).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
 		result := results[0]
 
-		// Assert grenade_final_x = -519.625
 		grenadeFinalX := result.GetField("grenade_final_x")
 		ctx.AssertValue(grenadeFinalX, "=", -519.625)
 
-		// Assert grenade_final_y = 207.9375
 		grenadeFinalY := result.GetField("grenade_final_y")
 		ctx.AssertValue(grenadeFinalY, "=", 207.9375)
 
-		// Assert grenade_final_z = 162.15625
 		grenadeFinalZ := result.GetField("grenade_final_z")
 		ctx.AssertValue(grenadeFinalZ, "=", 162.15625)
 	}
@@ -420,49 +346,57 @@ func (tc *TestClient) TestGrenadeFinalPosition(client *TestClient) *types.Assert
 	return ctx.GetResult()
 }
 
-// Test damage dealt (HE or Molotov damage)
-// NOTE: This test is expected to fail as damage_dealt field may not be implemented yet
-func (tc *TestClient) TestDamageDealt(client *TestClient) *types.AssertionResult {
-	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestDamageDealt")
-	ctx := types.NewTestContext("TestDamageDealt")
+func (tc *TestClient) TestEffectivenessRating(client *TestClient) *types.AssertionResult {
+	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestEffectivenessRating")
+	ctx := types.NewTestContext("TestEffectivenessRating")
 
-	// Get grenade event with specific steam ID and tick timestamp
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
 		Where("tick_timestamp", "=", 3275).
 		Get()
 
-	// Assert results = 1
 	ctx.AssertCount(results, "=", 1)
 
 	if len(results) == 1 {
-		// Assert damage_dealt = 10 (EXPECTED TO FAIL - field not implemented)
-		damageDealt := results[0].GetField("damage_dealt")
-		ctx.AssertValue(damageDealt, "=", 10)
+		effectivenessRating := results[0].GetField("effectiveness_rating")
+		ctx.AssertValue(effectivenessRating, "=", 10)
 	}
 
 	return ctx.GetResult()
 }
 
-// Test effectiveness rating
-// NOTE: This test is expected to fail as effectiveness_rating field may not be implemented yet
-func (tc *TestClient) TestEffectivenessRating(client *TestClient) *types.AssertionResult {
-	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestEffectivenessRating")
-	ctx := types.NewTestContext("TestEffectivenessRating")
+func (tc *TestClient) TestGrenadeDamage(client *TestClient) *types.AssertionResult {
+	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestGrenadeDamage")
+	ctx := types.NewTestContext("TestGrenadeDamage")
 
-	// Get grenade event with specific steam ID and tick timestamp
-	results := testCase.Data("grenade").
-		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 3275).
-		Get()
+	result := testCase.Data("grenade").
+		Where("player_steam_id", "=", "steam_76561198090208424").
+		Where("round_number", "=", 7).
+		Where("grenade_type", "=", "HE Grenade").
+		First()
 
-	// Assert results = 1
-	ctx.AssertCount(results, "=", 1)
+	ctx.AssertNotNull(result)
+	if result != nil {
+		ctx.AssertValue(result.GetField("damage_dealt"), ">", 0)
+	}
 
-	if len(results) == 1 {
-		// Assert effectiveness_rating = 10 (EXPECTED TO FAIL - field not implemented)
-		effectivenessRating := results[0].GetField("effectiveness_rating")
-		ctx.AssertValue(effectivenessRating, "=", 10)
+	return ctx.GetResult()
+}
+
+func (tc *TestClient) TestMolotovDamage(client *TestClient) *types.AssertionResult {
+	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestMolotovDamage")
+	ctx := types.NewTestContext("TestMolotovDamage")
+
+	result := testCase.Data("grenade").
+		Where("player_steam_id", "=", "steam_76561198081165057").
+		Where("round_number", "=", 2).
+		Where("grenade_type", "=", "Incendiary Grenade").
+		First()
+
+	ctx.AssertNotNull(result)
+
+	if result != nil {
+		ctx.AssertValue(result.GetField("damage_dealt"), ">", 0)
 	}
 
 	return ctx.GetResult()

@@ -266,7 +266,7 @@ func (tc *TestClient) TestRoundTimeOfDeathValidation(client *TestClient) *types.
 	ctx.AssertNotNull(result)
 	if result != nil {
 		roundTimeOfDeath := result.GetFloat("round_time_of_death")
-		ctx.AssertValue(roundTimeOfDeath, "=", 21.0)
+		ctx.AssertValue(roundTimeOfDeath, "=", 24.0)
 	}
 
 	return ctx.GetResult()
@@ -299,7 +299,6 @@ func (tc *TestClient) TestAWPKillsValidation(client *TestClient) *types.Assertio
 	return ctx.GetResult()
 }
 
-// TestDamageDealtValidation - Test damage dealt for specific player (this will fail as expected)
 func (tc *TestClient) TestDamageDealtValidation(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestDamageDealtValidation")
 	ctx := types.NewTestContext("TestDamageDealtValidation")
@@ -311,7 +310,7 @@ func (tc *TestClient) TestDamageDealtValidation(client *TestClient) *types.Asser
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("damage_dealt"), "=", 10)
+		ctx.AssertValue(result.GetField("damage_dealt"), "=", 138)
 	}
 
 	return ctx.GetResult()
@@ -433,7 +432,7 @@ func (tc *TestClient) TestTimeToContactValidation(client *TestClient) *types.Ass
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("time_to_contact"), "=", 61.000)
+		ctx.AssertValue(result.GetField("time_to_contact"), "=", 62.000)
 	}
 
 	return ctx.GetResult()

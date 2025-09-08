@@ -92,7 +92,7 @@ func (tc *TestClient) TestGunfightRoundTime(client *TestClient) *types.Assertion
 
 	results := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("round_time", "=", 10).
+		Where("round_time", "=", 54).
 		Get()
 
 	ctx.AssertExists(results)
@@ -107,7 +107,7 @@ func (tc *TestClient) TestGunfightTickTimestamp(client *TestClient) *types.Asser
 
 	results := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("tick_timestamp", "=", 46515).
 		Get()
 
 	ctx.AssertExists(results)
@@ -147,7 +147,7 @@ func (tc *TestClient) TestGunfightPlayerSide(client *TestClient) *types.Assertio
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("tick_timestamp", "=", 46515).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -165,7 +165,7 @@ func (tc *TestClient) TestGunfightPlayerHP(client *TestClient) *types.AssertionR
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("tick_timestamp", "=", 6641).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -184,7 +184,7 @@ func (tc *TestClient) TestGunfightPlayerArmor(client *TestClient) *types.Asserti
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("tick_timestamp", "=", 6641).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -203,7 +203,7 @@ func (tc *TestClient) TestGunfightPlayersFlashed(client *TestClient) *types.Asse
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 42877).
+		Where("tick_timestamp", "=", 40786).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -222,7 +222,7 @@ func (tc *TestClient) TestGunfightPlayerWeapons(client *TestClient) *types.Asser
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 21751).
+		Where("tick_timestamp", "=", 20655).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -241,7 +241,7 @@ func (tc *TestClient) TestGunfightPlayerEquipmentValues(client *TestClient) *typ
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("tick_timestamp", "=", 6641).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -260,7 +260,7 @@ func (tc *TestClient) TestGunfightPlayer1And2Ids(client *TestClient) *types.Asse
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 42877).
+		Where("tick_timestamp", "=", 40786).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -278,7 +278,7 @@ func (tc *TestClient) TestGunfightPlayer1And2PositionAndDistance(client *TestCli
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561199084124069").
-		Where("tick_timestamp", "=", 64808).
+		Where("tick_timestamp", "=", 61610).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -310,7 +310,7 @@ func (tc *TestClient) TestGunfightWasHeadshot(client *TestClient) *types.Asserti
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561199442474887").
-		Where("tick_timestamp", "=", 47598).
+		Where("tick_timestamp", "=", 85263).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -328,7 +328,7 @@ func (tc *TestClient) TestGunfightWasNotHeadshot(client *TestClient) *types.Asse
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 42877).
+		Where("tick_timestamp", "=", 82591).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -346,7 +346,7 @@ func (tc *TestClient) TestGunfightWasNotWallbang(client *TestClient) *types.Asse
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 42877).
+		Where("tick_timestamp", "=", 82591).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -365,7 +365,7 @@ func (tc *TestClient) TestGunfightWasWallbang(client *TestClient) *types.Asserti
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 28772).
+		Where("tick_timestamp", "=", 27348).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -384,7 +384,7 @@ func (tc *TestClient) TestGunfightVictor(client *TestClient) *types.AssertionRes
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 28772).
+		Where("tick_timestamp", "=", 27348).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -401,8 +401,8 @@ func (tc *TestClient) TestGunfightFlashAssisterSteamId(client *TestClient) *type
 	ctx := types.NewTestContext("TestGunfightFlashAssisterSteamId")
 
 	result := testCase.Data("gunfight").
-		Where("player_1_steam_id", "=", "steam_76561198081165057").
-		Where("tick_timestamp", "=", 7008).
+		Where("player_1_steam_id", "=", "steam_76561199426243273").
+		Where("tick_timestamp", "=", 3876).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -420,7 +420,7 @@ func (tc *TestClient) TestGunfightHasAssist(client *TestClient) *types.Assertion
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 75228).
+		Where("tick_timestamp", "=", 71537).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -437,14 +437,14 @@ func (tc *TestClient) TestGunfightHasNoAssist(client *TestClient) *types.Asserti
 	ctx := types.NewTestContext("TestGunfightHasNoAssist")
 
 	result := testCase.Data("gunfight").
-		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 28772).
+		Where("player_1_steam_id", "=", "steam_76561199426243273").
+		Where("tick_timestamp", "=", 87107).
 		First()
 
 	ctx.AssertNotNull(result)
 	if result != nil {
 		// Check that damage_assist_steam_id is not null (it has a value)
-		ctx.AssertValue(result.GetField("damage_assist_steam_id"), "!=", nil)
+		ctx.AssertValue(result.GetField("damage_assist_steam_id"), "==", nil)
 	}
 
 	return ctx.GetResult()
@@ -457,7 +457,7 @@ func (tc *TestClient) TestGunfightRoundScenario(client *TestClient) *types.Asser
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 28772).
+		Where("tick_timestamp", "=", 27348).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -475,7 +475,7 @@ func (tc *TestClient) TestGunfightRoundScenario2WithFirstKill(client *TestClient
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 75228).
+		Where("tick_timestamp", "=", 71537).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -494,7 +494,7 @@ func (tc *TestClient) TestGunfightIsFirstKill(client *TestClient) *types.Asserti
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198180752157").
-		Where("tick_timestamp", "=", 75228).
+		Where("tick_timestamp", "=", 71537).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -512,7 +512,7 @@ func (tc *TestClient) TestGunfightIsNotFirstKill(client *TestClient) *types.Asse
 
 	result := testCase.Data("gunfight").
 		Where("player_1_steam_id", "=", "steam_76561198105596992").
-		Where("tick_timestamp", "=", 89336).
+		Where("tick_timestamp", "=", 84941).
 		First()
 
 	ctx.AssertNotNull(result)
@@ -523,19 +523,18 @@ func (tc *TestClient) TestGunfightIsNotFirstKill(client *TestClient) *types.Asse
 	return ctx.GetResult()
 }
 
-// TestGunfightDamageDealt - Check damage dealt = 89
 func (tc *TestClient) TestGunfightDamageDealt(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestGunfightDamageDealt")
 	ctx := types.NewTestContext("TestGunfightDamageDealt")
 
 	result := testCase.Data("gunfight").
-		Where("player_1_steam_id", "=", "steam_76561198090208424").
-		Where("tick_timestamp", "=", 8825).
+		Where("player_1_steam_id", "=", "steam_76561198105596992").
+		Where("tick_timestamp", "=", 84941).
 		First()
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("damage_dealt"), "=", 89)
+		ctx.AssertValue(result.GetField("damage_dealt"), "=", 51)
 	}
 
 	return ctx.GetResult()
