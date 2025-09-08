@@ -8,13 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func abs(x int64) int64 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 type GrenadeMovementInfo struct {
 	Tick               int64
 	RoundNumber        int
@@ -46,6 +39,10 @@ func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *Grenad
 
 func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) {
 	if e.Projectile.Thrower == nil {
+		return
+	}
+
+	if e.Projectile.WeaponInstance.Type.String() == "Flashbang" {
 		return
 	}
 
@@ -83,6 +80,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 		RoundNumber:       gh.processor.matchState.CurrentRound,
 		RoundTime:         roundTime,
 		TickTimestamp:     tickTimestamp,
+		ExplosionTick:     gh.processor.currentTick, // Add explosion time for matching
 		PlayerSteamID:     types.SteamIDToString(e.Projectile.Thrower.SteamID64),
 		PlayerSide:        gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Projectile.Thrower.SteamID64)),
 		GrenadeType:       grenadeType,
@@ -151,7 +149,6 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	var playerPos types.Position
 	var playerAim types.Vector
 	var roundTime int
-	var tickTimestamp int64
 	var movementThrowType string
 
 	if !hasMovementInfo {
@@ -170,8 +167,6 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	playerAim = movementInfo.PlayerAim
 	roundTime = movementInfo.RoundTime
 	movementThrowType = movementInfo.ThrowType
-	// Keep tickTimestamp as explosion time for matching logic
-	tickTimestamp = gh.processor.currentTick
 
 	gh.logger.WithFields(logrus.Fields{
 		"entity_id":      e.GrenadeEntityID,
@@ -188,10 +183,36 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 		roundNumber = movementInfo.RoundNumber
 	}
 
+	// Create contextual matching key for squashing duplicate FlashExplode events
+	contextualKey := fmt.Sprintf("%d_%s_%d", gh.processor.currentTick, flashEffect.ThrowerSteamID, roundNumber)
+
+	// Check if we already have a GrenadeEvent for this flashbang (squashing logic)
+	var existingGrenadeEvent *types.GrenadeEvent
+	for i := range gh.processor.matchState.GrenadeEvents {
+		if gh.processor.matchState.GrenadeEvents[i].GrenadeType == "Flashbang" &&
+			gh.processor.matchState.GrenadeEvents[i].PlayerSteamID == flashEffect.ThrowerSteamID &&
+			gh.processor.matchState.GrenadeEvents[i].ExplosionTick == gh.processor.currentTick {
+			existingGrenadeEvent = &gh.processor.matchState.GrenadeEvents[i]
+			break
+		}
+	}
+
+	// If flash data already exists, skip this duplicate event (first event wins)
+	if existingGrenadeEvent != nil {
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":      e.GrenadeEntityID,
+			"contextual_key": contextualKey,
+			"thrower":        flashEffect.ThrowerSteamID,
+			"explosion_tick": gh.processor.currentTick,
+		}).Debug("Flash data already exists for this flashbang - skipping duplicate FlashExplode event")
+		return
+	}
+
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:       roundNumber,
 		RoundTime:         roundTime,
-		TickTimestamp:     tickTimestamp,
+		TickTimestamp:     movementInfo.Tick,        // Use throw time for TickTimestamp
+		ExplosionTick:     gh.processor.currentTick, // Add explosion time for matching
 		PlayerSteamID:     flashEffect.ThrowerSteamID,
 		PlayerSide:        gh.processor.getPlayerCurrentSide(flashEffect.ThrowerSteamID),
 		GrenadeType:       "Flashbang",
@@ -397,23 +418,18 @@ func (gh *GrenadeHandler) getGrenadeDisplayName(weaponType string) string {
 
 func (gh *GrenadeHandler) updateGrenadeEventWithFlashData(flashEffect *FlashEffect) {
 	var targetGrenadeEvent *types.GrenadeEvent
-	var closestTick int64 = -1
 
-	// Find the grenade event that matches this flash effect by looking for:
+	// Find the grenade event that matches this flash effect using exact ExplosionTick matching:
 	// 1. Same grenade type (Flashbang)
 	// 2. Same thrower (PlayerSteamID)
-	// 3. Timestamp within ±10 ticks of the explosion (accounts for minor timing differences)
-	// If multiple matches exist, pick the one with the timestamp closest to the explosion tick
+	// 3. Exact ExplosionTick match
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
 		if grenadeEvent.GrenadeType == "Flashbang" &&
 			grenadeEvent.PlayerSteamID == flashEffect.ThrowerSteamID &&
-			grenadeEvent.TickTimestamp <= flashEffect.ExplosionTick+10 &&
-			grenadeEvent.TickTimestamp >= flashEffect.ExplosionTick-10 {
-			if closestTick == -1 || abs(grenadeEvent.TickTimestamp-flashEffect.ExplosionTick) < abs(closestTick-flashEffect.ExplosionTick) {
-				targetGrenadeEvent = grenadeEvent
-				closestTick = grenadeEvent.TickTimestamp
-			}
+			grenadeEvent.ExplosionTick == flashEffect.ExplosionTick {
+			targetGrenadeEvent = grenadeEvent
+			break
 		}
 	}
 
@@ -464,18 +480,14 @@ func (gh *GrenadeHandler) CheckFlashEffectiveness(killerSteamID, victimSteamID s
 
 func (gh *GrenadeHandler) markFlashLeadsToKill(flashEffect *FlashEffect) {
 	var targetGrenadeEvent *types.GrenadeEvent
-	var closestTick int64 = -1
 
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
 		if grenadeEvent.GrenadeType == "Flashbang" &&
 			grenadeEvent.PlayerSteamID == flashEffect.ThrowerSteamID &&
-			grenadeEvent.TickTimestamp <= flashEffect.ExplosionTick+10 &&
-			grenadeEvent.TickTimestamp >= flashEffect.ExplosionTick-10 {
-			if closestTick == -1 || abs(grenadeEvent.TickTimestamp-flashEffect.ExplosionTick) < abs(closestTick-flashEffect.ExplosionTick) {
-				targetGrenadeEvent = grenadeEvent
-				closestTick = grenadeEvent.TickTimestamp
-			}
+			grenadeEvent.ExplosionTick == flashEffect.ExplosionTick {
+			targetGrenadeEvent = grenadeEvent
+			break
 		}
 	}
 
@@ -486,18 +498,14 @@ func (gh *GrenadeHandler) markFlashLeadsToKill(flashEffect *FlashEffect) {
 
 func (gh *GrenadeHandler) markFlashLeadsToDeath(flashEffect *FlashEffect) {
 	var targetGrenadeEvent *types.GrenadeEvent
-	var closestTick int64 = -1
 
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
 		if grenadeEvent.GrenadeType == "Flashbang" &&
 			grenadeEvent.PlayerSteamID == flashEffect.ThrowerSteamID &&
-			grenadeEvent.TickTimestamp <= flashEffect.ExplosionTick+10 &&
-			grenadeEvent.TickTimestamp >= flashEffect.ExplosionTick-10 {
-			if closestTick == -1 || abs(grenadeEvent.TickTimestamp-flashEffect.ExplosionTick) < abs(closestTick-flashEffect.ExplosionTick) {
-				targetGrenadeEvent = grenadeEvent
-				closestTick = grenadeEvent.TickTimestamp
-			}
+			grenadeEvent.ExplosionTick == flashEffect.ExplosionTick {
+			targetGrenadeEvent = grenadeEvent
+			break
 		}
 	}
 

@@ -76,6 +76,7 @@ type GrenadeEvent struct {
 	RoundNumber   int   `json:"round_number"`
 	RoundTime     int   `json:"round_time"`
 	TickTimestamp int64 `json:"tick_timestamp"`
+	ExplosionTick int64 `json:"explosion_tick,omitempty"` // For flashbang matching
 
 	PlayerSteamID string `json:"player_steam_id"`
 	PlayerSide    string `json:"player_side"` // "CT" or "T"
