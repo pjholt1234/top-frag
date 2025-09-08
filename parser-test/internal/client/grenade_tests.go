@@ -19,7 +19,6 @@ func (tc *TestClient) getGrenadeTests() []TestFunction {
 		tc.TestDecoyGrenadeType,
 		tc.TestFlashStats,
 		tc.TestPlayerPosition,
-		tc.TestPlayerAim,
 		tc.TestGrenadeFinalPosition,
 		tc.TestEffectivenessRating,
 		tc.TestGrenadeDamage,
@@ -234,7 +233,7 @@ func (tc *TestClient) TestFlashStats(client *TestClient) *types.AssertionResult 
 
 	results := testCase.Data("grenade").
 		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("tick_timestamp", "=", 47458).
+		Where("tick_timestamp", "=", 45035).
 		Get()
 
 	ctx.AssertCount(results, "=", 1)
@@ -264,6 +263,33 @@ func (tc *TestClient) TestFlashStats(client *TestClient) *types.AssertionResult 
 	return ctx.GetResult()
 }
 
+func (tc *TestClient) TestFlashPlayerPosition(client *TestClient) *types.AssertionResult {
+	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestFlashStats")
+	ctx := types.NewTestContext("TestFlashStats")
+
+	results := testCase.Data("grenade").
+		Where("player_steam_id", "=", "steam_76561198288628308").
+		Where("tick_timestamp", "=", 45035).
+		Get()
+
+	ctx.AssertCount(results, "=", 1)
+
+	if len(results) == 1 {
+		result := results[0]
+
+		playerX := result.GetField("player_x")
+		ctx.AssertValue(playerX, "=", -993.98266601562)
+
+		playerY := result.GetField("player_y")
+		ctx.AssertValue(playerY, "=", -1664.146484375)
+
+		playerZ := result.GetField("player_z")
+		ctx.AssertValue(playerZ, "=", 3.296875)
+	}
+
+	return ctx.GetResult()
+}
+
 func (tc *TestClient) TestPlayerPosition(client *TestClient) *types.AssertionResult {
 	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestPlayerPosition")
 	ctx := types.NewTestContext("TestPlayerPosition")
@@ -286,34 +312,6 @@ func (tc *TestClient) TestPlayerPosition(client *TestClient) *types.AssertionRes
 
 		playerZ := result.GetField("player_z")
 		ctx.AssertValue(playerZ, "=", -124.34375)
-	}
-
-	return ctx.GetResult()
-}
-
-func (tc *TestClient) TestPlayerAim(client *TestClient) *types.AssertionResult {
-	testCase := types.NewTestCase(client, tc.jobID, tc.logger, "TestPlayerAim")
-	ctx := types.NewTestContext("TestPlayerAim")
-
-	results := testCase.Data("grenade").
-		Where("player_steam_id", "=", "steam_76561198173463029").
-		Where("tick_timestamp", "=", 19358).
-		Get()
-
-	ctx.AssertCount(results, "=", 1)
-
-	if len(results) == 1 {
-		result := results[0]
-
-		playerAimX := result.GetField("player_aim_x")
-		ctx.AssertValue(playerAimX, "=", 81.0537109375)
-
-		playerAimY := result.GetField("player_aim_y")
-		ctx.AssertValue(playerAimY, ">=", -36.127502441406)
-		ctx.AssertValue(playerAimY, "<=", -36.127502441407)
-
-		playerAimZ := result.GetField("player_aim_z")
-		ctx.AssertValue(playerAimZ, "=", 0)
 	}
 
 	return ctx.GetResult()

@@ -401,13 +401,13 @@ func (tc *TestClient) TestGunfightFlashAssisterSteamId(client *TestClient) *type
 	ctx := types.NewTestContext("TestGunfightFlashAssisterSteamId")
 
 	result := testCase.Data("gunfight").
-		Where("player_1_steam_id", "=", "steam_76561199426243273").
-		Where("tick_timestamp", "=", 3876).
+		Where("player_1_steam_id", "=", "steam_76561199442474887").
+		Where("tick_timestamp", "=", 45275).
 		First()
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("flash_assister_steam_id"), "=", "steam_76561199084124069")
+		ctx.AssertValue(result.GetField("flash_assister_steam_id"), "=", "steam_76561198288628308")
 	}
 
 	return ctx.GetResult()

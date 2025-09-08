@@ -323,17 +323,18 @@ func (tc *TestClient) TestFlashStatsValidation(client *TestClient) *types.Assert
 
 	result := testCase.Data("player-round").
 		Where("player_steam_id", "=", "steam_76561198288628308").
-		Where("round_number", "=", 12).
+		Where("round_number", "=", 10).
 		First()
 
 	ctx.AssertNotNull(result)
 	if result != nil {
-		ctx.AssertValue(result.GetField("flashes_thrown"), "!=", 0)
-		ctx.AssertValue(result.GetField("friendly_flash_duration"), "=", 3.264)
-		ctx.AssertValue(result.GetField("enemy_flash_duration"), "=", 14.122)
+		ctx.AssertValue(result.GetField("flashes_thrown"), "=", 1)
+		ctx.AssertValue(result.GetField("friendly_flash_duration"), "=", 2.490239072)
+		ctx.AssertValue(result.GetField("enemy_flash_duration"), "=", 9.651062784)
 		ctx.AssertValue(result.GetField("flashes_leading_to_kill"), "=", 1)
-		ctx.AssertValue(result.GetField("enemy_players_affected"), "=", 4)
-		ctx.AssertValue(result.GetField("flashes_leading_to_death"), "=", 0)
+		ctx.AssertValue(result.GetField("friendly_players_affected"), "=", 2)
+		ctx.AssertValue(result.GetField("enemy_players_affected"), "=", 3)
+		ctx.AssertValue(result.GetField("flashes_leading_to_death"), "=", 1)
 		ctx.AssertValue(result.GetField("grenade_effectiveness"), "=", 1)
 	}
 
