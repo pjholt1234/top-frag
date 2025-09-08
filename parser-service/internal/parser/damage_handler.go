@@ -39,6 +39,7 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) {
 		actualHealthDamage = e.Player.Health()
 	}
 
+	weaponName := e.Weapon.String()
 	damageEvent := types.DamageEvent{
 		RoundNumber:     dh.processor.matchState.CurrentRound,
 		RoundTime:       roundTime,
@@ -49,7 +50,20 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) {
 		ArmorDamage:     e.ArmorDamage,
 		HealthDamage:    actualHealthDamage,
 		Headshot:        false,
-		Weapon:          e.Weapon.String(),
+		Weapon:          weaponName,
+	}
+
+	// Log damage events for grenades to help debug
+	if weaponName == "hegrenade" || weaponName == "molotov" || weaponName == "incendiary" {
+		dh.logger.WithFields(logrus.Fields{
+			"weapon":        weaponName,
+			"attacker":      damageEvent.AttackerSteamID,
+			"victim":        damageEvent.VictimSteamID,
+			"health_damage": damageEvent.HealthDamage,
+			"armor_damage":  damageEvent.ArmorDamage,
+			"round_time":    damageEvent.RoundTime,
+			"tick":          damageEvent.TickTimestamp,
+		}).Info("Grenade damage event created")
 	}
 
 	dh.processor.matchState.DamageEvents = append(dh.processor.matchState.DamageEvents, damageEvent)

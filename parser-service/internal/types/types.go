@@ -299,7 +299,6 @@ type PlayerState struct {
 	FirstDeaths      int
 	TotalDamage      int
 	DamageTaken      int
-	HEDamage         int
 	EffectiveFlashes int
 	SmokesUsed       int
 	MolotovsUsed     int
@@ -371,12 +370,19 @@ const (
 
 // Game timing constants
 const (
-	CS2FreezeTime = 20 // Freeze time duration in seconds for CS2
+	CS2FreezeTime = 15 // Freeze time duration in seconds for CS2
 )
 
 // Damage assist constants
 const (
 	DamageAssistThreshold = 41
+)
+
+const (
+	BufferDuration      = 1
+	MolotovDuration     = 7 + BufferDuration
+	IncendiaryDuration  = 5.5 + BufferDuration
+	GrenadeDamageWindow = 1.5 + BufferDuration
 )
 
 // Trade constants

@@ -48,93 +48,40 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	}
 
 	if e.Projectile.WeaponInstance.Type.String() == "Flashbang" {
-		gh.logger.WithFields(logrus.Fields{
-			"player":       e.Projectile.Thrower.Name,
-			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
-		}).Debug("Skipping flashbang grenade destroy - handled in HandleFlashExplode")
 		return
 	}
 
 	gh.processor.ensurePlayerTracked(e.Projectile.Thrower)
 
-	var throwInfo *types.GrenadeThrowInfo
-	playerSteamID := types.SteamIDToString(e.Projectile.Thrower.SteamID64)
+	// Get stored throw information from HandleGrenadeProjectileThrow
+	projectileID := fmt.Sprintf("entity_%d", e.Projectile.Entity.ID())
+	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
 
-	// Look for the most recent throw by this player for this grenade type
-	for _, info := range gh.processor.grenadeThrows {
-		if info.PlayerSteamID == playerSteamID &&
-			info.GrenadeType == e.Projectile.WeaponInstance.Type.String() &&
-			info.RoundNumber == gh.processor.matchState.CurrentRound {
-			if throwInfo == nil || info.ThrowTick > throwInfo.ThrowTick {
-				throwInfo = info
-			}
-		}
-	}
-	if throwInfo == nil {
-		gh.logger.WithFields(logrus.Fields{
-			"player":       e.Projectile.Thrower.Name,
-			"grenade_type": e.Projectile.WeaponInstance.Type.String(),
-			"found_throw":  false,
-		}).Warn("No stored grenade throw info found, using current position")
+	if !hasMovementInfo {
 		return
 	}
 
-	playerPos := throwInfo.PlayerPosition
-	playerAim := throwInfo.PlayerAim
-	roundTime := throwInfo.RoundTime
-	tickTimestamp := throwInfo.ThrowTick
+	// Use throw-time data for accurate timing and positioning
+	playerPos := movementInfo.PlayerPos
+	playerAim := movementInfo.PlayerAim
+	roundTime := movementInfo.RoundTime
+	tickTimestamp := movementInfo.Tick
+	movementThrowType := movementInfo.ThrowType
 
-	// Clean up the stored throw info
-	for key, info := range gh.processor.grenadeThrows {
-		if info == throwInfo {
-			delete(gh.processor.grenadeThrows, key)
-			break
-		}
-	}
+	delete(gh.grenadeThrows, projectileID)
 
-	gh.logger.WithFields(logrus.Fields{
-		"player":       e.Projectile.Thrower.Name,
-		"grenade_type": e.Projectile.WeaponInstance.Type.String(),
-		"found_throw":  true,
-	}).Debug("Using stored grenade throw info")
-
-	// Get stored throw information including movement state captured at throw time
-	projectileID := fmt.Sprintf("%p", e.Projectile)
-	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
-	var movementThrowType string
-
-	if hasMovementInfo {
-		// Use movement state captured at throw time
-		movementThrowType = movementInfo.ThrowType
-		gh.logger.WithFields(logrus.Fields{
-			"projectile_id": projectileID,
-			"throw_tick":    movementInfo.Tick,
-			"destroy_tick":  gh.processor.currentTick,
-			"movement":      movementInfo.ThrowType,
-		}).Debug("Using stored throw movement state")
-
-		// Clean up the stored info
-		delete(gh.grenadeThrows, projectileID)
-	} else {
-		// Fallback to current movement state if no throw info stored
-		movementThrowType = gh.movementService.GetPlayerThrowType(e.Projectile.Thrower, gh.processor.currentTick)
-		gh.logger.WithFields(logrus.Fields{
-			"projectile_id": projectileID,
-			"player":        e.Projectile.Thrower.Name,
-		}).Warn("No stored throw info found, using current movement state")
-	}
+	grenadeType := gh.getGrenadeDisplayName(e.Projectile.WeaponInstance.Type.String())
 
 	grenadeEvent := types.GrenadeEvent{
-		RoundNumber:    gh.processor.matchState.CurrentRound,
-		RoundTime:      roundTime,
-		TickTimestamp:  tickTimestamp,
-		PlayerSteamID:  playerSteamID,
-		PlayerSide:     gh.processor.getPlayerCurrentSide(playerSteamID),
-		GrenadeType:    e.Projectile.WeaponInstance.Type.String(),
-		PlayerPosition: playerPos,
-		PlayerAim:      playerAim,
-		ThrowType:      movementThrowType,
-		// Initialize flash effectiveness tracking fields
+		RoundNumber:       gh.processor.matchState.CurrentRound,
+		RoundTime:         roundTime,
+		TickTimestamp:     tickTimestamp,
+		PlayerSteamID:     types.SteamIDToString(e.Projectile.Thrower.SteamID64),
+		PlayerSide:        gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Projectile.Thrower.SteamID64)),
+		GrenadeType:       grenadeType,
+		PlayerPosition:    playerPos,
+		PlayerAim:         playerAim,
+		ThrowType:         movementThrowType,
 		FlashLeadsToKill:  false,
 		FlashLeadsToDeath: false,
 	}
@@ -147,14 +94,13 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	}
 
 	gh.processor.matchState.GrenadeEvents = append(gh.processor.matchState.GrenadeEvents, grenadeEvent)
-
-	if playerState, exists := gh.processor.playerStates[e.Projectile.Thrower.SteamID64]; exists {
-		playerState.HEDamage++
-	}
 }
 
 func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	if _, exists := gh.processor.activeFlashEffects[e.GrenadeEntityID]; exists {
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id": e.GrenadeEntityID,
+		}).Debug("Flash effect already exists, skipping")
 		return
 	}
 
@@ -170,25 +116,66 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 
 	gh.processor.activeFlashEffects[e.GrenadeEntityID] = flashEffect
 
-	playerPos := types.Position{}
-	playerAim := types.Vector{}
+	gh.logger.WithFields(logrus.Fields{
+		"entity_id":      e.GrenadeEntityID,
+		"thrower":        flashEffect.ThrowerSteamID,
+		"explosion_tick": gh.processor.currentTick,
+		"position":       fmt.Sprintf("(%.2f, %.2f, %.2f)", e.Position.X, e.Position.Y, e.Position.Z),
+	}).Info("Flash explosion detected")
 
-	if e.Thrower != nil {
-		playerPos = gh.processor.getPlayerPosition(e.Thrower)
-		playerAim = gh.processor.getPlayerAim(e.Thrower)
-	}
+	// Try to find stored throw information for this flashbang using entity ID
+	projectileID := fmt.Sprintf("entity_%d", e.GrenadeEntityID)
+	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
 
+	var playerPos types.Position
+	var playerAim types.Vector
+	var roundTime int
+	var tickTimestamp int64
 	var movementThrowType string
-	if e.Thrower != nil {
-		movementThrowType = gh.movementService.GetPlayerThrowType(e.Thrower, gh.processor.currentTick)
+
+	if hasMovementInfo {
+		// Use throw-time data for accurate timing and positioning
+		playerPos = movementInfo.PlayerPos
+		playerAim = movementInfo.PlayerAim
+		roundTime = movementInfo.RoundTime
+		tickTimestamp = movementInfo.Tick
+		movementThrowType = movementInfo.ThrowType
+
+		// Clean up the stored info
+		delete(gh.grenadeThrows, projectileID)
+
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":      e.GrenadeEntityID,
+			"projectile_id":  projectileID,
+			"thrower":        flashEffect.ThrowerSteamID,
+			"throw_tick":     movementInfo.Tick,
+			"explosion_tick": gh.processor.currentTick,
+			"movement":       movementInfo.ThrowType,
+		}).Debug("Using stored throw info for flashbang")
 	} else {
-		movementThrowType = "Unknown"
+		// Fallback to current position/aim if no throw info found
+		if e.Thrower != nil {
+			playerPos = gh.processor.getPlayerPosition(e.Thrower)
+			playerAim = gh.processor.getPlayerAim(e.Thrower)
+			movementThrowType = gh.movementService.GetPlayerThrowType(e.Thrower, gh.processor.currentTick)
+		} else {
+			movementThrowType = "Unknown"
+		}
+		roundTime = gh.processor.getCurrentRoundTime()
+		tickTimestamp = gh.processor.currentTick
+
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":      e.GrenadeEntityID,
+			"projectile_id":  projectileID,
+			"thrower":        flashEffect.ThrowerSteamID,
+			"explosion_tick": gh.processor.currentTick,
+		}).Warn("No stored throw info found for flashbang, using current position")
 	}
 
 	grenadeEvent := types.GrenadeEvent{
 		RoundNumber:       gh.processor.matchState.CurrentRound,
-		RoundTime:         gh.processor.getCurrentRoundTime(),
-		TickTimestamp:     gh.processor.currentTick,
+		RoundTime:         roundTime,
+		TickTimestamp:     tickTimestamp,
 		PlayerSteamID:     flashEffect.ThrowerSteamID,
 		PlayerSide:        gh.processor.getPlayerCurrentSide(flashEffect.ThrowerSteamID),
 		GrenadeType:       "Flashbang",
@@ -214,30 +201,79 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 		return
 	}
 
+	if e.Projectile == nil {
+		gh.logger.WithFields(logrus.Fields{
+			"player": e.Player.Name,
+		}).Warn("PlayerFlashed event received with nil projectile")
+		return
+	}
+
 	playerSteamID := types.SteamIDToString(e.Player.SteamID64)
 	flashDuration := e.FlashDuration().Seconds()
 
-	var mostRecentFlash *FlashEffect
-	var mostRecentTick int64
+	gh.logger.WithFields(logrus.Fields{
+		"player":          e.Player.Name,
+		"player_steam_id": playerSteamID,
+		"flash_duration":  flashDuration,
+		"current_tick":    gh.processor.currentTick,
+	}).Info("Player flashed event received")
 
-	for _, flashEffect := range gh.processor.activeFlashEffects {
-		if gh.processor.currentTick-flashEffect.ExplosionTick <= MAX_FLASH_DURATION {
-			if mostRecentFlash == nil || flashEffect.ExplosionTick > mostRecentTick {
-				mostRecentFlash = flashEffect
-				mostRecentTick = flashEffect.ExplosionTick
+	// Find the specific flash effect using the projectile's entity ID
+	// The projectile should have the same entity ID as the flash explosion
+	projectileEntityID := e.Projectile.Entity.ID()
+	targetFlashEffect, exists := gh.processor.activeFlashEffects[projectileEntityID]
+
+	gh.logger.WithFields(logrus.Fields{
+		"projectile_entity_id": projectileEntityID,
+		"direct_match_found":   exists,
+		"active_flash_effects": len(gh.processor.activeFlashEffects),
+	}).Debug("Looking for flash effect match")
+
+	if !exists {
+		// Fallback: try to find by thrower and timing if direct entity ID match fails
+		gh.logger.Debug("Direct entity ID match failed, trying fallback matching")
+		for entityID, flashEffect := range gh.processor.activeFlashEffects {
+			timeDiff := gh.processor.currentTick - flashEffect.ExplosionTick
+			gh.logger.WithFields(logrus.Fields{
+				"flash_entity_id":      entityID,
+				"flash_thrower":        flashEffect.ThrowerSteamID,
+				"flash_explosion_tick": flashEffect.ExplosionTick,
+				"time_diff":            timeDiff,
+			}).Debug("Checking flash effect for fallback match")
+
+			// Look for flash effects within a reasonable time window (5 seconds = 320 ticks)
+			if timeDiff >= 0 && timeDiff <= 320 {
+				// Check if this flash effect matches the projectile's thrower
+				if e.Projectile.Thrower != nil && flashEffect.ThrowerSteamID == types.SteamIDToString(e.Projectile.Thrower.SteamID64) {
+					// Use the most recent matching flash effect
+					if targetFlashEffect == nil || flashEffect.ExplosionTick > targetFlashEffect.ExplosionTick {
+						targetFlashEffect = flashEffect
+						gh.logger.WithFields(logrus.Fields{
+							"matched_flash_entity_id": entityID,
+							"time_diff":               timeDiff,
+						}).Debug("Found fallback flash effect match")
+					}
+				}
 			}
 		}
 	}
 
-	if mostRecentFlash == nil {
+	if targetFlashEffect == nil {
+		gh.logger.WithFields(logrus.Fields{
+			"player":               e.Player.Name,
+			"current_tick":         gh.processor.currentTick,
+			"flash_duration":       flashDuration,
+			"projectile_entity_id": projectileEntityID,
+		}).Debug("No matching flash effect found for PlayerFlashed event")
 		return
 	}
 
+	// Determine if this is a friendly or enemy flash
 	isFriendly := false
-	if mostRecentFlash.ThrowerSteamID != "" {
-		throwerTeam := gh.processor.getAssignedTeam(mostRecentFlash.ThrowerSteamID)
+	if targetFlashEffect.ThrowerSteamID != "" {
+		throwerTeam := gh.processor.getAssignedTeam(targetFlashEffect.ThrowerSteamID)
 		playerTeam := gh.processor.getAssignedTeam(playerSteamID)
-		isFriendly = throwerTeam == playerTeam && mostRecentFlash.ThrowerSteamID != playerSteamID
+		isFriendly = throwerTeam == playerTeam && targetFlashEffect.ThrowerSteamID != playerSteamID
 	}
 
 	playerFlashInfo := &PlayerFlashInfo{
@@ -247,17 +283,28 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 		IsFriendly:    isFriendly,
 	}
 
-	mostRecentFlash.AffectedPlayers[e.Player.SteamID64] = playerFlashInfo
+	targetFlashEffect.AffectedPlayers[e.Player.SteamID64] = playerFlashInfo
 
 	if isFriendly {
-		mostRecentFlash.FriendlyDuration += flashDuration
-		mostRecentFlash.FriendlyCount++
+		targetFlashEffect.FriendlyDuration += flashDuration
+		targetFlashEffect.FriendlyCount++
 	} else {
-		mostRecentFlash.EnemyDuration += flashDuration
-		mostRecentFlash.EnemyCount++
+		targetFlashEffect.EnemyDuration += flashDuration
+		targetFlashEffect.EnemyCount++
 	}
 
-	gh.updateGrenadeEventWithFlashData(mostRecentFlash)
+	gh.logger.WithFields(logrus.Fields{
+		"player":            e.Player.Name,
+		"thrower":           targetFlashEffect.ThrowerSteamID,
+		"flash_duration":    flashDuration,
+		"is_friendly":       isFriendly,
+		"friendly_count":    targetFlashEffect.FriendlyCount,
+		"enemy_count":       targetFlashEffect.EnemyCount,
+		"friendly_duration": targetFlashEffect.FriendlyDuration,
+		"enemy_duration":    targetFlashEffect.EnemyDuration,
+	}).Debug("Updated flash effect with player flash data")
+
+	gh.updateGrenadeEventWithFlashData(targetFlashEffect)
 }
 
 func (gh *GrenadeHandler) HandleHeExplode(e events.HeExplode) {
@@ -276,7 +323,8 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectil
 
 	movementThrowType := gh.movementService.GetPlayerThrowType(e.Projectile.Thrower, gh.processor.currentTick)
 
-	projectileID := fmt.Sprintf("%p", e.Projectile)
+	// Use entity ID for proper matching instead of memory address
+	projectileID := fmt.Sprintf("entity_%d", e.Projectile.Entity.ID())
 	throwInfo := &GrenadeMovementInfo{
 		Tick:      gh.processor.currentTick,
 		RoundTime: gh.processor.getCurrentRoundTime(),
@@ -289,6 +337,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectil
 
 	gh.logger.WithFields(logrus.Fields{
 		"projectile_id": projectileID,
+		"entity_id":     e.Projectile.Entity.ID(),
 		"player":        e.Projectile.Thrower.Name,
 		"grenade_type":  e.Projectile.WeaponInstance.Type.String(),
 		"throw_tick":    gh.processor.currentTick,
@@ -301,34 +350,24 @@ func (gh *GrenadeHandler) HandleSmokeStart(e events.SmokeStart) {
 	gh.logger.Debug("Smoke grenade started")
 }
 
-func (gh *GrenadeHandler) TrackGrenadeThrow(e events.WeaponFire) {
-	// For now, we'll use a combination of player and tick to create a unique key
-	// This is a fallback since entity ID might not be directly accessible
-	key := int(e.Shooter.SteamID64) + int(gh.processor.currentTick)
-
-	roundTime := gh.processor.getCurrentRoundTime()
-	playerPos := gh.processor.getPlayerPosition(e.Shooter)
-	playerAim := gh.processor.getPlayerAim(e.Shooter)
-
-	throwInfo := &types.GrenadeThrowInfo{
-		PlayerSteamID:  types.SteamIDToString(e.Shooter.SteamID64),
-		PlayerPosition: playerPos,
-		PlayerAim:      playerAim,
-		ThrowTick:      gh.processor.currentTick,
-		RoundNumber:    gh.processor.matchState.CurrentRound,
-		RoundTime:      roundTime,
-		GrenadeType:    e.Weapon.Type.String(),
+// getGrenadeDisplayName converts internal weapon type strings to display names
+func (gh *GrenadeHandler) getGrenadeDisplayName(weaponType string) string {
+	switch weaponType {
+	case "hegrenade":
+		return "HE Grenade"
+	case "flashbang":
+		return "Flashbang"
+	case "smokegrenade":
+		return "Smoke Grenade"
+	case "molotov":
+		return "Molotov"
+	case "incendiary":
+		return "Incendiary"
+	case "decoy":
+		return "Decoy"
+	default:
+		return weaponType // Return as-is if no mapping found
 	}
-
-	gh.processor.grenadeThrows[key] = throwInfo
-
-	gh.logger.WithFields(logrus.Fields{
-		"key":          key,
-		"player":       e.Shooter.Name,
-		"grenade_type": e.Weapon.Type.String(),
-		"round":        gh.processor.matchState.CurrentRound,
-		"round_time":   roundTime,
-	}).Debug("Tracked grenade throw")
 }
 
 func (gh *GrenadeHandler) updateGrenadeEventWithFlashData(flashEffect *FlashEffect) {
@@ -440,4 +479,58 @@ func (gh *GrenadeHandler) markFlashLeadsToDeath(flashEffect *FlashEffect) {
 	if targetGrenadeEvent != nil {
 		targetGrenadeEvent.FlashLeadsToDeath = true
 	}
+}
+
+func (gh *GrenadeHandler) AggregateAllGrenadeDamage() {
+	gh.logger.Debug("Starting deferred grenade damage aggregation")
+
+	for i := range gh.processor.matchState.GrenadeEvents {
+		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+		gh.aggregateGrenadeDamage(grenadeEvent)
+	}
+
+	gh.logger.Debug("Completed deferred grenade damage aggregation")
+}
+
+func (gh *GrenadeHandler) aggregateGrenadeDamage(grenadeEvent *types.GrenadeEvent) {
+	totalDamage := 0
+	var affectedPlayers []types.AffectedPlayer
+
+	for _, damageEvent := range gh.processor.matchState.DamageEvents {
+		if damageEvent.RoundNumber != grenadeEvent.RoundNumber || damageEvent.AttackerSteamID != grenadeEvent.PlayerSteamID {
+			continue
+		}
+
+		if damageEvent.Weapon != grenadeEvent.GrenadeType {
+			continue
+		}
+
+		timeWindow := int64(types.GrenadeDamageWindow * 64)
+
+		if grenadeEvent.GrenadeType == "Molotov" {
+			timeWindow = int64(types.MolotovDuration * 64)
+		}
+
+		if grenadeEvent.GrenadeType == "Incendiary Grenade" {
+			timeWindow = int64(types.IncendiaryDuration * 64)
+		}
+
+		if damageEvent.TickTimestamp >= grenadeEvent.TickTimestamp && damageEvent.TickTimestamp <= grenadeEvent.TickTimestamp+timeWindow {
+			totalDamage += damageEvent.Damage
+
+			affectedPlayers = append(affectedPlayers, types.AffectedPlayer{
+				SteamID:     damageEvent.VictimSteamID,
+				DamageTaken: &damageEvent.Damage,
+			})
+		}
+	}
+
+	grenadeEvent.DamageDealt = totalDamage
+	grenadeEvent.AffectedPlayers = affectedPlayers
+
+	gh.logger.WithFields(logrus.Fields{
+		"grenade_type":     grenadeEvent.GrenadeType,
+		"total_damage":     totalDamage,
+		"affected_players": len(affectedPlayers),
+	}).Debug("Completed grenade damage aggregation")
 }

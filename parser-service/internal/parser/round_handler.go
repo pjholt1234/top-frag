@@ -109,7 +109,7 @@ func (rh *RoundHandler) aggregateGunfightMetrics(event *types.PlayerRoundEvent, 
 			}
 
 			weaponName := gunfightEvent.Player1Weapon
-			if weaponName == types.WeaponAWP || weaponName == "AWP" || weaponName == "weapon_awp" {
+			if weaponName == "AWP" {
 				killsWithAWP++
 			}
 		}
@@ -164,20 +164,17 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	flashesLeadingToKill := 0
 	flashesLeadingToDeath := 0
 
-	// Process grenade events thrown by this player
 	for _, grenadeEvent := range rh.processor.matchState.GrenadeEvents {
 		if grenadeEvent.RoundNumber != roundNumber || grenadeEvent.PlayerSteamID != playerSteamID {
 			continue
 		}
 
-		// Aggregate damage dealt by utility grenades (HE, Molotov, Incendiary)
-		if grenadeEvent.GrenadeType == types.GrenadeTypeHE || grenadeEvent.GrenadeType == "HE" ||
+		if grenadeEvent.GrenadeType == types.GrenadeTypeHE || grenadeEvent.GrenadeType == "HE Grenade" ||
 			grenadeEvent.GrenadeType == types.GrenadeTypeMolotov || grenadeEvent.GrenadeType == "Molotov" ||
-			grenadeEvent.GrenadeType == types.GrenadeTypeIncendiary || grenadeEvent.GrenadeType == "Incendiary" {
+			grenadeEvent.GrenadeType == types.GrenadeTypeIncendiary || grenadeEvent.GrenadeType == "Incendiary Grenade" {
 			damageDealt += grenadeEvent.DamageDealt
 		}
 
-		// Aggregate flash-related metrics
 		if grenadeEvent.GrenadeType == types.GrenadeTypeFlash || grenadeEvent.GrenadeType == "Flashbang" {
 			// Count flashbangs thrown
 			flashesThrown++
@@ -204,17 +201,7 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 				flashesLeadingToDeath++
 			}
 		}
-	}
 
-	// Also aggregate utility damage from damage events (as backup for grenade damage tracking)
-	for _, damageEvent := range rh.processor.matchState.DamageEvents {
-		if damageEvent.RoundNumber == roundNumber &&
-			damageEvent.AttackerSteamID == playerSteamID &&
-			(damageEvent.Weapon == types.WeaponHEGrenade || damageEvent.Weapon == "hegrenade" ||
-				damageEvent.Weapon == types.WeaponMolotov || damageEvent.Weapon == "molotov" ||
-				damageEvent.Weapon == types.WeaponIncendiary || damageEvent.Weapon == "incendiary") {
-			damageDealt += damageEvent.HealthDamage + damageEvent.ArmorDamage
-		}
 	}
 
 	// Calculate grenade effectiveness (simple metric: ratio of effective flashes to total flashes thrown)

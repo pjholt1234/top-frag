@@ -113,8 +113,7 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
 
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.matchHandler.HandleRoundEnd(e)
-
-	// Process round-level player statistics after all other events
+	ep.grenadeHandler.AggregateAllGrenadeDamage()
 	ep.roundHandler.ProcessRoundEnd()
 }
 
@@ -152,11 +151,6 @@ func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) {
 
 func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) {
 	ep.matchHandler.HandleWeaponFire(e)
-
-	// Check if this is a grenade throw and delegate to grenade handler
-	if ep.isGrenadeWeapon(*e.Weapon) {
-		ep.grenadeHandler.TrackGrenadeThrow(e)
-	}
 }
 
 func (ep *EventProcessor) HandleBombPlanted(e events.BombPlanted) {
@@ -423,41 +417,44 @@ func (ep *EventProcessor) UpdateCurrentTickAndPlayers(tick int64, gameState inte
 				}
 			}
 		}
-
-		// Debug: Log player count every 1000 ticks
-		if tick%1000 == 0 {
-			ep.logger.WithFields(logrus.Fields{
-				"tick":           tick,
-				"player_count":   playerCount,
-				"gamestate_type": fmt.Sprintf("%T", gameState),
-			}).Debug("Updated positions for players")
-		}
 	}
 }
 
-// getCurrentRoundTime calculates the current time in seconds since the round started
-// Subtracts freeze time to get actual gameplay time
 func (ep *EventProcessor) getCurrentRoundTime() int {
 	if ep.matchState.RoundStartTick == 0 {
 		return 0
 	}
 
-	// Calculate time since round start
 	timeSinceRoundStart := int((ep.currentTick - ep.matchState.RoundStartTick) / 64)
+
+	if timeSinceRoundStart < types.CS2FreezeTime {
+		ep.logger.WithFields(logrus.Fields{
+			"current_tick":      ep.currentTick,
+			"round_start_tick":  ep.matchState.RoundStartTick,
+			"time_since_start":  timeSinceRoundStart,
+			"freeze_time":       types.CS2FreezeTime,
+			"actual_round_time": 0,
+			"tick_difference":   ep.currentTick - ep.matchState.RoundStartTick,
+		}).Info("Calculated round time (still in freeze time)")
+
+		return 0
+	}
 
 	// Subtract freeze time to get actual gameplay time
 	actualRoundTime := timeSinceRoundStart - types.CS2FreezeTime
 
-	// Don't return negative values
-	if actualRoundTime < 0 {
-		return 0
-	}
+	ep.logger.WithFields(logrus.Fields{
+		"current_tick":      ep.currentTick,
+		"round_start_tick":  ep.matchState.RoundStartTick,
+		"time_since_start":  timeSinceRoundStart,
+		"freeze_time":       types.CS2FreezeTime,
+		"actual_round_time": actualRoundTime,
+		"tick_difference":   ep.currentTick - ep.matchState.RoundStartTick,
+	}).Info("Calculated round time")
 
 	return actualRoundTime
 }
 
-// getRoundScenario calculates the current team scenario before a kill happens
-// Returns a string in format "XvY" where X is killer's team alive count and Y is victim's team alive count
 func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string {
 	if ep.demoParser == nil {
 		ep.logger.Warn("Demo parser not available for round scenario calculation")
@@ -470,7 +467,6 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 		return "0v0"
 	}
 
-	// Get alive players directly from game state
 	killerTeamAlive := 0
 	victimTeamAlive := 0
 
@@ -501,13 +497,6 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 	}).Debug("Calculated round scenario")
 
 	return fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive)
-}
-
-// isGrenadeWeapon checks if a weapon is a grenade type
-func (ep *EventProcessor) isGrenadeWeapon(weapon common.Equipment) bool {
-	weaponType := weapon.Type
-	return weaponType == common.EqHE || weaponType == common.EqFlash || weaponType == common.EqSmoke ||
-		weaponType == common.EqMolotov || weaponType == common.EqIncendiary || weaponType == common.EqDecoy
 }
 
 // callMethod uses reflection to call a method on an object

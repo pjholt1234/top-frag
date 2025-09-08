@@ -1,0 +1,34 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "go.gopath": "/Users/paul-ho/go",
+        "go.delveConfig": {
+            "dlvLoadConfig": {
+                "followPointers": true,
+                "maxVariableRecurse": 1,
+                "maxStringLen": 64,
+                "maxArrayValues": 64,
+                "maxStructFields": -1
+            },
+            "apiVersion": 2,
+            "showGlobalVariables": true
+        },
+        "go.testFlags": [
+            "-v"
+        ],
+        "go.formatTool": "goimports",
+        "go.lintTool": "staticcheck",
+        "go.testTimeout": "30s"
+    },
+    "extensions": {
+        "recommendations": [
+            "golang.go"
+        ]
+    }
+}

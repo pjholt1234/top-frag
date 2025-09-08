@@ -84,7 +84,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		// Register frame handler to update current tick and player positions
 		parser.RegisterEventHandler(func(e events.FrameDone) {
-			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.CurrentFrame()), parser.GameState())
+			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.GameState().IngameTick()), parser.GameState())
 		})
 
 		// Get final game state after parsing
