@@ -13,3 +13,4 @@ demo.dem
 /web-app/coverage.txt
 /web-app/coverage-html
 /web-app/coverage.xml
+/.vscode
