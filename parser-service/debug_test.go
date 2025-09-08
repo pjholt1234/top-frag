@@ -15,5 +15,3 @@ func TestDebugSetup(t *testing.T) {
 
 	t.Logf("Debug test passed: %s", message)
 }
-
-
