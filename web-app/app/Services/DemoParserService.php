@@ -360,6 +360,7 @@ class DemoParserService
                     'grenade_final_y' => $grenadeEvent['grenade_final_y'],
                     'grenade_final_z' => $grenadeEvent['grenade_final_z'],
                     'damage_dealt' => $grenadeEvent['damage_dealt'] ?? 0,
+                    'team_damage_dealt' => $grenadeEvent['team_damage_dealt'] ?? 0,
                     'friendly_flash_duration' => $grenadeEvent['friendly_flash_duration'] ?? null,
                     'enemy_flash_duration' => $grenadeEvent['enemy_flash_duration'] ?? null,
                     'friendly_players_affected' => $grenadeEvent['friendly_players_affected'] ?? 0,

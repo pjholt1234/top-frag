@@ -37,7 +37,7 @@ return new class extends Migration
             $table->integer('enemy_players_affected')->default(0);
             $table->integer('flashes_leading_to_kills')->default(0);
             $table->integer('flashes_leading_to_deaths')->default(0);
-            $table->decimal('average_grenade_effectiveness')->default(0);
+            $table->integer('average_grenade_effectiveness')->default(0);
 
             // Trade fields
             $table->integer('total_successful_trades')->default(0);

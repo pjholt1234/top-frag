@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"math"
 	"parser-service/internal/types"
 
 	"github.com/sirupsen/logrus"
@@ -164,6 +165,10 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	flashesLeadingToKill := 0
 	flashesLeadingToDeath := 0
 
+	// For right now we're only counting the effectiveness flashbangs + fire grenades
+	totalEffectivenessRating := 0
+	totalNumberOfMeasuredGrenades := 0
+
 	for _, grenadeEvent := range rh.processor.matchState.GrenadeEvents {
 		if grenadeEvent.RoundNumber != roundNumber || grenadeEvent.PlayerSteamID != playerSteamID {
 			continue
@@ -173,11 +178,17 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 			grenadeEvent.GrenadeType == types.GrenadeTypeMolotov || grenadeEvent.GrenadeType == "Molotov" ||
 			grenadeEvent.GrenadeType == types.GrenadeTypeIncendiary || grenadeEvent.GrenadeType == "Incendiary Grenade" {
 			damageDealt += grenadeEvent.DamageDealt
+
+			totalEffectivenessRating += grenadeEvent.EffectivenessRating
+			totalNumberOfMeasuredGrenades++
 		}
 
 		if grenadeEvent.GrenadeType == types.GrenadeTypeFlash || grenadeEvent.GrenadeType == "Flashbang" {
 			// Count flashbangs thrown
 			flashesThrown++
+
+			totalEffectivenessRating += grenadeEvent.EffectivenessRating
+			totalNumberOfMeasuredGrenades++
 
 			// Flash duration on enemies (total time this player's flashes affected enemies)
 			if grenadeEvent.EnemyFlashDuration != nil {
@@ -204,21 +215,6 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 
 	}
 
-	// Calculate grenade effectiveness (simple metric: ratio of effective flashes to total flashes thrown)
-	grenadeEffectiveness := 0.0
-	totalFlashesThrown := 0
-	for _, grenadeEvent := range rh.processor.matchState.GrenadeEvents {
-		if grenadeEvent.RoundNumber == roundNumber &&
-			grenadeEvent.PlayerSteamID == playerSteamID &&
-			(grenadeEvent.GrenadeType == types.GrenadeTypeFlash || grenadeEvent.GrenadeType == "Flashbang") {
-			totalFlashesThrown++
-		}
-	}
-
-	if totalFlashesThrown > 0 {
-		grenadeEffectiveness = float64(flashesLeadingToKill) / float64(totalFlashesThrown)
-	}
-
 	// Set the aggregated values
 	event.DamageDealt = damageDealt
 	event.FlashesThrown = flashesThrown
@@ -228,7 +224,7 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	event.EnemyPlayersAffected = enemyPlayersAffected
 	event.FlashesLeadingToKill = flashesLeadingToKill
 	event.FlashesLeadingToDeath = flashesLeadingToDeath
-	event.GrenadeEffectiveness = grenadeEffectiveness
+	event.GrenadeEffectiveness = int(math.Round((float64(totalEffectivenessRating) / float64(totalNumberOfMeasuredGrenades))))
 }
 
 // aggregateTradeMetrics aggregates trade-related statistics from gunfight events
@@ -788,8 +784,7 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 	grenadeValueLostOnDeath := 0
 	if event.Died {
 		// TODO: Need to track grenades in inventory at time of death
-		// For now, estimate based on grenade usage in round
-		grenadeValueLostOnDeath = rh.estimateGrenadeValueLostOnDeath(playerSteamID, roundNumber)
+		grenadeValueLostOnDeath = rh.estimateGrenadeValueLostOnDeath()
 	}
 
 	// Set economy values
@@ -821,61 +816,7 @@ func (rh *RoundHandler) getPlayerEquipmentValueInRound(playerSteamID string, rou
 }
 
 // estimateGrenadeValueLostOnDeath calculates the value of grenades lost when player died
-func (rh *RoundHandler) estimateGrenadeValueLostOnDeath(playerSteamID string, roundNumber int) int {
-	// Track grenades thrown by this player in this round
-	grenadesThrown := make(map[string]int)
-
-	// Count grenades thrown by this player
-	for _, grenadeEvent := range rh.processor.matchState.GrenadeEvents {
-		if grenadeEvent.RoundNumber == roundNumber && grenadeEvent.PlayerSteamID == playerSteamID {
-			grenadesThrown[grenadeEvent.GrenadeType]++
-		}
-	}
-
-	// Calculate value of grenades thrown
-	grenadeValues := map[string]int{
-		types.GrenadeTypeHE:         300, // HE grenade
-		types.GrenadeTypeFlash:      200, // Flashbang
-		types.GrenadeTypeSmoke:      300, // Smoke
-		types.GrenadeTypeMolotov:    400, // Molotov
-		types.GrenadeTypeIncendiary: 600, // Incendiary
-		types.GrenadeTypeDecoy:      50,  // Decoy
-	}
-
-	// Estimate starting grenade value based on equipment value
-	// Get equipment value for this player in this round
-	playerEquipValue := rh.getPlayerEquipmentValueInRound(playerSteamID, roundNumber)
-
-	var estimatedStartingGrenadeValue int
-
-	// Estimate grenade inventory based on buy type
-	if roundNumber == 1 || roundNumber == 13 {
-		// Pistol rounds - players start with $800, can buy limited utility
-		estimatedStartingGrenadeValue = 500 // Can afford flash + smoke or flash + HE
-	} else if playerEquipValue <= types.EcoThreshold {
-		// Eco round - probably no grenades
-		estimatedStartingGrenadeValue = 0
-	} else if playerEquipValue <= types.ForceBuyThreshold {
-		// Force buy - maybe 1-2 grenades
-		estimatedStartingGrenadeValue = 500 // flash + smoke/HE
-	} else {
-		// Full buy - likely full grenade set
-		estimatedStartingGrenadeValue = 1000 // flash + smoke + HE + potentially molly
-	}
-
-	// Calculate value of grenades used
-	usedGrenadeValue := 0
-	for grenadeType, count := range grenadesThrown {
-		if value, exists := grenadeValues[grenadeType]; exists {
-			usedGrenadeValue += value * count
-		}
-	}
-
-	// Remaining grenade value is estimated starting value minus used value
-	remainingGrenadeValue := estimatedStartingGrenadeValue - usedGrenadeValue
-	if remainingGrenadeValue < 0 {
-		remainingGrenadeValue = 0
-	}
-
-	return remainingGrenadeValue
+func (rh *RoundHandler) estimateGrenadeValueLostOnDeath() int {
+	//todo
+	return 0
 }

@@ -89,6 +89,7 @@ type GrenadeEvent struct {
 	GrenadeFinalPosition *Position `json:"grenade_final_position,omitempty"`
 
 	DamageDealt     int              `json:"damage_dealt"`
+	TeamDamageDealt int              `json:"team_damage_dealt"`
 	FlashDuration   *float64         `json:"flash_duration,omitempty"`
 	AffectedPlayers []AffectedPlayer `json:"affected_players,omitempty"`
 
@@ -103,6 +104,8 @@ type GrenadeEvent struct {
 	FlashLeadsToDeath bool `json:"flash_leads_to_death"` // Whether this flash blinded a teammate who then died
 
 	ThrowType string `json:"throw_type"`
+
+	EffectivenessRating int `json:"effectiveness_rating"`
 }
 
 type RoundEvent struct {
@@ -153,7 +156,7 @@ type PlayerRoundEvent struct {
 	EnemyPlayersAffected    int     `json:"enemy_players_affected"`
 	FlashesLeadingToKill    int     `json:"flashes_leading_to_kill"`
 	FlashesLeadingToDeath   int     `json:"flashes_leading_to_death"`
-	GrenadeEffectiveness    float64 `json:"grenade_effectiveness"`
+	GrenadeEffectiveness    int     `json:"grenade_effectiveness"`
 
 	// Details
 	SuccessfulTrades          int `json:"successful_trades"`
@@ -212,7 +215,7 @@ type PlayerMatchEvent struct {
 	EnemyPlayersAffected        int     `json:"enemy_players_affected"`
 	FlashesLeadingToKills       int     `json:"flashes_leading_to_kills"`
 	FlashesLeadingToDeaths      int     `json:"flashes_leading_to_deaths"`
-	AverageGrenadeEffectiveness float64 `json:"average_grenade_effectiveness"`
+	AverageGrenadeEffectiveness int     `json:"average_grenade_effectiveness"`
 
 	// Details
 	TotalSuccessfulTrades     int     `json:"total_successful_trades"`

@@ -182,20 +182,21 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 		flatEvents := make([]map[string]interface{}, len(batch))
 		for j, event := range batch {
 			flatEvent := map[string]interface{}{
-				"round_number":    event.RoundNumber,
-				"round_time":      event.RoundTime,
-				"tick_timestamp":  event.TickTimestamp,
-				"player_steam_id": event.PlayerSteamID,
-				"player_side":     event.PlayerSide,
-				"grenade_type":    event.GrenadeType,
-				"player_x":        event.PlayerPosition.X,
-				"player_y":        event.PlayerPosition.Y,
-				"player_z":        event.PlayerPosition.Z,
-				"player_aim_x":    event.PlayerAim.X,
-				"player_aim_y":    event.PlayerAim.Y,
-				"player_aim_z":    event.PlayerAim.Z,
-				"damage_dealt":    event.DamageDealt,
-				"throw_type":      event.ThrowType,
+				"round_number":         event.RoundNumber,
+				"round_time":           event.RoundTime,
+				"tick_timestamp":       event.TickTimestamp,
+				"player_steam_id":      event.PlayerSteamID,
+				"player_side":          event.PlayerSide,
+				"grenade_type":         event.GrenadeType,
+				"player_x":             event.PlayerPosition.X,
+				"player_y":             event.PlayerPosition.Y,
+				"player_z":             event.PlayerPosition.Z,
+				"player_aim_x":         event.PlayerAim.X,
+				"player_aim_y":         event.PlayerAim.Y,
+				"player_aim_z":         event.PlayerAim.Z,
+				"damage_dealt":         event.DamageDealt,
+				"throw_type":           event.ThrowType,
+				"effectiveness_rating": event.EffectivenessRating,
 			}
 
 			if event.GrenadeFinalPosition != nil {

@@ -391,7 +391,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"player_match_events": len(matchState.PlayerMatchEvents),
 	}).Info("Match data built with event counts")
 
-	//Aggregate player match events
+	//Post processing steps
 	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
 	return &types.ParsedDemoData{

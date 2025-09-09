@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"parser-service/internal/types"
 
+	grenade_rating "parser-service/internal/utils"
+
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
 )
@@ -183,9 +185,6 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 		roundNumber = movementInfo.RoundNumber
 	}
 
-	// Create contextual matching key for squashing duplicate FlashExplode events
-	contextualKey := fmt.Sprintf("%d_%s_%d", gh.processor.currentTick, flashEffect.ThrowerSteamID, roundNumber)
-
 	// Check if we already have a GrenadeEvent for this flashbang (squashing logic)
 	var existingGrenadeEvent *types.GrenadeEvent
 	for i := range gh.processor.matchState.GrenadeEvents {
@@ -199,12 +198,6 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 
 	// If flash data already exists, skip this duplicate event (first event wins)
 	if existingGrenadeEvent != nil {
-		gh.logger.WithFields(logrus.Fields{
-			"entity_id":      e.GrenadeEntityID,
-			"contextual_key": contextualKey,
-			"thrower":        flashEffect.ThrowerSteamID,
-			"explosion_tick": gh.processor.currentTick,
-		}).Debug("Flash data already exists for this flashbang - skipping duplicate FlashExplode event")
 		return
 	}
 
@@ -234,37 +227,11 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 
 func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 	if e.Player == nil {
-		gh.logger.Warn("PlayerFlashed event received with nil player")
 		return
 	}
-
-	if e.Projectile == nil {
-		gh.logger.WithFields(logrus.Fields{
-			"player": e.Player.Name,
-		}).Warn("PlayerFlashed event received with nil projectile")
-		return
-	}
-
-	// Log entity ID for verification
-	projectileEntityID := e.Projectile.Entity.ID()
-	projectileUniqueID := e.Projectile.UniqueID()
-	gh.logger.WithFields(logrus.Fields{
-		"event_type":           "PlayerFlashed",
-		"projectile_entity_id": projectileEntityID,
-		"projectile_unique_id": projectileUniqueID,
-		"player":               e.Player.Name,
-		"tick":                 gh.processor.currentTick,
-	}).Info("UNIQUE_ID_TEST: PlayerFlashed - unique ID for verification")
 
 	playerSteamID := types.SteamIDToString(e.Player.SteamID64)
 	flashDuration := e.FlashDuration().Seconds()
-
-	gh.logger.WithFields(logrus.Fields{
-		"player":          e.Player.Name,
-		"player_steam_id": playerSteamID,
-		"flash_duration":  flashDuration,
-		"current_tick":    gh.processor.currentTick,
-	}).Info("Player flashed event received")
 
 	// Find the flash effect using contextual matching (exact match only)
 	var targetFlashEffect *FlashEffect
@@ -286,26 +253,7 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 		}
 	}
 
-	gh.logger.WithFields(logrus.Fields{
-		"player":               e.Player.Name,
-		"attacker":             attackerSteamID,
-		"current_tick":         currentTick,
-		"current_round":        currentRound,
-		"flash_duration":       flashDuration,
-		"projectile_entity_id": projectileEntityID,
-		"exact_match_found":    targetFlashEffect != nil,
-		"active_flash_effects": len(gh.processor.activeFlashEffects),
-	}).Debug("Looking for flash effect with contextual matching")
-
 	if targetFlashEffect == nil {
-		gh.logger.WithFields(logrus.Fields{
-			"player":               e.Player.Name,
-			"attacker":             attackerSteamID,
-			"current_tick":         currentTick,
-			"current_round":        currentRound,
-			"flash_duration":       flashDuration,
-			"projectile_entity_id": projectileEntityID,
-		}).Warn("No exact contextual match found for PlayerFlashed event - logging orphaned event")
 		return
 	}
 
@@ -332,17 +280,6 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 		targetFlashEffect.EnemyDuration += flashDuration
 		targetFlashEffect.EnemyCount++
 	}
-
-	gh.logger.WithFields(logrus.Fields{
-		"player":            e.Player.Name,
-		"thrower":           targetFlashEffect.ThrowerSteamID,
-		"flash_duration":    flashDuration,
-		"is_friendly":       isFriendly,
-		"friendly_count":    targetFlashEffect.FriendlyCount,
-		"enemy_count":       targetFlashEffect.EnemyCount,
-		"friendly_duration": targetFlashEffect.FriendlyDuration,
-		"enemy_duration":    targetFlashEffect.EnemyDuration,
-	}).Debug("Updated flash effect with player flash data")
 
 	gh.updateGrenadeEventWithFlashData(targetFlashEffect)
 }
@@ -425,6 +362,7 @@ func (gh *GrenadeHandler) updateGrenadeEventWithFlashData(flashEffect *FlashEffe
 	// 3. Exact ExplosionTick match
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+
 		if grenadeEvent.GrenadeType == "Flashbang" &&
 			grenadeEvent.PlayerSteamID == flashEffect.ThrowerSteamID &&
 			grenadeEvent.ExplosionTick == flashEffect.ExplosionTick {
@@ -444,9 +382,11 @@ func (gh *GrenadeHandler) updateGrenadeEventWithFlashData(flashEffect *FlashEffe
 	if flashEffect.FriendlyDuration > 0 {
 		targetGrenadeEvent.FriendlyFlashDuration = &flashEffect.FriendlyDuration
 	}
+
 	if flashEffect.EnemyDuration > 0 {
 		targetGrenadeEvent.EnemyFlashDuration = &flashEffect.EnemyDuration
 	}
+
 	targetGrenadeEvent.FriendlyPlayersAffected = flashEffect.FriendlyCount
 	targetGrenadeEvent.EnemyPlayersAffected = flashEffect.EnemyCount
 }
@@ -514,20 +454,33 @@ func (gh *GrenadeHandler) markFlashLeadsToDeath(flashEffect *FlashEffect) {
 	}
 }
 
+func (gh *GrenadeHandler) PopulateFlashGrenadeEffectiveness() {
+	for i := range gh.processor.matchState.GrenadeEvents {
+		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+		if grenadeEvent.GrenadeType != "Flashbang" || gh.processor.matchState.CurrentRound != grenadeEvent.RoundNumber {
+			continue
+		}
+
+		grenadeEvent.EffectivenessRating = grenade_rating.ScoreFlash(*grenadeEvent)
+	}
+}
+
 func (gh *GrenadeHandler) AggregateAllGrenadeDamage() {
 	gh.logger.Debug("Starting deferred grenade damage aggregation")
 
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
-		gh.aggregateGrenadeDamage(grenadeEvent)
+		if grenadeEvent.GrenadeType == "Molotov" || grenadeEvent.GrenadeType == "Incendiary Grenade" || grenadeEvent.GrenadeType == "HE Grenade" {
+			gh.aggregateGrenadeDamage(grenadeEvent)
+		}
 	}
 
 	gh.logger.Debug("Completed deferred grenade damage aggregation")
 }
 
 func (gh *GrenadeHandler) aggregateGrenadeDamage(grenadeEvent *types.GrenadeEvent) {
-	totalDamage := 0
-	var affectedPlayers []types.AffectedPlayer
+	enemyDamage := 0
+	teamDamage := 0
 
 	for _, damageEvent := range gh.processor.matchState.DamageEvents {
 		if damageEvent.RoundNumber != grenadeEvent.RoundNumber || damageEvent.AttackerSteamID != grenadeEvent.PlayerSteamID {
@@ -549,21 +502,15 @@ func (gh *GrenadeHandler) aggregateGrenadeDamage(grenadeEvent *types.GrenadeEven
 		}
 
 		if damageEvent.TickTimestamp >= grenadeEvent.TickTimestamp && damageEvent.TickTimestamp <= grenadeEvent.TickTimestamp+timeWindow {
-			totalDamage += damageEvent.Damage
-
-			affectedPlayers = append(affectedPlayers, types.AffectedPlayer{
-				SteamID:     damageEvent.VictimSteamID,
-				DamageTaken: &damageEvent.Damage,
-			})
+			if gh.processor.getAssignedTeam(damageEvent.VictimSteamID) == gh.processor.getAssignedTeam(grenadeEvent.PlayerSteamID) {
+				teamDamage += damageEvent.Damage
+			} else {
+				enemyDamage += damageEvent.Damage
+			}
 		}
 	}
 
-	grenadeEvent.DamageDealt = totalDamage
-	grenadeEvent.AffectedPlayers = affectedPlayers
-
-	gh.logger.WithFields(logrus.Fields{
-		"grenade_type":     grenadeEvent.GrenadeType,
-		"total_damage":     totalDamage,
-		"affected_players": len(affectedPlayers),
-	}).Debug("Completed grenade damage aggregation")
+	grenadeEvent.DamageDealt = enemyDamage
+	grenadeEvent.TeamDamageDealt = teamDamage
+	grenadeEvent.EffectivenessRating = grenade_rating.ScoreExplosive(*grenadeEvent)
 }

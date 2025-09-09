@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"math"
 	"parser-service/internal/types"
 
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,8 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 
 	numberOfRoundsParticipated := 0
 	totalRoundTimeOfDeath := 0
-	totalGrenadeEffectiveness := 0.0
+	totalGrenadeEffectiveness := 0
+	nonZeroGrenadeEffectivenessRounds := 0
 	totalTimeToContact := 0.0
 	totalGrenadeValueLostOnDeath := 0
 
@@ -124,6 +126,10 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		playerMatchEvent.FlashesLeadingToDeaths += roundEvent.FlashesLeadingToDeath
 		totalGrenadeEffectiveness += roundEvent.GrenadeEffectiveness
 
+		if roundEvent.GrenadeEffectiveness != 0 {
+			nonZeroGrenadeEffectivenessRounds++
+		}
+
 		//Round scenario metrics
 		playerMatchEvent.TotalSuccessfulTrades += roundEvent.SuccessfulTrades
 		playerMatchEvent.TotalPossibleTrades += roundEvent.TotalPossibleTrades
@@ -150,7 +156,7 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 
 	//Average metrics
 	playerMatchEvent.AverageRoundTimeOfDeath = float64(totalRoundTimeOfDeath) / float64(numberOfRoundsParticipated)
-	playerMatchEvent.AverageGrenadeEffectiveness = float64(totalGrenadeEffectiveness) / float64(numberOfRoundsParticipated)
+	playerMatchEvent.AverageGrenadeEffectiveness = int(math.Round((float64(totalGrenadeEffectiveness) / float64(nonZeroGrenadeEffectivenessRounds))))
 	playerMatchEvent.AverageTimeToContact = float64(totalTimeToContact) / float64(numberOfRoundsParticipated)
 	playerMatchEvent.AverageGrenadeValueLost = float64(totalGrenadeValueLostOnDeath) / float64(numberOfRoundsParticipated)
 	playerMatchEvent.ADR = float64(playerMatchEvent.Damage) / float64(numberOfRoundsParticipated)

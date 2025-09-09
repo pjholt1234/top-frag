@@ -118,6 +118,7 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.matchHandler.HandleRoundEnd(e)
 	ep.grenadeHandler.AggregateAllGrenadeDamage()
+	ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
 	ep.roundHandler.ProcessRoundEnd()
 }
 
