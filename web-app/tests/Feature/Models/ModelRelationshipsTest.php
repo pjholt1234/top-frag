@@ -11,7 +11,6 @@ use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\MatchSummary;
 use App\Models\Player;
-use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -122,7 +121,6 @@ class ModelRelationshipsTest extends TestCase
             'total_clutches_1v5_attempted' => 0,
             'total_clutches_1v5_successful' => 0,
         ]);
-
 
         // Test relationships from match perspective
         $this->assertCount(3, $match->matchPlayers);

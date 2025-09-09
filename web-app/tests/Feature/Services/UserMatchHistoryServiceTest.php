@@ -4,10 +4,10 @@ namespace Tests\Feature\Services;
 
 use App\Enums\MatchType;
 use App\Enums\Team;
-use App\Models\DamageEvent;
 use App\Models\GameMatch;
 use App\Models\GunfightEvent;
 use App\Models\Player;
+use App\Models\PlayerMatchEvent;
 use App\Models\User;
 use App\Services\UserMatchHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,43 +112,15 @@ class UserMatchHistoryServiceTest extends TestCase
         // Attach player to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        // Create gunfight events
-        GunfightEvent::factory()->create([
+        // Create PlayerMatchEvent with the stats
+        PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
-            'is_first_kill' => true,
-        ]);
-
-        GunfightEvent::factory()->create([
-            'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
-            'is_first_kill' => false,
-        ]);
-
-        // Create death event
-        GunfightEvent::factory()->create([
-            'match_id' => $match->id,
-            'player_1_steam_id' => 'STEAM_987654321',
-            'player_2_steam_id' => $this->player->steam_id,
-            'victor_steam_id' => 'STEAM_987654321',
-            'is_first_kill' => true,
-        ]);
-
-        // Create damage events
-        DamageEvent::factory()->create([
-            'match_id' => $match->id,
-            'attacker_steam_id' => $this->player->steam_id,
-            'health_damage' => 100,
-        ]);
-
-        DamageEvent::factory()->create([
-            'match_id' => $match->id,
-            'attacker_steam_id' => $this->player->steam_id,
-            'health_damage' => 50,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 2,
+            'deaths' => 1,
+            'first_kills' => 1,
+            'first_deaths' => 1,
+            'adr' => 5.0,
         ]);
 
         $result = $this->service->aggregateMatchData($this->user);
@@ -158,7 +130,7 @@ class UserMatchHistoryServiceTest extends TestCase
         $this->assertEquals(1, $playerStats['player_deaths']);
         $this->assertEquals(0, $playerStats['player_first_kill_differential']); // 1 first kill - 1 first death
         $this->assertEquals(2.0, $playerStats['player_kill_death_ratio']);
-        $this->assertEquals(5.0, $playerStats['player_adr']); // (100 + 50) / 30 rounds
+        $this->assertEquals(5.0, $playerStats['player_adr']);
         $this->assertEquals('A', $playerStats['team']);
         $this->assertEquals('TestPlayer', $playerStats['player_name']);
     }
@@ -172,12 +144,15 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        // Create only kill events
-        GunfightEvent::factory()->create([
+        // Create PlayerMatchEvent with zero deaths
+        PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 1,
+            'deaths' => 0,
+            'first_kills' => 0,
+            'first_deaths' => 0,
+            'adr' => 0.0,
         ]);
 
         $result = $this->service->aggregateMatchData($this->user);
@@ -197,23 +172,21 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        // Create damage events
-        DamageEvent::factory()->create([
+        // Create PlayerMatchEvent with specific ADR
+        PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
-            'attacker_steam_id' => $this->player->steam_id,
-            'health_damage' => 100,
-        ]);
-
-        DamageEvent::factory()->create([
-            'match_id' => $match->id,
-            'attacker_steam_id' => $this->player->steam_id,
-            'health_damage' => 50,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 0,
+            'deaths' => 0,
+            'first_kills' => 0,
+            'first_deaths' => 0,
+            'adr' => 7.5,
         ]);
 
         $result = $this->service->aggregateMatchData($this->user);
         $playerStats = $result[0]['player_stats'][0];
 
-        $this->assertEquals(7.5, $playerStats['player_adr']); // (100 + 50) / 20 rounds
+        $this->assertEquals(7.5, $playerStats['player_adr']);
     }
 
     #[Test]
@@ -231,6 +204,27 @@ class UserMatchHistoryServiceTest extends TestCase
         // Attach both players to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
         $match->players()->attach($otherPlayer->id, ['team' => 'B']);
+
+        // Create PlayerMatchEvent for both players
+        PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 5,
+            'deaths' => 3,
+            'first_kills' => 2,
+            'first_deaths' => 1,
+            'adr' => 80.0,
+        ]);
+
+        PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => $otherPlayer->steam_id,
+            'kills' => 4,
+            'deaths' => 4,
+            'first_kills' => 1,
+            'first_deaths' => 2,
+            'adr' => 70.0,
+        ]);
 
         $result = $this->service->aggregateMatchData($this->user);
         $playerStats = $result[0]['player_stats'];
@@ -303,6 +297,17 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create PlayerMatchEvent with zero stats
+        PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 0,
+            'deaths' => 0,
+            'first_kills' => 0,
+            'first_deaths' => 0,
+            'adr' => 0.0,
+        ]);
+
         $result = $this->service->aggregateMatchData($this->user);
         $playerStats = $result[0]['player_stats'][0];
 
@@ -322,12 +327,15 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        // Only create gunfight events, no damage events
-        GunfightEvent::factory()->create([
+        // Create PlayerMatchEvent with kills but no damage
+        PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 1,
+            'deaths' => 0,
+            'first_kills' => 0,
+            'first_deaths' => 0,
+            'adr' => 0.0,
         ]);
 
         $result = $this->service->aggregateMatchData($this->user);
@@ -347,31 +355,15 @@ class UserMatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        // Create first kill event
-        GunfightEvent::factory()->create([
+        // Create PlayerMatchEvent with first kill stats
+        PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
-            'is_first_kill' => true,
-        ]);
-
-        // Create regular kill event
-        GunfightEvent::factory()->create([
-            'match_id' => $match->id,
-            'player_1_steam_id' => $this->player->steam_id,
-            'player_2_steam_id' => 'STEAM_987654321',
-            'victor_steam_id' => $this->player->steam_id,
-            'is_first_kill' => false,
-        ]);
-
-        // Create first death event
-        GunfightEvent::factory()->create([
-            'match_id' => $match->id,
-            'player_1_steam_id' => 'STEAM_987654321',
-            'player_2_steam_id' => $this->player->steam_id,
-            'victor_steam_id' => 'STEAM_987654321',
-            'is_first_kill' => true,
+            'player_steam_id' => $this->player->steam_id,
+            'kills' => 2,
+            'deaths' => 1,
+            'first_kills' => 1,
+            'first_deaths' => 1,
+            'adr' => 0.0,
         ]);
 
         $result = $this->service->aggregateMatchData($this->user);

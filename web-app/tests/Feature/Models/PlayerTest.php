@@ -8,7 +8,6 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\Player;
-use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -132,7 +131,6 @@ class PlayerTest extends TestCase
         $this->assertCount(1, $player->grenadeEvents);
         $this->assertInstanceOf(GrenadeEvent::class, $player->grenadeEvents->first());
     }
-
 
     #[Test]
     public function it_can_be_created_with_factory()

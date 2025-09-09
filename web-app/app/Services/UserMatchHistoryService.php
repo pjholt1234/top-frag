@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Models\GameMatch;
 use App\Models\Player;
+use App\Models\PlayerMatchEvent;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class UserMatchHistoryService
 {
@@ -386,132 +386,24 @@ class UserMatchHistoryService
 
     private function getPlayerStatsOptimized(GameMatch $match): array
     {
-        // Pre-calculate all gunfight statistics for this match in a single query
-        $gunfightStats = $this->getGunfightStatsForMatch($match);
+        return $match->playerMatchEvents->map(function (PlayerMatchEvent $playerMatchEvent) use ($match) {
+            $playerSteamId = $playerMatchEvent->player_steam_id;
 
-        // Pre-calculate all damage statistics for this match in a single query
-        $damageStats = $this->getDamageStatsForMatch($match);
-
-        return $match->players->map(function (Player $player) use ($match, $gunfightStats, $damageStats) {
-            $playerSteamId = $player->steam_id;
-            $playerGunfightStats = $gunfightStats[$playerSteamId] ?? [
-                'kills' => 0,
-                'deaths' => 0,
-                'first_kills' => 0,
-                'first_deaths' => 0,
-            ];
-
-            $playerDamageStats = $damageStats[$playerSteamId] ?? ['total_damage' => 0];
-
-            $openingKills = $playerGunfightStats['first_kills'] - $playerGunfightStats['first_deaths'];
+            $openingKills = $playerMatchEvent['first_kills'] - $playerMatchEvent['first_deaths'];
 
             return [
-                'player_kills' => $playerGunfightStats['kills'],
-                'player_deaths' => $playerGunfightStats['deaths'],
+                'player_kills' => $playerMatchEvent['kills'],
+                'player_deaths' => $playerMatchEvent['deaths'],
                 'player_first_kill_differential' => $openingKills,
                 'player_kill_death_ratio' => $this->calculateKillDeathRatio(
-                    $playerGunfightStats['kills'],
-                    $playerGunfightStats['deaths']
+                    $playerMatchEvent['kills'],
+                    $playerMatchEvent['deaths']
                 ),
-                'player_adr' => round($playerDamageStats['total_damage'] / $match->total_rounds, 2),
+                'player_adr' => $playerMatchEvent['adr'] ?? 0,
                 'team' => $match->players->where('steam_id', $playerSteamId)->first()->pivot->team,
-                'player_name' => $player->name,
+                'player_name' => $playerMatchEvent->player->name,
             ];
         })->toArray();
-    }
-
-    /**
-     * Get gunfight statistics for all players in a match using a single optimized query
-     */
-    private function getGunfightStatsForMatch(GameMatch $match): array
-    {
-        $stats = DB::table('gunfight_events')
-            ->select([
-                'victor_steam_id',
-                DB::raw('COUNT(*) as total_events'),
-                DB::raw('SUM(CASE WHEN is_first_kill = 1 THEN 1 ELSE 0 END) as first_kills'),
-            ])
-            ->where('match_id', $match->id)
-            ->groupBy('victor_steam_id')
-            ->get()
-            ->keyBy('victor_steam_id')
-            ->toArray();
-
-        // Get death statistics (events where player was involved but not the victor)
-        $deathStats = DB::table('gunfight_events')
-            ->select([
-                'player_1_steam_id as steam_id',
-                DB::raw('COUNT(*) as deaths'),
-                DB::raw('SUM(CASE WHEN is_first_kill = 1 AND victor_steam_id != player_1_steam_id THEN 1 ELSE 0 END) as first_deaths'),
-            ])
-            ->where('match_id', $match->id)
-            ->whereRaw('victor_steam_id != player_1_steam_id')
-            ->groupBy('player_1_steam_id')
-            ->union(
-                DB::table('gunfight_events')
-                    ->select([
-                        'player_2_steam_id as steam_id',
-                        DB::raw('COUNT(*) as deaths'),
-                        DB::raw('SUM(CASE WHEN is_first_kill = 1 AND victor_steam_id != player_2_steam_id THEN 1 ELSE 0 END) as first_deaths'),
-                    ])
-                    ->where('match_id', $match->id)
-                    ->whereRaw('victor_steam_id != player_2_steam_id')
-                    ->groupBy('player_2_steam_id')
-            )
-            ->get()
-            ->groupBy('steam_id')
-            ->map(function ($group) {
-                return [
-                    'deaths' => $group->sum('deaths'),
-                    'first_deaths' => $group->sum('first_deaths'),
-                ];
-            })
-            ->toArray();
-
-        // Combine kill and death statistics
-        $result = [];
-        foreach ($stats as $steamId => $killStats) {
-            $result[$steamId] = [
-                'kills' => $killStats->total_events,
-                'deaths' => $deathStats[$steamId]['deaths'] ?? 0,
-                'first_kills' => $killStats->first_kills,
-                'first_deaths' => $deathStats[$steamId]['first_deaths'] ?? 0,
-            ];
-        }
-
-        // Add players who only died (no kills)
-        foreach ($deathStats as $steamId => $deathData) {
-            if (! isset($result[$steamId])) {
-                $result[$steamId] = [
-                    'kills' => 0,
-                    'deaths' => $deathData['deaths'],
-                    'first_kills' => 0,
-                    'first_deaths' => $deathData['first_deaths'],
-                ];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get damage statistics for all players in a match using a single optimized query
-     */
-    private function getDamageStatsForMatch(GameMatch $match): array
-    {
-        return DB::table('damage_events')
-            ->select([
-                'attacker_steam_id',
-                DB::raw('SUM(health_damage) as total_damage'),
-            ])
-            ->where('match_id', $match->id)
-            ->groupBy('attacker_steam_id')
-            ->get()
-            ->keyBy('attacker_steam_id')
-            ->map(function ($item) {
-                return ['total_damage' => $item->total_damage];
-            })
-            ->toArray();
     }
 
     /**
@@ -535,18 +427,5 @@ class UserMatchHistoryService
         }
 
         return round($kills / $deaths, 2);
-    }
-
-    /**
-     * Legacy method for backward compatibility - now uses optimized approach
-     */
-    private function calculatePlayerAverageDamagePerRound(GameMatch $match, Player $player)
-    {
-        $totalDamage = $match
-            ->damageEvents()
-            ->where('attacker_steam_id', $player->steam_id)
-            ->sum('health_damage');
-
-        return round($totalDamage / $match->total_rounds, 2);
     }
 }

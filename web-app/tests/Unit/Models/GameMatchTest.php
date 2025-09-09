@@ -10,7 +10,6 @@ use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\MatchSummary;
 use App\Models\Player;
-use App\Models\PlayerMatchSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;

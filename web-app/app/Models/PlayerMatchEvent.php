@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,6 +63,6 @@ class PlayerMatchEvent extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_1_steam_id', 'steam_id');
+        return $this->belongsTo(Player::class, 'player_steam_id', 'steam_id');
     }
 }

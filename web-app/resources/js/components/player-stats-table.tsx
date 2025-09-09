@@ -308,7 +308,7 @@ export function PlayerStatsTable({
                     </TableCell>
                     <TableCell className="text-sm font-bold py-2 px-3 border-0">
                       <span className={getAdrColor(player.player_adr)}>
-                        {player.player_adr.toFixed(0)}
+                        {player.player_adr}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -448,7 +448,7 @@ export function PlayerStatsTable({
                     </TableCell>
                     <TableCell className="text-sm font-bold py-2 px-3 border-0">
                       <span className={getAdrColor(player.player_adr)}>
-                        {player.player_adr.toFixed(0)}
+                        {player.player_adr}
                       </span>
                     </TableCell>
                   </TableRow>
