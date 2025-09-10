@@ -126,6 +126,11 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 		// Add grenade event to match state
 		processor.matchState.GrenadeEvents = append(processor.matchState.GrenadeEvents, *grenadeEvent)
 
+		// Set up player teams for damage aggregation
+		processor.teamAssignments["steam_123"] = "A"
+		processor.teamAssignments["steam_456"] = "B"
+		processor.teamAssignments["steam_789"] = "B"
+
 		// Aggregate damage using the new deferred method
 		grenadeHandler.AggregateAllGrenadeDamage()
 
@@ -328,6 +333,10 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 
 		// Add grenade event to match state first
 		processor.matchState.GrenadeEvents = append(processor.matchState.GrenadeEvents, grenadeEvent)
+
+		// Set up player teams for damage aggregation
+		processor.teamAssignments["steam_123"] = "A"
+		processor.teamAssignments["steam_456"] = "B"
 
 		// Aggregate damage from damage events using deferred method
 		grenadeHandler.AggregateAllGrenadeDamage()
