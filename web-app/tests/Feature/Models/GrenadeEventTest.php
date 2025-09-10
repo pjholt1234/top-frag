@@ -76,6 +76,7 @@ class GrenadeEventTest extends TestCase
             'grenade_final_y',
             'grenade_final_z',
             'damage_dealt',
+            'team_damage_dealt',
             'friendly_flash_duration',
             'enemy_flash_duration',
             'friendly_players_affected',
