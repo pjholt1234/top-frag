@@ -43,6 +43,10 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		KillsWithAWP:                0,
 		DamageDealt:                 0,
 		FlashesThrown:               0,
+		FireGrenadesThrown:          0,
+		SmokesThrown:                0,
+		HesThrown:                   0,
+		DecoysThrown:                0,
 		FriendlyFlashDuration:       0,
 		EnemyFlashDuration:          0,
 		FriendlyPlayersAffected:     0,
@@ -118,6 +122,10 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		//Grenade metrics
 		playerMatchEvent.DamageDealt += roundEvent.DamageDealt
 		playerMatchEvent.FlashesThrown += roundEvent.FlashesThrown
+		playerMatchEvent.FireGrenadesThrown += roundEvent.FireGrenadesThrown
+		playerMatchEvent.SmokesThrown += roundEvent.SmokesThrown
+		playerMatchEvent.HesThrown += roundEvent.HesThrown
+		playerMatchEvent.DecoysThrown += roundEvent.DecoysThrown
 		playerMatchEvent.FriendlyFlashDuration += roundEvent.FriendlyFlashDuration
 		playerMatchEvent.EnemyFlashDuration += roundEvent.EnemyFlashDuration
 		playerMatchEvent.FriendlyPlayersAffected += roundEvent.FriendlyPlayersAffected

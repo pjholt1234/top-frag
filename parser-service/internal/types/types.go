@@ -150,6 +150,10 @@ type PlayerRoundEvent struct {
 	// Grenades
 	DamageDealt             int     `json:"damage_dealt"`
 	FlashesThrown           int     `json:"flashes_thrown"`
+	FireGrenadesThrown      int     `json:"fire_grenades_thrown"`
+	SmokesThrown            int     `json:"smokes_thrown"`
+	HesThrown               int     `json:"hes_thrown"`
+	DecoysThrown            int     `json:"decoys_thrown"`
 	FriendlyFlashDuration   float64 `json:"friendly_flash_duration"`
 	EnemyFlashDuration      float64 `json:"enemy_flash_duration"`
 	FriendlyPlayersAffected int     `json:"friendly_players_affected"`
@@ -209,6 +213,10 @@ type PlayerMatchEvent struct {
 	// Grenades
 	DamageDealt                 int     `json:"damage_dealt"`
 	FlashesThrown               int     `json:"flashes_thrown"`
+	FireGrenadesThrown          int     `json:"fire_grenades_thrown"`
+	SmokesThrown                int     `json:"smokes_thrown"`
+	HesThrown                   int     `json:"hes_thrown"`
+	DecoysThrown                int     `json:"decoys_thrown"`
 	FriendlyFlashDuration       float64 `json:"friendly_flash_duration"`
 	EnemyFlashDuration          float64 `json:"enemy_flash_duration"`
 	FriendlyPlayersAffected     int     `json:"friendly_players_affected"`

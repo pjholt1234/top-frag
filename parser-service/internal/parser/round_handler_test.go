@@ -56,6 +56,90 @@ func TestRoundHandler_aggregateGunfightMetrics_ExcludesTeamDamage(t *testing.T) 
 	}
 }
 
+func TestRoundHandler_aggregateGrenadeMetrics_CountsGrenadeTypes(t *testing.T) {
+	// Create a mock processor with grenade events
+	processor := &EventProcessor{
+		matchState: &types.MatchState{
+			CurrentRound: 1,
+			GrenadeEvents: []types.GrenadeEvent{
+				{
+					RoundNumber:         1,
+					PlayerSteamID:       "player1",
+					GrenadeType:         types.GrenadeTypeFlash,
+					DamageDealt:         0,
+					EffectivenessRating: 5,
+				},
+				{
+					RoundNumber:         1,
+					PlayerSteamID:       "player1",
+					GrenadeType:         types.GrenadeTypeHE,
+					DamageDealt:         50,
+					EffectivenessRating: 8,
+				},
+				{
+					RoundNumber:         1,
+					PlayerSteamID:       "player1",
+					GrenadeType:         types.GrenadeTypeSmoke,
+					DamageDealt:         0,
+					EffectivenessRating: 0,
+				},
+				{
+					RoundNumber:         1,
+					PlayerSteamID:       "player1",
+					GrenadeType:         types.GrenadeTypeMolotov,
+					DamageDealt:         25,
+					EffectivenessRating: 6,
+				},
+				{
+					RoundNumber:         1,
+					PlayerSteamID:       "player1",
+					GrenadeType:         types.GrenadeTypeDecoy,
+					DamageDealt:         0,
+					EffectivenessRating: 0,
+				},
+			},
+		},
+		teamAssignments: map[string]string{
+			"player1": "A",
+		},
+	}
+
+	// Create round handler
+	rh := &RoundHandler{
+		processor: processor,
+		logger:    logrus.New(),
+	}
+
+	// Create player round event
+	event := &types.PlayerRoundEvent{
+		PlayerSteamID: "player1",
+		RoundNumber:   1,
+	}
+
+	// Call the method
+	rh.aggregateGrenadeMetrics(event, "player1", 1)
+
+	// Verify grenade counts
+	if event.FlashesThrown != 1 {
+		t.Errorf("Expected flashes thrown to be 1, got %d", event.FlashesThrown)
+	}
+	if event.HesThrown != 1 {
+		t.Errorf("Expected HE grenades thrown to be 1, got %d", event.HesThrown)
+	}
+	if event.SmokesThrown != 1 {
+		t.Errorf("Expected smokes thrown to be 1, got %d", event.SmokesThrown)
+	}
+	if event.FireGrenadesThrown != 1 {
+		t.Errorf("Expected fire grenades thrown to be 1, got %d", event.FireGrenadesThrown)
+	}
+	if event.DecoysThrown != 1 {
+		t.Errorf("Expected decoys thrown to be 1, got %d", event.DecoysThrown)
+	}
+	if event.DamageDealt != 75 {
+		t.Errorf("Expected damage dealt to be 75 (50 HE + 25 Molotov), got %d", event.DamageDealt)
+	}
+}
+
 func TestRoundHandler_aggregateGunfightMetrics_IncludesEnemyDamage(t *testing.T) {
 	// Create a mock processor with team assignments
 	processor := &EventProcessor{

@@ -29,6 +29,10 @@ class PlayerRoundEvent extends Model
         // Grenade fields
         'damage_dealt',
         'flashes_thrown',
+        'fire_grenades_thrown',
+        'smokes_thrown',
+        'hes_thrown',
+        'decoys_thrown',
         'friendly_flash_duration',
         'enemy_flash_duration',
         'friendly_players_affected',

@@ -158,6 +158,10 @@ func (rh *RoundHandler) aggregateGunfightMetrics(event *types.PlayerRoundEvent, 
 func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, playerSteamID string, roundNumber int) {
 	damageDealt := 0
 	flashesThrown := 0
+	fireGrenadesThrown := 0
+	smokesThrown := 0
+	hesThrown := 0
+	decoysThrown := 0
 	friendlyFlashDuration := 0.0
 	enemyFlashDuration := 0.0
 	friendlyPlayersAffected := 0
@@ -174,13 +178,28 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 			continue
 		}
 
-		if grenadeEvent.GrenadeType == types.GrenadeTypeHE || grenadeEvent.GrenadeType == "HE Grenade" ||
-			grenadeEvent.GrenadeType == types.GrenadeTypeMolotov || grenadeEvent.GrenadeType == "Molotov" ||
-			grenadeEvent.GrenadeType == types.GrenadeTypeIncendiary || grenadeEvent.GrenadeType == "Incendiary Grenade" {
+		// Count different grenade types
+		if grenadeEvent.GrenadeType == types.GrenadeTypeHE || grenadeEvent.GrenadeType == "HE Grenade" {
+			hesThrown++
 			damageDealt += grenadeEvent.DamageDealt
-
 			totalEffectivenessRating += grenadeEvent.EffectivenessRating
 			totalNumberOfMeasuredGrenades++
+		}
+
+		if grenadeEvent.GrenadeType == types.GrenadeTypeMolotov || grenadeEvent.GrenadeType == "Molotov" ||
+			grenadeEvent.GrenadeType == types.GrenadeTypeIncendiary || grenadeEvent.GrenadeType == "Incendiary Grenade" {
+			fireGrenadesThrown++
+			damageDealt += grenadeEvent.DamageDealt
+			totalEffectivenessRating += grenadeEvent.EffectivenessRating
+			totalNumberOfMeasuredGrenades++
+		}
+
+		if grenadeEvent.GrenadeType == types.GrenadeTypeSmoke || grenadeEvent.GrenadeType == "Smoke Grenade" {
+			smokesThrown++
+		}
+
+		if grenadeEvent.GrenadeType == types.GrenadeTypeDecoy || grenadeEvent.GrenadeType == "Decoy Grenade" {
+			decoysThrown++
 		}
 
 		if grenadeEvent.GrenadeType == types.GrenadeTypeFlash || grenadeEvent.GrenadeType == "Flashbang" {
@@ -218,6 +237,10 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	// Set the aggregated values
 	event.DamageDealt = damageDealt
 	event.FlashesThrown = flashesThrown
+	event.FireGrenadesThrown = fireGrenadesThrown
+	event.SmokesThrown = smokesThrown
+	event.HesThrown = hesThrown
+	event.DecoysThrown = decoysThrown
 	event.FriendlyFlashDuration = friendlyFlashDuration
 	event.EnemyFlashDuration = enemyFlashDuration
 	event.FriendlyPlayersAffected = friendlyPlayersAffected

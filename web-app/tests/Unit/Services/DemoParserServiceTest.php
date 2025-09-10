@@ -661,6 +661,10 @@ class DemoParserServiceTest extends TestCase
                 'kills_with_awp' => 0,
                 'damage_dealt' => 25,
                 'flashes_thrown' => 1,
+                'fire_grenades_thrown' => 0,
+                'smokes_thrown' => 1,
+                'hes_thrown' => 0,
+                'decoys_thrown' => 1,
                 'friendly_flash_duration' => 0.5,
                 'enemy_flash_duration' => 2.1,
                 'friendly_players_affected' => 0,
@@ -711,6 +715,10 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(0, $playerRoundEvent->kills_with_awp);
         $this->assertEquals(25, $playerRoundEvent->damage_dealt);
         $this->assertEquals(1, $playerRoundEvent->flashes_thrown);
+        $this->assertEquals(0, $playerRoundEvent->fire_grenades_thrown);
+        $this->assertEquals(1, $playerRoundEvent->smokes_thrown);
+        $this->assertEquals(0, $playerRoundEvent->hes_thrown);
+        $this->assertEquals(1, $playerRoundEvent->decoys_thrown);
         $this->assertEquals(0.5, $playerRoundEvent->friendly_flash_duration);
         $this->assertEquals(2.1, $playerRoundEvent->enemy_flash_duration);
         $this->assertEquals(0, $playerRoundEvent->friendly_players_affected);
@@ -901,7 +909,7 @@ class DemoParserServiceTest extends TestCase
         $playerRoundEvents = [];
         for ($i = 1; $i <= 1500; $i++) {
             $playerRoundEvents[] = [
-                'player_steam_id' => 'steam_'.($i % 10), // 10 different players
+                'player_steam_id' => 'steam_' . ($i % 10), // 10 different players
                 'round_number' => ($i % 30) + 1, // Rounds 1-30
                 'kills' => $i % 5,
                 'damage' => $i * 10,
