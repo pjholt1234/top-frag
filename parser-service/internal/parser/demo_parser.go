@@ -28,10 +28,6 @@ func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
 	}
 }
 
-// Parses the demo file and sends the data to the batch sender
-// Sends progress updates via the progress callback function
-// Handles errors and sends error messages to the callback URLs
-
 func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	return dp.ParseDemoFromFile(ctx, demoPath, progressCallback)
 }
@@ -61,42 +57,35 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		CurrentStep: "Parsing demo file",
 	})
 
-	// Variable to store map name
 	var mapName string
-	// Variable to store parser reference for getting playback ticks
 	var demoParser demoinfocs.Parser
 
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
-		// Store parser reference for later use
 		demoParser = parser
-
-		// Set parser reference in event processor for round scenario calculation
 		eventProcessor.SetDemoParser(parser)
 
-		// Register handler for demo file header to get map name
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
 			dp.logger.WithField("map_name", mapName).Info("Map name extracted from demo header")
 		})
 
-		// Register event handlers for the demo parser
 		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
 
-		// Register frame handler to update current tick and player positions
 		parser.RegisterEventHandler(func(e events.FrameDone) {
 			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.GameState().IngameTick()), parser.GameState())
 		})
 
-		// Get final game state after parsing
 		gameState := parser.GameState()
-		if gameState != nil {
-			totalRoundsPlayed := gameState.TotalRoundsPlayed()
-			dp.logger.WithFields(logrus.Fields{
-				"game_state_total_rounds": totalRoundsPlayed,
-				"current_round":           eventProcessor.matchState.CurrentRound,
-				"round_events_count":      len(eventProcessor.matchState.RoundEvents),
-			}).Info("Final game state information")
+		if gameState == nil {
+			return nil
 		}
+
+		totalRoundsPlayed := gameState.TotalRoundsPlayed()
+		dp.logger.WithFields(logrus.Fields{
+			"game_state_total_rounds": totalRoundsPlayed,
+			"current_round":           eventProcessor.matchState.CurrentRound,
+			"round_events_count":      len(eventProcessor.matchState.RoundEvents),
+		}).Info("Final game state information")
 
 		return nil
 	})
@@ -105,11 +94,8 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		return nil, fmt.Errorf("failed to parse demo: %w", err)
 	}
 
-	// Get playback ticks from the parser after parsing is complete
 	playbackTicks := 0
 	if demoParser != nil {
-		// Use the current frame as an approximation of playback ticks
-		// This represents the total number of frames processed
 		playbackTicks = demoParser.CurrentFrame()
 		dp.logger.WithField("playback_ticks", playbackTicks).Info("Extracted playback ticks from demo parser")
 	}
@@ -120,10 +106,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		CurrentStep: "Processing final data",
 	})
 
-	// Post-process grenade movement data using collected position records
 	dp.postProcessGrenadeMovement(eventProcessor)
-
-	// Post-process damage assists after all events have been processed
 	dp.postProcessDamageAssists(eventProcessor)
 
 	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor)
@@ -134,7 +117,6 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	return parsedData, nil
 }
 
-// postProcessGrenadeMovement calculates movement for all grenade events using position data
 func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor) {
 	dp.logger.Info("Starting grenade movement post-processing", logrus.Fields{
 		"total_grenades": len(eventProcessor.matchState.GrenadeEvents),
@@ -145,23 +127,20 @@ func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor)
 
 	for i := range eventProcessor.matchState.GrenadeEvents {
 		grenadeEvent := &eventProcessor.matchState.GrenadeEvents[i]
-
-		// Parse steam ID from string
 		steamID := types.StringToSteamID(grenadeEvent.PlayerSteamID)
 
-		// Calculate movement using post-processing approach
-		// Note: We don't have the player object here, so we'll need to work around this
 		newMovementType := movementService.CalculateGrenadeMovementSimple(
 			steamID,
 			grenadeEvent.RoundNumber,
 			grenadeEvent.TickTimestamp,
 		)
 
-		// Update the grenade event with the new movement type
-		if newMovementType != "" {
-			grenadeEvent.ThrowType = newMovementType
-			processedCount++
+		if newMovementType == "" {
+			continue
 		}
+
+		grenadeEvent.ThrowType = newMovementType
+		processedCount++
 	}
 
 	dp.logger.Info("Completed grenade movement post-processing", logrus.Fields{
@@ -170,8 +149,6 @@ func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor)
 	})
 }
 
-// postProcessDamageAssists recalculates damage assists for all gunfight events
-// This is necessary because damage events might be processed after kill events
 func (dp *DemoParser) postProcessDamageAssists(eventProcessor *EventProcessor) {
 	dp.logger.Info("Starting damage assist post-processing", logrus.Fields{
 		"total_gunfights": len(eventProcessor.matchState.GunfightEvents),
@@ -183,21 +160,18 @@ func (dp *DemoParser) postProcessDamageAssists(eventProcessor *EventProcessor) {
 	for i := range eventProcessor.matchState.GunfightEvents {
 		gunfightEvent := &eventProcessor.matchState.GunfightEvents[i]
 
-		// Only process if victor exists (i.e., this was a kill, not a trade)
 		if gunfightEvent.VictorSteamID == nil {
 			continue
 		}
 
 		processedCount++
 
-		// Recalculate damage assist using complete damage event data
 		originalAssist := gunfightEvent.DamageAssistSteamID
 		newAssist := eventProcessor.gunfightHandler.findDamageAssist(
-			gunfightEvent.Player2SteamID, // victim
-			*gunfightEvent.VictorSteamID, // killer
+			gunfightEvent.Player2SteamID,
+			*gunfightEvent.VictorSteamID,
 		)
 
-		// Update if different
 		if (originalAssist == nil && newAssist != nil) ||
 			(originalAssist != nil && newAssist == nil) ||
 			(originalAssist != nil && newAssist != nil && *originalAssist != *newAssist) {
@@ -242,7 +216,6 @@ func (dp *DemoParser) validateDemoFile(demoPath string) error {
 	return nil
 }
 
-// Registers event handlers for the demo parser
 func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProcessor *EventProcessor, progressCallback func(types.ProgressUpdate)) {
 	parser.RegisterEventHandler(func(e events.RoundStart) {
 		eventProcessor.HandleRoundStart(e)
@@ -305,7 +278,6 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 		eventProcessor.HandleBombExplode(e)
 	})
 
-	// Add player tracking events
 	parser.RegisterEventHandler(func(e events.PlayerConnect) {
 		eventProcessor.HandlePlayerConnect(e)
 	})
@@ -325,27 +297,22 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		players = append(players, *player)
 	}
 
-	// Use extracted map name, fallback to de_dust2 if not available
 	if mapName == "" {
 		mapName = "de_dust2"
 		dp.logger.Warn("Map name not found in demo header, using default: de_dust2")
 	}
 
-	// Count round end events to get actual total rounds
 	totalRounds := 0
-
 	for _, roundEvent := range matchState.RoundEvents {
 		if roundEvent.EventType == "end" {
 			totalRounds++
 		}
 	}
 
-	// Determine winning team and scores using the event processor
 	winningTeam := eventProcessor.getWinningTeam()
 	teamAWins := eventProcessor.teamAWins
 	teamBWins := eventProcessor.teamBWins
 
-	// Set the match scores
 	winningTeamScore := 0
 	losingTeamScore := 0
 
@@ -391,7 +358,6 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"player_match_events": len(matchState.PlayerMatchEvents),
 	}).Info("Match data built with event counts")
 
-	//Post processing steps
 	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
 	return &types.ParsedDemoData{

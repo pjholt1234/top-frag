@@ -136,7 +136,6 @@ cp config.yaml.backup config.yaml
 # Parser Service
 cd parser-service
 go test                    # Run tests
-golangci-lint run         # Check code quality
 gofmt -w .                # Format code
 
 # Web Application

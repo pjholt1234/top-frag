@@ -11,35 +11,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Struct for managing match events
-
 type EventProcessor struct {
 	matchState   *types.MatchState
 	logger       *logrus.Logger
 	playerStates map[uint64]*types.PlayerState
 
-	// Team assignment tracking
-	teamAssignments    map[string]string // steamID -> "A" or "B"
-	teamAWins          int               // Count of wins for team A
-	teamBWins          int               // Count of wins for team B
-	teamAStartedAs     string            // "CT" or "T" - which side team A started on
-	teamBStartedAs     string            // "CT" or "T" - which side team B started on
-	teamACurrentSide   string            // "CT" or "T" - which side team A is currently on
-	teamBCurrentSide   string            // "CT" or "T" - which side team B is currently on
-	assignmentComplete bool              // Whether all players have been assigned teams
-	currentRound       int               // Current round number for team assignment
-	currentTick        int64             // Current tick timestamp
+	teamAssignments    map[string]string
+	teamAWins          int
+	teamBWins          int
+	teamAStartedAs     string
+	teamBStartedAs     string
+	teamACurrentSide   string
+	teamBCurrentSide   string
+	assignmentComplete bool
+	currentRound       int
+	currentTick        int64
 
-	// Demo parser reference for accessing current game state
 	demoParser demoinfocs.Parser
 
-	// Grenade tracking by entity ID
-	grenadeThrows map[int]*types.GrenadeThrowInfo // entityID -> throw info
+	grenadeThrows map[int]*types.GrenadeThrowInfo
 
-	// Flash tracking
-	activeFlashEffects map[int]*FlashEffect // entityID -> flash effect info
+	activeFlashEffects map[int]*FlashEffect
 
-	// Event handlers
 	grenadeHandler     *GrenadeHandler
 	gunfightHandler    *GunfightHandler
 	damageHandler      *DamageHandler
@@ -48,7 +41,6 @@ type EventProcessor struct {
 	playerMatchHandler *PlayerMatchHandler
 }
 
-// FlashEffect tracks information about an active flash effect
 type FlashEffect struct {
 	EntityID          int
 	ThrowerSteamID    string
@@ -62,7 +54,6 @@ type FlashEffect struct {
 	EnemyCount        int
 }
 
-// PlayerFlashInfo tracks individual player flash information
 type PlayerFlashInfo struct {
 	SteamID       string
 	Team          string
@@ -76,7 +67,6 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 		logger:       logger,
 		playerStates: make(map[uint64]*types.PlayerState),
 
-		// Initialize team assignment tracking
 		teamAssignments:    make(map[string]string),
 		teamAWins:          0,
 		teamBWins:          0,
@@ -85,17 +75,14 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 		teamACurrentSide:   "",
 		teamBCurrentSide:   "",
 		assignmentComplete: false,
-		currentRound:       0, // Initialize currentRound
-		currentTick:        0, // Initialize currentTick
+		currentRound:       0,
+		currentTick:        0,
 
-		// Initialize grenade tracking
 		grenadeThrows: make(map[int]*types.GrenadeThrowInfo),
 
-		// Initialize flash tracking
 		activeFlashEffects: make(map[int]*FlashEffect),
 	}
 
-	// Initialize event handlers
 	ep.grenadeHandler = NewGrenadeHandler(ep, logger)
 	ep.gunfightHandler = NewGunfightHandler(ep, logger)
 	ep.damageHandler = NewDamageHandler(ep, logger)
@@ -106,7 +93,6 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	return ep
 }
 
-// SetDemoParser sets the demo parser reference for accessing current game state
 func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
 	ep.demoParser = parser
 }
@@ -183,7 +169,6 @@ func (ep *EventProcessor) getPlayerPosition(player *common.Player) types.Positio
 		return types.Position{}
 	}
 
-	// Try to get position, but handle potential nil pointer issues
 	defer func() {
 		if r := recover(); r != nil {
 			ep.logger.WithFields(logrus.Fields{
@@ -206,7 +191,6 @@ func (ep *EventProcessor) getPlayerAim(player *common.Player) types.Vector {
 		return types.Vector{}
 	}
 
-	// Try to get aim, but handle potential nil pointer issues
 	defer func() {
 		if r := recover(); r != nil {
 			ep.logger.WithFields(logrus.Fields{
@@ -225,7 +209,6 @@ func (ep *EventProcessor) getPlayerAim(player *common.Player) types.Vector {
 	}
 }
 
-// getTeamString converts team enum to string
 func (ep *EventProcessor) getTeamString(team common.Team) string {
 	switch team {
 	case common.TeamCounterTerrorists:
@@ -245,11 +228,9 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 	steamID := types.SteamIDToString(player.SteamID64)
 	side := ep.getTeamString(player.Team)
 
-	// Assign team based on rounds 1-12 (if not already assigned)
 	ep.assignTeamBasedOnRound1To12(steamID, side)
 	assignedTeam := ep.getAssignedTeam(steamID)
 
-	// Add player to match state if not already present
 	if _, exists := ep.matchState.Players[steamID]; !exists {
 		ep.matchState.Players[steamID] = &types.Player{
 			SteamID: steamID,
@@ -258,7 +239,6 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 		}
 	}
 
-	// Add player state if not already present
 	if _, exists := ep.playerStates[player.SteamID64]; !exists {
 		ep.playerStates[player.SteamID64] = &types.PlayerState{
 			SteamID: steamID,
@@ -268,7 +248,6 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 	}
 }
 
-// assignTeamBasedOnRound1To12 assigns a player to team A or B based on their side in rounds 0-12
 func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) {
 	ep.logger.WithFields(logrus.Fields{
 		"steam_id":            steamID,
@@ -277,7 +256,6 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 		"assignment_complete": ep.assignmentComplete,
 	}).Debug("Attempting team assignment")
 
-	// Only assign teams during rounds 0-12 (allow round 0 for early events)
 	if ep.currentRound > 12 {
 		ep.logger.WithFields(logrus.Fields{
 			"steam_id":      steamID,
@@ -290,17 +268,16 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 		ep.logger.WithFields(logrus.Fields{
 			"steam_id": steamID,
 		}).Debug("Skipping team assignment - already complete")
-		return // Stop assigning once complete
+		return
 	}
 
 	if _, assigned := ep.teamAssignments[steamID]; assigned {
 		ep.logger.WithFields(logrus.Fields{
 			"steam_id": steamID,
 		}).Debug("Skipping team assignment - player already assigned")
-		return // Already assigned
+		return
 	}
 
-	// Assign based on side in rounds 0-12
 	if side == "CT" {
 		ep.teamAssignments[steamID] = "A"
 		ep.logger.WithFields(logrus.Fields{
@@ -329,7 +306,6 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 		}
 	}
 
-	// Check if we've assigned all players (assuming 10 players total)
 	if len(ep.teamAssignments) == 10 {
 		ep.assignmentComplete = true
 		ep.logger.Info("Team assignment complete", logrus.Fields{
@@ -342,15 +318,13 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 	}
 }
 
-// getAssignedTeam returns the assigned team for a player, or "A" as default
 func (ep *EventProcessor) getAssignedTeam(steamID string) string {
 	if team, assigned := ep.teamAssignments[steamID]; assigned {
 		return team
 	}
-	return "A" // Default fallback
+	return "A"
 }
 
-// getPlayerCurrentSide returns the current side (CT/T) for a player
 func (ep *EventProcessor) getPlayerCurrentSide(steamID string) string {
 	assignedTeam, assigned := ep.teamAssignments[steamID]
 
@@ -369,51 +343,44 @@ func (ep *EventProcessor) getPlayerCurrentSide(steamID string) string {
 		return ep.teamBCurrentSide
 	}
 
-	// Default fallback if team assignment hasn't happened yet
 	return "Unknown"
 }
 
-// getWinningTeam returns "A" or "B" based on which team won more rounds
 func (ep *EventProcessor) getWinningTeam() string {
 	if ep.teamAWins > ep.teamBWins {
 		return "A"
 	} else if ep.teamBWins > ep.teamAWins {
 		return "B"
 	}
-	return "A" // Default to A in case of tie
+	return "A"
 }
 
-// UpdateCurrentTick updates the current tick timestamp
 func (ep *EventProcessor) UpdateCurrentTick(tick int64) {
 	ep.currentTick = tick
 }
 
-// UpdateCurrentTickAndPlayers updates the current tick and tracks all player positions
 func (ep *EventProcessor) UpdateCurrentTickAndPlayers(tick int64, gameState interface{}) {
 	ep.currentTick = tick
 
-	// Debug: Log frame processing every 1000 ticks
 	if tick%1000 == 0 {
 		ep.logger.WithFields(logrus.Fields{
 			"tick": tick,
 		}).Debug("Processing frame for position tracking")
 	}
 
-	// Update position history for all active players
-	// Use reflection to access the game state methods dynamically
-	if gameState != nil {
-		// Try different approaches to get players
-		playerCount := 0
+	if gameState == nil {
+		return
+	}
 
-		// Approach 1: Try direct method call using reflection
-		if participants := ep.callMethod(gameState, "Participants"); participants != nil {
-			if players := ep.callMethod(participants, "Playing"); players != nil {
-				if playerSlice, ok := players.([]*common.Player); ok {
-					for _, player := range playerSlice {
-						if player != nil {
-							ep.grenadeHandler.movementService.UpdatePlayerPosition(player, tick)
-							playerCount++
-						}
+	playerCount := 0
+
+	if participants := ep.callMethod(gameState, "Participants"); participants != nil {
+		if players := ep.callMethod(participants, "Playing"); players != nil {
+			if playerSlice, ok := players.([]*common.Player); ok {
+				for _, player := range playerSlice {
+					if player != nil {
+						ep.grenadeHandler.movementService.UpdatePlayerPosition(player, tick)
+						playerCount++
 					}
 				}
 			}
@@ -441,7 +408,6 @@ func (ep *EventProcessor) getCurrentRoundTime() int {
 		return 0
 	}
 
-	// Subtract freeze time to get actual gameplay time
 	actualRoundTime := timeSinceRoundStart - types.CS2FreezeTime
 
 	ep.logger.WithFields(logrus.Fields{
@@ -479,13 +445,15 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 
 	players := participants.Playing()
 	for _, player := range players {
-		if player != nil && player.IsAlive() {
-			playerSide := ep.getTeamString(player.Team)
-			if playerSide == killerSide {
-				killerTeamAlive++
-			} else if playerSide == victimSide {
-				victimTeamAlive++
-			}
+		if player == nil || !player.IsAlive() {
+			continue
+		}
+
+		playerSide := ep.getTeamString(player.Team)
+		if playerSide == killerSide {
+			killerTeamAlive++
+		} else if playerSide == victimSide {
+			victimTeamAlive++
 		}
 	}
 
@@ -500,7 +468,6 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 	return fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive)
 }
 
-// callMethod uses reflection to call a method on an object
 func (ep *EventProcessor) callMethod(obj interface{}, methodName string) interface{} {
 	if obj == nil {
 		return nil
@@ -516,13 +483,11 @@ func (ep *EventProcessor) callMethod(obj interface{}, methodName string) interfa
 		return nil
 	}
 
-	// Call the method with no arguments
 	results := method.Call(nil)
 	if len(results) == 0 {
 		return nil
 	}
 
-	// Return the first result
 	result := results[0]
 	if !result.IsValid() || result.IsNil() {
 		return nil

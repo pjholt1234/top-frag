@@ -8,13 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GunfightHandler handles all gunfight-related events
 type GunfightHandler struct {
 	processor *EventProcessor
 	logger    *logrus.Logger
 }
 
-// NewGunfightHandler creates a new gunfight handler
 func NewGunfightHandler(processor *EventProcessor, logger *logrus.Logger) *GunfightHandler {
 	return &GunfightHandler{
 		processor: processor,
@@ -22,17 +20,14 @@ func NewGunfightHandler(processor *EventProcessor, logger *logrus.Logger) *Gunfi
 	}
 }
 
-// HandlePlayerKilled handles player kill events
 func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 	if e.Killer == nil || e.Victim == nil {
 		return
 	}
 
-	// Ensure players are tracked
 	gh.processor.ensurePlayerTracked(e.Killer)
 	gh.processor.ensurePlayerTracked(e.Victim)
 
-	// Check if this is the first kill of the round
 	isFirstKill := gh.processor.matchState.FirstKillPlayer == nil
 
 	if gh.processor.matchState.FirstKillPlayer == nil {
@@ -61,7 +56,6 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 		victimState.Deaths++
 	}
 
-	// Calculate round scenario BEFORE the victim dies (while they're still counted as alive)
 	killerSide := gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Killer.SteamID64))
 	victimSide := gh.processor.getPlayerCurrentSide(types.SteamIDToString(e.Victim.SteamID64))
 	roundScenario := gh.processor.getRoundScenario(killerSide, victimSide)
@@ -69,7 +63,6 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 	gunfightEvent := gh.createGunfightEvent(e, isFirstKill)
 	gunfightEvent.RoundScenario = roundScenario
 
-	// Check if any active flash effects contributed to this kill
 	killerSteamID := types.SteamIDToString(e.Killer.SteamID64)
 	victimSteamID := types.SteamIDToString(e.Victim.SteamID64)
 	gunfightEvent.FlashAssisterSteamID = gh.processor.grenadeHandler.CheckFlashEffectiveness(killerSteamID, victimSteamID, gh.processor.currentTick)
@@ -77,7 +70,6 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 	gh.processor.matchState.GunfightEvents = append(gh.processor.matchState.GunfightEvents, gunfightEvent)
 }
 
-// createGunfightEvent creates a gunfight event from a kill event
 func (gh *GunfightHandler) createGunfightEvent(e events.Kill, isFirstKill bool) types.GunfightEvent {
 	roundTime := gh.processor.getCurrentRoundTime()
 
@@ -121,13 +113,11 @@ func (gh *GunfightHandler) createGunfightEvent(e events.Kill, isFirstKill bool) 
 	gunfightEvent.VictorSteamID = &player1SteamID
 	gunfightEvent.DamageDealt = 100 - gunfightEvent.Player2HPStart
 
-	// Find damage assist
 	gunfightEvent.DamageAssistSteamID = gh.findDamageAssist(player2SteamID, player1SteamID)
 
 	return gunfightEvent
 }
 
-// getPlayerHP gets a player's health points
 func (gh *GunfightHandler) getPlayerHP(player *common.Player) int {
 	if player == nil {
 		return 0
@@ -135,7 +125,6 @@ func (gh *GunfightHandler) getPlayerHP(player *common.Player) int {
 	return player.Health()
 }
 
-// getPlayerArmor gets a player's armor value
 func (gh *GunfightHandler) getPlayerArmor(player *common.Player) int {
 	if player == nil {
 		return 0
@@ -143,7 +132,6 @@ func (gh *GunfightHandler) getPlayerArmor(player *common.Player) int {
 	return player.Armor()
 }
 
-// getPlayerFlashed checks if a player is currently flashed
 func (gh *GunfightHandler) getPlayerFlashed(player *common.Player) bool {
 	if player == nil {
 		return false
@@ -153,7 +141,6 @@ func (gh *GunfightHandler) getPlayerFlashed(player *common.Player) bool {
 	return flashDuration > 0
 }
 
-// getPlayerWeapon gets a player's active weapon
 func (gh *GunfightHandler) getPlayerWeapon(player *common.Player) string {
 	if player == nil || player.ActiveWeapon() == nil {
 		return "Unknown"
@@ -165,7 +152,6 @@ func (gh *GunfightHandler) getPlayerWeapon(player *common.Player) string {
 	return weapon
 }
 
-// getPlayerEquipmentValue calculates a player's total equipment value
 func (gh *GunfightHandler) getPlayerEquipmentValue(player *common.Player) int {
 	if player == nil {
 		return 0
@@ -173,7 +159,6 @@ func (gh *GunfightHandler) getPlayerEquipmentValue(player *common.Player) int {
 
 	equipmentValue := 0
 
-	// Add value of all weapons in inventory (this includes the active weapon)
 	for _, weapon := range player.Inventory {
 		if weapon != nil {
 			weaponType := int(weapon.Type)
@@ -181,12 +166,11 @@ func (gh *GunfightHandler) getPlayerEquipmentValue(player *common.Player) int {
 		}
 	}
 
-	// Add armor value
 	if player.Armor() > 0 {
 		if player.HasHelmet() {
-			equipmentValue += types.GetEquipmentValue(403) // EqHelmet (Kevlar + Helmet)
+			equipmentValue += types.GetEquipmentValue(403)
 		} else {
-			equipmentValue += types.GetEquipmentValue(402) // EqKevlar
+			equipmentValue += types.GetEquipmentValue(402)
 		}
 	}
 

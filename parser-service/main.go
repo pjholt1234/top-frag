@@ -45,13 +45,6 @@ func main() {
 		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
-	// Starts the HTTP server listen for incoming request in a goroutine
-	// This creates a concurrent operation that doesn't block the main thread
-	// The best way to think about this is Jobs + Queues in laravel.
-
-	// The main difference is that Laravel jobs are persistent (stored in database/Redis)
-	// while Go goroutines are ephemeral (in-memory only). Laravel jobs survive server
-	// restarts, while goroutines don't!
 	go func() {
 		logger.WithField("port", cfg.Server.Port).Info("Starting HTTP server")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -59,10 +52,6 @@ func main() {
 		}
 	}()
 
-	// This is pretty confusing....
-	// This creates a channel, allowing the gorountine to listen for OS signals
-	// When a signal is received, it's sent to the channel
-	// This allows the program to handle OS signals gracefully
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -97,15 +86,17 @@ func setupLogger(cfg *config.Config) *logrus.Logger {
 		})
 	}
 
-	// Configure file output if specified
-	if cfg.Logging.File != "" {
-		file, err := os.OpenFile(cfg.Logging.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		if err != nil {
-			logger.WithError(err).Warn("Failed to open log file, using stdout only")
-		} else {
-			logger.SetOutput(file)
-		}
+	if cfg.Logging.File == "" {
+		return logger
 	}
+
+	file, err := os.OpenFile(cfg.Logging.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		logger.WithError(err).Warn("Failed to open log file, using stdout only")
+		return logger
+	}
+
+	logger.SetOutput(file)
 
 	return logger
 }
@@ -118,16 +109,12 @@ func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *han
 	router.Use(gin.Recovery())
 	router.Use(loggingMiddleware())
 
-	// Health endpoints (public)
 	router.GET(api.HealthEndpoint, healthHandler.HandleHealth)
 	router.GET(api.ReadinessEndpoint, healthHandler.HandleReadiness)
 
-	// API endpoints (require authentication)
 	apiGroup := router.Group("/api")
 	apiGroup.Use(middleware.APIKeyAuth(cfg.Server.APIKey))
-	{
-		apiGroup.POST(api.ParseDemoEndpoint, parseDemoHandler.HandleParseDemo) // File upload endpoint
-	}
+	apiGroup.POST(api.ParseDemoEndpoint, parseDemoHandler.HandleParseDemo)
 
 	return router
 }
