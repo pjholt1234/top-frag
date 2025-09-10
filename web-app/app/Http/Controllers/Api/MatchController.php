@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\MatchUtilityAnalysisService;
 use App\Services\UserMatchHistoryService;
 use Illuminate\Http\Request;
 
@@ -10,6 +11,7 @@ class MatchController extends Controller
 {
     public function __construct(
         private readonly UserMatchHistoryService $userMatchHistoryService,
+        private readonly MatchUtilityAnalysisService $utilityAnalysisService,
     ) {}
 
     public function index(Request $request)
@@ -77,5 +79,39 @@ class MatchController extends Controller
         ];
 
         return response()->json($match);
+    }
+
+    public function utilityAnalysis(Request $request, int $matchId)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $playerSteamId = $request->get('player_steam_id');
+        $roundNumber = $request->get('round_number');
+
+        if ($roundNumber && $roundNumber !== 'all') {
+            $roundNumber = (int) $roundNumber;
+        } else {
+            $roundNumber = null;
+        }
+
+        $analysis = $this->utilityAnalysisService->getUtilityAnalysis(
+            $user,
+            $matchId,
+            $playerSteamId,
+            $roundNumber
+        );
+
+        if (empty($analysis)) {
+            return response()->json(['message' => 'Match not found or no data available'], 404);
+        }
+
+        return response()->json($analysis);
     }
 }

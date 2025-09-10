@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/matches', [MatchController::class, 'index']);
     Route::get('/matches/{matchId}', [MatchController::class, 'show']);
+    Route::get('/matches/{matchId}/utility-analysis', [MatchController::class, 'utilityAnalysis']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
 
     // Grenade Library routes

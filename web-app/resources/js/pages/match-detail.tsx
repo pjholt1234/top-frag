@@ -14,6 +14,7 @@ import {
 } from '@tabler/icons-react';
 import { PlayerStatsTable } from '@/components/player-stats-table';
 import MatchGrenadesView from '../components/match-grenades-view';
+import { MatchUtilityAnalysis } from '@/components/match-utility-analysis';
 
 interface PlayerStats {
   player_name: string;
@@ -249,12 +250,18 @@ const MatchDetail = () => {
         {match.is_completed && (
           <Card className="p-0">
             <Tabs defaultValue="player-stats" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 rounded-t-lg mb-6">
+              <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 rounded-t-lg mb-6">
                 <TabsTrigger
                   value="player-stats"
                   className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
                 >
                   Player Statistics
+                </TabsTrigger>
+                <TabsTrigger
+                  value="utility"
+                  className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
+                >
+                  Utility Analysis
                 </TabsTrigger>
                 <TabsTrigger
                   value="grenades"
@@ -284,7 +291,13 @@ const MatchDetail = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="grenades" className="mt-0">
+              <TabsContent value="utility" className="mt-0 mb-6">
+                <CardContent>
+                  <MatchUtilityAnalysis matchId={match.id} />
+                </CardContent>
+              </TabsContent>
+
+              <TabsContent value="grenades" className="mt-0 mb-6">
                 <CardContent>
                   <MatchGrenadesView
                     hideMapAndMatchFilters={true}
