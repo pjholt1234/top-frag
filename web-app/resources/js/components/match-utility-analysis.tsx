@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { UtilityFilters } from './utility-filters';
-import { UtilityCharts } from './utility-charts';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { UtilityUsageChart } from './match-details/utility-usage-chart';
+import { GrenadeRatingGauge } from './match-details/grenade-rating-gauge';
+import { GrenadeEffectivenessChart } from './match-details/grenade-effectiveness-chart';
+import { GrenadeTimingChart } from './match-details/grenade-timing-chart';
+import { UtilityStats } from './match-details/utility-stats';
 
 interface UtilityAnalysisData {
   utility_usage: Array<{
@@ -149,19 +154,54 @@ export function MatchUtilityAnalysis({ matchId }: MatchUtilityAnalysisProps) {
 
   return (
     <div className="space-y-6">
-      <UtilityFilters
-        players={data.players}
-        rounds={data.rounds}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-      />
 
-      <UtilityCharts
-        utilityUsage={data.utility_usage}
-        grenadeEffectiveness={data.grenade_effectiveness}
-        grenadeTiming={data.grenade_timing}
-        overallStats={data.overall_stats}
-      />
+
+      <div className="space-y-6">
+        {/* First row: Utility Usage and Stats will be side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <UtilityFilters
+              players={data.players}
+              rounds={data.rounds}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+            />
+
+            <UtilityStats overallStats={data.overall_stats} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="h-full">
+              <CardContent className="flex items-center justify-center">
+                <GrenadeRatingGauge rating={data.overall_stats.overall_grenade_rating} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <UtilityUsageChart data={data.utility_usage} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Second row: Grenade Effectiveness and Timing Analysis side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="pt-2">
+              <CardTitle className="mb-2">
+                Grenade Effectiveness by Round
+              </CardTitle>
+              <GrenadeEffectivenessChart data={data.grenade_effectiveness} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-2">
+              <CardTitle className="mb-2">Grenade Timing Analysis</CardTitle>
+              <GrenadeTimingChart data={data.grenade_timing} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

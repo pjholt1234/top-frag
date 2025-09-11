@@ -47,7 +47,7 @@ export function UtilityFilters({
   };
 
   return (
-    <Card>
+    <Card className="mb-4">
       <CardContent className="flex gap-4">
         <div className="space-y-1 min-w-[120px]">
           <Label htmlFor="player-select">Player</Label>

@@ -165,57 +165,115 @@ const MatchDetail = () => {
                     }
                 `}
       </style>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => navigate('/')}>
-            <IconArrowLeft className="w-4 h-4 mr-2" />
-            Back to Matches
-          </Button>
-        </div>
-
+      <div className="container mx-auto px-4 py-4">
         {/* Match Details Card */}
         {match.match_details && (
-          <Card className="mb-6">
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <CardTitle className="flex items-center gap-2">
-                  <IconMapPin className="w-5 h-5" />
-                  {match.match_details.map}
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <IconCalendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-400">
-                    {formatDate(match.match_details.created_at)}
-                  </span>
+          <Tabs defaultValue="player-stats" className="w-full">
+            <Card className="mb-4 pb-0 pt-4">
+              <CardContent className="p-0">
+                <div className="px-4 mb-4">
+                  <div className="flex items-center flex">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="flex items-center gap-2">
+                        <IconMapPin className="w-6 h-6 text-gray-400" />
+                        <h1 className="text-2xl font-bold tracking-tight text-white font-bold">{match.match_details.map}</h1>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <IconTrophy className="w-6 h-6 text-gray-400" />
+                        <h1 className="text-2xl font-bold tracking-tight text-green-500 font-bold">{match.match_details.winning_team_score}</h1>
+                        <span className="text-2xl text-gray-400">-</span>
+                        <h1 className="text-2xl font-bold tracking-tight text-red-500 font-bold">{match.match_details.losing_team_score}</h1>
+                      </div>
+                    </div>
+                    <div className="flex items-center ml-auto mr-0 gap-4">
+                      <div className="flex items-center gap-1">
+                        <IconUsers className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-400">
+                          {match.match_details.match_type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <IconCalendar className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-400">
+                          {formatDate(match.match_details.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <IconUsers className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-400">
-                    {match.match_details.match_type}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <IconTrophy className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-400">
-                    {match.match_details.winning_team_score} -{' '}
-                    {match.match_details.losing_team_score}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    className={
-                      match.match_details.winning_team === 'A'
-                        ? 'bg-blue-500'
-                        : 'bg-orange-500'
-                    }
+
+                <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 rounded-b-lg px-3">
+                  <TabsTrigger
+                    value="player-stats"
+                    className="!bg-transparent rounded-none"
                   >
-                    Team {match.match_details.winning_team} Won
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    Player Statistics
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="utility"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Utility Analysis
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="grenades"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Grenades
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="details"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Details
+                  </TabsTrigger>
+                </TabsList>
+              </CardContent>
+            </Card>
+
+            <TabsContent value="player-stats" className="mt-0">
+              {match.player_stats && match.player_stats.length > 0 ? (
+                <PlayerStatsTable
+                  players={match.player_stats}
+                  variant="expanded"
+                  match={match}
+                />
+              ) : (
+                <p className="text-center text-gray-400">
+                  No player statistics available for this match.
+                </p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="utility" className="mt-0">
+              <CardContent className="p-0">
+                <MatchUtilityAnalysis matchId={match.id} />
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="grenades" className="mt-0 mb-6">
+              <CardContent>
+                <MatchGrenadesView
+                  hideMapAndMatchFilters={true}
+                  showHeader={false}
+                  showFavourites={true}
+                  initialFilters={{
+                    map: match?.match_details?.map || '',
+                    matchId: match?.id?.toString() || '',
+                    grenadeType: 'fire_grenades',
+                  }}
+                />
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="details" className="mt-0">
+              <CardContent>
+                <p className="text-center text-gray-400">
+                  Additional match details will be displayed here.
+                </p>
+              </CardContent>
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Processing Status */}
@@ -243,83 +301,6 @@ const MatchDetail = () => {
                 </p>
               )}
             </CardContent>
-          </Card>
-        )}
-
-        {/* Tabs Section */}
-        {match.is_completed && (
-          <Card className="p-0">
-            <Tabs defaultValue="player-stats" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 rounded-t-lg mb-6">
-                <TabsTrigger
-                  value="player-stats"
-                  className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
-                >
-                  Player Statistics
-                </TabsTrigger>
-                <TabsTrigger
-                  value="utility"
-                  className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
-                >
-                  Utility Analysis
-                </TabsTrigger>
-                <TabsTrigger
-                  value="grenades"
-                  className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
-                >
-                  Grenades
-                </TabsTrigger>
-                <TabsTrigger
-                  value="details"
-                  className="bg-transparent rounded-none shadow-none hover:bg-gray-800/50 transition-all duration-200"
-                >
-                  Details
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="player-stats" className="mt-0 pb-4">
-                {match.player_stats && match.player_stats.length > 0 ? (
-                  <PlayerStatsTable
-                    players={match.player_stats}
-                    variant="expanded"
-                    match={match}
-                  />
-                ) : (
-                  <p className="text-center text-gray-400">
-                    No player statistics available for this match.
-                  </p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="utility" className="mt-0 mb-6">
-                <CardContent>
-                  <MatchUtilityAnalysis matchId={match.id} />
-                </CardContent>
-              </TabsContent>
-
-              <TabsContent value="grenades" className="mt-0 mb-6">
-                <CardContent>
-                  <MatchGrenadesView
-                    hideMapAndMatchFilters={true}
-                    showHeader={false}
-                    showFavourites={true}
-                    initialFilters={{
-                      map: match?.match_details?.map || '',
-                      matchId: match?.id?.toString() || '',
-                      grenadeType: 'fire_grenades',
-                    }}
-                  />
-                </CardContent>
-              </TabsContent>
-
-              <TabsContent value="details" className="mt-0">
-                <CardContent>
-                  <p className="text-center text-gray-400">
-                    Additional match details will be displayed here.
-                  </p>
-                </CardContent>
-              </TabsContent>
-            </Tabs>
           </Card>
         )}
       </div>

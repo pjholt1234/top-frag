@@ -1,4 +1,5 @@
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { getCustomRatingColor, getRatingColor } from '@/lib/utils';
 
 interface FlashStats {
   enemy_avg_duration: number;
@@ -24,44 +25,31 @@ interface UtilityStatsProps {
 export function UtilityStats({ overallStats }: UtilityStatsProps) {
   const getFlashDurationColor = (duration: number, isEnemy: boolean) => {
     if (isEnemy) {
-      if (duration >= 3) return 'text-green-400';
-      if (duration >= 2) return 'text-green-300';
-      if (duration >= 1) return 'text-orange-400';
-      return 'text-red-400';
+      // For enemy flash duration, higher is better (more effective)
+      return getCustomRatingColor(duration, [1, 2, 3, 4], 'text');
     } else {
-      if (duration >= 3) return 'text-red-400';
-      if (duration >= 2) return 'text-orange-400';
-      if (duration >= 1) return 'text-green-300';
-      return 'text-green-400';
+      // For friendly flash duration, lower is better (less friendly fire)
+      return getCustomRatingColor(4 - duration, [1, 2, 3, 4], 'text');
     }
   };
 
   const getBlindedColor = (count: number, isEnemy: boolean) => {
     if (isEnemy) {
-      if (count >= 3) return 'text-green-400';
-      if (count >= 2) return 'text-green-300';
-      if (count >= 1) return 'text-orange-400';
-      return 'text-red-400';
+      // For enemy blinded count, higher is better (more effective)
+      return getCustomRatingColor(count, [1, 2, 3, 4], 'text');
     } else {
-      if (count >= 3) return 'text-red-400';
-      if (count >= 2) return 'text-orange-400';
-      if (count >= 1) return 'text-green-300';
-      return 'text-green-400';
+      // For friendly blinded count, lower is better (less friendly fire)
+      return getCustomRatingColor(4 - count, [1, 2, 3, 4], 'text');
     }
   };
 
   const getHeDamageColor = (damage: number) => {
-    if (damage >= 20) return 'bg-green-600';
-    if (damage >= 10) return 'bg-green-400';
-    if (damage >= 5) return 'bg-orange-400';
-    return 'bg-red-500';
+    // For HE damage, higher is better (more effective)
+    return getCustomRatingColor(damage, [5, 10, 20, 30], 'bg');
   };
 
-  const getRatingColor = (rating: number) => {
-    if (rating >= 75) return 'bg-green-600';
-    if (rating >= 50) return 'bg-green-400';
-    if (rating >= 25) return 'bg-orange-400';
-    return 'bg-red-500';
+  const getRatingBgColor = (rating: number) => {
+    return getRatingColor(rating, 'bg');
   };
 
   return (
@@ -72,7 +60,7 @@ export function UtilityStats({ overallStats }: UtilityStatsProps) {
           <div className="flex items-center gap-3">
             <div className="text-sm text-gray-400">Overall Rating</div>
             <span
-              className={`inline-flex items-center px-1 rounded-full text-md font-medium ${getRatingColor(overallStats.overall_grenade_rating)} text-white`}
+              className={`inline-flex items-center px-1 rounded-full text-md font-medium ${getRatingBgColor(overallStats.overall_grenade_rating)} text-white`}
             >
               {overallStats.overall_grenade_rating.toFixed(1)}/100
             </span>
