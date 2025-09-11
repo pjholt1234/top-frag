@@ -184,12 +184,53 @@ class MatchControllerUtilityAnalysisTest extends TestCase
         $this->assertCount(2, $data['utility_usage']);
     }
 
-    public function test_utility_analysis_returns_404_when_no_data_available()
+    public function test_utility_analysis_returns_empty_data_when_no_grenade_events()
     {
         $response = $this->actingAs($this->user)
             ->getJson("/api/matches/{$this->match->id}/utility-analysis");
 
-        $response->assertStatus(404)
-            ->assertJson(['message' => 'Match not found or no data available']);
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'utility_usage',
+                'grenade_effectiveness',
+                'grenade_timing',
+                'overall_stats',
+                'players',
+                'rounds',
+                'current_user_steam_id',
+            ]);
+
+        $data = $response->json();
+        $this->assertEmpty($data['utility_usage']);
+        $this->assertEmpty($data['grenade_effectiveness']);
+        $this->assertEmpty($data['grenade_timing']);
+    }
+
+    public function test_utility_analysis_returns_empty_data_for_round_with_no_grenade_events()
+    {
+        // Create grenade events for round 1
+        GrenadeEvent::factory()->create([
+            'match_id' => $this->match->id,
+            'player_steam_id' => $this->player->steam_id,
+            'round_number' => 1,
+            'grenade_type' => GrenadeType::FLASHBANG,
+        ]);
+
+        // Request data for round 2 (which has no grenade events)
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/matches/{$this->match->id}/utility-analysis?round_number=2");
+
+        $response->assertStatus(200);
+        $data = $response->json();
+
+        // Should return empty arrays for the filtered round
+        $this->assertEmpty($data['utility_usage']);
+        $this->assertEmpty($data['grenade_effectiveness']);
+        $this->assertEmpty($data['grenade_timing']);
+
+        // But should still include match metadata
+        $this->assertNotEmpty($data['players']);
+        $this->assertNotEmpty($data['rounds']);
+        $this->assertEquals($this->user->steam_id, $data['current_user_steam_id']);
     }
 }
