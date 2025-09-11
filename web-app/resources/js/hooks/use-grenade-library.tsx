@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from 'react';
 import { toast } from 'sonner';
-import { useApi } from './useApi';
+import { useApi } from './use-api';
 
 // Types
 export interface FavouritedGrenadeData {

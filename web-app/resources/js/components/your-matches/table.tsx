@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
-import { PlayerStatsTable } from '@/components/player-stats-table';
+import { PlayerStatsTable } from '@/components/match-detail/player-stats-table';
 import {
   Table,
   TableBody,

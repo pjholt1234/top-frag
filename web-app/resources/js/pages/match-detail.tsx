@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -11,9 +11,9 @@ import {
   IconUsers,
   IconTrophy,
 } from '@tabler/icons-react';
-import { PlayerStatsTable } from '@/components/player-stats-table';
-import MatchGrenadesView from '../components/match-grenades-view';
-import { MatchUtilityAnalysis } from '@/components/match-utility-analysis';
+import { PlayerStatsTable } from '@/components/match-detail/player-stats-table';
+import MatchGrenadesView from '@/components/match-detail/grenades-view';
+import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
 
 interface PlayerStats {
   player_name: string;

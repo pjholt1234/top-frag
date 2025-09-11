@@ -7,7 +7,7 @@ import {
   useContext,
   ReactNode,
 } from 'react';
-import { useApi } from './useApi';
+import { useApi } from './use-api';
 
 // Types
 export interface GrenadeData {

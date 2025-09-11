@@ -7,7 +7,7 @@ import {
   IconListDetails,
   IconSettings,
 } from '@tabler/icons-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';

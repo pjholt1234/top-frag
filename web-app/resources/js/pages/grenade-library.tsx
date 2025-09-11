@@ -1,4 +1,4 @@
-import GrenadeLibraryView from '../components/grenade-library-view';
+import GrenadeLibraryView from '@/components/grenade-library/view';
 
 const GrenadeLibrary = () => {
   return <GrenadeLibraryView />;

@@ -7,8 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
-import { useMatchGrenades } from '../hooks/useMatchGrenades';
+import { useGrenadeLibrary } from '@/hooks/use-grenade-library';
+import { useMatchGrenades } from '@/hooks/use-match-grenades';
 
 interface GrenadeFiltersProps {
   hideMapAndMatchFilters?: boolean;

@@ -3,8 +3,8 @@ import { Stage, Layer, Image, Circle, Line } from 'react-konva';
 import { getMapMetadata } from '../config/maps';
 import ZoomSlider from './zoom-slider';
 import RoundSlider from './round-slider';
-import { useGrenadeLibrary } from '../hooks/useGrenadeLibrary';
-import { useMatchGrenades } from '../hooks/useMatchGrenades';
+import { useGrenadeLibrary } from '@/hooks/use-grenade-library';
+import { useMatchGrenades } from '@/hooks/use-match-grenades';
 
 interface MapVisualizationProps {
   mapName: string;

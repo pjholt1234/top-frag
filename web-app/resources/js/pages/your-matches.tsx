@@ -1,8 +1,8 @@
-import { MatchesTable } from '@/components/matches-table';
-import { MatchesFilters } from '@/components/matches-filters';
-import { MatchesTableSkeleton } from '@/components/matches-table-skeleton';
-import { UploadDemoModal } from '@/components/upload-demo-modal';
-import { api } from '../lib/api';
+import { MatchesTable } from '@/components/your-matches/table';
+import { MatchesFilters } from '@/components/your-matches/filters';
+import { MatchesTableSkeleton } from '@/components/your-matches/table-skeleton';
+import { UploadDemoModal } from '@/components/your-matches/upload-demo-modal';
+import { api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 interface PlayerStats {

@@ -12,9 +12,9 @@ import { Copy, Star } from 'lucide-react';
 import {
   useGrenadeLibrary,
   FavouritedGrenadeData,
-} from '../hooks/useGrenadeLibrary';
-import { useMatchGrenades, GrenadeData } from '../hooks/useMatchGrenades';
-import { useGrenadeFavourites } from '../hooks/useGrenadeFavourites';
+} from '@/hooks/use-grenade-library';
+import { useMatchGrenades, GrenadeData } from '@/hooks/use-match-grenades';
+import { useGrenadeFavourites } from '@/hooks/use-grenade-favourites';
 
 interface GrenadeListProps {
   onGrenadeClick: (grenade: GrenadeData | FavouritedGrenadeData) => void;

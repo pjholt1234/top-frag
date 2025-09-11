@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { api } from '../lib/api';
-import { UtilityFilters } from './utility-filters';
+import { api } from '@/lib/api';
+import { UtilityFilters } from '@/components/your-matches/utility-filters';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { UtilityUsageChart } from './match-details/utility-usage-chart';
-import { GrenadeRatingGauge } from './match-details/grenade-rating-gauge';
-import { GrenadeEffectivenessChart } from './match-details/grenade-effectiveness-chart';
-import { GrenadeTimingChart } from './match-details/grenade-timing-chart';
-import { UtilityStats } from './match-details/utility-stats';
+import { UtilityUsageChart } from './details/utility-usage-chart';
+import { GrenadeRatingGauge } from './details/grenade-rating-gauge';
+import { GrenadeEffectivenessChart } from './details/grenade-effectiveness-chart';
+import { GrenadeTimingChart } from './details/grenade-timing-chart';
+import { UtilityStats } from './details/utility-stats';
 
 interface UtilityAnalysisData {
   utility_usage: Array<{

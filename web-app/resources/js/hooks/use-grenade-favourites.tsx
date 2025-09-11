@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { api } from '../lib/api';
-import { GrenadeData } from './useMatchGrenades';
+import { api } from '@/lib/api';
+import { GrenadeData } from './use-match-grenades';
 
 interface FavouriteStatus {
   is_favourited: boolean;

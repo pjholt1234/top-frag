@@ -1,19 +1,18 @@
 import { useMemo, useState } from 'react';
-import MapVisualizationKonva from './map-visualization-konva';
-import MapVisualizationSkeleton from './map-visualization-skeleton';
-import GrenadeFilters from './grenade-filters';
-import GrenadeList from './grenade-list';
-import GrenadeListSkeleton from './grenade-list-skeleton';
+import MapVisualizationKonva from '@/components/map-visualization-konva';
+import MapVisualizationSkeleton from '@/components/map-visualization-skeleton';
+import GrenadeFilters from '@/components/grenade-filters';
+import GrenadeList from '@/components/grenade-list';
+import GrenadeListSkeleton from '@/components/grenade-list-skeleton';
 import {
-  useMatchGrenades,
-  MatchGrenadesProvider,
-  GrenadeData,
-} from '../hooks/useMatchGrenades';
+  useGrenadeLibrary,
+  GrenadeLibraryProvider,
+  FavouritedGrenadeData,
+} from '@/hooks/use-grenade-library';
 
-interface MatchGrenadesViewProps {
+interface GrenadeLibraryViewProps {
   hideMapAndMatchFilters?: boolean;
   showHeader?: boolean;
-  showFavourites?: boolean;
   className?: string;
   initialFilters?: {
     map?: string;
@@ -25,13 +24,12 @@ interface MatchGrenadesViewProps {
   };
 }
 
-const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
+const GrenadeLibraryViewContent: React.FC<GrenadeLibraryViewProps> = ({
   hideMapAndMatchFilters = false,
   showHeader = true,
-  showFavourites = false,
   className = '',
 }) => {
-  const { grenades, isLoading, error, currentMap } = useMatchGrenades();
+  const { grenades, isLoading, error, currentMap } = useGrenadeLibrary();
 
   const [selectedGrenadeId, setSelectedGrenadeId] = useState<number | null>(
     null
@@ -59,7 +57,7 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
   };
 
   // Handle grenade selection from list
-  const handleListGrenadeClick = (grenade: GrenadeData) => {
+  const handleListGrenadeClick = (grenade: FavouritedGrenadeData) => {
     setSelectedGrenadeId(selectedGrenadeId === grenade.id ? null : grenade.id);
   };
 
@@ -67,9 +65,9 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
     <div className={`space-y-6 ${className}`}>
       {showHeader && (
         <div className="mt-4">
-          <h1 className="text-3xl font-bold tracking-tight">Match Grenades</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Grenade Library</h1>
           <p className="text-muted-foreground">
-            Discover grenades from your recent matches
+            Your collection of favourite grenades from all matches
           </p>
         </div>
       )}
@@ -82,7 +80,7 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
 
       <GrenadeFilters
         hideMapAndMatchFilters={hideMapAndMatchFilters}
-        useFavouritesContext={false}
+        useFavouritesContext={true}
       />
 
       <div className="flex gap-6 items-start justify-center">
@@ -92,7 +90,8 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
             mapName={currentMap}
             onGrenadeSelect={handleMapGrenadeSelect}
             selectedGrenadeId={selectedGrenadeId}
-            useFavouritesContext={false}
+            useFavouritesContext={true}
+            hideRoundSlider={true}
           />
         ) : (
           <MapVisualizationKonva
@@ -100,7 +99,8 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
             grenadePositions={grenadePositions}
             onGrenadeSelect={handleMapGrenadeSelect}
             selectedGrenadeId={selectedGrenadeId}
-            useFavouritesContext={false}
+            useFavouritesContext={true}
+            hideRoundSlider={true}
           />
         )}
 
@@ -111,8 +111,9 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
           <GrenadeList
             onGrenadeClick={handleListGrenadeClick}
             selectedGrenadeId={selectedGrenadeId}
-            showFavourites={showFavourites}
-            useFavouritesContext={false}
+            showFavourites={true} // Show unfavourite buttons for favourited grenades
+            useFavouritesContext={true}
+            hideRoundNumber={true}
           />
         )}
       </div>
@@ -120,12 +121,12 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
   );
 };
 
-const MatchGrenadesView: React.FC<MatchGrenadesViewProps> = props => {
+const GrenadeLibraryView: React.FC<GrenadeLibraryViewProps> = props => {
   return (
-    <MatchGrenadesProvider initialFilters={props.initialFilters}>
-      <MatchGrenadesViewContent {...props} />
-    </MatchGrenadesProvider>
+    <GrenadeLibraryProvider initialFilters={props.initialFilters}>
+      <GrenadeLibraryViewContent {...props} />
+    </GrenadeLibraryProvider>
   );
 };
 
-export default MatchGrenadesView;
+export default GrenadeLibraryView;

@@ -1,4 +1,4 @@
-import { GaugeChart } from '../charts/gauge-chart';
+import { GaugeChart } from '@/components/charts/gauge-chart';
 import { getRatingColor, getQualityLevel } from '@/lib/utils';
 
 interface GrenadeRatingGaugeProps {

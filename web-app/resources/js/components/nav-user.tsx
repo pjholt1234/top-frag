@@ -5,7 +5,7 @@ import {
   IconNotification,
   IconUserCircle,
 } from '@tabler/icons-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
