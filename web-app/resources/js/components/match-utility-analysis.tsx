@@ -154,8 +154,6 @@ export function MatchUtilityAnalysis({ matchId }: MatchUtilityAnalysisProps) {
 
   return (
     <div className="space-y-6">
-
-
       <div className="space-y-6">
         {/* First row: Utility Usage and Stats will be side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -172,7 +170,9 @@ export function MatchUtilityAnalysis({ matchId }: MatchUtilityAnalysisProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="h-full">
               <CardContent className="flex items-center justify-center">
-                <GrenadeRatingGauge rating={data.overall_stats.overall_grenade_rating} />
+                <GrenadeRatingGauge
+                  rating={data.overall_stats.overall_grenade_rating}
+                />
               </CardContent>
             </Card>
             <Card>

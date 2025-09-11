@@ -61,7 +61,10 @@ export const QUALITY_COLORS: ColorScheme = {
  * @param format - The color format (hex, text, bg)
  * @returns The color value in the requested format
  */
-export function getQualityColor(level: QualityLevel, format: ColorFormat): string {
+export function getQualityColor(
+  level: QualityLevel,
+  format: ColorFormat
+): string {
   return QUALITY_COLORS[level][format];
 }
 
@@ -100,7 +103,7 @@ export function getCustomRatingColor(
   thresholds: [number, number, number, number],
   format: ColorFormat
 ): string {
-  const [poorThreshold, fairThreshold, goodThreshold, excellentThreshold] = thresholds;
+  const [fairThreshold, goodThreshold, excellentThreshold] = thresholds;
 
   if (value >= excellentThreshold) return getQualityColor('excellent', format);
   if (value >= goodThreshold) return getQualityColor('good', format);

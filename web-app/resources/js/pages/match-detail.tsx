@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   IconArrowLeft,
@@ -176,13 +175,19 @@ const MatchDetail = () => {
                     <div className="flex items-center gap-4 mb-2">
                       <div className="flex items-center gap-2">
                         <IconMapPin className="w-6 h-6 text-gray-400" />
-                        <h1 className="text-2xl font-bold tracking-tight text-white font-bold">{match.match_details.map}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-white font-bold">
+                          {match.match_details.map}
+                        </h1>
                       </div>
                       <div className="flex items-center gap-2">
                         <IconTrophy className="w-6 h-6 text-gray-400" />
-                        <h1 className="text-2xl font-bold tracking-tight text-green-500 font-bold">{match.match_details.winning_team_score}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-green-500 font-bold">
+                          {match.match_details.winning_team_score}
+                        </h1>
                         <span className="text-2xl text-gray-400">-</span>
-                        <h1 className="text-2xl font-bold tracking-tight text-red-500 font-bold">{match.match_details.losing_team_score}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-red-500 font-bold">
+                          {match.match_details.losing_team_score}
+                        </h1>
                       </div>
                     </div>
                     <div className="flex items-center ml-auto mr-0 gap-4">

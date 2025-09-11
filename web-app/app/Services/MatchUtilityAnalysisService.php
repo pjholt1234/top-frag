@@ -61,6 +61,7 @@ class MatchUtilityAnalysisService
             if ($type === GrenadeType::INCENDIARY || $type === GrenadeType::MOLOTOV) {
                 return 'Fire';
             }
+
             return $type;
         });
 
@@ -110,6 +111,7 @@ class MatchUtilityAnalysisService
             if ($type === GrenadeType::INCENDIARY || $type === GrenadeType::MOLOTOV) {
                 return 'Fire';
             }
+
             return $type;
         });
 
