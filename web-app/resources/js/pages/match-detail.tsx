@@ -167,7 +167,7 @@ const MatchDetail = () => {
       <div className="container mx-auto px-4 py-4">
         {/* Match Details Card */}
         {match.match_details && (
-          <Tabs defaultValue="player-stats" className="w-full">
+          <Tabs defaultValue="match-details" className="w-full">
             <Card className="mb-4 pb-0 pt-4">
               <CardContent className="p-0">
                 <div className="px-4 mb-4">
@@ -207,12 +207,18 @@ const MatchDetail = () => {
                   </div>
                 </div>
 
-                <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 rounded-b-lg px-3">
+                <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 rounded-b-lg px-3">
+                  <TabsTrigger
+                    value="match-details"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Match Details
+                  </TabsTrigger>
                   <TabsTrigger
                     value="player-stats"
                     className="!bg-transparent rounded-none"
                   >
-                    Player Statistics
+                    Player Stats
                   </TabsTrigger>
                   <TabsTrigger
                     value="utility"
@@ -224,19 +230,19 @@ const MatchDetail = () => {
                     value="grenades"
                     className="!bg-transparent rounded-none"
                   >
-                    Grenades
+                    Grenade Explorer
                   </TabsTrigger>
                   <TabsTrigger
-                    value="details"
+                    value="head-to-head"
                     className="!bg-transparent rounded-none"
                   >
-                    Details
+                    Head to Head
                   </TabsTrigger>
                 </TabsList>
               </CardContent>
             </Card>
 
-            <TabsContent value="player-stats" className="mt-0">
+            <TabsContent value="match-details" className="mt-0">
               {match.player_stats && match.player_stats.length > 0 ? (
                 <PlayerStatsTable
                   players={match.player_stats}
@@ -250,6 +256,14 @@ const MatchDetail = () => {
               )}
             </TabsContent>
 
+            <TabsContent value="player-stats" className="mt-0">
+              <CardContent className="p-0">
+                <p className="text-center text-gray-400">
+                  Player statistics will be displayed here.
+                </p>
+              </CardContent>
+            </TabsContent>
+
             <TabsContent value="utility" className="mt-0">
               <CardContent className="p-0">
                 <MatchUtilityAnalysis matchId={match.id} />
@@ -257,7 +271,7 @@ const MatchDetail = () => {
             </TabsContent>
 
             <TabsContent value="grenades" className="mt-0 mb-6">
-              <CardContent>
+              <CardContent className="p-0">
                 <MatchGrenadesView
                   hideMapAndMatchFilters={true}
                   showHeader={false}
@@ -271,10 +285,10 @@ const MatchDetail = () => {
               </CardContent>
             </TabsContent>
 
-            <TabsContent value="details" className="mt-0">
-              <CardContent>
+            <TabsContent value="head-to-head" className="mt-0">
+              <CardContent className="p-0">
                 <p className="text-center text-gray-400">
-                  Additional match details will be displayed here.
+                  Head to Head will be displayed here.
                 </p>
               </CardContent>
             </TabsContent>
