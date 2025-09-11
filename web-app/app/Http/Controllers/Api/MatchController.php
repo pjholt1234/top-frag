@@ -108,8 +108,10 @@ class MatchController extends Controller
             $roundNumber
         );
 
+        // Only return 404 if the match itself doesn't exist or user doesn't have access
+        // Empty analysis data (e.g., no grenade events for a specific round) is valid
         if (empty($analysis)) {
-            return response()->json(['message' => 'Match not found or no data available'], 404);
+            return response()->json(['message' => 'Match not found'], 404);
         }
 
         return response()->json($analysis);

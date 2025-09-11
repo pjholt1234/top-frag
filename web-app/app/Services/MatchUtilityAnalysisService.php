@@ -29,10 +29,8 @@ class MatchUtilityAnalysisService
 
         $grenadeEvents = $query->get();
 
-        if ($grenadeEvents->isEmpty()) {
-            return [];
-        }
-
+        // Always return a valid response structure, even if no grenade events are found
+        // This allows for proper filtering behavior where empty results are valid
         return [
             'utility_usage' => $this->getUtilityUsageStats($grenadeEvents),
             'grenade_effectiveness' => $this->getGrenadeEffectivenessByRound($grenadeEvents),
