@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\GameMatch;
+use App\Services\Matches\GrenadeExplorerService;
+use App\Services\Matches\HeadToHeadService;
 use App\Services\Matches\MatchDetailsService;
 use App\Services\Matches\PlayerStatsService;
 use App\Services\Matches\UtilityAnalysisService;
-use App\Services\Matches\GrenadeExplorerService;
-use App\Services\Matches\HeadToHeadService;
 use App\Services\MatchHistoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

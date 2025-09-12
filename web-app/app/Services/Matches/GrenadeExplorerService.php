@@ -13,7 +13,7 @@ class GrenadeExplorerService
 {
     use MatchAccessTrait;
 
-    public function getExplorer(User $user, array $filters = [], int $matchId): array
+    public function getExplorer(User $user, array $filters, int $matchId): array
     {
         $cacheKey = $this->getCacheKey($filters);
 
@@ -25,12 +25,14 @@ class GrenadeExplorerService
     private function getCacheKey(array $filters): string
     {
         $filterHash = empty($filters) ? 'default' : md5(serialize($filters));
+
         return "grenade-explorer_{$filterHash}";
     }
 
     private function getFilterOptionsCacheKey(array $filters): string
     {
         $filterHash = empty($filters) ? 'default' : md5(serialize($filters));
+
         return "grenade-explorer-filter-options_{$filterHash}";
     }
 
@@ -92,7 +94,7 @@ class GrenadeExplorerService
         ];
     }
 
-    public function getFilterOptions(User $user, array $filters = [], int $matchId): array
+    public function getFilterOptions(User $user, array $filters, int $matchId): array
     {
         $cacheKey = $this->getFilterOptionsCacheKey($filters);
 
@@ -155,7 +157,7 @@ class GrenadeExplorerService
         }
 
         // Add "All Matches" option if map is selected and there are matches
-        if ($map && !empty($matches)) {
+        if ($map && ! empty($matches)) {
             array_unshift($matches, [
                 'id' => 'all',
                 'name' => 'All Matches',

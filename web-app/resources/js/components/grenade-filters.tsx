@@ -96,7 +96,6 @@ const GrenadeFiltersContent: React.FC<GrenadeFiltersContentProps> = ({
           </div>
         )}
 
-
         {/* Grenade Type Filter - No "All" option, hardcoded with Fire Grenades */}
         <div className="space-y-1 min-w-[120px]">
           <Label htmlFor="grenade-type-filter" className="text-xs">

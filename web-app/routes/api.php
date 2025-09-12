@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
-use App\Http\Controllers\Api\GrenadeLibraryController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\UploadController;
@@ -25,17 +24,17 @@ Route::get('/health', [HealthController::class, 'check']);
 // Test utility analysis directly
 Route::get('/test-utility/{matchId}', function ($matchId) {
     $user = \App\Models\User::first();
-    if (!$user) {
+    if (! $user) {
         return response()->json(['error' => 'No users found']);
     }
 
-    $service = new \App\Services\Matches\UtilityAnalysisService();
-    $result = $service->getAnalysis($user, (int)$matchId);
+    $service = new \App\Services\Matches\UtilityAnalysisService;
+    $result = $service->getAnalysis($user, (int) $matchId);
 
     return response()->json([
         'match_id' => $matchId,
         'user_id' => $user->id,
-        'result_keys' => array_keys($result)
+        'result_keys' => array_keys($result),
     ]);
 });
 

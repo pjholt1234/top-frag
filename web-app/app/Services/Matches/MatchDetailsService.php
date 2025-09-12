@@ -40,13 +40,13 @@ class MatchDetailsService
 
     private function buildMatchDetails(User $user, int $matchId): array
     {
-        if (!$this->hasUserAccessToMatch($user, $matchId)) {
+        if (! $this->hasUserAccessToMatch($user, $matchId)) {
             return [];
         }
 
         $match = GameMatch::with(['players'])->find($matchId);
 
-        if (!$match) {
+        if (! $match) {
             return [];
         }
 

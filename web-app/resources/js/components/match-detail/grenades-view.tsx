@@ -122,7 +122,10 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
 
 const MatchGrenadesView: React.FC<MatchGrenadesViewProps> = props => {
   return (
-    <MatchGrenadesProvider matchId={props.matchId} initialFilters={props.initialFilters}>
+    <MatchGrenadesProvider
+      matchId={props.matchId}
+      initialFilters={props.initialFilters}
+    >
       <MatchGrenadesViewContent {...props} />
     </MatchGrenadesProvider>
   );

@@ -21,7 +21,7 @@ class MatchCacheManager
      */
     public static function cache(string $component, int $matchId, array $data, ?int $ttl = null): void
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return;
         }
 
@@ -34,11 +34,12 @@ class MatchCacheManager
      */
     public static function get(string $component, int $matchId): ?array
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return null;
         }
 
         $key = self::getKey($component, $matchId);
+
         return Cache::get($key);
     }
 
@@ -47,11 +48,12 @@ class MatchCacheManager
      */
     public static function remember(string $component, int $matchId, callable $callback, ?int $ttl = null): array
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return $callback();
         }
 
         $key = self::getKey($component, $matchId);
+
         return Cache::remember($key, $ttl ?? self::CACHE_TTL, $callback);
     }
 
@@ -60,7 +62,7 @@ class MatchCacheManager
      */
     public static function invalidateComponent(int $matchId, string $component): void
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return;
         }
 
@@ -76,7 +78,7 @@ class MatchCacheManager
      */
     public static function invalidateComplete(int $matchId): void
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return;
         }
 
@@ -92,7 +94,7 @@ class MatchCacheManager
      */
     public static function invalidateAll(int $matchId): void
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return;
         }
 
@@ -107,11 +109,12 @@ class MatchCacheManager
      */
     public static function has(string $component, int $matchId): bool
     {
-        if (!self::isCacheEnabled()) {
+        if (! self::isCacheEnabled()) {
             return false;
         }
 
         $key = self::getKey($component, $matchId);
+
         return Cache::has($key);
     }
 

@@ -39,7 +39,7 @@ class MatchHistoryServiceTest extends TestCase
         ]);
 
         $this->service = new MatchHistoryService(
-            matchDetailsService: new \App\Services\Matches\MatchDetailsService()
+            matchDetailsService: new \App\Services\Matches\MatchDetailsService
         );
     }
 

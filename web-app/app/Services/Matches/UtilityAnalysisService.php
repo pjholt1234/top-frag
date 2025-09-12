@@ -25,8 +25,13 @@ class UtilityAnalysisService
     private function getCacheKey(?string $playerSteamId, ?int $roundNumber): string
     {
         $key = 'utility-analysis';
-        if ($playerSteamId) $key .= "_player_{$playerSteamId}";
-        if ($roundNumber) $key .= "_round_{$roundNumber}";
+        if ($playerSteamId) {
+            $key .= "_player_{$playerSteamId}";
+        }
+        if ($roundNumber) {
+            $key .= "_round_{$roundNumber}";
+        }
+
         return $key;
     }
 

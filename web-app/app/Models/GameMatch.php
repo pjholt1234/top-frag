@@ -4,12 +4,11 @@ namespace App\Models;
 
 use App\Enums\MatchType;
 use App\Enums\ProcessingStatus;
+use App\Services\MatchCacheManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Cache;
-use App\Services\MatchCacheManager;
 
 class GameMatch extends Model
 {

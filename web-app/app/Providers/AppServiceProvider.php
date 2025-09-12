@@ -11,8 +11,8 @@ use App\Observers\DemoProcessingJobObserver;
 use App\Observers\GrenadeEventObserver;
 use App\Observers\GunfightEventObserver;
 use App\Services\DemoParserService;
-use App\Services\ParserServiceConnector;
 use App\Services\MatchHistoryService;
+use App\Services\ParserServiceConnector;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

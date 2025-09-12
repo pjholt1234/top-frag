@@ -165,7 +165,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     try {
       setError(null);
       const response = await get<FilterOptions>(
-        `/matches/${matchId}/grenade-explorer/filter-options`,
+        `/matches/${matchId}/grenade-explorer/filter-options`
       );
       const data = response.data;
       setFilterOptions(data);
@@ -183,7 +183,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
     try {
       const response = await get<FilterOptions>(
-        `/matches/${matchId}/grenade-explorer/filter-options`,
+        `/matches/${matchId}/grenade-explorer/filter-options`
       );
       const data = response.data;
 
@@ -430,7 +430,6 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     loadGrenades();
   }, [loadGrenades]);
 
-
   const contextValue: UseMatchGrenadesReturn = {
     // Data
     grenades,
@@ -492,18 +491,18 @@ export const useMatchGrenades = (): UseMatchGrenadesReturn => {
         playerSteamId: 'all',
         playerSide: 'all',
       },
-      setFilter: () => { },
-      setFilters: () => { },
-      resetFilters: () => { },
+      setFilter: () => {},
+      setFilters: () => {},
+      resetFilters: () => {},
       isLoading: false,
       isInitialized: false,
       error: null,
-      refreshData: async () => { },
-      loadFilterOptions: async () => { },
+      refreshData: async () => {},
+      loadFilterOptions: async () => {},
       grenadeStates: new Map(),
-      selectGrenade: () => { },
-      selectGrenades: () => { },
-      clearSelection: () => { },
+      selectGrenade: () => {},
+      selectGrenades: () => {},
+      clearSelection: () => {},
       getSelectedGrenades: () => [],
       selectedGrenadeCount: 0,
       hasValidFilters: false,

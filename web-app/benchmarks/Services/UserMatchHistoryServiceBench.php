@@ -56,20 +56,20 @@ class MatchHistoryServiceBench implements BenchmarkInterface
         config(['app.cache_enabled' => false]);
 
         $this->service = new MatchHistoryService(
-            matchDetailsService: new \App\Services\Matches\MatchDetailsService()
+            matchDetailsService: new \App\Services\Matches\MatchDetailsService
         );
 
         $uniqueId = uniqid();
 
         $this->user = User::factory()->create([
-            'name' => 'Benchmark User ' . $uniqueId,
-            'email' => 'benchmark' . $uniqueId . '@test.com',
-            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
+            'name' => 'Benchmark User '.$uniqueId,
+            'email' => 'benchmark'.$uniqueId.'@test.com',
+            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
         ]);
 
         $this->player = Player::factory()->create([
             'steam_id' => $this->user->steam_id,
-            'name' => 'Benchmark Player ' . $uniqueId,
+            'name' => 'Benchmark Player '.$uniqueId,
         ]);
 
         $this->match = GameMatch::factory()->create([
@@ -177,14 +177,14 @@ class MatchHistoryServiceBench implements BenchmarkInterface
 
         // Create user with multiple matches for multiple matches benchmark
         $this->userWithMultipleMatches = User::factory()->create([
-            'name' => 'Multiple Matches User ' . $uniqueId,
-            'email' => 'multiple' . $uniqueId . '@test.com',
-            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
+            'name' => 'Multiple Matches User '.$uniqueId,
+            'email' => 'multiple'.$uniqueId.'@test.com',
+            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
         ]);
 
         $playerWithMultipleMatches = Player::factory()->create([
             'steam_id' => $this->userWithMultipleMatches->steam_id,
-            'name' => 'Multiple Matches Player ' . $uniqueId,
+            'name' => 'Multiple Matches Player '.$uniqueId,
         ]);
 
         // Create additional matches for the user
@@ -223,9 +223,9 @@ class MatchHistoryServiceBench implements BenchmarkInterface
 
         // Create user without player for edge case benchmark
         $this->userWithoutPlayer = User::factory()->create([
-            'name' => 'User Without Player ' . $uniqueId,
-            'email' => 'noplayer' . $uniqueId . '@test.com',
-            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
+            'name' => 'User Without Player '.$uniqueId,
+            'email' => 'noplayer'.$uniqueId.'@test.com',
+            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
         ]);
     }
 
