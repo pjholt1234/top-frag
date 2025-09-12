@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Cache Enabled
+    |--------------------------------------------------------------------------
+    |
+    | This value determines whether caching is enabled for the application.
+    | When disabled, all caching operations will be bypassed. Set this in
+    | your ".env" file.
+    |
+    */
+
+    'cache_enabled' => (bool) env('CACHE_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

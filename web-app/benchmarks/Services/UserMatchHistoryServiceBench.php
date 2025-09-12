@@ -11,7 +11,7 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\Player;
 use App\Models\User;
-use App\Services\UserMatchHistoryService;
+use App\Services\MatchHistoryService;
 use PhpBench\Benchmark\Metadata\Annotations\AfterMethods;
 use PhpBench\Benchmark\Metadata\Annotations\Assert;
 use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
@@ -24,9 +24,9 @@ use PhpBench\Benchmark\Metadata\Annotations\Warmup;
  *
  * @AfterMethods({"tearDown"})
  */
-class UserMatchHistoryServiceBench implements BenchmarkInterface
+class MatchHistoryServiceBench implements BenchmarkInterface
 {
-    private UserMatchHistoryService $service;
+    private MatchHistoryService $service;
 
     private User $user;
 
@@ -52,19 +52,24 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
 
     public function setUp(): void
     {
-        $this->service = new UserMatchHistoryService(false);
+        // Set CACHE_ENABLED to false for benchmarking
+        config(['app.cache_enabled' => false]);
+
+        $this->service = new MatchHistoryService(
+            matchDetailsService: new \App\Services\Matches\MatchDetailsService()
+        );
 
         $uniqueId = uniqid();
 
         $this->user = User::factory()->create([
-            'name' => 'Benchmark User '.$uniqueId,
-            'email' => 'benchmark'.$uniqueId.'@test.com',
-            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
+            'name' => 'Benchmark User ' . $uniqueId,
+            'email' => 'benchmark' . $uniqueId . '@test.com',
+            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
         ]);
 
         $this->player = Player::factory()->create([
             'steam_id' => $this->user->steam_id,
-            'name' => 'Benchmark Player '.$uniqueId,
+            'name' => 'Benchmark Player ' . $uniqueId,
         ]);
 
         $this->match = GameMatch::factory()->create([
@@ -172,14 +177,14 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
 
         // Create user with multiple matches for multiple matches benchmark
         $this->userWithMultipleMatches = User::factory()->create([
-            'name' => 'Multiple Matches User '.$uniqueId,
-            'email' => 'multiple'.$uniqueId.'@test.com',
-            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
+            'name' => 'Multiple Matches User ' . $uniqueId,
+            'email' => 'multiple' . $uniqueId . '@test.com',
+            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
         ]);
 
         $playerWithMultipleMatches = Player::factory()->create([
             'steam_id' => $this->userWithMultipleMatches->steam_id,
-            'name' => 'Multiple Matches Player '.$uniqueId,
+            'name' => 'Multiple Matches Player ' . $uniqueId,
         ]);
 
         // Create additional matches for the user
@@ -218,9 +223,9 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
 
         // Create user without player for edge case benchmark
         $this->userWithoutPlayer = User::factory()->create([
-            'name' => 'User Without Player '.$uniqueId,
-            'email' => 'noplayer'.$uniqueId.'@test.com',
-            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
+            'name' => 'User Without Player ' . $uniqueId,
+            'email' => 'noplayer' . $uniqueId . '@test.com',
+            'steam_id' => 'STEAM_0:1:' . rand(100000000, 999999999),
         ]);
     }
 
@@ -240,7 +245,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
      */
     public function benchAggregateMatchData(): void
     {
-        $this->service->aggregateMatchData($this->user);
+        $this->service->getPaginatedMatchHistory($this->user, 10, 1);
     }
 
     /**
@@ -283,8 +288,8 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
      */
     public function benchCalculatePlayerAverageDamagePerRound(): void
     {
-        // This will test the damage calculation through the aggregate method
-        $this->service->aggregateMatchData($this->user);
+        // This will test the damage calculation through the paginated method
+        $this->service->getPaginatedMatchHistory($this->user, 10, 1);
     }
 
     /**
@@ -298,7 +303,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
      */
     public function benchMultipleMatchesAggregation(): void
     {
-        $this->service->aggregateMatchData($this->userWithMultipleMatches);
+        $this->service->getPaginatedMatchHistory($this->userWithMultipleMatches, 10, 1);
     }
 
     /**
@@ -312,6 +317,6 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
      */
     public function benchUserWithoutPlayer(): void
     {
-        $this->service->aggregateMatchData($this->userWithoutPlayer);
+        $this->service->getPaginatedMatchHistory($this->userWithoutPlayer, 10, 1);
     }
 }

@@ -1,16 +1,36 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Matches;
 
 use App\Enums\GrenadeType;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\User;
+use App\Services\MatchCacheManager;
 use Illuminate\Support\Collection;
 
-class MatchUtilityAnalysisService
+class UtilityAnalysisService
 {
-    public function getUtilityAnalysis(User $user, int $matchId, ?string $playerSteamId = null, ?int $roundNumber = null): array
+    use MatchAccessTrait;
+
+    public function getAnalysis(User $user, int $matchId, ?string $playerSteamId = null, ?int $roundNumber = null): array
+    {
+        $cacheKey = $this->getCacheKey($playerSteamId, $roundNumber);
+
+        return MatchCacheManager::remember($cacheKey, $matchId, function () use ($user, $matchId, $playerSteamId, $roundNumber) {
+            return $this->buildAnalysis($user, $matchId, $playerSteamId, $roundNumber);
+        });
+    }
+
+    private function getCacheKey(?string $playerSteamId, ?int $roundNumber): string
+    {
+        $key = 'utility-analysis';
+        if ($playerSteamId) $key .= "_player_{$playerSteamId}";
+        if ($roundNumber) $key .= "_round_{$roundNumber}";
+        return $key;
+    }
+
+    private function buildAnalysis(User $user, int $matchId, ?string $playerSteamId = null, ?int $roundNumber = null): array
     {
         $match = $this->getMatchForUser($user, $matchId);
         if (! $match) {

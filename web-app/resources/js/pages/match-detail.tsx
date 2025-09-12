@@ -60,7 +60,7 @@ const MatchDetail = () => {
 
       try {
         setLoading(true);
-        const response = await api.get<Match>(`/matches/${id}`, {
+        const response = await api.get<Match>(`/matches/${id}/match-details`, {
           requireAuth: true,
         });
         setMatch(response.data);
@@ -137,28 +137,28 @@ const MatchDetail = () => {
                         border: none !important;
                         border-bottom: 2px solid #f97316 !important;
                     }
-                    
+
                     [data-state="inactive"] {
                         border: none !important;
                         border-bottom: 2px solid transparent !important;
                     }
-                    
+
                     .border-0 {
                         border: none !important;
                         border-bottom: none !important;
                     }
-                    
+
                     [data-slot="tabs-content"] {
                         border: none !important;
                         border-bottom: none !important;
                     }
-                    
+
                     [role="tab"] {
                         border: none !important;
                         border-bottom: 2px solid transparent !important;
                         transition: border-bottom-color 0.2s ease-in-out !important;
                     }
-                    
+
                     [data-state="active"][role="tab"] {
                         border-bottom: 2px solid #f97316 !important;
                     }

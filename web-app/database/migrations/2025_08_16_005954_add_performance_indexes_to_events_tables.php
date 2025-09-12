@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add composite indexes for better performance in UserMatchHistoryService
+        // Add composite indexes for better performance in MatchHistoryService
         Schema::table('gunfight_events', function (Blueprint $table) {
             // Composite index for match_id + victor_steam_id (for kill statistics)
             $table->index(['match_id', 'victor_steam_id'], 'gunfight_match_victor_idx');

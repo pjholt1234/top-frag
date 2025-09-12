@@ -7,15 +7,15 @@ use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\Player;
 use App\Models\User;
-use App\Services\MatchUtilityAnalysisService;
+use App\Services\Matches\UtilityAnalysisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class MatchUtilityAnalysisServiceTest extends TestCase
+class UtilityAnalysisServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private MatchUtilityAnalysisService $service;
+    private UtilityAnalysisService $service;
 
     private User $user;
 
@@ -27,7 +27,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new MatchUtilityAnalysisService;
+        $this->service = new UtilityAnalysisService;
 
         $this->user = User::factory()->create([
             'steam_id' => '76561198012345678',
@@ -50,14 +50,14 @@ class MatchUtilityAnalysisServiceTest extends TestCase
     {
         $userWithoutPlayer = User::factory()->create(['steam_id' => null]);
 
-        $result = $this->service->getUtilityAnalysis($userWithoutPlayer, $this->match->id);
+        $result = $this->service->getAnalysis($userWithoutPlayer, $this->match->id);
 
         $this->assertEmpty($result);
     }
 
     public function test_get_utility_analysis_returns_empty_array_for_nonexistent_match()
     {
-        $result = $this->service->getUtilityAnalysis($this->user, 99999);
+        $result = $this->service->getAnalysis($this->user, 99999);
 
         $this->assertEmpty($result);
     }
@@ -74,7 +74,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'enemy_players_affected' => 2,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $this->assertArrayHasKey('utility_usage', $result);
         $this->assertArrayHasKey('grenade_effectiveness', $result);
@@ -100,7 +100,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'grenade_type' => GrenadeType::HE_GRENADE,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $this->assertCount(2, $result['utility_usage']);
 
@@ -136,7 +136,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'effectiveness_rating' => 9,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $this->assertCount(2, $result['grenade_effectiveness']);
 
@@ -169,7 +169,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'effectiveness_rating' => null,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $this->assertEquals(7.0, $result['overall_stats']['overall_grenade_rating']);
     }
@@ -196,7 +196,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'friendly_players_affected' => 0,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $flashStats = $result['overall_stats']['flash_stats'];
         $this->assertEquals(2.5, $flashStats['enemy_avg_duration']);
@@ -228,7 +228,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'damage_dealt' => 0,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         $this->assertEquals(40.0, $result['overall_stats']['he_stats']['avg_damage']);
     }
@@ -250,7 +250,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'grenade_type' => GrenadeType::HE_GRENADE,
         ]);
 
-        $result = $this->service->getUtilityAnalysis(
+        $result = $this->service->getAnalysis(
             $this->user,
             $this->match->id,
             $this->player->steam_id
@@ -276,7 +276,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'grenade_type' => GrenadeType::HE_GRENADE,
         ]);
 
-        $result = $this->service->getUtilityAnalysis(
+        $result = $this->service->getAnalysis(
             $this->user,
             $this->match->id,
             null,
@@ -304,7 +304,7 @@ class MatchUtilityAnalysisServiceTest extends TestCase
             'round_number' => 2,
         ]);
 
-        $result = $this->service->getUtilityAnalysis($this->user, $this->match->id);
+        $result = $this->service->getAnalysis($this->user, $this->match->id);
 
         // Check utility usage combines into "Fire"
         $fireUsage = collect($result['utility_usage'])->firstWhere('type', 'Fire');

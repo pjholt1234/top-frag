@@ -3,20 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\MatchUtilityAnalysisService;
-use App\Services\UserMatchHistoryService;
+use App\Models\GameMatch;
+use App\Services\Matches\MatchDetailsService;
+use App\Services\Matches\PlayerStatsService;
+use App\Services\Matches\UtilityAnalysisService;
+use App\Services\Matches\GrenadeExplorerService;
+use App\Services\Matches\HeadToHeadService;
+use App\Services\MatchHistoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MatchController extends Controller
 {
     public function __construct(
-        private readonly UserMatchHistoryService $userMatchHistoryService,
-        private readonly MatchUtilityAnalysisService $utilityAnalysisService,
+        private readonly MatchHistoryService $matchHistoryService,
+        private readonly MatchDetailsService $matchDetailsService,
+        private readonly PlayerStatsService $playerStatsService,
+        private readonly UtilityAnalysisService $utilityAnalysisService,
+        private readonly GrenadeExplorerService $grenadeExplorerService,
+        private readonly HeadToHeadService $headToHeadService,
     ) {}
 
     public function index(Request $request)
     {
-        // todo auth policies
         $user = $request->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -47,41 +56,12 @@ class MatchController extends Controller
             return $value !== null && $value !== '';
         });
 
-        $matchHistory = $this->userMatchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
+        $matchHistory = $this->matchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
 
         return response()->json($matchHistory);
     }
 
-    public function show(Request $request, int $matchId)
-    {
-        // todo auth policies
-        $user = $request->user();
-        if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
-        }
-
-        $match = $this->userMatchHistoryService->getMatchById($user, $matchId);
-
-        if (! $match) {
-            return response()->json(['message' => 'Match not found'], 404);
-        }
-
-        // Add debug info to response
-        $match['debug'] = [
-            'user_id' => $user->id,
-            'steam_id' => $user->steam_id,
-            'has_player' => $user->player ? 'yes' : 'no',
-            'match_id' => $matchId,
-        ];
-
-        return response()->json($match);
-    }
-
-    public function utilityAnalysis(Request $request, int $matchId)
+    public function utilityAnalysis(Request $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
@@ -101,7 +81,7 @@ class MatchController extends Controller
             $roundNumber = null;
         }
 
-        $analysis = $this->utilityAnalysisService->getUtilityAnalysis(
+        $analysis = $this->utilityAnalysisService->getAnalysis(
             $user,
             $matchId,
             $playerSteamId,
@@ -115,5 +95,109 @@ class MatchController extends Controller
         }
 
         return response()->json($analysis);
+    }
+
+    public function matchDetails(Request $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $details = $this->matchDetailsService->getDetails($user, $matchId);
+
+        if (empty($details)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($details);
+    }
+
+    public function playerStats(Request $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $stats = $this->playerStatsService->getStats($user, $matchId);
+
+        if (empty($stats)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($stats);
+    }
+
+    public function grenadeExplorer(Request $request, int $matchId)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $filters = $request->only(['round_number', 'grenade_type', 'player_steam_id', 'player_side']);
+        $explorer = $this->grenadeExplorerService->getExplorer($user, $matchId, $filters);
+
+        if (empty($explorer)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($explorer);
+    }
+
+    public function grenadeExplorerFilterOptions(Request $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $filterOptions = $this->grenadeExplorerService->getFilterOptions($user, $matchId);
+
+        if (empty($filterOptions)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($filterOptions);
+    }
+
+    public function headToHead(Request $request, int $matchId)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $player1SteamId = $request->get('player1_steam_id');
+        $player2SteamId = $request->get('player2_steam_id');
+
+        $headToHead = $this->headToHeadService->getHeadToHead($user, $matchId, $player1SteamId, $player2SteamId);
+
+        if (empty($headToHead)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($headToHead);
     }
 }

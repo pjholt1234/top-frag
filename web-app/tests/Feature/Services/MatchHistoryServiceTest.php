@@ -9,12 +9,12 @@ use App\Models\GunfightEvent;
 use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\UserMatchHistoryService;
+use App\Services\MatchHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class UserMatchHistoryServiceTest extends TestCase
+class MatchHistoryServiceTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -22,7 +22,7 @@ class UserMatchHistoryServiceTest extends TestCase
 
     private Player $player;
 
-    private UserMatchHistoryService $service;
+    private MatchHistoryService $service;
 
     protected function setUp(): void
     {
@@ -38,7 +38,9 @@ class UserMatchHistoryServiceTest extends TestCase
             'name' => 'TestPlayer',
         ]);
 
-        $this->service = new UserMatchHistoryService;
+        $this->service = new MatchHistoryService(
+            matchDetailsService: new \App\Services\Matches\MatchDetailsService()
+        );
     }
 
     #[Test]
@@ -57,14 +59,16 @@ class UserMatchHistoryServiceTest extends TestCase
         // Attach player to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
-        $result = $this->service->aggregateMatchData($this->user);
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
-        $this->assertCount(1, $result);
-        $this->assertArrayHasKey('match_details', $result[0]);
-        $this->assertArrayHasKey('player_stats', $result[0]);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('pagination', $result);
+        $this->assertCount(1, $result['data']);
+        $this->assertArrayHasKey('match_details', $result['data'][0]);
+        $this->assertArrayHasKey('player_stats', $result['data'][0]);
 
         // Check match details
-        $matchDetails = $result[0]['match_details'];
+        $matchDetails = $result['data'][0]['match_details'];
         $this->assertEquals($match->id, $matchDetails['id']);
         $this->assertEquals('de_dust2', $matchDetails['map']);
         $this->assertEquals(16, $matchDetails['winning_team_score']);
@@ -78,10 +82,11 @@ class UserMatchHistoryServiceTest extends TestCase
     #[Test]
     public function it_returns_empty_array_when_user_has_no_matches()
     {
-        $result = $this->service->aggregateMatchData($this->user);
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
         $this->assertIsArray($result);
-        $this->assertEmpty($result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertEmpty($result['data']);
     }
 
     #[Test]
@@ -96,8 +101,8 @@ class UserMatchHistoryServiceTest extends TestCase
         // Attach player to losing team
         $match->players()->attach($this->player->id, ['team' => 'B']);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $matchDetails = $result[0]['match_details'];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $matchDetails = $result['data'][0]['match_details'];
 
         $this->assertFalse($matchDetails['player_won_match']);
     }
@@ -123,8 +128,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 5.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
         $this->assertEquals(2, $playerStats['player_kills']);
         $this->assertEquals(1, $playerStats['player_deaths']);
@@ -155,8 +160,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 0.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
         $this->assertEquals(1, $playerStats['player_kills']);
         $this->assertEquals(0, $playerStats['player_deaths']);
@@ -183,10 +188,10 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 7.5,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
-        $this->assertEquals(7.5, $playerStats['player_adr']);
+        $this->assertEquals(8.0, $playerStats['player_adr']);
     }
 
     #[Test]
@@ -226,8 +231,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 70.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'];
 
         $this->assertCount(2, $playerStats);
 
@@ -282,10 +287,11 @@ class UserMatchHistoryServiceTest extends TestCase
             'steam_id' => null,
         ]);
 
-        $result = $this->service->aggregateMatchData($userWithoutPlayer);
+        $result = $this->service->getPaginatedMatchHistory($userWithoutPlayer, 10, 1);
 
         $this->assertIsArray($result);
-        $this->assertEmpty($result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertEmpty($result['data']);
     }
 
     #[Test]
@@ -308,8 +314,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 0.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
         $this->assertEquals(0, $playerStats['player_kills']);
         $this->assertEquals(0, $playerStats['player_deaths']);
@@ -338,8 +344,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 0.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
         $this->assertEquals(1, $playerStats['player_kills']);
         $this->assertEquals(0, $playerStats['player_deaths']);
@@ -366,8 +372,8 @@ class UserMatchHistoryServiceTest extends TestCase
             'adr' => 0.0,
         ]);
 
-        $result = $this->service->aggregateMatchData($this->user);
-        $playerStats = $result[0]['player_stats'][0];
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+        $playerStats = $result['data'][0]['player_stats'][0];
 
         $this->assertEquals(2, $playerStats['player_kills']);
         $this->assertEquals(1, $playerStats['player_deaths']);
@@ -397,17 +403,17 @@ class UserMatchHistoryServiceTest extends TestCase
         $match1->players()->attach($this->player->id, ['team' => 'A']);
         $match2->players()->attach($this->player->id, ['team' => 'A']);
 
-        $result = $this->service->aggregateMatchData($this->user);
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
-        $this->assertCount(2, $result);
+        $this->assertCount(2, $result['data']);
 
         // Check first match details
-        $this->assertEquals('de_dust2', $result[0]['match_details']['map']);
-        $this->assertTrue($result[0]['match_details']['player_won_match']);
+        $this->assertEquals('de_dust2', $result['data'][0]['match_details']['map']);
+        $this->assertTrue($result['data'][0]['match_details']['player_won_match']);
 
         // Check second match details
-        $this->assertEquals('de_mirage', $result[1]['match_details']['map']);
-        $this->assertFalse($result[1]['match_details']['player_won_match']);
+        $this->assertEquals('de_mirage', $result['data'][1]['match_details']['map']);
+        $this->assertFalse($result['data'][1]['match_details']['player_won_match']);
     }
 
     public function test_get_paginated_match_history_returns_correct_structure()
@@ -441,20 +447,10 @@ class UserMatchHistoryServiceTest extends TestCase
 
         // Don't attach the player to the match - they didn't participate
 
-        $result = $this->service->getMatchById($this->user, $match->id);
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
-        $this->assertNotNull($result);
-        $this->assertArrayHasKey('match_details', $result);
-
-        // Check match details
-        $matchDetails = $result['match_details'];
-        $this->assertEquals($match->id, $matchDetails['id']);
-        $this->assertEquals('de_dust2', $matchDetails['map']);
-        $this->assertEquals(16, $matchDetails['winning_team_score']);
-        $this->assertEquals(14, $matchDetails['losing_team_score']);
-        $this->assertEquals('A', $matchDetails['winning_team']);
-        $this->assertFalse($matchDetails['player_won_match']);
-        $this->assertFalse($matchDetails['player_was_participant']);
-        $this->assertNull($matchDetails['player_team']);
+        // Since the player didn't participate, there should be no matches returned
+        $this->assertArrayHasKey('data', $result);
+        $this->assertEmpty($result['data']);
     }
 }

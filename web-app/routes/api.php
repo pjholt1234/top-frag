@@ -22,6 +22,63 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'check']);
 
+// Test logging
+Route::get('/test-log', function () {
+    \Log::info('Test log message from route');
+    return response()->json(['message' => 'Check logs for test message']);
+});
+
+// Test utility analysis directly
+Route::get('/test-utility/{matchId}', function ($matchId) {
+    $user = \App\Models\User::first();
+    if (!$user) {
+        return response()->json(['error' => 'No users found']);
+    }
+
+    $service = new \App\Services\Matches\UtilityAnalysisService();
+    $result = $service->getAnalysis($user, (int)$matchId);
+
+    return response()->json([
+        'match_id' => $matchId,
+        'user_id' => $user->id,
+        'result_keys' => array_keys($result)
+    ]);
+});
+
+// Test grenade explorer directly
+Route::get('/test-grenade-explorer/{matchId}', function ($matchId) {
+    $user = \App\Models\User::first();
+    if (!$user) {
+        return response()->json(['error' => 'No users found']);
+    }
+
+    $service = new \App\Services\Matches\GrenadeExplorerService();
+    $result = $service->getExplorer($user, (int)$matchId);
+
+    return response()->json([
+        'match_id' => $matchId,
+        'user_id' => $user->id,
+        'result_keys' => array_keys($result)
+    ]);
+});
+
+// Test grenade explorer filter options
+Route::get('/test-grenade-filters/{matchId}', function ($matchId) {
+    $user = \App\Models\User::first();
+    if (!$user) {
+        return response()->json(['error' => 'No users found']);
+    }
+
+    $service = new \App\Services\Matches\GrenadeExplorerService();
+    $result = $service->getFilterOptions($user, (int)$matchId);
+
+    return response()->json([
+        'match_id' => $matchId,
+        'user_id' => $user->id,
+        'result_keys' => array_keys($result)
+    ]);
+});
+
 // Authentication routes
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -31,8 +88,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/matches', [MatchController::class, 'index']);
-    Route::get('/matches/{matchId}', [MatchController::class, 'show']);
+
+    // Match detail sections
+    Route::get('/matches/{matchId}/match-details', [MatchController::class, 'matchDetails']);
+    Route::get('/matches/{matchId}/player-stats', [MatchController::class, 'playerStats']);
     Route::get('/matches/{matchId}/utility-analysis', [MatchController::class, 'utilityAnalysis']);
+    Route::get('/matches/{matchId}/grenade-explorer', [MatchController::class, 'grenadeExplorer']);
+    Route::get('/matches/{matchId}/grenade-explorer/filter-options', [MatchController::class, 'grenadeExplorerFilterOptions']);
+    Route::get('/matches/{matchId}/head-to-head', [MatchController::class, 'headToHead']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
 
     // Grenade Library routes

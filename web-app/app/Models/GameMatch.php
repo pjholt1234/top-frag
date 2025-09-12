@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Cache;
+use App\Services\MatchCacheManager;
 
 class GameMatch extends Model
 {
@@ -97,6 +98,6 @@ class GameMatch extends Model
 
     public function invalidateMatchCache(): void
     {
-        Cache::forget("match_data_{$this->id}");
+        MatchCacheManager::invalidateAll($this->id);
     }
 }

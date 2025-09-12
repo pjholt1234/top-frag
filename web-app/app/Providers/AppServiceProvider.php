@@ -12,7 +12,7 @@ use App\Observers\GrenadeEventObserver;
 use App\Observers\GunfightEventObserver;
 use App\Services\DemoParserService;
 use App\Services\ParserServiceConnector;
-use App\Services\UserMatchHistoryService;
+use App\Services\MatchHistoryService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,8 +30,10 @@ class AppServiceProvider extends ServiceProvider
             return new DemoParserService;
         });
 
-        $this->app->singleton(UserMatchHistoryService::class, function ($app) {
-            return new UserMatchHistoryService;
+        $this->app->singleton(MatchHistoryService::class, function ($app) {
+            return new MatchHistoryService(
+                matchDetailsService: $app->make(\App\Services\Matches\MatchDetailsService::class)
+            );
         });
 
         $this->app->alias(ParserServiceConnector::class, 'parser.connector');
