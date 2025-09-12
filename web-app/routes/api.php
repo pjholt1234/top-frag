@@ -22,12 +22,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [HealthController::class, 'check']);
 
-// Test logging
-Route::get('/test-log', function () {
-    \Log::info('Test log message from route');
-    return response()->json(['message' => 'Check logs for test message']);
-});
-
 // Test utility analysis directly
 Route::get('/test-utility/{matchId}', function ($matchId) {
     $user = \App\Models\User::first();
@@ -37,40 +31,6 @@ Route::get('/test-utility/{matchId}', function ($matchId) {
 
     $service = new \App\Services\Matches\UtilityAnalysisService();
     $result = $service->getAnalysis($user, (int)$matchId);
-
-    return response()->json([
-        'match_id' => $matchId,
-        'user_id' => $user->id,
-        'result_keys' => array_keys($result)
-    ]);
-});
-
-// Test grenade explorer directly
-Route::get('/test-grenade-explorer/{matchId}', function ($matchId) {
-    $user = \App\Models\User::first();
-    if (!$user) {
-        return response()->json(['error' => 'No users found']);
-    }
-
-    $service = new \App\Services\Matches\GrenadeExplorerService();
-    $result = $service->getExplorer($user, (int)$matchId);
-
-    return response()->json([
-        'match_id' => $matchId,
-        'user_id' => $user->id,
-        'result_keys' => array_keys($result)
-    ]);
-});
-
-// Test grenade explorer filter options
-Route::get('/test-grenade-filters/{matchId}', function ($matchId) {
-    $user = \App\Models\User::first();
-    if (!$user) {
-        return response()->json(['error' => 'No users found']);
-    }
-
-    $service = new \App\Services\Matches\GrenadeExplorerService();
-    $result = $service->getFilterOptions($user, (int)$matchId);
 
     return response()->json([
         'match_id' => $matchId,
@@ -97,10 +57,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/matches/{matchId}/grenade-explorer/filter-options', [MatchController::class, 'grenadeExplorerFilterOptions']);
     Route::get('/matches/{matchId}/head-to-head', [MatchController::class, 'headToHead']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
-
-    // Grenade Library routes
-    Route::get('/grenade-library', [GrenadeLibraryController::class, 'index']);
-    Route::get('/grenade-library/filter-options', [GrenadeLibraryController::class, 'filterOptions']);
 
     // Grenade Favourites routes
     Route::get('/grenade-favourites', [GrenadeFavouriteController::class, 'index']);

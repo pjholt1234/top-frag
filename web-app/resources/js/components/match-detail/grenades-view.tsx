@@ -11,13 +11,13 @@ import {
 } from '@/hooks/use-match-grenades';
 
 interface MatchGrenadesViewProps {
+  matchId: string;
   hideMapAndMatchFilters?: boolean;
   showHeader?: boolean;
   showFavourites?: boolean;
   className?: string;
   initialFilters?: {
     map?: string;
-    matchId?: string;
     roundNumber?: string;
     grenadeType?: string;
     playerSteamId?: string;
@@ -122,7 +122,7 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
 
 const MatchGrenadesView: React.FC<MatchGrenadesViewProps> = props => {
   return (
-    <MatchGrenadesProvider initialFilters={props.initialFilters}>
+    <MatchGrenadesProvider matchId={props.matchId} initialFilters={props.initialFilters}>
       <MatchGrenadesViewContent {...props} />
     </MatchGrenadesProvider>
   );

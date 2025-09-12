@@ -273,12 +273,12 @@ const MatchDetail = () => {
             <TabsContent value="grenades" className="mt-0 mb-6">
               <CardContent className="p-0">
                 <MatchGrenadesView
+                  matchId={match?.id?.toString() || ''}
                   hideMapAndMatchFilters={true}
                   showHeader={false}
                   showFavourites={true}
                   initialFilters={{
                     map: match?.match_details?.map || '',
-                    matchId: match?.id?.toString() || '',
                     grenadeType: 'fire_grenades',
                   }}
                 />

@@ -13,12 +13,12 @@ class GrenadeExplorerService
 {
     use MatchAccessTrait;
 
-    public function getExplorer(User $user, int $matchId, array $filters = []): array
+    public function getExplorer(User $user, array $filters = [], int $matchId): array
     {
         $cacheKey = $this->getCacheKey($filters);
 
-        return MatchCacheManager::remember($cacheKey, $matchId, function () use ($user, $matchId, $filters) {
-            return $this->buildExplorer($user, $matchId, $filters);
+        return MatchCacheManager::remember($cacheKey, $matchId, function () use ($user, $filters, $matchId) {
+            return $this->buildExplorer($user, $filters, $matchId);
         });
     }
 
@@ -28,40 +28,60 @@ class GrenadeExplorerService
         return "grenade-explorer_{$filterHash}";
     }
 
-    private function buildExplorer(User $user, int $matchId, array $filters): array
+    private function getFilterOptionsCacheKey(array $filters): string
     {
-        // Check user access first
-        if (!$this->hasUserAccessToMatch($user, $matchId)) {
-            return [];
-        }
+        $filterHash = empty($filters) ? 'default' : md5(serialize($filters));
+        return "grenade-explorer-filter-options_{$filterHash}";
+    }
 
+    private function buildExplorer(User $user, array $filters, int $matchId): array
+    {
+        $map = $filters['map'] ?? null;
+        $roundNumber = $filters['round_number'] ?? null;
+        $grenadeType = $filters['grenade_type'] ?? null;
+        $playerSteamId = $filters['player_steam_id'] ?? null;
+        $playerSide = $filters['player_side'] ?? null;
+
+        // Start with base query for user's matches (same as controller)
         $query = GrenadeEvent::query()
-            ->where('match_id', $matchId)
-            ->with('player');
+            ->join('matches', 'grenade_events.match_id', '=', 'matches.id')
+            ->join('match_players', 'matches.id', '=', 'match_players.match_id')
+            ->join('players as match_players_player', 'match_players.player_id', '=', 'match_players_player.id')
+            ->where('match_players_player.steam_id', $user->steam_id)
+            ->select('grenade_events.*', 'matches.map', 'players.name as player_name')
+            ->join('players', 'grenade_events.player_steam_id', '=', 'players.steam_id');
 
-        // Apply filters
-        if (!empty($filters['round_number']) && $filters['round_number'] !== 'all') {
-            $query->where('round_number', $filters['round_number']);
+        // Apply filters (same as controller)
+        if ($map) {
+            $query->where('matches.map', $map);
         }
 
-        if (!empty($filters['grenade_type'])) {
-            if ($filters['grenade_type'] === 'fire_grenades') {
+        if ($matchId) {
+            $query->where('grenade_events.match_id', $matchId);
+        }
+
+        if ($roundNumber && $roundNumber !== 'all') {
+            $query->where('grenade_events.round_number', $roundNumber);
+        }
+
+        if ($grenadeType) {
+            if ($grenadeType === 'fire_grenades') {
                 // Special case: Fire Grenades (Molotov + Incendiary)
-                $query->whereIn('grenade_type', [
+                $query->whereIn('grenade_events.grenade_type', [
                     GrenadeType::MOLOTOV->value,
                     GrenadeType::INCENDIARY->value,
                 ]);
             } else {
-                $query->where('grenade_type', $filters['grenade_type']);
+                $query->where('grenade_events.grenade_type', $grenadeType);
             }
         }
 
-        if (!empty($filters['player_steam_id']) && $filters['player_steam_id'] !== 'all') {
-            $query->where('player_steam_id', $filters['player_steam_id']);
+        if ($playerSteamId && $playerSteamId !== 'all') {
+            $query->where('grenade_events.player_steam_id', $playerSteamId);
         }
 
-        if (!empty($filters['player_side']) && $filters['player_side'] !== 'all') {
-            $query->where('player_side', $filters['player_side']);
+        if ($playerSide && $playerSide !== 'all') {
+            $query->where('grenade_events.player_side', $playerSide);
         }
 
         $grenades = $query->get();
@@ -69,27 +89,37 @@ class GrenadeExplorerService
         return [
             'grenades' => $grenades,
             'filters' => $filters,
-            'stats' => $this->getGrenadeStats($grenades),
         ];
     }
 
-    public function getFilterOptions(User $user, int $matchId): array
+    public function getFilterOptions(User $user, array $filters = [], int $matchId): array
     {
-        $cacheKey = 'filter-options';
+        $cacheKey = $this->getFilterOptionsCacheKey($filters);
 
-        return MatchCacheManager::remember($cacheKey, $matchId, function () use ($user, $matchId) {
-            return $this->buildFilterOptions($user, $matchId);
+        return MatchCacheManager::remember($cacheKey, $matchId, function () use ($user, $filters, $matchId) {
+            return $this->buildFilterOptions($user, $filters, $matchId);
         });
     }
 
-    private function buildFilterOptions(User $user, int $matchId): array
+    private function buildFilterOptions(User $user, array $filters, int $matchId): array
     {
-        // Check user access first
-        if (!$this->hasUserAccessToMatch($user, $matchId)) {
-            return [];
-        }
+        $map = $filters['map'] ?? null;
 
-        // Hardcoded grenade types with special "Fire Grenades" option
+        // Hardcoded maps as specified (same as controller)
+        $maps = [
+            ['name' => 'de_ancient', 'displayName' => 'Ancient'],
+            ['name' => 'de_dust2', 'displayName' => 'Dust II'],
+            ['name' => 'de_mirage', 'displayName' => 'Mirage'],
+            ['name' => 'de_inferno', 'displayName' => 'Inferno'],
+            ['name' => 'de_nuke', 'displayName' => 'Nuke'],
+            ['name' => 'de_overpass', 'displayName' => 'Overpass'],
+            ['name' => 'de_train', 'displayName' => 'Train'],
+            ['name' => 'de_cache', 'displayName' => 'Cache'],
+            ['name' => 'de_anubis', 'displayName' => 'Anubis'],
+            ['name' => 'de_vertigo', 'displayName' => 'Vertigo'],
+        ];
+
+        // Hardcoded grenade types with special "Fire Grenades" option (same as controller)
         $grenadeTypes = [
             ['type' => 'fire_grenades', 'displayName' => 'Fire Grenades'],
             ['type' => GrenadeType::SMOKE_GRENADE->value, 'displayName' => 'Smoke Grenade'],
@@ -98,81 +128,80 @@ class GrenadeExplorerService
             ['type' => GrenadeType::DECOY->value, 'displayName' => 'Decoy Grenade'],
         ];
 
-        // Hardcoded player sides
+        // Hardcoded player sides (same as controller)
         $playerSides = [
             ['side' => 'CT', 'displayName' => 'Counter-Terrorist'],
             ['side' => 'T', 'displayName' => 'Terrorist'],
         ];
 
-        // Dynamic rounds based on match
-        $rounds = GrenadeEvent::query()
-            ->where('match_id', $matchId)
-            ->select('round_number as number')
-            ->distinct()
-            ->orderBy('round_number')
-            ->get()
-            ->toArray();
+        // Dynamic matches based on selected map (same as controller)
+        $matches = [];
+        if ($map) {
+            $matches = GameMatch::query()
+                ->join('match_players', 'matches.id', '=', 'match_players.match_id')
+                ->join('players', 'match_players.player_id', '=', 'players.id')
+                ->where('players.steam_id', $user->steam_id)
+                ->where('matches.map', $map)
+                ->select('matches.id', 'matches.map')
+                ->distinct()
+                ->get()
+                ->map(function ($match) {
+                    return [
+                        'id' => $match->id,
+                        'name' => "Match #{$match->id} - {$match->map}",
+                    ];
+                })
+                ->toArray();
+        }
 
-        // Add "All Rounds" option
-        array_unshift($rounds, [
-            'number' => 'all',
-            'displayName' => 'All Rounds',
-        ]);
+        // Add "All Matches" option if map is selected and there are matches
+        if ($map && !empty($matches)) {
+            array_unshift($matches, [
+                'id' => 'all',
+                'name' => 'All Matches',
+            ]);
+        }
 
-        // Dynamic players based on match
-        $players = Player::query()
-            ->join('match_players', 'players.id', '=', 'match_players.player_id')
-            ->where('match_players.match_id', $matchId)
-            ->select('players.steam_id', 'players.name')
-            ->distinct()
-            ->orderBy('players.name')
-            ->get()
-            ->toArray();
+        // Dynamic rounds based on selected match (same as controller)
+        $rounds = [];
+        if ($matchId) {
+            $rounds = GrenadeEvent::query()
+                ->join('matches', 'grenade_events.match_id', '=', 'matches.id')
+                ->join('match_players', 'matches.id', '=', 'match_players.match_id')
+                ->join('players', 'match_players.player_id', '=', 'players.id')
+                ->where('players.steam_id', $user->steam_id)
+                ->where('grenade_events.match_id', $matchId)
+                ->select('grenade_events.round_number as number')
+                ->distinct()
+                ->orderBy('grenade_events.round_number')
+                ->get()
+                ->toArray();
+        }
 
-        // Add "All Players" option
-        array_unshift($players, [
-            'steam_id' => 'all',
-            'name' => 'All Players',
-        ]);
+        // Dynamic players based on selected match (same as controller)
+        $players = [];
+        if ($matchId) {
+            $players = Player::query()
+                ->join('match_players', 'players.id', '=', 'match_players.player_id')
+                ->join('matches', 'match_players.match_id', '=', 'matches.id')
+                ->join('match_players as user_match_players', 'matches.id', '=', 'user_match_players.match_id')
+                ->join('players as user_player', 'user_match_players.player_id', '=', 'user_player.id')
+                ->where('user_player.steam_id', $user->steam_id)
+                ->where('matches.id', $matchId)
+                ->select('players.steam_id', 'players.name')
+                ->distinct()
+                ->orderBy('players.name')
+                ->get()
+                ->toArray();
+        }
 
         return [
+            'maps' => $maps,
+            'matches' => $matches,
             'rounds' => $rounds,
             'grenadeTypes' => $grenadeTypes,
             'players' => $players,
             'playerSides' => $playerSides,
-        ];
-    }
-
-    private function getGrenadeStats($grenades): array
-    {
-        if ($grenades->isEmpty()) {
-            return [
-                'total_grenades' => 0,
-                'by_type' => [],
-                'by_round' => [],
-            ];
-        }
-
-        $byType = $grenades->groupBy('grenade_type')->map(function ($group) {
-            return [
-                'type' => $group->first()->grenade_type,
-                'count' => $group->count(),
-                'avg_effectiveness' => $group->where('effectiveness_rating', '>', 0)->avg('effectiveness_rating') ?? 0,
-            ];
-        })->values();
-
-        $byRound = $grenades->groupBy('round_number')->map(function ($group) {
-            return [
-                'round' => $group->first()->round_number,
-                'count' => $group->count(),
-                'avg_effectiveness' => $group->where('effectiveness_rating', '>', 0)->avg('effectiveness_rating') ?? 0,
-            ];
-        })->values();
-
-        return [
-            'total_grenades' => $grenades->count(),
-            'by_type' => $byType,
-            'by_round' => $byRound,
         ];
     }
 }

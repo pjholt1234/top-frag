@@ -96,34 +96,6 @@ const GrenadeFiltersContent: React.FC<GrenadeFiltersContentProps> = ({
           </div>
         )}
 
-        {/* Match Filter - Now includes "All Matches" option, depends on Map */}
-        {!hideMapAndMatchFilters && (
-          <div className="space-y-1 min-w-[120px]">
-            <Label htmlFor="match-filter" className="text-xs">
-              Match
-            </Label>
-            <Select
-              value={filters.matchId}
-              onValueChange={value => handleFilterChange('matchId', value)}
-              disabled={!filters.map || filterOptions.matches.length === 0}
-            >
-              <SelectTrigger id="match-filter" className="h-8 w-full">
-                <SelectValue
-                  placeholder={
-                    !filters.map ? 'Select map first' : 'Select match'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {filterOptions.matches.map(match => (
-                  <SelectItem key={match.id} value={match.id}>
-                    {match.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
 
         {/* Grenade Type Filter - No "All" option, hardcoded with Fire Grenades */}
         <div className="space-y-1 min-w-[120px]">
@@ -147,7 +119,7 @@ const GrenadeFiltersContent: React.FC<GrenadeFiltersContentProps> = ({
           </Select>
         </div>
 
-        {/* Player Filter - ALLOW "All" option, depends on Match */}
+        {/* Player Filter - ALLOW "All" option */}
         <div className="space-y-1 min-w-[120px]">
           <Label htmlFor="player-filter" className="text-xs">
             Player
@@ -155,14 +127,10 @@ const GrenadeFiltersContent: React.FC<GrenadeFiltersContentProps> = ({
           <Select
             value={filters.playerSteamId}
             onValueChange={value => handleFilterChange('playerSteamId', value)}
-            disabled={!filters.matchId || filterOptions.players.length === 0}
+            disabled={filterOptions.players.length === 0}
           >
             <SelectTrigger id="player-filter" className="h-8 w-full">
-              <SelectValue
-                placeholder={
-                  !filters.matchId ? 'Select match first' : 'Select player'
-                }
-              />
+              <SelectValue placeholder="Select player" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Players</SelectItem>

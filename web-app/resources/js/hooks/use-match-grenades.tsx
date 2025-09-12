@@ -44,7 +44,6 @@ export interface GrenadeData {
 
 export interface FilterOptions {
   maps: Array<{ name: string; displayName: string }>;
-  matches: Array<{ id: string; name: string }>;
   rounds: Array<{ number: number }>;
   grenadeTypes: Array<{ type: string; displayName: string }>;
   players: Array<{ steam_id: string; name: string }>;
@@ -53,7 +52,6 @@ export interface FilterOptions {
 
 export interface GrenadeFilters {
   map: string;
-  matchId: string;
   roundNumber: string;
   grenadeType: string;
   playerSteamId: string;
@@ -101,7 +99,6 @@ export interface UseMatchGrenadesReturn {
 
 const DEFAULT_FILTERS: GrenadeFilters = {
   map: '',
-  matchId: '',
   roundNumber: 'all',
   grenadeType: '',
   playerSteamId: 'all',
@@ -110,7 +107,6 @@ const DEFAULT_FILTERS: GrenadeFilters = {
 
 const DEFAULT_FILTER_OPTIONS: FilterOptions = {
   maps: [],
-  matches: [],
   rounds: [],
   grenadeTypes: [],
   players: [],
@@ -123,11 +119,13 @@ const MatchGrenadesContext = createContext<UseMatchGrenadesReturn | null>(null);
 // Provider component
 interface MatchGrenadesProviderProps {
   children: ReactNode;
+  matchId: string;
   initialFilters?: Partial<GrenadeFilters>;
 }
 
 export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
   children,
+  matchId,
   initialFilters = {},
 }) => {
   const { get } = useApi();
@@ -150,8 +148,8 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
   // Computed values
   const hasValidFilters = useMemo(() => {
-    return !!(filters.map && filters.matchId);
-  }, [filters.map, filters.matchId]);
+    return !!filters.map;
+  }, [filters.map]);
 
   const currentMap = useMemo(() => {
     return filters.map || 'de_ancient';
@@ -167,7 +165,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     try {
       setError(null);
       const response = await get<FilterOptions>(
-        '/grenade-library/filter-options'
+        `/matches/${matchId}/grenade-explorer/filter-options`,
       );
       const data = response.data;
       setFilterOptions(data);
@@ -185,7 +183,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
     try {
       const response = await get<FilterOptions>(
-        '/grenade-library/filter-options'
+        `/matches/${matchId}/grenade-explorer/filter-options`,
       );
       const data = response.data;
 
@@ -195,26 +193,9 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
         // Check if we have initial filters that should override defaults
         const currentFilters = { ...DEFAULT_FILTERS, ...initialFilters };
-        const hasInitialFilters = currentFilters.map || currentFilters.matchId;
+        const hasInitialFilters = currentFilters.map;
 
         if (hasInitialFilters) {
-          // If we have initial filters, we need to load the appropriate matches
-          if (currentFilters.map) {
-            const matchResponse = await get<FilterOptions>(
-              '/grenade-library/filter-options',
-              {
-                params: { map: currentFilters.map },
-              }
-            );
-            const matchData = matchResponse.data;
-
-            // Update filter options with matches for the initial map
-            setFilterOptions(prev => ({
-              ...prev,
-              matches: matchData.matches,
-            }));
-          }
-
           // Set grenade type if not already set
           if (!currentFilters.grenadeType) {
             setFiltersState(prev => ({
@@ -224,29 +205,9 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
           }
         } else {
           // No initial filters, use defaults
-          const matchResponse = await get<FilterOptions>(
-            '/grenade-library/filter-options',
-            {
-              params: { map: firstMap.name },
-            }
-          );
-          const matchData = matchResponse.data;
-
-          // Update filter options with matches FIRST
-          setFilterOptions(prev => ({
-            ...prev,
-            matches: matchData.matches,
-          }));
-
-          // Small delay to ensure state update is processed
-          await new Promise(resolve => setTimeout(resolve, 0));
-
-          // Then set initial filters
           const defaultFilters: GrenadeFilters = {
             map: firstMap.name,
             grenadeType: firstGrenadeType.type,
-            matchId:
-              matchData.matches.length > 0 ? matchData.matches[0].id : '',
             roundNumber: 'all',
             playerSteamId: 'all',
             playerSide: 'all',
@@ -269,22 +230,15 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
   // Load match-dependent options (rounds and players)
   const loadMatchDependentOptions = useCallback(async () => {
-    if (
-      !isInitialized ||
-      !filters.map ||
-      !filters.matchId ||
-      filters.matchId === 'all'
-    )
-      return;
+    if (!isInitialized || !filters.map || !matchId) return;
 
     try {
       setError(null);
       const response = await get<FilterOptions>(
-        '/grenade-library/filter-options',
+        `/matches/${matchId}/grenade-explorer/filter-options`,
         {
           params: {
             map: filters.map,
-            match_id: filters.matchId,
           },
         }
       );
@@ -301,7 +255,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
       setError(errorMessage);
       console.error('Failed to load match-dependent options:', err);
     }
-  }, [get, isInitialized, filters.map, filters.matchId]);
+  }, [get, isInitialized, filters.map, matchId]);
 
   // Load favourited grenade data
   const loadGrenades = useCallback(async () => {
@@ -316,11 +270,6 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
       const params: Record<string, string> = {
         map: filters.map,
       };
-
-      // Only add match_id if it's not "all"
-      if (filters.matchId && filters.matchId !== 'all') {
-        params.match_id = filters.matchId;
-      }
 
       // Only add grenade_type if it's set
       if (filters.grenadeType) {
@@ -338,9 +287,10 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
       }
 
       const response = await get<{ grenades: GrenadeData[] }>(
-        '/grenade-library',
+        `/matches/${matchId}/grenade-explorer`,
         { params }
       );
+
       setGrenades(response.data.grenades);
 
       // Initialize grenade states for new grenades
@@ -367,7 +317,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [get, isInitialized, hasValidFilters, filters]);
+  }, [get, isInitialized, hasValidFilters, filters, matchId]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
@@ -386,18 +336,12 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
 
         // Handle filter dependencies
         if (filterName === 'map') {
-          // Map changed: reset match, round, and player filters
-          newFilters.matchId = '';
+          // Map changed: reset round and player filters
           newFilters.roundNumber = 'all';
           newFilters.playerSteamId = 'all';
           newFilters.playerSide = 'all';
           // Clear grenades immediately
           setGrenades([]);
-        } else if (filterName === 'matchId') {
-          // Match changed: reset round and player filters
-          newFilters.roundNumber = 'all';
-          newFilters.playerSteamId = 'all';
-          newFilters.playerSide = 'all';
         }
 
         return newFilters;
@@ -486,49 +430,6 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     loadGrenades();
   }, [loadGrenades]);
 
-  // Handle map change with auto-selection of first match
-  useEffect(() => {
-    // Don't auto-select match if we have initial filters
-    const hasInitialFilters = initialFilters.map || initialFilters.matchId;
-    if (
-      filters.map &&
-      !filters.matchId &&
-      isInitialized &&
-      !hasInitialFilters
-    ) {
-      const loadMatchesForMap = async () => {
-        try {
-          const response = await get<FilterOptions>(
-            '/grenade-library/filter-options',
-            {
-              params: { map: filters.map },
-            }
-          );
-          const data = response.data;
-
-          setFilterOptions(prev => ({
-            ...prev,
-            matches: data.matches,
-            rounds: [],
-            players: [],
-          }));
-
-          if (data.matches.length > 0) {
-            setFiltersState(prev => ({
-              ...prev,
-              matchId: data.matches[0].id,
-              roundNumber: 'all',
-              playerSteamId: 'all',
-            }));
-          }
-        } catch (err) {
-          console.error('Failed to load matches for map:', err);
-        }
-      };
-
-      loadMatchesForMap();
-    }
-  }, [filters.map, filters.matchId, get, isInitialized, initialFilters]);
 
   const contextValue: UseMatchGrenadesReturn = {
     // Data
@@ -579,7 +480,6 @@ export const useMatchGrenades = (): UseMatchGrenadesReturn => {
       grenades: [],
       filterOptions: {
         maps: [],
-        matches: [],
         rounds: [],
         grenadeTypes: [],
         players: [],
@@ -587,24 +487,23 @@ export const useMatchGrenades = (): UseMatchGrenadesReturn => {
       },
       filters: {
         map: '',
-        matchId: '',
         roundNumber: 'all',
         grenadeType: '',
         playerSteamId: 'all',
         playerSide: 'all',
       },
-      setFilter: () => {},
-      setFilters: () => {},
-      resetFilters: () => {},
+      setFilter: () => { },
+      setFilters: () => { },
+      resetFilters: () => { },
       isLoading: false,
       isInitialized: false,
       error: null,
-      refreshData: async () => {},
-      loadFilterOptions: async () => {},
+      refreshData: async () => { },
+      loadFilterOptions: async () => { },
       grenadeStates: new Map(),
-      selectGrenade: () => {},
-      selectGrenades: () => {},
-      clearSelection: () => {},
+      selectGrenade: () => { },
+      selectGrenades: () => { },
+      clearSelection: () => { },
       getSelectedGrenades: () => [],
       selectedGrenadeCount: 0,
       hasValidFilters: false,

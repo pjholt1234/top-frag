@@ -148,8 +148,8 @@ class MatchController extends Controller
             return response()->json(['message' => 'Player not found'], 404);
         }
 
-        $filters = $request->only(['round_number', 'grenade_type', 'player_steam_id', 'player_side']);
-        $explorer = $this->grenadeExplorerService->getExplorer($user, $matchId, $filters);
+        $filters = $request->only(['map', 'match_id', 'round_number', 'grenade_type', 'player_steam_id', 'player_side']);
+        $explorer = $this->grenadeExplorerService->getExplorer($user, $filters, $matchId);
 
         if (empty($explorer)) {
             return response()->json(['message' => 'Match not found'], 404);
@@ -169,7 +169,8 @@ class MatchController extends Controller
             return response()->json(['message' => 'Player not found'], 404);
         }
 
-        $filterOptions = $this->grenadeExplorerService->getFilterOptions($user, $matchId);
+        $filters = $request->only(['map']);
+        $filterOptions = $this->grenadeExplorerService->getFilterOptions($user, $filters, $matchId);
 
         if (empty($filterOptions)) {
             return response()->json(['message' => 'Match not found'], 404);
