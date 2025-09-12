@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -42,24 +43,33 @@ const chartConfig = {
 };
 
 export function GrenadeTimingChart({ data }: GrenadeTimingChartProps) {
-  const formatGrenadeType = (type: string) => {
-    if (type === 'Fire') {
-      return 'Fire';
-    }
-    return type.charAt(0).toUpperCase() + type.slice(1).replace(' Grenade', '');
-  };
+  const formatGrenadeType = useMemo(
+    () => (type: string) => {
+      if (type === 'Fire') {
+        return 'Fire';
+      }
+      return (
+        type.charAt(0).toUpperCase() + type.slice(1).replace(' Grenade', '')
+      );
+    },
+    []
+  );
 
-  const scatterData = data.map(grenadeType => ({
-    type: grenadeType.type,
-    data: grenadeType.timing_data
-      .filter(point => point.round_time >= 0) // Filter out negative round times
-      .map(point => ({
-        ...point,
-        fill:
-          GRENADE_COLORS[grenadeType.type as keyof typeof GRENADE_COLORS] ||
-          '#6b7280',
+  const scatterData = useMemo(
+    () =>
+      data.map(grenadeType => ({
+        type: grenadeType.type,
+        data: grenadeType.timing_data
+          .filter(point => point.round_time >= 0) // Filter out negative round times
+          .map(point => ({
+            ...point,
+            fill:
+              GRENADE_COLORS[grenadeType.type as keyof typeof GRENADE_COLORS] ||
+              '#6b7280',
+          })),
       })),
-  }));
+    [data]
+  );
 
   if (scatterData.length === 0) {
     return (

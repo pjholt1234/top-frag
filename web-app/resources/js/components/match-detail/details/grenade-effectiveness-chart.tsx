@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -36,7 +37,9 @@ const chartConfig = {
 export function GrenadeEffectivenessChart({
   data,
 }: GrenadeEffectivenessChartProps) {
-  if (data.length === 0) {
+  const hasData = useMemo(() => data.length > 0, [data.length]);
+
+  if (!hasData) {
     return (
       <div className="flex items-center justify-center h-[300px] text-gray-400">
         No effectiveness data available

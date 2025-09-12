@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import {
   ChartContainer,
@@ -33,17 +34,27 @@ const chartConfig = {
 };
 
 export function UtilityUsageChart({ data }: UtilityUsageChartProps) {
-  const chartData = data.map(item => ({
-    ...item,
-    fill: GRENADE_COLORS[item.type as keyof typeof GRENADE_COLORS] || '#6b7280',
-  }));
+  const chartData = useMemo(
+    () =>
+      data.map(item => ({
+        ...item,
+        fill:
+          GRENADE_COLORS[item.type as keyof typeof GRENADE_COLORS] || '#6b7280',
+      })),
+    [data]
+  );
 
-  const formatGrenadeType = (type: string) => {
-    if (type === 'Fire') {
-      return 'Fire';
-    }
-    return type.charAt(0).toUpperCase() + type.slice(1).replace(' Grenade', '');
-  };
+  const formatGrenadeType = useMemo(
+    () => (type: string) => {
+      if (type === 'Fire') {
+        return 'Fire';
+      }
+      return (
+        type.charAt(0).toUpperCase() + type.slice(1).replace(' Grenade', '')
+      );
+    },
+    []
+  );
 
   return (
     <div className="flex justify-center">
