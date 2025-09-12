@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react';
-import MapVisualizationKonva from '@/components/map-visualization-konva';
+import { useMemo, useState, Suspense, lazy, useCallback } from 'react';
 import MapVisualizationSkeleton from '@/components/map-visualization-skeleton';
 import GrenadeFilters from '@/components/grenade-filters';
-import GrenadeList from '@/components/grenade-list';
 import GrenadeListSkeleton from '@/components/grenade-list-skeleton';
 import {
   useMatchGrenades,
   MatchGrenadesProvider,
   GrenadeData,
 } from '@/hooks/use-match-grenades';
+
+// Lazy load heavy components for better performance
+const MapVisualizationKonva = lazy(
+  () => import('@/components/map-visualization-konva')
+);
+const GrenadeList = lazy(() => import('@/components/grenade-list'));
 
 interface MatchGrenadesViewProps {
   matchId: string;
@@ -37,8 +41,10 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
     null
   );
 
-  // Convert grenade data to the format expected by MapVisualization
+  // Optimize grenade positions transformation with better memoization
   const grenadePositions = useMemo(() => {
+    if (!grenades.length) return [];
+
     return grenades.map(grenade => ({
       x: grenade.grenade_final_x,
       y: grenade.grenade_final_y,
@@ -53,15 +59,26 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
     }));
   }, [grenades]);
 
-  // Handle grenade selection from map
-  const handleMapGrenadeSelect = (grenadeId: number | null) => {
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleMapGrenadeSelect = useCallback((grenadeId: number | null) => {
     setSelectedGrenadeId(grenadeId);
-  };
+  }, []);
 
-  // Handle grenade selection from list
-  const handleListGrenadeClick = (grenade: GrenadeData) => {
-    setSelectedGrenadeId(selectedGrenadeId === grenade.id ? null : grenade.id);
-  };
+  const handleListGrenadeClick = useCallback((grenade: GrenadeData) => {
+    setSelectedGrenadeId(prev => (prev === grenade.id ? null : grenade.id));
+  }, []);
+
+  // Loading fallback components
+  const MapFallback = () => (
+    <MapVisualizationSkeleton
+      mapName={currentMap}
+      onGrenadeSelect={handleMapGrenadeSelect}
+      selectedGrenadeId={selectedGrenadeId}
+      useFavouritesContext={false}
+    />
+  );
+
+  const ListFallback = () => <GrenadeListSkeleton />;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -86,35 +103,34 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
       />
 
       <div className="flex gap-6 items-start justify-center">
-        {/* Map - Always visible, shows skeleton when loading */}
-        {isLoading ? (
-          <MapVisualizationSkeleton
-            mapName={currentMap}
-            onGrenadeSelect={handleMapGrenadeSelect}
-            selectedGrenadeId={selectedGrenadeId}
-            useFavouritesContext={false}
-          />
-        ) : (
-          <MapVisualizationKonva
-            mapName={currentMap}
-            grenadePositions={grenadePositions}
-            onGrenadeSelect={handleMapGrenadeSelect}
-            selectedGrenadeId={selectedGrenadeId}
-            useFavouritesContext={false}
-          />
-        )}
+        {/* Map - Progressive loading with Suspense */}
+        <Suspense fallback={<MapFallback />}>
+          {isLoading ? (
+            <MapFallback />
+          ) : (
+            <MapVisualizationKonva
+              mapName={currentMap}
+              grenadePositions={grenadePositions}
+              onGrenadeSelect={handleMapGrenadeSelect}
+              selectedGrenadeId={selectedGrenadeId}
+              useFavouritesContext={false}
+            />
+          )}
+        </Suspense>
 
-        {/* Grenade List - Shows skeleton when loading */}
-        {isLoading ? (
-          <GrenadeListSkeleton />
-        ) : (
-          <GrenadeList
-            onGrenadeClick={handleListGrenadeClick}
-            selectedGrenadeId={selectedGrenadeId}
-            showFavourites={showFavourites}
-            useFavouritesContext={false}
-          />
-        )}
+        {/* Grenade List - Progressive loading with Suspense */}
+        <Suspense fallback={<ListFallback />}>
+          {isLoading ? (
+            <ListFallback />
+          ) : (
+            <GrenadeList
+              onGrenadeClick={handleListGrenadeClick}
+              selectedGrenadeId={selectedGrenadeId}
+              showFavourites={showFavourites}
+              useFavouritesContext={false}
+            />
+          )}
+        </Suspense>
       </div>
     </div>
   );

@@ -228,7 +228,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     }
   }, [get, isInitialized, initialFilters]);
 
-  // Load match-dependent options (rounds and players)
+  // Load match-dependent options (rounds and players) - optimized with memoization
   const loadMatchDependentOptions = useCallback(async () => {
     if (!isInitialized || !filters.map || !matchId) return;
 
@@ -244,11 +244,20 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
       );
       const data = response.data;
 
-      setFilterOptions(prev => ({
-        ...prev,
-        rounds: data.rounds,
-        players: data.players,
-      }));
+      // Only update if data has actually changed to prevent unnecessary re-renders
+      setFilterOptions(prev => {
+        const hasChanges =
+          JSON.stringify(prev.rounds) !== JSON.stringify(data.rounds) ||
+          JSON.stringify(prev.players) !== JSON.stringify(data.players);
+
+        if (!hasChanges) return prev;
+
+        return {
+          ...prev,
+          rounds: data.rounds,
+          players: data.players,
+        };
+      });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to load match options';
@@ -257,7 +266,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     }
   }, [get, isInitialized, filters.map, matchId]);
 
-  // Load favourited grenade data
+  // Load grenade data - optimized with better state management
   const loadGrenades = useCallback(async () => {
     if (!isInitialized || !hasValidFilters) {
       return;
@@ -291,12 +300,23 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
         { params }
       );
 
-      setGrenades(response.data.grenades);
+      const newGrenades = response.data.grenades;
+      setGrenades(newGrenades);
 
-      // Initialize grenade states for new grenades
+      // Optimize grenade states initialization - only add new grenades
       setGrenadeStates(prev => {
         const newStates = new Map(prev);
-        response.data.grenades.forEach(grenade => {
+        const newGrenadeIds = new Set(newGrenades.map(g => g.id));
+
+        // Remove states for grenades that are no longer in the list
+        for (const [id] of newStates) {
+          if (!newGrenadeIds.has(id)) {
+            newStates.delete(id);
+          }
+        }
+
+        // Add states for new grenades
+        newGrenades.forEach(grenade => {
           if (!newStates.has(grenade.id)) {
             newStates.set(grenade.id, {
               id: grenade.id,
@@ -305,15 +325,14 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
             });
           }
         });
+
         return newStates;
       });
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to load favourited grenades';
+        err instanceof Error ? err.message : 'Failed to load grenades';
       setError(errorMessage);
-      console.error('Failed to load favourited grenades:', err);
+      console.error('Failed to load grenades:', err);
     } finally {
       setIsLoading(false);
     }
@@ -413,22 +432,34 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     });
   }, [grenades, grenadeStates]);
 
-  // Effects
+  // Optimized effects - reduce cascading API calls
   useEffect(() => {
-    loadFilterOptions();
-  }, [loadFilterOptions]);
+    // Only load filter options once on mount
+    if (!isInitialized) {
+      loadFilterOptions();
+    }
+  }, [loadFilterOptions, isInitialized]);
 
   useEffect(() => {
-    initializeWithDefaults();
-  }, [initializeWithDefaults]);
+    // Initialize with defaults only once
+    if (!isInitialized) {
+      initializeWithDefaults();
+    }
+  }, [initializeWithDefaults, isInitialized]);
 
   useEffect(() => {
-    loadMatchDependentOptions();
-  }, [loadMatchDependentOptions]);
+    // Load match-dependent options only when map changes and we're initialized
+    if (isInitialized && filters.map) {
+      loadMatchDependentOptions();
+    }
+  }, [loadMatchDependentOptions, isInitialized, filters.map]);
 
   useEffect(() => {
-    loadGrenades();
-  }, [loadGrenades]);
+    // Load grenades only when we have valid filters
+    if (isInitialized && hasValidFilters) {
+      loadGrenades();
+    }
+  }, [loadGrenades, isInitialized, hasValidFilters]);
 
   const contextValue: UseMatchGrenadesReturn = {
     // Data
