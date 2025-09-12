@@ -2,14 +2,12 @@
 
 namespace App\Services\Matches;
 
-use App\Models\GameMatch;
-use App\Models\GunfightEvent;
-use App\Models\Player;
 use App\Models\User;
-use App\Services\MatchCacheManager;
 
 class HeadToHeadService
 {
+    use MatchAccessTrait;
+
     public function getHeadToHead(User $user, int $matchId, ?string $player1SteamId = null, ?string $player2SteamId = null): array
     {
         // Check user access first
@@ -19,11 +17,6 @@ class HeadToHeadService
 
         // Return empty array for now - placeholder implementation
         return [];
-    }
-
-    private function hasUserAccessToMatch(User $user, int $matchId): bool
-    {
-        return $user->player?->matches()->where('matches.id', $matchId)->exists() ?? false;
     }
 
     private function getCacheKey(?string $player1SteamId, ?string $player2SteamId): string

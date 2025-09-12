@@ -9,6 +9,8 @@ use App\Services\MatchCacheManager;
 
 class PlayerStatsService
 {
+    use MatchAccessTrait;
+
     public function getStats(User $user, int $matchId): array
     {
         // Check user access first
