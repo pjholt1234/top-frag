@@ -21,6 +21,14 @@ class InProgressJobsResource extends JsonResource
             'progress_percentage' => $this->progress_percentage,
             'current_step' => $this->current_step,
             'error_message' => $this->error_message,
+            'step_progress' => $this->step_progress,
+            'total_steps' => $this->total_steps,
+            'current_step_num' => $this->current_step_num,
+            'start_time' => $this->start_time,
+            'last_update_time' => $this->last_update_time,
+            'error_code' => $this->error_code,
+            'context' => $this->context,
+            'is_final' => $this->is_final,
         ];
 
         if (! empty($match)) {

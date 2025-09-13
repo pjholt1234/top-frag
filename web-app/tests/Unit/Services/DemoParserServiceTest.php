@@ -935,7 +935,7 @@ class DemoParserServiceTest extends TestCase
         $playerRoundEvents = [];
         for ($i = 1; $i <= 1500; $i++) {
             $playerRoundEvents[] = [
-                'player_steam_id' => 'steam_'.($i % 10), // 10 different players
+                'player_steam_id' => 'steam_' . ($i % 10), // 10 different players
                 'round_number' => ($i % 30) + 1, // Rounds 1-30
                 'kills' => $i % 5,
                 'damage' => $i * 10,
@@ -993,5 +993,281 @@ class DemoParserServiceTest extends TestCase
 
         $this->assertEquals(1, PlayerRoundEvent::count());
         $this->assertEquals(1, DamageEvent::count());
+    }
+
+    // Enhanced Progress Tracking Tests
+
+    public function test_it_can_update_processing_job_with_enhanced_progress_fields()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        $data = [
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 25,
+            'current_step' => 'Processing grenade events',
+            'step_progress' => 75,
+            'total_steps' => 20,
+            'current_step_num' => 6,
+            'start_time' => '2024-01-01 10:00:00',
+            'last_update_time' => '2024-01-01 10:05:00',
+            'error_code' => null,
+            'context' => [
+                'step' => 'grenade_events_processing',
+                'round' => 3,
+                'total_rounds' => 16,
+            ],
+            'is_final' => false,
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        // Test basic fields
+        $this->assertEquals(ProcessingStatus::PARSING, $job->processing_status);
+        $this->assertEquals(25, $job->progress_percentage);
+        $this->assertEquals('Processing grenade events', $job->current_step);
+
+        // Test enhanced progress fields
+        $this->assertEquals(75, $job->step_progress);
+        $this->assertEquals(20, $job->total_steps);
+        $this->assertEquals(6, $job->current_step_num);
+        $this->assertEquals('2024-01-01 10:00:00', $job->start_time->format('Y-m-d H:i:s'));
+        $this->assertEquals('2024-01-01 10:05:00', $job->last_update_time->format('Y-m-d H:i:s'));
+        $this->assertNull($job->error_code);
+        $this->assertEquals([
+            'step' => 'grenade_events_processing',
+            'round' => 3,
+            'total_rounds' => 16,
+        ], $job->context);
+        $this->assertFalse($job->is_final);
+    }
+
+    public function test_it_can_update_processing_job_with_partial_enhanced_fields()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        // Test with only some enhanced fields present
+        $data = [
+            'status' => ProcessingStatus::PROCESSING_EVENTS->value,
+            'progress' => 50,
+            'current_step' => 'Processing round events',
+            'step_progress' => 30,
+            'total_steps' => 18,
+            'current_step_num' => 3,
+            // Missing: start_time, last_update_time, error_code, context, is_final
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        // Test that only provided fields are updated
+        $this->assertEquals(ProcessingStatus::PROCESSING_EVENTS, $job->processing_status);
+        $this->assertEquals(50, $job->progress_percentage);
+        $this->assertEquals('Processing round events', $job->current_step);
+        $this->assertEquals(30, $job->step_progress);
+        $this->assertEquals(18, $job->total_steps);
+        $this->assertEquals(3, $job->current_step_num);
+
+        // Test that missing fields remain unchanged (null or default values)
+        $this->assertNull($job->start_time);
+        $this->assertNull($job->last_update_time);
+        $this->assertNull($job->error_code);
+        $this->assertNull($job->context);
+        $this->assertFalse($job->is_final); // Default value
+    }
+
+    public function test_it_can_update_processing_job_with_error_code()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PARSING,
+            'progress_percentage' => 30,
+        ]);
+
+        $data = [
+            'status' => ProcessingStatus::FAILED->value,
+            'progress' => 30,
+            'current_step' => 'Processing demo file',
+            'error_message' => 'Demo file corrupted',
+            'error_code' => 'DEMO_CORRUPTED',
+            'step_progress' => 0,
+            'total_steps' => 18,
+            'current_step_num' => 1,
+            'context' => [
+                'step' => 'file_validation',
+                'error_details' => 'Invalid demo header',
+            ],
+            'is_final' => true,
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        $this->assertEquals(ProcessingStatus::FAILED, $job->processing_status);
+        $this->assertEquals('Demo file corrupted', $job->error_message);
+        $this->assertEquals('DEMO_CORRUPTED', $job->error_code);
+        $this->assertEquals([
+            'step' => 'file_validation',
+            'error_details' => 'Invalid demo header',
+        ], $job->context);
+        $this->assertTrue($job->is_final);
+    }
+
+    public function test_it_can_update_processing_job_with_final_completion()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::FINALIZING,
+            'progress_percentage' => 95,
+        ]);
+
+        $data = [
+            'status' => ProcessingStatus::COMPLETED->value,
+            'progress' => 100,
+            'current_step' => 'Completed',
+            'step_progress' => 100,
+            'total_steps' => 18,
+            'current_step_num' => 18,
+            'context' => [
+                'step' => 'finalization',
+                'total_events_processed' => 1250,
+            ],
+            'is_final' => true,
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data, true);
+
+        $job->refresh();
+
+        $this->assertEquals(ProcessingStatus::COMPLETED, $job->processing_status);
+        $this->assertEquals(100, $job->progress_percentage);
+        $this->assertEquals('Completed', $job->current_step);
+        $this->assertEquals(100, $job->step_progress);
+        $this->assertEquals(18, $job->current_step_num);
+        $this->assertEquals([
+            'step' => 'finalization',
+            'total_events_processed' => 1250,
+        ], $job->context);
+        $this->assertTrue($job->is_final);
+        $this->assertNotNull($job->completed_at);
+    }
+
+    public function test_it_handles_complex_context_data()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        $complexContext = [
+            'step' => 'round_events_processing',
+            'round' => 5,
+            'total_rounds' => 16,
+            'events_processed' => 150,
+            'total_events' => 300,
+            'processing_time' => 2.5,
+            'memory_usage' => '128MB',
+            'debug_info' => [
+                'parser_version' => '1.0.0',
+                'demo_ticks' => 50000,
+                'map_name' => 'de_dust2',
+            ],
+        ];
+
+        $data = [
+            'status' => ProcessingStatus::PROCESSING_EVENTS->value,
+            'progress' => 40,
+            'current_step' => 'Processing round 5 of 16',
+            'step_progress' => 50,
+            'total_steps' => 34, // 18 base + 16 rounds
+            'current_step_num' => 3,
+            'context' => $complexContext,
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        $this->assertEquals($complexContext, $job->context);
+        $this->assertEquals(34, $job->total_steps);
+        $this->assertEquals(50, $job->step_progress);
+    }
+
+    public function test_it_handles_null_and_empty_values_correctly()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        $data = [
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 10,
+            'current_step' => 'Initializing',
+            'step_progress' => 0,
+            'total_steps' => 18,
+            'current_step_num' => 1,
+            'start_time' => null,
+            'last_update_time' => null,
+            'error_code' => null,
+            'context' => null,
+            'is_final' => false,
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        $this->assertEquals(ProcessingStatus::PARSING, $job->processing_status);
+        $this->assertEquals(10, $job->progress_percentage);
+        $this->assertEquals('Initializing', $job->current_step);
+        $this->assertEquals(0, $job->step_progress);
+        $this->assertEquals(18, $job->total_steps);
+        $this->assertEquals(1, $job->current_step_num);
+        $this->assertNull($job->start_time);
+        $this->assertNull($job->last_update_time);
+        $this->assertNull($job->error_code);
+        $this->assertNull($job->context);
+        $this->assertFalse($job->is_final);
+    }
+
+    public function test_it_handles_missing_enhanced_fields_gracefully()
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+            'step_progress' => 0,
+            'total_steps' => 18,
+            'current_step_num' => 1,
+        ]);
+
+        // Test with only basic fields (backward compatibility)
+        $data = [
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 20,
+            'current_step' => 'Parsing demo file',
+            // No enhanced fields provided
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data);
+
+        $job->refresh();
+
+        // Basic fields should be updated
+        $this->assertEquals(ProcessingStatus::PARSING, $job->processing_status);
+        $this->assertEquals(20, $job->progress_percentage);
+        $this->assertEquals('Parsing demo file', $job->current_step);
+
+        // Enhanced fields should remain unchanged
+        $this->assertEquals(0, $job->step_progress);
+        $this->assertEquals(18, $job->total_steps);
+        $this->assertEquals(1, $job->current_step_num);
     }
 }

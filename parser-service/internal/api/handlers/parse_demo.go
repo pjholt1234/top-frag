@@ -237,6 +237,16 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	}
 
 	// Parsing
+	// Initialize step manager (we'll update total steps once we know the round count)
+	stepManager := types.NewStepManager(0) // Will be updated during parsing
+
+	// Initialize job with step manager data
+	job.StepProgress = stepManager.StepProgress
+	job.TotalSteps = stepManager.TotalSteps
+	job.CurrentStepNum = stepManager.CurrentStepNum
+	job.Context = stepManager.Context
+	job.LastUpdateTime = stepManager.LastUpdateTime
+
 	job.Status = types.StatusParsing
 	job.CurrentStep = "Parsing demo file"
 
@@ -245,8 +255,14 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	}
 
 	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
+		// Update job with new progress data
 		job.Progress = update.Progress
 		job.CurrentStep = update.CurrentStep
+		job.StepProgress = update.StepProgress
+		job.TotalSteps = update.TotalSteps
+		job.CurrentStepNum = update.CurrentStepNum
+		job.Context = update.Context
+		job.LastUpdateTime = update.LastUpdateTime
 
 		// Update status based on progress
 		if update.Progress < 20 {
@@ -284,6 +300,10 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Status = types.StatusSendingMetadata
 	job.CurrentStep = "Sending match metadata"
 	job.Progress = 90
+	job.CurrentStepNum = 12 // Sending match metadata step
+	job.StepProgress = 0
+	job.LastUpdateTime = time.Now()
+	job.Context["step"] = "sending_metadata"
 
 	// Send match and players data via progress callback
 	if err := h.sendProgressUpdateWithMatchData(ctx, job, parsedData); err != nil {
@@ -300,6 +320,10 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Status = types.StatusSendingEvents
 	job.CurrentStep = "Sending event data"
 	job.Progress = 95
+	job.CurrentStepNum = 13 // Sending events step
+	job.StepProgress = 0
+	job.LastUpdateTime = time.Now()
+	job.Context["step"] = "sending_events"
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		h.logger.WithError(err).Error("Failed to send progress update")
@@ -319,6 +343,11 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Status = types.StatusFinalizing
 	job.CurrentStep = "Finalizing job"
 	job.Progress = 98
+	job.CurrentStepNum = 18 // Final step
+	job.StepProgress = 100
+	job.IsFinal = true
+	job.LastUpdateTime = time.Now()
+	job.Context["step"] = "finalization"
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		h.logger.WithError(err).Error("Failed to send progress update")
@@ -348,14 +377,25 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 func (h *ParseDemoHandler) sendProgressUpdate(ctx context.Context, job *types.ProcessingJob) error {
 	update := types.ProgressUpdate{
-		JobID:       job.JobID,
-		Status:      job.Status,
-		Progress:    job.Progress,
-		CurrentStep: job.CurrentStep,
+		JobID:          job.JobID,
+		Status:         job.Status,
+		Progress:       job.Progress,
+		CurrentStep:    job.CurrentStep,
+		StepProgress:   job.StepProgress,
+		TotalSteps:     job.TotalSteps,
+		CurrentStepNum: job.CurrentStepNum,
+		StartTime:      job.StartTime,
+		LastUpdateTime: job.LastUpdateTime,
+		Context:        job.Context,
+		IsFinal:        job.IsFinal,
 	}
 
 	if job.ErrorMessage != "" {
 		update.ErrorMessage = &job.ErrorMessage
+	}
+
+	if job.ErrorCode != "" {
+		update.ErrorCode = &job.ErrorCode
 	}
 
 	jsonData, err := json.Marshal(update)
@@ -392,28 +432,50 @@ func (h *ParseDemoHandler) sendProgressUpdate(ctx context.Context, job *types.Pr
 // sendProgressUpdateWithMatchData sends progress updates with match and players data
 func (h *ParseDemoHandler) sendProgressUpdateWithMatchData(ctx context.Context, job *types.ProcessingJob, parsedData *types.ParsedDemoData) error {
 	update := types.ProgressUpdate{
-		JobID:       job.JobID,
-		Status:      job.Status,
-		Progress:    job.Progress,
-		CurrentStep: job.CurrentStep,
+		JobID:          job.JobID,
+		Status:         job.Status,
+		Progress:       job.Progress,
+		CurrentStep:    job.CurrentStep,
+		StepProgress:   job.StepProgress,
+		TotalSteps:     job.TotalSteps,
+		CurrentStepNum: job.CurrentStepNum,
+		StartTime:      job.StartTime,
+		LastUpdateTime: job.LastUpdateTime,
+		Context:        job.Context,
+		IsFinal:        job.IsFinal,
 	}
 
 	if job.ErrorMessage != "" {
 		update.ErrorMessage = &job.ErrorMessage
 	}
 
+	if job.ErrorCode != "" {
+		update.ErrorCode = &job.ErrorCode
+	}
+
 	// Create payload with match and players data
 	payload := map[string]interface{}{
-		"job_id":       update.JobID,
-		"status":       update.Status,
-		"progress":     update.Progress,
-		"current_step": update.CurrentStep,
-		"match":        parsedData.Match,
-		"players":      parsedData.Players,
+		"job_id":           update.JobID,
+		"status":           update.Status,
+		"progress":         update.Progress,
+		"current_step":     update.CurrentStep,
+		"step_progress":    update.StepProgress,
+		"total_steps":      update.TotalSteps,
+		"current_step_num": update.CurrentStepNum,
+		"start_time":       update.StartTime,
+		"last_update_time": update.LastUpdateTime,
+		"context":          update.Context,
+		"is_final":         update.IsFinal,
+		"match":            parsedData.Match,
+		"players":          parsedData.Players,
 	}
 
 	if update.ErrorMessage != nil {
 		payload["error_message"] = *update.ErrorMessage
+	}
+
+	if update.ErrorCode != nil {
+		payload["error_code"] = *update.ErrorCode
 	}
 
 	jsonData, err := json.Marshal(payload)

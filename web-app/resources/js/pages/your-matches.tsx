@@ -35,6 +35,14 @@ interface UnifiedMatch {
   progress_percentage: number | null;
   current_step: string | null;
   error_message: string | null;
+  step_progress: number | null;
+  total_steps: number | null;
+  current_step_num: number | null;
+  start_time: string | null;
+  last_update_time: string | null;
+  error_code: string | null;
+  context: Record<string, any> | null;
+  is_final: boolean | null;
 }
 
 interface PaginationData {

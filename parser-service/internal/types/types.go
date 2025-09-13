@@ -302,11 +302,19 @@ type ParseDemoResponse struct {
 }
 
 type ProgressUpdate struct {
-	JobID        string  `json:"job_id"`
-	Status       string  `json:"status"`
-	Progress     int     `json:"progress"`
-	CurrentStep  string  `json:"current_step"`
-	ErrorMessage *string `json:"error_message,omitempty"`
+	JobID          string                 `json:"job_id"`
+	Status         string                 `json:"status"`
+	Progress       int                    `json:"progress"`
+	CurrentStep    string                 `json:"current_step"`
+	ErrorMessage   *string                `json:"error_message,omitempty"`
+	StepProgress   int                    `json:"step_progress"`
+	TotalSteps     int                    `json:"total_steps"`
+	CurrentStepNum int                    `json:"current_step_num"`
+	StartTime      time.Time              `json:"start_time"`
+	LastUpdateTime time.Time              `json:"last_update_time"`
+	ErrorCode      *string                `json:"error_code,omitempty"`
+	Context        map[string]interface{} `json:"context,omitempty"`
+	IsFinal        bool                   `json:"is_final"`
 }
 
 type CompletionData struct {
@@ -329,6 +337,13 @@ type ProcessingJob struct {
 	ErrorMessage          string
 	StartTime             time.Time
 	MatchData             *ParsedDemoData
+	ErrorCode             string
+	LastUpdateTime        time.Time
+	StepProgress          int
+	TotalSteps            int
+	CurrentStepNum        int
+	Context               map[string]interface{}
+	IsFinal               bool
 }
 
 type MatchState struct {
@@ -598,4 +613,61 @@ func StringToSteamID(steamIDString string) uint64 {
 	var steamID uint64
 	fmt.Sscanf(steamIDString, "steam_%d", &steamID)
 	return steamID
+}
+
+// StepManager manages progress tracking with granular steps
+type StepManager struct {
+	TotalSteps     int
+	CurrentStepNum int
+	StepProgress   int
+	StartTime      time.Time
+	LastUpdateTime time.Time
+	Context        map[string]interface{}
+}
+
+// NewStepManager creates a new step manager with the given total rounds
+func NewStepManager(totalRounds int) *StepManager {
+	return &StepManager{
+		TotalSteps:     18 + totalRounds, // 18 base steps + rounds
+		CurrentStepNum: 1,
+		StepProgress:   0,
+		StartTime:      time.Now(),
+		LastUpdateTime: time.Now(),
+		Context:        make(map[string]interface{}),
+	}
+}
+
+// UpdateStep updates the current step and resets step progress
+func (sm *StepManager) UpdateStep(stepNum int, stepName string) {
+	sm.CurrentStepNum = stepNum
+	sm.StepProgress = 0
+	sm.LastUpdateTime = time.Now()
+	sm.Context["current_step_name"] = stepName
+}
+
+// UpdateStepProgress updates the progress within the current step
+func (sm *StepManager) UpdateStepProgress(progress int, context map[string]interface{}) {
+	sm.StepProgress = progress
+	sm.LastUpdateTime = time.Now()
+
+	// Merge context
+	for k, v := range context {
+		sm.Context[k] = v
+	}
+}
+
+// GetOverallProgress calculates the overall progress percentage
+func (sm *StepManager) GetOverallProgress() int {
+	if sm.TotalSteps == 0 {
+		return 0
+	}
+
+	// Calculate progress: (completed steps * 100 + current step progress) / total steps
+	completedSteps := sm.CurrentStepNum - 1
+	overallProgress := (completedSteps*100 + sm.StepProgress) / sm.TotalSteps
+
+	if overallProgress > 100 {
+		return 100
+	}
+	return overallProgress
 }

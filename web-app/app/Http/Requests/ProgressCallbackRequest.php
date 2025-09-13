@@ -29,6 +29,14 @@ class ProgressCallbackRequest extends FormRequest
             'error_message' => 'nullable|string',
             'match' => 'nullable|array',
             'players' => 'nullable|array',
+            'step_progress' => 'nullable|integer|min:0|max:100',
+            'total_steps' => 'nullable|integer|min:1',
+            'current_step_num' => 'nullable|integer|min:1',
+            'start_time' => 'nullable|date',
+            'last_update_time' => 'nullable|date',
+            'error_code' => 'nullable|string',
+            'context' => 'nullable|array',
+            'is_final' => 'nullable|boolean',
         ];
     }
 }

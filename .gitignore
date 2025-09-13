@@ -15,3 +15,4 @@ demo.dem
 /web-app/coverage.xml
 /.vscode
 /parser-service/parser-service.code-workspace
+/web-app/.env.testing

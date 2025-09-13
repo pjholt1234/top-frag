@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 	"time"
@@ -846,4 +847,437 @@ func float64Ptr(f float64) *float64 {
 
 func timePtr(t time.Time) *time.Time {
 	return &t
+}
+
+// Enhanced Progress Tracking Tests
+
+func TestNewStepManager(t *testing.T) {
+	tests := []struct {
+		name          string
+		totalRounds   int
+		expectedSteps int
+	}{
+		{
+			name:          "zero rounds",
+			totalRounds:   0,
+			expectedSteps: 18, // Just base steps
+		},
+		{
+			name:          "16 rounds",
+			totalRounds:   16,
+			expectedSteps: 34, // 18 base + 16 rounds
+		},
+		{
+			name:          "30 rounds",
+			totalRounds:   30,
+			expectedSteps: 48, // 18 base + 30 rounds
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := NewStepManager(tt.totalRounds)
+
+			if sm.TotalSteps != tt.expectedSteps {
+				t.Errorf("Expected TotalSteps to be %d, got %d", tt.expectedSteps, sm.TotalSteps)
+			}
+			if sm.CurrentStepNum != 1 {
+				t.Errorf("Expected CurrentStepNum to be 1, got %d", sm.CurrentStepNum)
+			}
+			if sm.StepProgress != 0 {
+				t.Errorf("Expected StepProgress to be 0, got %d", sm.StepProgress)
+			}
+			if sm.Context == nil {
+				t.Error("Expected Context to be initialized")
+			}
+			if sm.StartTime.IsZero() {
+				t.Error("Expected StartTime to be set")
+			}
+			if sm.LastUpdateTime.IsZero() {
+				t.Error("Expected LastUpdateTime to be set")
+			}
+		})
+	}
+}
+
+func TestStepManager_UpdateStep(t *testing.T) {
+	sm := NewStepManager(16)
+
+	// Test step update
+	sm.UpdateStep(5, "Processing grenade events")
+
+	if sm.CurrentStepNum != 5 {
+		t.Errorf("Expected CurrentStepNum to be 5, got %d", sm.CurrentStepNum)
+	}
+	if sm.StepProgress != 0 {
+		t.Errorf("Expected StepProgress to be reset to 0, got %d", sm.StepProgress)
+	}
+	if sm.Context["current_step_name"] != "Processing grenade events" {
+		t.Errorf("Expected current_step_name to be 'Processing grenade events', got %v", sm.Context["current_step_name"])
+	}
+
+	// Verify LastUpdateTime was updated
+	if sm.LastUpdateTime.IsZero() {
+		t.Error("Expected LastUpdateTime to be updated")
+	}
+}
+
+func TestStepManager_UpdateStepProgress(t *testing.T) {
+	sm := NewStepManager(16)
+
+	// Test step progress update
+	context := map[string]interface{}{
+		"round":            5,
+		"events_processed": 100,
+	}
+	sm.UpdateStepProgress(75, context)
+
+	if sm.StepProgress != 75 {
+		t.Errorf("Expected StepProgress to be 75, got %d", sm.StepProgress)
+	}
+	if sm.Context["round"] != 5 {
+		t.Errorf("Expected context round to be 5, got %v", sm.Context["round"])
+	}
+	if sm.Context["events_processed"] != 100 {
+		t.Errorf("Expected context events_processed to be 100, got %v", sm.Context["events_processed"])
+	}
+
+	// Verify LastUpdateTime was updated
+	if sm.LastUpdateTime.IsZero() {
+		t.Error("Expected LastUpdateTime to be updated")
+	}
+}
+
+func TestStepManager_GetOverallProgress(t *testing.T) {
+	tests := []struct {
+		name         string
+		totalRounds  int
+		currentStep  int
+		stepProgress int
+		expectedMin  int
+		expectedMax  int
+	}{
+		{
+			name:         "first step, no progress",
+			totalRounds:  16,
+			currentStep:  1,
+			stepProgress: 0,
+			expectedMin:  0,
+			expectedMax:  5,
+		},
+		{
+			name:         "first step, half progress",
+			totalRounds:  16,
+			currentStep:  1,
+			stepProgress: 50,
+			expectedMin:  1,
+			expectedMax:  3,
+		},
+		{
+			name:         "middle step, full progress",
+			totalRounds:  16,
+			currentStep:  10,
+			stepProgress: 100,
+			expectedMin:  25,
+			expectedMax:  30,
+		},
+		{
+			name:         "last step, full progress",
+			totalRounds:  16,
+			currentStep:  34, // 18 + 16
+			stepProgress: 100,
+			expectedMin:  95,
+			expectedMax:  100,
+		},
+		{
+			name:         "zero rounds, first step",
+			totalRounds:  0,
+			currentStep:  1,
+			stepProgress: 50,
+			expectedMin:  2,
+			expectedMax:  7,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := NewStepManager(tt.totalRounds)
+			sm.UpdateStep(tt.currentStep, "Test step")
+			sm.UpdateStepProgress(tt.stepProgress, nil)
+
+			overallProgress := sm.GetOverallProgress()
+
+			if overallProgress < tt.expectedMin || overallProgress > tt.expectedMax {
+				t.Errorf("Expected overall progress to be between %d-%d, got %d",
+					tt.expectedMin, tt.expectedMax, overallProgress)
+			}
+		})
+	}
+}
+
+func TestStepManager_ContextMerging(t *testing.T) {
+	sm := NewStepManager(16)
+
+	// Test initial context
+	sm.UpdateStep(1, "Initial step")
+	if sm.Context["current_step_name"] != "Initial step" {
+		t.Errorf("Expected current_step_name to be 'Initial step', got %v", sm.Context["current_step_name"])
+	}
+
+	// Test context merging
+	context1 := map[string]interface{}{
+		"round":            5,
+		"events_processed": 100,
+	}
+	sm.UpdateStepProgress(50, context1)
+
+	if sm.Context["round"] != 5 {
+		t.Errorf("Expected context round to be 5, got %v", sm.Context["round"])
+	}
+	if sm.Context["events_processed"] != 100 {
+		t.Errorf("Expected context events_processed to be 100, got %v", sm.Context["events_processed"])
+	}
+
+	// Test context overwriting
+	context2 := map[string]interface{}{
+		"round":     6, // Should overwrite previous round
+		"new_field": "new_value",
+	}
+	sm.UpdateStepProgress(75, context2)
+
+	if sm.Context["round"] != 6 {
+		t.Errorf("Expected context round to be updated to 6, got %v", sm.Context["round"])
+	}
+	if sm.Context["new_field"] != "new_value" {
+		t.Errorf("Expected context new_field to be 'new_value', got %v", sm.Context["new_field"])
+	}
+	if sm.Context["events_processed"] != 100 {
+		t.Errorf("Expected context events_processed to remain 100, got %v", sm.Context["events_processed"])
+	}
+}
+
+func TestStepManager_EdgeCases(t *testing.T) {
+	// Test with zero rounds
+	sm := NewStepManager(0)
+	expectedTotalSteps := 18
+	if sm.TotalSteps != expectedTotalSteps {
+		t.Errorf("Expected TotalSteps to be %d for zero rounds, got %d", expectedTotalSteps, sm.TotalSteps)
+	}
+
+	// Test step progress boundaries
+	sm.UpdateStepProgress(0, nil)
+	if sm.StepProgress != 0 {
+		t.Errorf("Expected StepProgress to be 0, got %d", sm.StepProgress)
+	}
+
+	sm.UpdateStepProgress(100, nil)
+	if sm.StepProgress != 100 {
+		t.Errorf("Expected StepProgress to be 100, got %d", sm.StepProgress)
+	}
+
+	// Test step number boundaries
+	sm.UpdateStep(1, "First step")
+	if sm.CurrentStepNum != 1 {
+		t.Errorf("Expected CurrentStepNum to be 1, got %d", sm.CurrentStepNum)
+	}
+
+	sm.UpdateStep(sm.TotalSteps, "Last step")
+	if sm.CurrentStepNum != sm.TotalSteps {
+		t.Errorf("Expected CurrentStepNum to be %d, got %d", sm.TotalSteps, sm.CurrentStepNum)
+	}
+}
+
+func TestProgressUpdate_JSONSerialization(t *testing.T) {
+	// Test ProgressUpdate JSON serialization
+	startTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	lastUpdateTime := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	errorMessage := "Test error"
+	errorCode := "TEST_ERROR"
+
+	original := ProgressUpdate{
+		JobID:          "test-job-123",
+		Status:         StatusParsing,
+		Progress:       25,
+		CurrentStep:    "Processing grenade events",
+		ErrorMessage:   &errorMessage,
+		StepProgress:   75,
+		TotalSteps:     20,
+		CurrentStepNum: 6,
+		StartTime:      startTime,
+		LastUpdateTime: lastUpdateTime,
+		ErrorCode:      &errorCode,
+		Context: map[string]interface{}{
+			"step":         "grenade_events_processing",
+			"round":        3,
+			"total_rounds": 16,
+		},
+		IsFinal: false,
+	}
+
+	// Serialize to JSON
+	jsonData, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Failed to marshal ProgressUpdate to JSON: %v", err)
+	}
+
+	// Deserialize from JSON
+	var deserialized ProgressUpdate
+	err = json.Unmarshal(jsonData, &deserialized)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal ProgressUpdate from JSON: %v", err)
+	}
+
+	// Verify all fields are preserved
+	if deserialized.JobID != original.JobID {
+		t.Errorf("JobID mismatch: expected %s, got %s", original.JobID, deserialized.JobID)
+	}
+	if deserialized.Status != original.Status {
+		t.Errorf("Status mismatch: expected %s, got %s", original.Status, deserialized.Status)
+	}
+	if deserialized.Progress != original.Progress {
+		t.Errorf("Progress mismatch: expected %d, got %d", original.Progress, deserialized.Progress)
+	}
+	if deserialized.CurrentStep != original.CurrentStep {
+		t.Errorf("CurrentStep mismatch: expected %s, got %s", original.CurrentStep, deserialized.CurrentStep)
+	}
+	if deserialized.StepProgress != original.StepProgress {
+		t.Errorf("StepProgress mismatch: expected %d, got %d", original.StepProgress, deserialized.StepProgress)
+	}
+	if deserialized.TotalSteps != original.TotalSteps {
+		t.Errorf("TotalSteps mismatch: expected %d, got %d", original.TotalSteps, deserialized.TotalSteps)
+	}
+	if deserialized.CurrentStepNum != original.CurrentStepNum {
+		t.Errorf("CurrentStepNum mismatch: expected %d, got %d", original.CurrentStepNum, deserialized.CurrentStepNum)
+	}
+	if deserialized.StartTime != original.StartTime {
+		t.Errorf("StartTime mismatch: expected %v, got %v", original.StartTime, deserialized.StartTime)
+	}
+	if deserialized.LastUpdateTime != original.LastUpdateTime {
+		t.Errorf("LastUpdateTime mismatch: expected %v, got %v", original.LastUpdateTime, deserialized.LastUpdateTime)
+	}
+	if deserialized.IsFinal != original.IsFinal {
+		t.Errorf("IsFinal mismatch: expected %v, got %v", original.IsFinal, deserialized.IsFinal)
+	}
+
+	// Verify error fields
+	if deserialized.ErrorMessage == nil {
+		t.Error("Expected ErrorMessage to be preserved")
+	} else if *deserialized.ErrorMessage != *original.ErrorMessage {
+		t.Errorf("ErrorMessage mismatch: expected %s, got %s", *original.ErrorMessage, *deserialized.ErrorMessage)
+	}
+
+	if deserialized.ErrorCode == nil {
+		t.Error("Expected ErrorCode to be preserved")
+	} else if *deserialized.ErrorCode != *original.ErrorCode {
+		t.Errorf("ErrorCode mismatch: expected %s, got %s", *original.ErrorCode, *deserialized.ErrorCode)
+	}
+
+	// Verify context
+	if deserialized.Context == nil {
+		t.Error("Expected Context to be preserved")
+	} else {
+		if deserialized.Context["step"] != original.Context["step"] {
+			t.Errorf("Context step mismatch: expected %v, got %v", original.Context["step"], deserialized.Context["step"])
+		}
+		// JSON unmarshaling converts numbers to float64, so we need to compare appropriately
+		if deserialized.Context["round"] != float64(original.Context["round"].(int)) {
+			t.Errorf("Context round mismatch: expected %v, got %v", original.Context["round"], deserialized.Context["round"])
+		}
+	}
+}
+
+func TestProgressUpdate_JSONSerializationWithNilFields(t *testing.T) {
+	// Test ProgressUpdate JSON serialization with nil fields
+	startTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	lastUpdateTime := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+
+	original := ProgressUpdate{
+		JobID:          "test-job-123",
+		Status:         StatusParsing,
+		Progress:       25,
+		CurrentStep:    "Processing grenade events",
+		ErrorMessage:   nil, // nil field
+		StepProgress:   75,
+		TotalSteps:     20,
+		CurrentStepNum: 6,
+		StartTime:      startTime,
+		LastUpdateTime: lastUpdateTime,
+		ErrorCode:      nil, // nil field
+		Context: map[string]interface{}{
+			"step": "grenade_events_processing",
+		},
+		IsFinal: false,
+	}
+
+	// Serialize to JSON
+	jsonData, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Failed to marshal ProgressUpdate with nil fields to JSON: %v", err)
+	}
+
+	// Deserialize from JSON
+	var deserialized ProgressUpdate
+	err = json.Unmarshal(jsonData, &deserialized)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal ProgressUpdate with nil fields from JSON: %v", err)
+	}
+
+	// Verify nil fields remain nil
+	if deserialized.ErrorMessage != nil {
+		t.Errorf("Expected ErrorMessage to remain nil, got %v", *deserialized.ErrorMessage)
+	}
+	if deserialized.ErrorCode != nil {
+		t.Errorf("Expected ErrorCode to remain nil, got %v", *deserialized.ErrorCode)
+	}
+}
+
+func TestProcessingJob_EnhancedFields(t *testing.T) {
+	// Test ProcessingJob with enhanced fields
+	startTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	lastUpdateTime := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+
+	job := ProcessingJob{
+		JobID:                 "test-job-123",
+		TempFilePath:          "/test/path.dem",
+		ProgressCallbackURL:   "http://localhost:8080/callback",
+		CompletionCallbackURL: "http://localhost:8080/completion",
+		Status:                StatusParsing,
+		Progress:              25,
+		CurrentStep:           "Processing grenade events",
+		ErrorMessage:          "",
+		StartTime:             startTime,
+		MatchData:             nil,
+		ErrorCode:             "TEST_ERROR",
+		LastUpdateTime:        lastUpdateTime,
+		StepProgress:          75,
+		TotalSteps:            20,
+		CurrentStepNum:        6,
+		Context: map[string]interface{}{
+			"step": "grenade_events_processing",
+		},
+		IsFinal: false,
+	}
+
+	// Verify enhanced fields
+	if job.StepProgress != 75 {
+		t.Errorf("Expected StepProgress to be 75, got %d", job.StepProgress)
+	}
+	if job.TotalSteps != 20 {
+		t.Errorf("Expected TotalSteps to be 20, got %d", job.TotalSteps)
+	}
+	if job.CurrentStepNum != 6 {
+		t.Errorf("Expected CurrentStepNum to be 6, got %d", job.CurrentStepNum)
+	}
+	if job.ErrorCode != "TEST_ERROR" {
+		t.Errorf("Expected ErrorCode to be 'TEST_ERROR', got %s", job.ErrorCode)
+	}
+	if job.LastUpdateTime != lastUpdateTime {
+		t.Errorf("Expected LastUpdateTime to match, got %v", job.LastUpdateTime)
+	}
+	if job.Context == nil {
+		t.Error("Expected Context to be initialized")
+	}
+	if job.IsFinal {
+		t.Error("Expected IsFinal to be false")
+	}
 }

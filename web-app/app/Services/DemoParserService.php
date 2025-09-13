@@ -31,12 +31,45 @@ class DemoParserService
             return;
         }
 
-        $job->update([
+        $updateData = [
             'processing_status' => $data['status'],
             'progress_percentage' => $isCompleted ? 100 : $data['progress'],
             'completed_at' => $isCompleted ? now() : null,
             'current_step' => $data['current_step'] ?? ($isCompleted ? 'Completed' : null),
-        ]);
+        ];
+
+        // Add error_message if it exists
+        if (isset($data['error_message'])) {
+            $updateData['error_message'] = $data['error_message'];
+        }
+
+        // Add new progress tracking fields if they exist
+        if (isset($data['step_progress'])) {
+            $updateData['step_progress'] = $data['step_progress'];
+        }
+        if (isset($data['total_steps'])) {
+            $updateData['total_steps'] = $data['total_steps'];
+        }
+        if (isset($data['current_step_num'])) {
+            $updateData['current_step_num'] = $data['current_step_num'];
+        }
+        if (isset($data['start_time'])) {
+            $updateData['start_time'] = $data['start_time'];
+        }
+        if (isset($data['last_update_time'])) {
+            $updateData['last_update_time'] = $data['last_update_time'];
+        }
+        if (isset($data['error_code'])) {
+            $updateData['error_code'] = $data['error_code'];
+        }
+        if (isset($data['context'])) {
+            $updateData['context'] = $data['context'];
+        }
+        if (isset($data['is_final'])) {
+            $updateData['is_final'] = $data['is_final'];
+        }
+
+        $job->update($updateData);
 
         // Clear cache after update to ensure fresh data
         $this->clearJobCache($jobId);

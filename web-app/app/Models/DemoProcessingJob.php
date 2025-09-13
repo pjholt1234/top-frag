@@ -21,6 +21,14 @@ class DemoProcessingJob extends Model
         'completed_at',
         'current_step',
         'user_id',
+        'step_progress',
+        'total_steps',
+        'current_step_num',
+        'start_time',
+        'last_update_time',
+        'error_code',
+        'context',
+        'is_final',
     ];
 
     protected $casts = [
@@ -29,6 +37,13 @@ class DemoProcessingJob extends Model
         'processing_status' => ProcessingStatus::class,
         'progress_percentage' => 'integer',
         'match_id' => 'integer',
+        'step_progress' => 'integer',
+        'total_steps' => 'integer',
+        'current_step_num' => 'integer',
+        'start_time' => 'datetime',
+        'last_update_time' => 'datetime',
+        'context' => 'array',
+        'is_final' => 'boolean',
     ];
 
     public function match(): BelongsTo

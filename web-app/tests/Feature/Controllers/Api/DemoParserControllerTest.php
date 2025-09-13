@@ -264,4 +264,257 @@ class DemoParserControllerTest extends TestCase
             'current_step' => 'Processing complete',
         ]);
     }
+
+    // Enhanced Progress Tracking Tests
+
+    public function test_progress_callback_with_enhanced_progress_fields()
+    {
+        $jobId = 'test-job-enhanced-123';
+
+        // Create a demo processing job
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 25,
+            'current_step' => 'Processing grenade events',
+            'step_progress' => 75,
+            'total_steps' => 20,
+            'current_step_num' => 6,
+            'start_time' => '2024-01-01 10:00:00',
+            'last_update_time' => '2024-01-01 10:05:00',
+            'error_code' => null,
+            'context' => [
+                'step' => 'grenade_events_processing',
+                'round' => 3,
+                'total_rounds' => 16,
+            ],
+            'is_final' => false,
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Progress update received',
+            'job_id' => $jobId,
+        ]);
+
+        $this->assertDatabaseHas('demo_processing_jobs', [
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PARSING,
+            'progress_percentage' => 25,
+            'current_step' => 'Processing grenade events',
+            'step_progress' => 75,
+            'total_steps' => 20,
+            'current_step_num' => 6,
+            'error_code' => null,
+            'is_final' => false,
+        ]);
+    }
+
+    public function test_progress_callback_with_error_code()
+    {
+        $jobId = 'test-job-error-123';
+
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PARSING,
+            'progress_percentage' => 30,
+        ]);
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::FAILED->value,
+            'progress' => 30,
+            'current_step' => 'Processing demo file',
+            'error_message' => 'Demo file corrupted',
+            'error_code' => 'DEMO_CORRUPTED',
+            'step_progress' => 0,
+            'total_steps' => 18,
+            'current_step_num' => 1,
+            'context' => [
+                'step' => 'file_validation',
+                'error_details' => 'Invalid demo header',
+            ],
+            'is_final' => true,
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('demo_processing_jobs', [
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::FAILED,
+            'error_message' => 'Demo file corrupted',
+            'error_code' => 'DEMO_CORRUPTED',
+            'is_final' => true,
+        ]);
+    }
+
+    public function test_progress_callback_with_complex_context()
+    {
+        $jobId = 'test-job-context-123';
+
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        $complexContext = [
+            'step' => 'round_events_processing',
+            'round' => 5,
+            'total_rounds' => 16,
+            'events_processed' => 150,
+            'total_events' => 300,
+            'processing_time' => 2.5,
+            'memory_usage' => '128MB',
+            'debug_info' => [
+                'parser_version' => '1.0.0',
+                'demo_ticks' => 50000,
+                'map_name' => 'de_dust2',
+            ],
+        ];
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::PROCESSING_EVENTS->value,
+            'progress' => 40,
+            'current_step' => 'Processing round 5 of 16',
+            'step_progress' => 50,
+            'total_steps' => 34,
+            'current_step_num' => 3,
+            'context' => $complexContext,
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(200);
+
+        $job = DemoProcessingJob::where('uuid', $jobId)->first();
+        $this->assertEquals($complexContext, $job->context);
+        $this->assertEquals(34, $job->total_steps);
+        $this->assertEquals(50, $job->step_progress);
+    }
+
+    public function test_progress_callback_validation_with_invalid_enhanced_fields()
+    {
+        $jobId = 'test-job-invalid-123';
+
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PENDING,
+        ]);
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 25,
+            'current_step' => 'Processing',
+            'step_progress' => 150, // Invalid: should be 0-100
+            'total_steps' => 0, // Invalid: should be min 1
+            'current_step_num' => -1, // Invalid: should be min 1
+            'start_time' => 'invalid-date', // Invalid date format
+            'is_final' => 'not-boolean', // Invalid: should be boolean
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
+            'step_progress',
+            'total_steps',
+            'current_step_num',
+            'start_time',
+            'is_final',
+        ]);
+    }
+
+    public function test_progress_callback_with_partial_enhanced_fields()
+    {
+        $jobId = 'test-job-partial-123';
+
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        // Test with only some enhanced fields (should be valid)
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::PROCESSING_EVENTS->value,
+            'progress' => 50,
+            'current_step' => 'Processing round events',
+            'step_progress' => 30,
+            'total_steps' => 18,
+            'current_step_num' => 3,
+            // Missing optional fields: start_time, last_update_time, error_code, context, is_final
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('demo_processing_jobs', [
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PROCESSING_EVENTS,
+            'progress_percentage' => 50,
+            'current_step' => 'Processing round events',
+            'step_progress' => 30,
+            'total_steps' => 18,
+            'current_step_num' => 3,
+        ]);
+    }
+
+    public function test_progress_callback_backward_compatibility()
+    {
+        $jobId = 'test-job-backward-123';
+
+        DemoProcessingJob::factory()->create([
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PENDING,
+            'progress_percentage' => 0,
+        ]);
+
+        // Test with only basic fields (backward compatibility)
+        $payload = [
+            'job_id' => $jobId,
+            'status' => ProcessingStatus::PARSING->value,
+            'progress' => 20,
+            'current_step' => 'Parsing demo file',
+            // No enhanced fields provided
+        ];
+
+        $response = $this->postJson('/api/job/callback/progress', $payload, [
+            'X-API-Key' => 'test-api-key',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('demo_processing_jobs', [
+            'uuid' => $jobId,
+            'processing_status' => ProcessingStatus::PARSING,
+            'progress_percentage' => 20,
+            'current_step' => 'Parsing demo file',
+        ]);
+    }
 }

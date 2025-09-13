@@ -52,9 +52,16 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	eventProcessor := NewEventProcessor(matchState, dp.logger)
 
 	progressCallback(types.ProgressUpdate{
-		Status:      types.StatusParsing,
-		Progress:    15,
-		CurrentStep: "Parsing demo file",
+		Status:         types.StatusParsing,
+		Progress:       15,
+		CurrentStep:    "Parsing demo file",
+		StepProgress:   0,
+		TotalSteps:     18, // Will be updated when we know round count
+		CurrentStepNum: 1,
+		StartTime:      time.Now(),
+		LastUpdateTime: time.Now(),
+		Context:        map[string]interface{}{"step": "file_validation"},
+		IsFinal:        false,
 	})
 
 	var mapName string
@@ -101,9 +108,16 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	}
 
 	progressCallback(types.ProgressUpdate{
-		Status:      types.StatusProcessingEvents,
-		Progress:    85,
-		CurrentStep: "Processing final data",
+		Status:         types.StatusProcessingEvents,
+		Progress:       85,
+		CurrentStep:    "Processing final data",
+		StepProgress:   0,
+		TotalSteps:     18, // Will be updated when we know round count
+		CurrentStepNum: 11, // Final data assembly step
+		StartTime:      time.Now(),
+		LastUpdateTime: time.Now(),
+		Context:        map[string]interface{}{"step": "final_data_assembly"},
+		IsFinal:        false,
 	})
 
 	dp.postProcessGrenadeMovement(eventProcessor)
@@ -220,9 +234,20 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	parser.RegisterEventHandler(func(e events.RoundStart) {
 		eventProcessor.HandleRoundStart(e)
 		progressCallback(types.ProgressUpdate{
-			Status:      types.StatusProcessingEvents,
-			Progress:    20 + (eventProcessor.matchState.CurrentRound * 2),
-			CurrentStep: fmt.Sprintf("Processing round %d", eventProcessor.matchState.CurrentRound),
+			Status:         types.StatusProcessingEvents,
+			Progress:       20 + (eventProcessor.matchState.CurrentRound * 2),
+			CurrentStep:    fmt.Sprintf("Processing round %d", eventProcessor.matchState.CurrentRound),
+			StepProgress:   0,
+			TotalSteps:     18 + eventProcessor.matchState.TotalRounds, // Update with actual round count
+			CurrentStepNum: 3,                                          // Round events processing step
+			StartTime:      time.Now(),
+			LastUpdateTime: time.Now(),
+			Context: map[string]interface{}{
+				"step":         "round_events_processing",
+				"round":        eventProcessor.matchState.CurrentRound,
+				"total_rounds": eventProcessor.matchState.TotalRounds,
+			},
+			IsFinal: false,
 		})
 	})
 

@@ -46,6 +46,14 @@ interface UnifiedMatch {
   progress_percentage: number | null;
   current_step: string | null;
   error_message: string | null;
+  step_progress: number | null;
+  total_steps: number | null;
+  current_step_num: number | null;
+  start_time: string | null;
+  last_update_time: string | null;
+  error_code: string | null;
+  context: Record<string, any> | null;
+  is_final: boolean | null;
 }
 
 interface PaginationData {
@@ -222,6 +230,16 @@ export function MatchesTable({
                             {match.progress_percentage}%
                           </Badge>
                         )}
+                      {match.current_step_num && match.total_steps && (
+                        <Badge variant="outline" className="text-xs">
+                          Step {match.current_step_num}/{match.total_steps}
+                        </Badge>
+                      )}
+                      {match.current_step && (
+                        <span className="text-xs text-muted-foreground">
+                          {match.current_step}
+                        </span>
+                      )}
                       {match.error_message && (
                         <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
                           Error
@@ -308,7 +326,7 @@ export function MatchesTable({
                   <TableCell>
                     {match.match_details
                       ? capitalizeFirst(match.match_details.match_type) ||
-                        'Unknown'
+                      'Unknown'
                       : 'Processing...'}
                   </TableCell>
                   <TableCell>
