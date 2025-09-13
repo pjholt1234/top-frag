@@ -4,13 +4,14 @@ import { OpenerIcon } from '@/components/icons/opener-icon';
 import { CloserIcon } from '@/components/icons/closer-icon';
 import { SupportIcon } from '@/components/icons/support-icon';
 import { FraggerIcon } from '@/components/icons/fragger-icon';
-import { COMPLEXION_COLORS, type ComplexionRole } from '@/constants/colors';
+import { COMPLEXION_COLORS } from '@/constants/colors';
 import { api } from '@/lib/api';
 
 interface TopRolePlayer {
     name: string | null;
     steam_id: string | null;
     score: number;
+    stats: Record<string, string | number>;
 }
 
 interface TopRolePlayers {
@@ -130,14 +131,30 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
                 return (
                     <Card
                         key={key}
-                        className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors relative overflow-hidden"
+                        className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-all duration-1000 relative overflow-hidden cursor-pointer group h-40"
                         style={{
-                            background: `linear-gradient(135deg, ${hexColor}30 0%, rgba(31, 41, 55, 0.7) 50%, rgba(31, 41, 55, 0.9) 100%)`,
+                            background: `linear-gradient(315deg, ${hexColor}30 0%, rgba(31, 41, 55, 0.7) 50%, rgba(31, 41, 55, 0.9) 100%)`,
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(135deg, ${hexColor}30 0%, rgba(31, 41, 55, 0.7) 50%, rgba(31, 41, 55, 0.9) 100%)`;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(315deg, ${hexColor}30 0%, rgba(31, 41, 55, 0.7) 50%, rgba(31, 41, 55, 0.9) 100%)`;
                         }}
                     >
-                        <CardContent className="text-center">
-                            <div>
-                                <div className="flex items-center justify-center gap-2">
+                        <CardContent className="p-4 h-full relative">
+                            {/* Icon in top left - slides in on hover */}
+                            <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <IconComponent
+                                    size={20}
+                                    color={hexColor}
+                                    className="opacity-90"
+                                />
+                            </div>
+
+                            {/* Main content - slides out on hover */}
+                            <div className="flex flex-col items-center justify-center h-full transition-transform duration-300 group-hover:-translate-y-16">
+                                <div className="flex items-center justify-center gap-2 mb-2">
                                     <IconComponent
                                         size={32}
                                         color={hexColor}
@@ -147,11 +164,32 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
                                         Top {label}
                                     </div>
                                 </div>
+                                <div className="text-white">
+                                    <div className="font-medium text-3xl">{player.name}</div>
+                                    <div className="text-gray-400 text-xs mt-1 group-hover:opacity-0 transition-opacity duration-300">
+                                        Score: {player.score} / 100
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-white my-2">
-                                <div className="font-medium text-3xl">{player.name}</div>
-                                <div className="text-gray-400 text-xs mt-1">
-                                    Score: {player.score} / 100
+
+                            {/* Stats content - slides in on hover */}
+                            <div className="absolute inset-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
+                                <div className="h-full flex flex-col">
+                                    <div className="font-semibold text-sm mb-1 text-center" style={{ color: hexColor }}>
+                                        {label} Stats
+                                    </div>
+                                    <div className="space-y-0.5 flex-1">
+                                        {Object.entries(player.stats || {}).map(([statName, statValue]) => (
+                                            <div key={statName} className="flex justify-between text-xs leading-tight">
+                                                <span className="text-gray-300 truncate">{statName}:</span>
+                                                <span className="text-white font-medium ml-2">{statValue}</span>
+                                            </div>
+                                        ))}
+                                        {/* Debug info - remove this later */}
+                                        <div className="text-xs text-gray-500 mt-2">
+                                            Debug: {Object.keys(player.stats || {}).length} stats
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
