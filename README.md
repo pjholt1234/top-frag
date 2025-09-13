@@ -290,10 +290,16 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [demoinfocs-golang](https://github.com/markus-wa/demoinfocs-golang) - CS2 demo parsing library
+### Core Dependencies
+- [demoinfocs-golang](https://github.com/markus-wa/demoinfocs-golang) - Main Go parser package that the parser service is built from
 - [Laravel](https://laravel.com) - PHP web framework
 - [React](https://reactjs.org) - JavaScript UI library
 - [Tailwind CSS](https://tailwindcss.com) - CSS framework
+
+### Assets & Resources
+- [Counter-Strike Wiki](https://counterstrike.fandom.com/wiki) - Map logs and background images
+- [Simple Radar](https://readtldr.gg/simpleradar) - Map radar images for CS2
+- [Boltobserv](https://github.com/boltgolt/boltobserv) - Player position to radar conversion configuration
 
 ---
 
