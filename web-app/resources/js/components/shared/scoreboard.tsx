@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
+import { QUALITY_COLORS, getRatingColor } from '@/constants/colors';
 
 interface Scoreboard {
   player_name: string;
@@ -181,21 +182,21 @@ export function Scoreboard({
           <div className="lg:flex-1 lg:border-r lg:border-border lg:border-b lg:border-border">
             {/* Team A Header */}
             <div
-              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamAWon ? 'bg-green-500/10' : 'bg-red-500/10') : 'bg-gray-500/10'}`}
+              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamAWon ? 'bg-green-400/10' : 'bg-red-600/10') : 'bg-gray-500/10'}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamAWon ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-500'}`}
+                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamAWon ? 'bg-green-400' : 'bg-red-600') : 'bg-gray-500'}`}
                   ></div>
                   <span
-                    className={`font-semibold ${hasMatchDetails ? (teamAWon ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}
+                    className={`font-semibold ${hasMatchDetails ? (teamAWon ? 'text-green-400' : 'text-red-600') : 'text-gray-500'}`}
                   >
                     Team A
                   </span>
                   {hasMatchDetails ? (
                     <span
-                      className={`text-sm font-medium ${teamAWon ? 'text-green-500' : 'text-red-500'}`}
+                      className={`text-sm font-medium ${teamAWon ? 'text-green-400' : 'text-red-600'}`}
                     >
                       {teamAWon ? 'WIN' : 'LOSS'}
                     </span>
@@ -276,11 +277,9 @@ export function Scoreboard({
                     <TableCell className="text-sm py-2 px-3 border-0">
                       <span
                         className={
-                          player.player_kill_death_ratio > 1
-                            ? 'text-green-600 dark:text-green-400'
-                            : player.player_kill_death_ratio < 1
-                              ? 'text-red-600 dark:text-red-400'
-                              : ''
+                          player.player_kill_death_ratio >= 1.0
+                            ? QUALITY_COLORS.excellent.text
+                            : QUALITY_COLORS.poor.text
                         }
                       >
                         {player.player_kill_death_ratio.toFixed(2)}
@@ -296,9 +295,9 @@ export function Scoreboard({
                       <span
                         className={
                           player.player_first_kill_differential > 0
-                            ? 'text-green-600 dark:text-green-400'
+                            ? QUALITY_COLORS.excellent.text
                             : player.player_first_kill_differential < 0
-                              ? 'text-red-600 dark:text-red-400'
+                              ? QUALITY_COLORS.poor.text
                               : ''
                         }
                       >
@@ -321,21 +320,21 @@ export function Scoreboard({
           <div className="lg:flex-1 lg:border-b lg:border-border">
             {/* Team B Header */}
             <div
-              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamBWon ? 'bg-green-500/10' : 'bg-red-500/10') : 'bg-gray-500/10'}`}
+              className={`border-b border-border px-6 py-3 ${hasMatchDetails ? (teamBWon ? 'bg-green-400/10' : 'bg-red-600/10') : 'bg-gray-500/10'}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamBWon ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-500'}`}
+                    className={`w-3 h-3 rounded-full ${hasMatchDetails ? (teamBWon ? QUALITY_COLORS.excellent.bg : QUALITY_COLORS.poor.bg) : 'bg-gray-500'}`}
                   ></div>
                   <span
-                    className={`font-semibold ${hasMatchDetails ? (teamBWon ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}
+                    className={`font-semibold ${hasMatchDetails ? (teamBWon ? QUALITY_COLORS.excellent.text : QUALITY_COLORS.poor.text) : 'text-gray-500'}`}
                   >
                     Team B
                   </span>
                   {hasMatchDetails ? (
                     <span
-                      className={`text-sm font-medium ${teamBWon ? 'text-green-500' : 'text-red-500'}`}
+                      className={`text-sm font-medium ${teamBWon ? QUALITY_COLORS.excellent.text : QUALITY_COLORS.poor.text}`}
                     >
                       {teamBWon ? 'WIN' : 'LOSS'}
                     </span>
@@ -416,11 +415,9 @@ export function Scoreboard({
                     <TableCell className="text-sm py-2 px-3 border-0">
                       <span
                         className={
-                          player.player_kill_death_ratio > 1
-                            ? 'text-green-600 dark:text-green-400'
-                            : player.player_kill_death_ratio < 1
-                              ? 'text-red-600 dark:text-red-400'
-                              : ''
+                          player.player_kill_death_ratio >= 1.0
+                            ? QUALITY_COLORS.excellent.text
+                            : QUALITY_COLORS.poor.text
                         }
                       >
                         {player.player_kill_death_ratio.toFixed(2)}
@@ -436,9 +433,9 @@ export function Scoreboard({
                       <span
                         className={
                           player.player_first_kill_differential > 0
-                            ? 'text-green-600 dark:text-green-400'
+                            ? QUALITY_COLORS.excellent.text
                             : player.player_first_kill_differential < 0
-                              ? 'text-red-600 dark:text-red-400'
+                              ? QUALITY_COLORS.poor.text
                               : ''
                         }
                       >
@@ -541,8 +538,8 @@ export function Scoreboard({
               <span
                 className={
                   player.player_first_kill_differential >= 0
-                    ? 'text-green-400'
-                    : 'text-red-400'
+                    ? QUALITY_COLORS.excellent.text
+                    : QUALITY_COLORS.poor.text
                 }
               >
                 {player.player_first_kill_differential >= 0 ? '+' : ''}
