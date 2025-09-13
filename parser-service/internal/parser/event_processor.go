@@ -116,24 +116,24 @@ func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) error {
 	return ep.damageHandler.HandlePlayerHurt(e)
 }
 
-func (ep *EventProcessor) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {
-	ep.grenadeHandler.HandleGrenadeProjectileThrow(e)
+func (ep *EventProcessor) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) error {
+	return ep.grenadeHandler.HandleGrenadeProjectileThrow(e)
 }
 
-func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) {
-	ep.grenadeHandler.HandleGrenadeProjectileDestroy(e)
+func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) error {
+	return ep.grenadeHandler.HandleGrenadeProjectileDestroy(e)
 }
 
-func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) {
-	ep.grenadeHandler.HandleFlashExplode(e)
+func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) error {
+	return ep.grenadeHandler.HandleFlashExplode(e)
 }
 
-func (ep *EventProcessor) HandlePlayerFlashed(e events.PlayerFlashed) {
-	ep.grenadeHandler.HandlePlayerFlashed(e)
+func (ep *EventProcessor) HandlePlayerFlashed(e events.PlayerFlashed) error {
+	return ep.grenadeHandler.HandlePlayerFlashed(e)
 }
 
-func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) {
-	ep.grenadeHandler.HandleSmokeStart(e)
+func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) error {
+	return ep.grenadeHandler.HandleSmokeStart(e)
 }
 
 func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) {

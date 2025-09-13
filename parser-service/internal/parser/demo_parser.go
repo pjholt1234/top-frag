@@ -274,15 +274,30 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileThrow) {
-		eventProcessor.HandleGrenadeProjectileThrow(e)
+		if err := eventProcessor.HandleGrenadeProjectileThrow(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle grenade projectile throw event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileDestroy) {
-		eventProcessor.HandleGrenadeProjectileDestroy(e)
+		if err := eventProcessor.HandleGrenadeProjectileDestroy(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle grenade projectile destroy event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.FlashExplode) {
-		eventProcessor.HandleFlashExplode(e)
+		if err := eventProcessor.HandleFlashExplode(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle flash explode event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerFlashed) {
@@ -290,11 +305,21 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 			"player": e.Player.Name,
 			"tick":   eventProcessor.currentTick,
 		}).Info("PlayerFlashed event received")
-		eventProcessor.HandlePlayerFlashed(e)
+		if err := eventProcessor.HandlePlayerFlashed(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle player flashed event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.SmokeStart) {
-		eventProcessor.HandleSmokeStart(e)
+		if err := eventProcessor.HandleSmokeStart(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle smoke start event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.WeaponFire) {

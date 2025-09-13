@@ -38,9 +38,24 @@ func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *Grenad
 	}
 }
 
-func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) {
+func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) error {
+	if e.Projectile == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile is nil", nil).
+			WithContext("event_type", "GrenadeProjectileDestroy").
+			WithContext("tick", gh.processor.currentTick)
+	}
+
 	if e.Projectile.Thrower == nil {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile thrower is nil", nil).
+			WithContext("event_type", "GrenadeProjectileDestroy").
+			WithContext("tick", gh.processor.currentTick)
+	}
+
+	if e.Projectile.WeaponInstance == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile weapon instance is nil", nil).
+			WithContext("event_type", "GrenadeProjectileDestroy").
+			WithContext("tick", gh.processor.currentTick).
+			WithContext("thrower", types.SteamIDToString(e.Projectile.Thrower.SteamID64))
 	}
 
 	grenadeTypeString := e.Projectile.WeaponInstance.Type.String()
@@ -50,7 +65,10 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
 
 	if !hasMovementInfo {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "no movement info found for projectile", nil).
+			WithContext("projectile_id", projectileID).
+			WithContext("thrower", types.SteamIDToString(e.Projectile.Thrower.SteamID64)).
+			WithContext("tick", gh.processor.currentTick)
 	}
 
 	playerPos := movementInfo.PlayerPos
@@ -84,13 +102,21 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	}
 
 	gh.processor.matchState.GrenadeEvents = append(gh.processor.matchState.GrenadeEvents, grenadeEvent)
+
+	return nil
 }
 
-func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
+func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) error {
+	if e.GrenadeEntityID == 0 {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "grenade entity ID is zero", nil).
+			WithContext("event_type", "FlashExplode").
+			WithContext("tick", gh.processor.currentTick)
+	}
+
 	var flashEffect *FlashEffect
 	if existingEffect, exists := gh.processor.activeFlashEffects[e.GrenadeEntityID]; exists {
 		if existingEffect.ExplosionTick == gh.processor.currentTick {
-			return
+			return nil // Already processed this tick
 		}
 
 		flashEffect = existingEffect
@@ -123,7 +149,10 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	var movementThrowType string
 
 	if !hasMovementInfo {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "no movement info found for flash grenade", nil).
+			WithContext("projectile_id", projectileID).
+			WithContext("entity_id", e.GrenadeEntityID).
+			WithContext("tick", gh.processor.currentTick)
 	}
 
 	playerPos = movementInfo.PlayerPos
@@ -148,7 +177,7 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	}
 
 	if existingGrenadeEvent != nil {
-		return
+		return nil
 	}
 
 	grenadeEvent := types.GrenadeEvent{
@@ -173,15 +202,26 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) {
 	}
 
 	gh.processor.matchState.GrenadeEvents = append(gh.processor.matchState.GrenadeEvents, grenadeEvent)
+
+	return nil
 }
 
-func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
+func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) error {
 	if e.Player == nil {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "player is nil", nil).
+			WithContext("event_type", "PlayerFlashed").
+			WithContext("tick", gh.processor.currentTick)
 	}
 
 	playerSteamID := types.SteamIDToString(e.Player.SteamID64)
 	flashDuration := e.FlashDuration().Seconds()
+
+	if flashDuration < 0 {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "flash duration cannot be negative", nil).
+			WithContext("flash_duration", flashDuration).
+			WithContext("player", playerSteamID).
+			WithContext("tick", gh.processor.currentTick)
+	}
 
 	var targetFlashEffect *FlashEffect
 	currentRound := gh.processor.matchState.CurrentRound
@@ -199,7 +239,11 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 	}
 
 	if targetFlashEffect == nil {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "no matching flash effect found for player", nil).
+			WithContext("player", playerSteamID).
+			WithContext("current_round", currentRound).
+			WithContext("current_tick", currentTick).
+			WithContext("tick", gh.processor.currentTick)
 	}
 
 	isFriendly := false
@@ -227,12 +271,21 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) {
 	}
 
 	gh.updateGrenadeEventWithFlashData(targetFlashEffect)
+
+	return nil
 }
 
-func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {
+func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) error {
+	if e.Projectile == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile is nil", nil).
+			WithContext("event_type", "GrenadeProjectileThrow").
+			WithContext("tick", gh.processor.currentTick)
+	}
 
 	if e.Projectile.Thrower == nil {
-		return
+		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile thrower is nil", nil).
+			WithContext("event_type", "GrenadeProjectileThrow").
+			WithContext("tick", gh.processor.currentTick)
 	}
 
 	movementThrowType := gh.movementService.GetPlayerThrowType(e.Projectile.Thrower, gh.processor.currentTick)
@@ -251,10 +304,13 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectil
 	}
 
 	gh.grenadeThrows[projectileID] = throwInfo
+
+	return nil
 }
 
-func (gh *GrenadeHandler) HandleSmokeStart(e events.SmokeStart) {
+func (gh *GrenadeHandler) HandleSmokeStart(e events.SmokeStart) error {
 	gh.logger.Debug("Smoke grenade started")
+	return nil
 }
 
 func (gh *GrenadeHandler) getGrenadeDisplayName(weaponType string) string {

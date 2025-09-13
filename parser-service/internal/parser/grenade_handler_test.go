@@ -395,24 +395,225 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 }
 
 func TestGrenadeHandler_HandleGrenadeProjectileThrow(t *testing.T) {
-	// Note: This test is simplified since we can't easily mock the Entity interface
-	// The test mainly ensures the method exists and can be called without panicking
-	// In a real scenario, the Entity would be properly initialized
-	t.Log("HandleGrenadeProjectileThrow method test skipped - requires complex Entity mocking")
+	matchState := &types.MatchState{
+		CurrentRound:  1,
+		GrenadeEvents: []types.GrenadeEvent{},
+		Players:       make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	grenadeHandler := NewGrenadeHandler(processor, logger)
+
+	tests := []struct {
+		name          string
+		event         events.GrenadeProjectileThrow
+		expectedError bool
+		errorType     types.ErrorType
+		errorMessage  string
+	}{
+		{
+			name: "nil projectile should return event processing error",
+			event: events.GrenadeProjectileThrow{
+				Projectile: nil,
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "projectile is nil",
+		},
+		{
+			name: "nil thrower should return event processing error",
+			event: events.GrenadeProjectileThrow{
+				Projectile: nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "projectile is nil", // Fail-fast: projectile is checked first
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := grenadeHandler.HandleGrenadeProjectileThrow(tt.event)
+
+			if tt.expectedError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+					return
+				}
+
+				parseErr, ok := err.(*types.ParseError)
+				if !ok {
+					t.Errorf("Expected ParseError, got %T", err)
+					return
+				}
+
+				if parseErr.Type != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, parseErr.Type)
+				}
+
+				if parseErr.Message != tt.errorMessage {
+					t.Errorf("Expected error message %q, got %q", tt.errorMessage, parseErr.Message)
+				}
+
+				// Verify context is set
+				if parseErr.Context == nil {
+					t.Error("Expected error context to be set")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+			}
+		})
+	}
 }
 
 func TestGrenadeHandler_HandleGrenadeProjectileDestroy(t *testing.T) {
-	// Note: This test is simplified since we can't easily mock the Entity interface
-	// The test mainly ensures the method exists and can be called without panicking
-	// In a real scenario, the Entity would be properly initialized
-	t.Log("HandleGrenadeProjectileDestroy method test skipped - requires complex Entity mocking")
+	matchState := &types.MatchState{
+		CurrentRound:  1,
+		GrenadeEvents: []types.GrenadeEvent{},
+		Players:       make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	grenadeHandler := NewGrenadeHandler(processor, logger)
+
+	tests := []struct {
+		name          string
+		event         events.GrenadeProjectileDestroy
+		expectedError bool
+		errorType     types.ErrorType
+		errorMessage  string
+	}{
+		{
+			name: "nil projectile should return event processing error",
+			event: events.GrenadeProjectileDestroy{
+				Projectile: nil,
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "projectile is nil",
+		},
+		{
+			name: "nil thrower should return event processing error",
+			event: events.GrenadeProjectileDestroy{
+				Projectile: nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "projectile is nil", // Fail-fast: projectile is checked first
+		},
+		{
+			name: "nil weapon instance should return event processing error",
+			event: events.GrenadeProjectileDestroy{
+				Projectile: nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "projectile is nil", // Fail-fast: projectile is checked first
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := grenadeHandler.HandleGrenadeProjectileDestroy(tt.event)
+
+			if tt.expectedError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+					return
+				}
+
+				parseErr, ok := err.(*types.ParseError)
+				if !ok {
+					t.Errorf("Expected ParseError, got %T", err)
+					return
+				}
+
+				if parseErr.Type != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, parseErr.Type)
+				}
+
+				if parseErr.Message != tt.errorMessage {
+					t.Errorf("Expected error message %q, got %q", tt.errorMessage, parseErr.Message)
+				}
+
+				// Verify context is set
+				if parseErr.Context == nil {
+					t.Error("Expected error context to be set")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+			}
+		})
+	}
 }
 
 func TestGrenadeHandler_HandlePlayerFlashed(t *testing.T) {
-	// Note: This test is simplified since we can't easily mock the Entity interface
-	// The test mainly ensures the method exists and can be called without panicking
-	// In a real scenario, the Entity would be properly initialized
-	t.Log("HandlePlayerFlashed method test skipped - requires complex Entity mocking")
+	matchState := &types.MatchState{
+		CurrentRound:  1,
+		GrenadeEvents: []types.GrenadeEvent{},
+		Players:       make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	grenadeHandler := NewGrenadeHandler(processor, logger)
+
+	tests := []struct {
+		name          string
+		event         events.PlayerFlashed
+		expectedError bool
+		errorType     types.ErrorType
+		errorMessage  string
+	}{
+		{
+			name: "nil player should return event processing error",
+			event: events.PlayerFlashed{
+				Player: nil,
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "player is nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := grenadeHandler.HandlePlayerFlashed(tt.event)
+
+			if tt.expectedError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+					return
+				}
+
+				parseErr, ok := err.(*types.ParseError)
+				if !ok {
+					t.Errorf("Expected ParseError, got %T", err)
+					return
+				}
+
+				if parseErr.Type != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, parseErr.Type)
+				}
+
+				if parseErr.Message != tt.errorMessage {
+					t.Errorf("Expected error message %q, got %q", tt.errorMessage, parseErr.Message)
+				}
+
+				// Verify context is set
+				if parseErr.Context == nil {
+					t.Error("Expected error context to be set")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+			}
+		})
+	}
 }
 
 func TestGrenadeHandler_HandleSmokeStart(t *testing.T) {
@@ -431,8 +632,11 @@ func TestGrenadeHandler_HandleSmokeStart(t *testing.T) {
 		},
 	}
 
-	// Test that HandleSmokeStart doesn't panic
-	grenadeHandler.HandleSmokeStart(smokeEvent)
+	// Test that HandleSmokeStart doesn't panic and returns no error
+	err := grenadeHandler.HandleSmokeStart(smokeEvent)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
 
 	t.Log("HandleSmokeStart method tested successfully")
 }
