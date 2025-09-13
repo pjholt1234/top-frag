@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Match detail sections
     Route::get('/matches/{matchId}/match-details', [MatchController::class, 'matchDetails']);
     Route::get('/matches/{matchId}/player-stats', [MatchController::class, 'playerStats']);
+    Route::get('/matches/{matchId}/top-role-players', [MatchController::class, 'topRolePlayers']);
     Route::get('/matches/{matchId}/utility-analysis', [MatchController::class, 'utilityAnalysis']);
     Route::get('/matches/{matchId}/grenade-explorer', [MatchController::class, 'grenadeExplorer']);
     Route::get('/matches/{matchId}/grenade-explorer/filter-options', [MatchController::class, 'grenadeExplorerFilterOptions']);

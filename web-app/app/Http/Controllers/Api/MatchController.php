@@ -7,6 +7,7 @@ use App\Services\Matches\GrenadeExplorerService;
 use App\Services\Matches\HeadToHeadService;
 use App\Services\Matches\MatchDetailsService;
 use App\Services\Matches\PlayerStatsService;
+use App\Services\Matches\TopRolePlayerService;
 use App\Services\Matches\UtilityAnalysisService;
 use App\Services\MatchHistoryService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,7 @@ class MatchController extends Controller
         private readonly MatchHistoryService $matchHistoryService,
         private readonly MatchDetailsService $matchDetailsService,
         private readonly PlayerStatsService $playerStatsService,
+        private readonly TopRolePlayerService $topRolePlayerService,
         private readonly UtilityAnalysisService $utilityAnalysisService,
         private readonly GrenadeExplorerService $grenadeExplorerService,
         private readonly HeadToHeadService $headToHeadService,
@@ -31,7 +33,17 @@ class MatchController extends Controller
         }
 
         if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json([
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => 1,
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => 1,
+                    'to' => 1,
+                ],
+            ]);
         }
 
         $perPage = $request->get('per_page', 10);
@@ -200,5 +212,25 @@ class MatchController extends Controller
         }
 
         return response()->json($headToHead);
+    }
+
+    public function topRolePlayers(Request $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (empty($user->steam_id)) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        $topRolePlayers = $this->topRolePlayerService->get($matchId);
+
+        if (empty($topRolePlayers)) {
+            return response()->json(['message' => 'Match not found'], 404);
+        }
+
+        return response()->json($topRolePlayers);
     }
 }

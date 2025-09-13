@@ -15,6 +15,7 @@ import { Scoreboard } from '@/components/shared/scoreboard';
 import MatchGrenadesView from '@/components/match-detail/grenades-view';
 import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
 import { MatchPlayerStats } from '@/components/match-detail/player-stats';
+import { TopPlayers } from '@/components/match-detail/top-players';
 
 interface Scoreboard {
   player_name: string;
@@ -245,11 +246,14 @@ const MatchDetail = () => {
 
             <TabsContent value="match-details" className="mt-0">
               {match.player_stats && match.player_stats.length > 0 ? (
-                <Scoreboard
-                  players={match.player_stats}
-                  variant="expanded"
-                  match={match}
-                />
+                <>
+                  <TopPlayers matchId={match.id} />
+                  <Scoreboard
+                    players={match.player_stats}
+                    variant="expanded"
+                    match={match}
+                  />
+                </>
               ) : (
                 <p className="text-center text-gray-400">
                   No player statistics available for this match.
