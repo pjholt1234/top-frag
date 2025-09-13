@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
-import { PlayerStatsTable } from '@/components/match-detail/player-stats-table';
+import { Scoreboard } from '@/components/shared/scoreboard';
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
 import { Pagination } from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
 
-interface PlayerStats {
+interface Scoreboard {
   player_name: string;
   player_kills: number;
   player_deaths: number;
@@ -41,7 +41,7 @@ interface UnifiedMatch {
   created_at: string;
   is_completed: boolean;
   match_details: MatchDetails | null;
-  player_stats: PlayerStats[] | null;
+  player_stats: Scoreboard[] | null;
   processing_status: string | null;
   progress_percentage: number | null;
   current_step: string | null;
@@ -308,7 +308,7 @@ export function MatchesTable({
                   <TableCell>
                     {match.match_details
                       ? capitalizeFirst(match.match_details.match_type) ||
-                        'Unknown'
+                      'Unknown'
                       : 'Processing...'}
                   </TableCell>
                   <TableCell>
@@ -334,7 +334,7 @@ export function MatchesTable({
                 {isExpanded && (
                   <TableRow>
                     <TableCell colSpan={6} className="p-0">
-                      <PlayerStatsTable
+                      <Scoreboard
                         players={allPlayers}
                         variant="expanded"
                         sortColumn={matchSortStates[matchId]?.column}

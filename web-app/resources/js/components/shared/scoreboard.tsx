@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
 
-interface PlayerStats {
+interface Scoreboard {
   player_name: string;
   player_kills: number;
   player_deaths: number;
@@ -40,7 +40,7 @@ interface Match {
   created_at: string;
   is_completed: boolean;
   match_details: MatchDetails | null;
-  player_stats: PlayerStats[] | null;
+  player_stats: Scoreboard[] | null;
   processing_status: string | null;
   progress_percentage: number | null;
   current_step: string | null;
@@ -56,8 +56,8 @@ type SortColumn =
   | 'player_adr';
 type SortDirection = 'asc' | 'desc';
 
-interface PlayerStatsTableProps {
-  players: PlayerStats[];
+interface ScoreboardProps {
+  players: Scoreboard[];
   variant?: 'expanded' | 'full';
   className?: string;
   // For expanded variant, allow external sorting state
@@ -68,7 +68,7 @@ interface PlayerStatsTableProps {
   match?: Match | null;
 }
 
-export function PlayerStatsTable({
+export function Scoreboard({
   players,
   variant = 'full',
   className = '',
@@ -76,7 +76,7 @@ export function PlayerStatsTable({
   sortDirection: externalSortDirection,
   onSort,
   match,
-}: PlayerStatsTableProps) {
+}: ScoreboardProps) {
   const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>(
     'player_kill_death_ratio'
   );
@@ -142,7 +142,7 @@ export function PlayerStatsTable({
     return team === 'A' ? 'bg-blue-500' : 'bg-orange-500';
   };
 
-  const sortPlayers = (players: PlayerStats[], _matchId: number) => {
+  const sortPlayers = (players: Scoreboard[], _matchId: number) => {
     return players.sort((a, b) => {
       const aValue = a[sortColumn];
       const bValue = b[sortColumn];

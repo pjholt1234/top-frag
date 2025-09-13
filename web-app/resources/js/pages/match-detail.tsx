@@ -11,11 +11,11 @@ import {
   IconUsers,
   IconTrophy,
 } from '@tabler/icons-react';
-import { PlayerStatsTable } from '@/components/match-detail/player-stats-table';
+import { Scoreboard } from '@/components/shared/scoreboard';
 import MatchGrenadesView from '@/components/match-detail/grenades-view';
 import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
 
-interface PlayerStats {
+interface Scoreboard {
   player_name: string;
   player_kills: number;
   player_deaths: number;
@@ -40,7 +40,7 @@ interface Match {
   created_at: string;
   is_completed: boolean;
   match_details: MatchDetails | null;
-  player_stats: PlayerStats[] | null;
+  player_stats: Scoreboard[] | null;
   processing_status: string | null;
   progress_percentage: number | null;
   current_step: string | null;
@@ -244,7 +244,7 @@ const MatchDetail = () => {
 
             <TabsContent value="match-details" className="mt-0">
               {match.player_stats && match.player_stats.length > 0 ? (
-                <PlayerStatsTable
+                <Scoreboard
                   players={match.player_stats}
                   variant="expanded"
                   match={match}
@@ -258,9 +258,6 @@ const MatchDetail = () => {
 
             <TabsContent value="player-stats" className="mt-0">
               <CardContent className="p-0">
-                <p className="text-center text-gray-400">
-                  Player statistics will be displayed here.
-                </p>
               </CardContent>
             </TabsContent>
 

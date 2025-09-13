@@ -9,26 +9,26 @@ import {
 import { api } from '@/lib/api';
 import { UtilityFilters } from '@/components/your-matches/utility-filters';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { UtilityStats } from './details/utility-stats';
+import { UtilityStats } from './utility-analysis/utility-stats';
 
 // Lazy load chart components for better performance
 const UtilityUsageChart = lazy(() =>
-  import('./details/utility-usage-chart').then(m => ({
+  import('./utility-analysis/utility-usage-chart').then(m => ({
     default: m.UtilityUsageChart,
   }))
 );
 const GrenadeRatingGauge = lazy(() =>
-  import('./details/grenade-rating-gauge').then(m => ({
+  import('./utility-analysis/grenade-rating-gauge').then(m => ({
     default: m.GrenadeRatingGauge,
   }))
 );
 const GrenadeEffectivenessChart = lazy(() =>
-  import('./details/grenade-effectiveness-chart').then(m => ({
+  import('./utility-analysis/grenade-effectiveness-chart').then(m => ({
     default: m.GrenadeEffectivenessChart,
   }))
 );
 const GrenadeTimingChart = lazy(() =>
-  import('./details/grenade-timing-chart').then(m => ({
+  import('./utility-analysis/grenade-timing-chart').then(m => ({
     default: m.GrenadeTimingChart,
   }))
 );
