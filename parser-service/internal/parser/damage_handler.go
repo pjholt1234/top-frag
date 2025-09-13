@@ -22,9 +22,31 @@ func NewDamageHandler(processor *EventProcessor, logger *logrus.Logger) *DamageH
 }
 
 // HandlePlayerHurt handles player hurt events
-func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) {
-	if e.Attacker == nil || e.Player == nil {
-		return
+func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) error {
+	if e.Attacker == nil {
+		return types.NewParseError(types.ErrorTypeValidation, "attacker is nil", nil).
+			WithContext("event_type", "PlayerHurt").
+			WithContext("tick", dh.processor.currentTick)
+	}
+
+	if e.Player == nil {
+		return types.NewParseError(types.ErrorTypeValidation, "victim player is nil", nil).
+			WithContext("event_type", "PlayerHurt").
+			WithContext("tick", dh.processor.currentTick)
+	}
+
+	if e.HealthDamage < 0 {
+		return types.NewParseError(types.ErrorTypeValidation, "health damage cannot be negative", nil).
+			WithContext("health_damage", e.HealthDamage).
+			WithContext("attacker", types.SteamIDToString(e.Attacker.SteamID64)).
+			WithContext("victim", types.SteamIDToString(e.Player.SteamID64))
+	}
+
+	if e.ArmorDamage < 0 {
+		return types.NewParseError(types.ErrorTypeValidation, "armor damage cannot be negative", nil).
+			WithContext("armor_damage", e.ArmorDamage).
+			WithContext("attacker", types.SteamIDToString(e.Attacker.SteamID64)).
+			WithContext("victim", types.SteamIDToString(e.Player.SteamID64))
 	}
 
 	// Ensure players are tracked
@@ -74,4 +96,6 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) {
 	if victimState, exists := dh.processor.playerStates[e.Player.SteamID64]; exists {
 		victimState.DamageTaken += damageEvent.Damage
 	}
+
+	return nil
 }

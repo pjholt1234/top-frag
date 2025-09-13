@@ -112,8 +112,8 @@ func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {
 	ep.gunfightHandler.HandlePlayerKilled(e)
 }
 
-func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) {
-	ep.damageHandler.HandlePlayerHurt(e)
+func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) error {
+	return ep.damageHandler.HandlePlayerHurt(e)
 }
 
 func (ep *EventProcessor) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) {

@@ -46,9 +46,10 @@ type BatchConfig struct {
 }
 
 type LoggingConfig struct {
-	Level  string `mapstructure:"level"`
-	Format string `mapstructure:"format"`
-	File   string `mapstructure:"file"`
+	Level     string `mapstructure:"level"`
+	Format    string `mapstructure:"format"`
+	File      string `mapstructure:"file"`
+	ErrorFile string `mapstructure:"error_file"`
 }
 
 func Load() (*Config, error) {
@@ -102,4 +103,5 @@ func setDefaults() {
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
 	viper.SetDefault("logging.file", "service.log")
+	viper.SetDefault("logging.error_file", "errors.log")
 }

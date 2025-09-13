@@ -260,7 +260,12 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerHurt) {
-		eventProcessor.HandlePlayerHurt(e)
+		if err := eventProcessor.HandlePlayerHurt(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle player hurt event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileThrow) {

@@ -86,17 +86,25 @@ func setupLogger(cfg *config.Config) *logrus.Logger {
 		})
 	}
 
-	if cfg.Logging.File == "" {
-		return logger
+	// Setup main log file
+	if cfg.Logging.File != "" {
+		file, err := os.OpenFile(cfg.Logging.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to open log file, using stdout only")
+		} else {
+			logger.SetOutput(file)
+		}
 	}
 
-	file, err := os.OpenFile(cfg.Logging.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		logger.WithError(err).Warn("Failed to open log file, using stdout only")
-		return logger
+	// Setup error log file hook
+	if cfg.Logging.ErrorFile != "" {
+		errorHook, err := config.NewErrorLogHook(cfg.Logging.ErrorFile)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to setup error log hook")
+		} else {
+			logger.AddHook(errorHook)
+		}
 	}
-
-	logger.SetOutput(file)
 
 	return logger
 }

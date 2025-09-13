@@ -16,3 +16,4 @@ demo.dem
 /.vscode
 /parser-service/parser-service.code-workspace
 /web-app/.env.testing
+/parser-service/errors.log

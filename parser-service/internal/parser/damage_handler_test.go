@@ -5,6 +5,7 @@ import (
 
 	"parser-service/internal/types"
 
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
 )
 
@@ -85,6 +86,7 @@ func TestDamageHandler_NewDamageHandler(t *testing.T) {
 
 	if damageHandler == nil {
 		t.Error("Expected damage handler to be created, got nil")
+		return
 	}
 
 	if damageHandler.processor != processor {
@@ -99,8 +101,109 @@ func TestDamageHandler_NewDamageHandler(t *testing.T) {
 }
 
 func TestDamageHandler_HandlePlayerHurt(t *testing.T) {
-	// Note: This test is simplified since we can't easily mock the Player objects
-	// The test mainly ensures the method exists and can be called without panicking
-	// In a real scenario, the Player objects would be properly initialized
-	t.Log("HandlePlayerHurt method test skipped - requires complex Player object mocking")
+	matchState := &types.MatchState{
+		CurrentRound: 1,
+		DamageEvents: []types.DamageEvent{},
+		Players:      make(map[string]*types.Player),
+	}
+	logger := logrus.New()
+	processor := NewEventProcessor(matchState, logger)
+	damageHandler := NewDamageHandler(processor, logger)
+
+	tests := []struct {
+		name          string
+		event         events.PlayerHurt
+		expectedError bool
+		errorType     types.ErrorType
+		errorMessage  string
+	}{
+		{
+			name: "nil attacker should return validation error",
+			event: events.PlayerHurt{
+				Attacker:     nil,
+				Player:       nil, // Will be nil for this test
+				HealthDamage: 25,
+				ArmorDamage:  10,
+				Weapon:       nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeValidation,
+			errorMessage:  "attacker is nil",
+		},
+		{
+			name: "nil victim should return validation error",
+			event: events.PlayerHurt{
+				Attacker:     nil, // Will be nil for this test
+				Player:       nil,
+				HealthDamage: 25,
+				ArmorDamage:  10,
+				Weapon:       nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeValidation,
+			errorMessage:  "attacker is nil", // Fail-fast: attacker is checked first
+		},
+		{
+			name: "negative health damage should return validation error",
+			event: events.PlayerHurt{
+				Attacker:     nil, // Will be nil for this test
+				Player:       nil, // Will be nil for this test
+				HealthDamage: -5,
+				ArmorDamage:  10,
+				Weapon:       nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeValidation,
+			errorMessage:  "attacker is nil", // Fail-fast: attacker is checked first
+		},
+		{
+			name: "negative armor damage should return validation error",
+			event: events.PlayerHurt{
+				Attacker:     nil, // Will be nil for this test
+				Player:       nil, // Will be nil for this test
+				HealthDamage: 25,
+				ArmorDamage:  -5,
+				Weapon:       nil, // Will be nil for this test
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeValidation,
+			errorMessage:  "attacker is nil", // Fail-fast: attacker is checked first
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := damageHandler.HandlePlayerHurt(tt.event)
+
+			if tt.expectedError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+					return
+				}
+
+				parseErr, ok := err.(*types.ParseError)
+				if !ok {
+					t.Errorf("Expected ParseError, got %T", err)
+					return
+				}
+
+				if parseErr.Type != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, parseErr.Type)
+				}
+
+				if parseErr.Message != tt.errorMessage {
+					t.Errorf("Expected error message %q, got %q", tt.errorMessage, parseErr.Message)
+				}
+
+				// Verify context is set
+				if parseErr.Context == nil {
+					t.Error("Expected error context to be set")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+			}
+		})
+	}
 }
