@@ -9,29 +9,44 @@ class PlayerComplexionService
 {
     // Opener metrics
     private const LOWEST_AVERAGE_TIME_OF_DEATH = 25;
+
     private const LOWEST_AVERAGE_TIME_TO_CONTACT = 20;
+
     private const MAX_FIRST_KILLS_PLUS_MINUS = 3;
+
     private const MAX_FIRST_KILL_ATTEMPTS = 4;
+
     private const MAX_TRADED_DEATH_PERCENTAGE = 50;
 
     // Closer metrics
     private const MAX_AVERAGE_ROUND_TIME_TO_DEATH = 40;
+
     private const MAX_AVERAGE_ROUND_TIME_TO_CONTACT = 35;
+
     private const MAX_CLUTCH_WIN_PERCENTAGE = 25;
+
     private const MAX_TOTAL_CLUTCH_ATTEMPTS = 5;
 
     // Support metrics
     private const MAX_TOTAL_GRENADES_THROWN = 25;
+
     private const MAX_DAMAGE_DEALTH_FROM_GRENADES = 200;
+
     private const MAX_ENEMY_FLASH_DURATION = 30;
+
     private const MAX_AVERAGE_GRENADE_EFFECTIVENESS = 50;
+
     private const MAX_TOTAL_FLASHES_LEADING_TO_KILLS = 5;
 
     // Fragger metrics
     private const MAX_KILL_DEATH_RATION = 1.5;
+
     private const MAX_TOTAL_KILLS_PER_ROUND = 0.9;
+
     private const MAX_AVERAGE_DAMAGE_PER_ROUND = 90;
+
     private const MAX_TRADE_KILL_PERCENTAGE = 50;
+
     private const MAX_TRADE_OPPORTUNIES_PER_ROUND = 1.5;
 
     public function get(string $playerSteamId, int $matchId): array
@@ -55,7 +70,7 @@ class PlayerComplexionService
             ->where('player_steam_id', $playerSteamId)
             ->first();
 
-        if (!$playerMatchEvent) {
+        if (! $playerMatchEvent) {
             return [];
         }
 

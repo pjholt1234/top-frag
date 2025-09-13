@@ -191,7 +191,9 @@ const MatchDetail = () => {
                     <div className="flex items-center gap-4 mb-2">
                       <div className="flex items-center gap-2">
                         {(() => {
-                          const mapMetadata = getMapMetadata(match.match_details.map);
+                          const mapMetadata = getMapMetadata(
+                            match.match_details.map
+                          );
                           return mapMetadata ? (
                             <img
                               src={mapMetadata.logoPath}
@@ -204,8 +206,12 @@ const MatchDetail = () => {
                         })()}
                         <h1 className="text-3xl font-bold tracking-tight text-white font-bold">
                           {(() => {
-                            const mapMetadata = getMapMetadata(match.match_details.map);
-                            return mapMetadata ? mapMetadata.displayName : match.match_details.map;
+                            const mapMetadata = getMapMetadata(
+                              match.match_details.map
+                            );
+                            return mapMetadata
+                              ? mapMetadata.displayName
+                              : match.match_details.map;
                           })()}
                         </h1>
                       </div>

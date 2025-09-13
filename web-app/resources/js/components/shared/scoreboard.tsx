@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
-import { QUALITY_COLORS, getRatingColor } from '@/constants/colors';
+import { QUALITY_COLORS } from '@/constants/colors';
 
 interface Scoreboard {
   player_name: string;

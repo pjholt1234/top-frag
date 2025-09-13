@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface SupportIconProps {
   className?: string;
   size?: number;

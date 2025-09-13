@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface OpenerIconProps {
   className?: string;
   size?: number;

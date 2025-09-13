@@ -118,6 +118,7 @@ class PlayerStatsService
             ],
         ];
     }
+
     private function getAvailablePlayers(GameMatch $match): array
     {
         return $match->players->map(function ($player) {

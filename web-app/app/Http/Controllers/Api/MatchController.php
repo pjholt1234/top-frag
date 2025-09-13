@@ -217,7 +217,7 @@ class MatchController extends Controller
     public function topRolePlayers(Request $request, int $matchId): JsonResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
