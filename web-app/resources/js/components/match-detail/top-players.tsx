@@ -164,7 +164,7 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
                                         Top {label}
                                     </div>
                                 </div>
-                                <div className="text-white">
+                                <div className="text-white flex flex-col items-center justify-center">
                                     <div className="font-medium text-3xl">{player.name}</div>
                                     <div className="text-gray-400 text-xs mt-1 group-hover:opacity-0 transition-opacity duration-300">
                                         Score: {player.score} / 100

@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   IconArrowLeft,
-  IconMapPin,
   IconCalendar,
   IconUsers,
   IconTrophy,
@@ -16,6 +15,7 @@ import MatchGrenadesView from '@/components/match-detail/grenades-view';
 import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
 import { MatchPlayerStats } from '@/components/match-detail/player-stats';
 import { TopPlayers } from '@/components/match-detail/top-players';
+import { getMapMetadata } from '@/config/maps';
 
 interface Scoreboard {
   player_name: string;
@@ -104,7 +104,7 @@ const MatchDetail = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">Error</h1>
+          <h1 className="text-3xl font-bold text-red-500 mb-4">Error</h1>
           <p className="text-gray-400 mb-4">{error}</p>
           <Button onClick={() => navigate('/')}>
             <IconArrowLeft className="w-4 h-4 mr-2" />
@@ -119,7 +119,7 @@ const MatchDetail = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-400 mb-4">
+          <h1 className="text-3xl font-bold text-gray-400 mb-4">
             Match Not Found
           </h1>
           <Button onClick={() => navigate('/')}>
@@ -170,24 +170,52 @@ const MatchDetail = () => {
         {/* Match Details Card */}
         {match.match_details && (
           <Tabs defaultValue="match-details" className="w-full">
-            <Card className="mb-4 pb-0 pt-4">
-              <CardContent className="p-0">
+            <Card className="mb-4 pb-0 pt-4 relative overflow-hidden">
+              {(() => {
+                const mapMetadata = getMapMetadata(match.match_details.map);
+                return mapMetadata ? (
+                  <div
+                    className="absolute inset-0 opacity-20"
+                    style={{
+                      backgroundImage: `url(${mapMetadata.backgroundPath})`,
+                      backgroundSize: `${mapMetadata.backgroundScale * 100}%`,
+                      backgroundPosition: `${mapMetadata.backgroundPosition.x}% ${mapMetadata.backgroundPosition.y}%`,
+                      backgroundRepeat: 'no-repeat',
+                    }}
+                  />
+                ) : null;
+              })()}
+              <CardContent className="p-0 relative z-10">
                 <div className="px-4 mb-4">
                   <div className="flex items-center flex">
                     <div className="flex items-center gap-4 mb-2">
                       <div className="flex items-center gap-2">
-                        <IconMapPin className="w-6 h-6 text-gray-400" />
-                        <h1 className="text-2xl font-bold tracking-tight text-white font-bold">
-                          {match.match_details.map}
+                        {(() => {
+                          const mapMetadata = getMapMetadata(match.match_details.map);
+                          return mapMetadata ? (
+                            <img
+                              src={mapMetadata.logoPath}
+                              alt={`${mapMetadata.displayName} logo`}
+                              className="w-12 h-12 object-contain"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-600 rounded"></div>
+                          );
+                        })()}
+                        <h1 className="text-3xl font-bold tracking-tight text-white font-bold">
+                          {(() => {
+                            const mapMetadata = getMapMetadata(match.match_details.map);
+                            return mapMetadata ? mapMetadata.displayName : match.match_details.map;
+                          })()}
                         </h1>
                       </div>
                       <div className="flex items-center gap-2">
                         <IconTrophy className="w-6 h-6 text-gray-400" />
-                        <h1 className="text-2xl font-bold tracking-tight text-green-500 font-bold">
+                        <h1 className="text-3xl font-bold tracking-tight text-green-500 font-bold">
                           {match.match_details.winning_team_score}
                         </h1>
-                        <span className="text-2xl text-gray-400">-</span>
-                        <h1 className="text-2xl font-bold tracking-tight text-red-500 font-bold">
+                        <span className="text-3xl text-gray-400">-</span>
+                        <h1 className="text-3xl font-bold tracking-tight text-red-500 font-bold">
                           {match.match_details.losing_team_score}
                         </h1>
                       </div>
