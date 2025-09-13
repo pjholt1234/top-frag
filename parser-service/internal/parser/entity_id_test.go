@@ -64,6 +64,7 @@ func TestFlashEffectMatchingLogic(t *testing.T) {
 
 		if targetFlashEffect == nil {
 			t.Error("Fallback matching failed - no flash effect found")
+			return
 		}
 
 		// Should find the most recent one (12346 with tick 1100)

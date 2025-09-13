@@ -20,9 +20,25 @@ func NewGunfightHandler(processor *EventProcessor, logger *logrus.Logger) *Gunfi
 	}
 }
 
-func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
-	if e.Killer == nil || e.Victim == nil {
-		return
+func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) error {
+	if e.Killer == nil {
+		return types.NewParseError(types.ErrorTypeValidation, "killer is nil", nil).
+			WithContext("event_type", "Kill").
+			WithContext("tick", gh.processor.currentTick)
+	}
+
+	if e.Victim == nil {
+		return types.NewParseError(types.ErrorTypeValidation, "victim is nil", nil).
+			WithContext("event_type", "Kill").
+			WithContext("tick", gh.processor.currentTick).
+			WithContext("killer", types.SteamIDToString(e.Killer.SteamID64))
+	}
+
+	if e.PenetratedObjects < 0 {
+		return types.NewParseError(types.ErrorTypeValidation, "penetrated objects cannot be negative", nil).
+			WithContext("penetrated_objects", e.PenetratedObjects).
+			WithContext("killer", types.SteamIDToString(e.Killer.SteamID64)).
+			WithContext("victim", types.SteamIDToString(e.Victim.SteamID64))
 	}
 
 	gh.processor.ensurePlayerTracked(e.Killer)
@@ -68,6 +84,8 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) {
 	gunfightEvent.FlashAssisterSteamID = gh.processor.grenadeHandler.CheckFlashEffectiveness(killerSteamID, victimSteamID, gh.processor.currentTick)
 
 	gh.processor.matchState.GunfightEvents = append(gh.processor.matchState.GunfightEvents, gunfightEvent)
+
+	return nil
 }
 
 func (gh *GunfightHandler) createGunfightEvent(e events.Kill, isFirstKill bool) types.GunfightEvent {

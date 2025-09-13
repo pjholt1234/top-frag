@@ -242,7 +242,7 @@ func TestEventProcessor_HandlePlayerKilled_NilPlayers(t *testing.T) {
 		Victim: &common.Player{SteamID64: 456},
 	}
 
-	processor.HandlePlayerKilled(event)
+	_ = processor.HandlePlayerKilled(event)
 
 	// Should not create any events or update state
 	if len(matchState.GunfightEvents) != 0 {
@@ -255,7 +255,7 @@ func TestEventProcessor_HandlePlayerKilled_NilPlayers(t *testing.T) {
 		Victim: nil,
 	}
 
-	processor.HandlePlayerKilled(event)
+	_ = processor.HandlePlayerKilled(event)
 
 	// Should not create any events or update state
 	if len(matchState.GunfightEvents) != 0 {

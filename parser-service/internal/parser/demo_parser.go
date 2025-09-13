@@ -256,7 +256,12 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.Kill) {
-		eventProcessor.HandlePlayerKilled(e)
+		if err := eventProcessor.HandlePlayerKilled(e); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"error": err,
+				"tick":  eventProcessor.currentTick,
+			}).Error("Failed to handle player killed event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerHurt) {

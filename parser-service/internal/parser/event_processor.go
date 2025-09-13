@@ -108,8 +108,8 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.roundHandler.ProcessRoundEnd()
 }
 
-func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) {
-	ep.gunfightHandler.HandlePlayerKilled(e)
+func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) error {
+	return ep.gunfightHandler.HandlePlayerKilled(e)
 }
 
 func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) error {
