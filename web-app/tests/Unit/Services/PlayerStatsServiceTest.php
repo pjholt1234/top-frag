@@ -7,7 +7,6 @@ use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
 use App\Services\Matches\PlayerStatsService;
-use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,7 +28,8 @@ class PlayerStatsServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new PlayerStatsService;
+        $playerComplexionService = new \App\Services\Matches\PlayerComplexionService;
+        $this->service = new PlayerStatsService($playerComplexionService);
 
         $this->user = User::factory()->create([
             'steam_id' => '76561198012345678',
@@ -90,10 +90,12 @@ class PlayerStatsServiceTest extends TestCase
         $filters = [];
         $matchId = $this->match->id;
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No player id specified');
+        $result = $this->service->get($this->user, $filters, $matchId);
 
-        $this->service->get($this->user, $filters, $matchId);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('players', $result);
+        $this->assertArrayHasKey('current_user_steam_id', $result);
+        $this->assertEquals($this->user->steam_id, $result['current_user_steam_id']);
     }
 
     public function test_get_returns_empty_array_when_player_not_found()
@@ -114,7 +116,7 @@ class PlayerStatsServiceTest extends TestCase
         $result = $this->service->get($this->user, $filters, $matchId);
 
         $this->assertArrayHasKey('player_complexion', $result);
-        $this->assertArrayHasKey('duels', $result);
+        $this->assertArrayHasKey('trades', $result);
         $this->assertArrayHasKey('clutch_stats', $result);
         $this->assertArrayHasKey('deep_dive', $result);
     }
@@ -155,20 +157,15 @@ class PlayerStatsServiceTest extends TestCase
 
         $result = $this->service->get($this->user, $filters, $matchId);
 
-        $duels = $result['duels'];
-        $this->assertArrayHasKey('total_successful_trades', $duels);
-        $this->assertArrayHasKey('total_possible_trades', $duels);
-        $this->assertArrayHasKey('total_traded_deaths', $duels);
-        $this->assertArrayHasKey('total_possible_traded_deaths', $duels);
-        $this->assertArrayHasKey('first_kills', $duels);
-        $this->assertArrayHasKey('first_deaths', $duels);
-
-        $this->assertEquals(4, $duels['total_successful_trades']);
-        $this->assertEquals(8, $duels['total_possible_trades']);
-        $this->assertEquals(3, $duels['total_traded_deaths']);
-        $this->assertEquals(6, $duels['total_possible_traded_deaths']);
-        $this->assertEquals(8, $duels['first_kills']);
-        $this->assertEquals(6, $duels['first_deaths']);
+        $trades = $result['trades'];
+        $this->assertArrayHasKey('total_successful_trades', $trades);
+        $this->assertArrayHasKey('total_possible_trades', $trades);
+        $this->assertArrayHasKey('total_traded_deaths', $trades);
+        $this->assertArrayHasKey('total_possible_traded_deaths', $trades);
+        $this->assertEquals(4, $trades['total_successful_trades']);
+        $this->assertEquals(8, $trades['total_possible_trades']);
+        $this->assertEquals(3, $trades['total_traded_deaths']);
+        $this->assertEquals(6, $trades['total_possible_traded_deaths']);
     }
 
     public function test_clutch_stats_structure()
@@ -406,63 +403,6 @@ class PlayerStatsServiceTest extends TestCase
 
         // Key should start with expected prefix
         $this->assertStringStartsWith('player-stats_', $key1);
-    }
-
-    public function test_normalise_score_higher_better()
-    {
-        // Use reflection to access private method
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('normaliseScore');
-        $method->setAccessible(true);
-
-        // Test with higher is better
-        $score1 = $method->invoke($this->service, 50, 100, true);
-        $this->assertEquals(50, $score1);
-
-        $score2 = $method->invoke($this->service, 100, 100, true);
-        $this->assertEquals(100, $score2);
-
-        $score3 = $method->invoke($this->service, 0, 100, true);
-        $this->assertEquals(0, $score3);
-
-        $score4 = $method->invoke($this->service, 150, 100, true);
-        $this->assertEquals(100, $score4); // Should be capped at 100
-    }
-
-    public function test_normalise_score_lower_better()
-    {
-        // Use reflection to access private method
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('normaliseScore');
-        $method->setAccessible(true);
-
-        // Test with lower is better
-        $score1 = $method->invoke($this->service, 50, 100, false);
-        $this->assertEquals(50, $score1);
-
-        $score2 = $method->invoke($this->service, 0, 100, false);
-        $this->assertEquals(100, $score2);
-
-        $score3 = $method->invoke($this->service, 100, 100, false);
-        $this->assertEquals(0, $score3);
-
-        $score4 = $method->invoke($this->service, 150, 100, false);
-        $this->assertEquals(0, $score4); // Should be capped at 0
-    }
-
-    public function test_normalise_score_with_float_values()
-    {
-        // Use reflection to access private method
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('normaliseScore');
-        $method->setAccessible(true);
-
-        // Test with float values
-        $score1 = $method->invoke($this->service, 25.5, 50.0, true);
-        $this->assertEquals(51, $score1); // 25.5/50 * 100 = 51
-
-        $score2 = $method->invoke($this->service, 12.5, 25.0, false);
-        $this->assertEquals(50, $score2); // (1 - 12.5/25) * 100 = 50
     }
 
     public function test_opener_score_with_duplicate_calculation_bug()

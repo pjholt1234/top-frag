@@ -16,16 +16,20 @@ class TopRolePlayerServiceTest extends TestCase
     use RefreshDatabase;
 
     private TopRolePlayerService $service;
+
     private PlayerComplexionService $playerComplexionService;
+
     private User $user;
+
     private Player $player;
+
     private GameMatch $match;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->playerComplexionService = new PlayerComplexionService();
+        $this->playerComplexionService = new PlayerComplexionService;
         $this->service = new TopRolePlayerService($this->playerComplexionService);
 
         $this->user = User::factory()->create([

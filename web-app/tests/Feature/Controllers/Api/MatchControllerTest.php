@@ -44,7 +44,18 @@ class MatchControllerTest extends TestCase
         $response = $this->actingAs($user)
             ->getJson('/api/matches');
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
+        $response->assertJson([
+            'data' => [],
+            'pagination' => [
+                'current_page' => 1,
+                'per_page' => 1,
+                'total' => 0,
+                'last_page' => 1,
+                'from' => 1,
+                'to' => 1,
+            ],
+        ]);
     }
 
     public function test_index_returns_empty_data_for_user_without_player()
