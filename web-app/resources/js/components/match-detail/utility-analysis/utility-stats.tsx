@@ -1,4 +1,5 @@
 import { getCustomRatingColor } from '@/lib/utils';
+import { StatsTable } from '@/components/ui/stats-table';
 
 interface FlashStats {
   enemy_avg_duration: number;
@@ -47,97 +48,88 @@ export function UtilityStats({ overallStats }: UtilityStatsProps) {
     return getCustomRatingColor(damage, [5, 10, 20, 30], 'text');
   };
 
+  // Flashbangs Table Data
+  const flashColumns = [
+    { header: 'Flashbangs', width: 'w-1/3' },
+    { header: 'Avg Flash Duration', width: 'w-1/3' },
+    { header: 'Players Blinded', width: 'w-1/3' },
+  ];
+
+  const flashRows = [
+    {
+      label: 'Enemy',
+      values: [
+        {
+          value: `${overallStats.flash_stats.enemy_avg_duration.toFixed(2)}s`,
+          className: getFlashDurationColor(
+            overallStats.flash_stats.enemy_avg_duration,
+            true
+          ),
+        },
+        {
+          value: overallStats.flash_stats.enemy_avg_blinded.toFixed(1),
+          className: getBlindedColor(
+            overallStats.flash_stats.enemy_avg_blinded,
+            true
+          ),
+        },
+      ],
+    },
+    {
+      label: 'Friendly',
+      values: [
+        {
+          value: `${overallStats.flash_stats.friendly_avg_duration.toFixed(2)}s`,
+          className: getFlashDurationColor(
+            overallStats.flash_stats.friendly_avg_duration,
+            false
+          ),
+        },
+        {
+          value: overallStats.flash_stats.friendly_avg_blinded.toFixed(1),
+          className: getBlindedColor(
+            overallStats.flash_stats.friendly_avg_blinded,
+            false
+          ),
+        },
+      ],
+    },
+  ];
+
+  // HE + Molotov Table Data
+  const heColumns = [
+    { header: 'HE + Molotov', width: 'w-1/3' },
+    { header: 'Damage', width: 'w-1/3' },
+    { header: '', width: 'w-1/3' },
+  ];
+
+  const heRows = [
+    {
+      label: 'Total',
+      values: [
+        {
+          value: overallStats.he_stats.avg_damage,
+          className: getHeDamageColor(overallStats.he_stats.avg_damage),
+        },
+        { value: '', empty: true },
+      ],
+    },
+  ];
+
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-gray-700 mb-4">
-        <table className="w-full table-fixed">
-          <thead className="bg-gray-800/50">
-            <tr>
-              <th className="w-1/3 px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Flashbangs
-              </th>
-              <th className="w-1/3 px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Avg Flash Duration
-              </th>
-              <th className="w-1/3 px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Players Blinded
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            <tr>
-              <td className="px-4 py-2 text-sm font-medium text-gray-300">
-                Enemy
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span
-                  className={`text-sm font-medium ${getFlashDurationColor(overallStats.flash_stats.enemy_avg_duration, true)}`}
-                >
-                  {overallStats.flash_stats.enemy_avg_duration.toFixed(2)}s
-                </span>
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span
-                  className={`text-sm font-medium ${getBlindedColor(overallStats.flash_stats.enemy_avg_blinded, true)}`}
-                >
-                  {overallStats.flash_stats.enemy_avg_blinded.toFixed(1)}
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-4 py-2 text-sm font-medium text-gray-300">
-                Friendly
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span
-                  className={`text-sm font-medium ${getFlashDurationColor(overallStats.flash_stats.friendly_avg_duration, false)}`}
-                >
-                  {overallStats.flash_stats.friendly_avg_duration.toFixed(2)}s
-                </span>
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span
-                  className={`text-sm font-medium ${getBlindedColor(overallStats.flash_stats.friendly_avg_blinded, false)}`}
-                >
-                  {overallStats.flash_stats.friendly_avg_blinded.toFixed(1)}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="overflow-hidden rounded-lg border border-gray-700 mb-4">
-        <table className="w-full table-fixed">
-          <thead className="bg-gray-800/50">
-            <tr>
-              <th className="w-1/3 px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                HE + Molotov
-              </th>
-              <th className="w-1/3 px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Damage
-              </th>
-              <th className="w-1/3 px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                &nbsp;
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            <tr>
-              <td className="px-4 py-2 text-sm font-medium text-gray-300">
-                Total
-              </td>
-              <td className="px-4 py-2 text-center">
-                <span
-                  className={`text-sm font-medium ${getHeDamageColor(overallStats.he_stats.avg_damage)}`}
-                >
-                  {overallStats.he_stats.avg_damage}
-                </span>
-              </td>
-              <td className="px-4 py-2 text-center">&nbsp;</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <StatsTable
+        title="Flashbangs"
+        columns={flashColumns}
+        rows={flashRows}
+        className="mb-4"
+      />
+      <StatsTable
+        title="HE + Molotov"
+        columns={heColumns}
+        rows={heRows}
+        className="mb-4"
+      />
     </>
   );
 }

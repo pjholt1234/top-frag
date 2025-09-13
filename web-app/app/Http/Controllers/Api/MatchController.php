@@ -127,7 +127,8 @@ class MatchController extends Controller
             return response()->json(['message' => 'Player not found'], 404);
         }
 
-        $stats = $this->playerStatsService->getStats($user, $matchId);
+        $filters = $request->only(['player_steam_id']);
+        $stats = $this->playerStatsService->get($user, $filters, $matchId);
 
         if (empty($stats)) {
             return response()->json(['message' => 'Match not found'], 404);

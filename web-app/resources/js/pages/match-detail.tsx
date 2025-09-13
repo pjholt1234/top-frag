@@ -14,6 +14,7 @@ import {
 import { Scoreboard } from '@/components/shared/scoreboard';
 import MatchGrenadesView from '@/components/match-detail/grenades-view';
 import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
+import { MatchPlayerStats } from '@/components/match-detail/player-stats';
 
 interface Scoreboard {
   player_name: string;
@@ -258,6 +259,7 @@ const MatchDetail = () => {
 
             <TabsContent value="player-stats" className="mt-0">
               <CardContent className="p-0">
+                <MatchPlayerStats matchId={match.id} />
               </CardContent>
             </TabsContent>
 

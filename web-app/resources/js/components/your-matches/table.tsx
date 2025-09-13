@@ -308,7 +308,7 @@ export function MatchesTable({
                   <TableCell>
                     {match.match_details
                       ? capitalizeFirst(match.match_details.match_type) ||
-                      'Unknown'
+                        'Unknown'
                       : 'Processing...'}
                   </TableCell>
                   <TableCell>

@@ -69,4 +69,41 @@ class PlayerMatchEvent extends Model
     {
         return $this->belongsTo(Player::class, 'player_steam_id', 'steam_id');
     }
+
+    public function getClutchWinsAttribute(): int
+    {
+        return $this->clutch_wins_1v1 +
+            $this->clutch_wins_1v2 +
+            $this->clutch_wins_1v3 +
+            $this->clutch_wins_1v4 +
+            $this->clutch_wins_1v5;
+    }
+
+    public function getClutchAttemptsAttribute(): int
+    {
+        return $this->clutch_attempts_1v1 +
+            $this->clutch_attempts_1v2 +
+            $this->clutch_attempts_1v3 +
+            $this->clutch_attempts_1v4 +
+            $this->clutch_attempts_1v5;
+    }
+
+    public function getClutchWinPercentageAttribute(): int
+    {
+        return calculatePercentage($this->clutch_wins, $this->clutch_attempts);
+    }
+
+    public function getTotalRoundsPlayedAttribute(): int
+    {
+        return $this->match->total_rounds ?? 0;
+    }
+
+    public function getGrenadesThrownAttribute(): int
+    {
+        return $this->flashes_thrown +
+            $this->fire_grenades_thrown +
+            $this->smokes_thrown +
+            $this->hes_thrown +
+            $this->decoys_thrown;
+    }
 }
