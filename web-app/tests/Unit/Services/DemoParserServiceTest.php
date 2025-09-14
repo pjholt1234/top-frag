@@ -320,9 +320,11 @@ class DemoParserServiceTest extends TestCase
         $method = $reflection->getMethod('generateMatchHash');
         $method->setAccessible(true);
 
+        // Mock the app environment to be 'local' for this test
+        $this->app['env'] = 'local';
+
         // In local environment, the method should return null
         $hash = $method->invoke($service, $matchData, $playersData);
-
         $this->assertNull($hash);
     }
 
@@ -935,7 +937,7 @@ class DemoParserServiceTest extends TestCase
         $playerRoundEvents = [];
         for ($i = 1; $i <= 1500; $i++) {
             $playerRoundEvents[] = [
-                'player_steam_id' => 'steam_' . ($i % 10), // 10 different players
+                'player_steam_id' => 'steam_'.($i % 10), // 10 different players
                 'round_number' => ($i % 30) + 1, // Rounds 1-30
                 'kills' => $i % 5,
                 'damage' => $i * 10,

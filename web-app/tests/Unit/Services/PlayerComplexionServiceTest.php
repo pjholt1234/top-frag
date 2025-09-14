@@ -248,6 +248,43 @@ class PlayerComplexionServiceTest extends TestCase
 
     public function test_caching_behavior()
     {
+        // Enable caching for this test
+        \Illuminate\Support\Facades\Config::set('app.cache_enabled', true);
+
+        // Create a match and PlayerMatchEvent for the test
+        $match = \App\Models\GameMatch::factory()->create();
+
+        PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => 'steam_123',
+            'kills' => 20,
+            'deaths' => 15,
+            'first_kills' => 8,
+            'first_deaths' => 6,
+            'average_round_time_of_death' => 30.5,
+            'average_time_to_contact' => 25.2,
+            'total_successful_trades' => 4,
+            'total_possible_trades' => 8,
+            'total_traded_deaths' => 3,
+            'total_possible_traded_deaths' => 6,
+            'clutch_wins_1v1' => 2,
+            'clutch_attempts_1v1' => 3,
+            'clutch_wins_1v2' => 1,
+            'clutch_attempts_1v2' => 2,
+            'clutch_wins_1v3' => 0,
+            'clutch_attempts_1v3' => 1,
+            'clutch_wins_1v4' => 0,
+            'clutch_attempts_1v4' => 0,
+            'clutch_wins_1v5' => 0,
+            'clutch_attempts_1v5' => 0,
+            'flashes_thrown' => 15,
+            'damage_dealt' => 150,
+            'enemy_flash_duration' => 25.5,
+            'average_grenade_effectiveness' => 45.2,
+            'flashes_leading_to_kills' => 3,
+            'adr' => 85.5,
+        ]);
+
         // Mock the cache to verify caching is used
         Cache::shouldReceive('remember')
             ->once()
@@ -258,7 +295,7 @@ class PlayerComplexionServiceTest extends TestCase
                 'fragger' => 70,
             ]);
 
-        $result = $this->service->get('steam_123', 1);
+        $result = $this->service->get('steam_123', $match->id);
 
         $this->assertEquals(75, $result['opener']);
         $this->assertEquals(60, $result['closer']);

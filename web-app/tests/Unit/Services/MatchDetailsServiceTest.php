@@ -281,6 +281,9 @@ class MatchDetailsServiceTest extends TestCase
 
     public function test_caching_behavior()
     {
+        // Enable caching for this test
+        \Illuminate\Support\Facades\Config::set('app.cache_enabled', true);
+
         $match = GameMatch::factory()->create();
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
@@ -293,14 +296,14 @@ class MatchDetailsServiceTest extends TestCase
                 'is_completed' => true,
                 'match_details' => [
                     'id' => $match->id,
-                    'map' => 'de_dust2',
-                    'winning_team_score' => 16,
-                    'losing_team_score' => 14,
-                    'winning_team' => 'A',
+                    'map' => $match->map, // Use the actual map from the created match
+                    'winning_team_score' => $match->winning_team_score,
+                    'losing_team_score' => $match->losing_team_score,
+                    'winning_team' => $match->winning_team,
                     'player_won_match' => true,
                     'player_was_participant' => true,
                     'player_team' => 'A',
-                    'match_type' => 'mm',
+                    'match_type' => $match->match_type,
                     'created_at' => $match->created_at,
                 ],
                 'player_stats' => [],
@@ -314,7 +317,7 @@ class MatchDetailsServiceTest extends TestCase
 
         $this->assertEquals($match->id, $result['id']);
         $this->assertTrue($result['is_completed']);
-        $this->assertEquals('de_dust2', $result['match_details']['map']);
+        $this->assertEquals($match->map, $result['match_details']['map']); // Use the actual map
     }
 
     public function test_edge_case_with_missing_player_relationship()
