@@ -22,8 +22,24 @@ func NewRoundHandler(processor *EventProcessor, logger *logrus.Logger) *RoundHan
 	}
 }
 
-func (rh *RoundHandler) ProcessRoundEnd() {
+func (rh *RoundHandler) ProcessRoundEnd() error {
+	if rh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event_type", "ProcessRoundEnd")
+	}
+
+	if rh.processor.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("event_type", "ProcessRoundEnd")
+	}
+
 	roundNumber := rh.processor.matchState.CurrentRound
+
+	if roundNumber <= 0 {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "invalid round number", nil).
+			WithContext("round_number", roundNumber).
+			WithContext("event_type", "ProcessRoundEnd")
+	}
 
 	rh.logger.WithFields(logrus.Fields{
 		"round": roundNumber,
@@ -31,7 +47,19 @@ func (rh *RoundHandler) ProcessRoundEnd() {
 
 	playersInRound := rh.getPlayersInRound(roundNumber)
 
+	if len(playersInRound) == 0 {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "no players found in round", nil).
+			WithContext("round_number", roundNumber).
+			WithContext("event_type", "ProcessRoundEnd")
+	}
+
 	for _, playerSteamID := range playersInRound {
+		if playerSteamID == "" {
+			return types.NewParseError(types.ErrorTypeEventProcessing, "empty player steam ID found", nil).
+				WithContext("round_number", roundNumber).
+				WithContext("event_type", "ProcessRoundEnd")
+		}
+
 		playerRoundEvent := rh.createPlayerRoundEvent(playerSteamID, roundNumber)
 		rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
 	}
@@ -40,6 +68,8 @@ func (rh *RoundHandler) ProcessRoundEnd() {
 		"round":         roundNumber,
 		"players_count": len(playersInRound),
 	}).Debug("Completed round-level player statistics processing")
+
+	return nil
 }
 
 // getPlayersInRound returns all players that are in the match, regardless of event participation

@@ -105,7 +105,9 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
 	ep.matchHandler.HandleRoundEnd(e)
 	ep.grenadeHandler.AggregateAllGrenadeDamage()
 	ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
-	ep.roundHandler.ProcessRoundEnd()
+	if err := ep.roundHandler.ProcessRoundEnd(); err != nil {
+		ep.logger.WithError(err).Error("Failed to process round end")
+	}
 }
 
 func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) error {

@@ -286,3 +286,146 @@ func TestRoundHandler_aggregateGunfightMetrics_NoDoubleCounting(t *testing.T) {
 		t.Errorf("Expected kills to be 1, got %d", event.Kills)
 	}
 }
+
+func TestRoundHandler_ProcessRoundEnd(t *testing.T) {
+	logger := logrus.New()
+
+	tests := []struct {
+		name          string
+		processor     *EventProcessor
+		expectedError bool
+		errorType     types.ErrorType
+		errorMessage  string
+	}{
+		{
+			name:          "nil processor should return event processing error",
+			processor:     nil,
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "processor is nil",
+		},
+		{
+			name: "nil match state should return event processing error",
+			processor: &EventProcessor{
+				matchState: nil,
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "match state is nil",
+		},
+		{
+			name: "invalid round number should return event processing error",
+			processor: &EventProcessor{
+				matchState: &types.MatchState{
+					CurrentRound: 0,
+					Players:      make(map[string]*types.Player),
+				},
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "invalid round number",
+		},
+		{
+			name: "negative round number should return event processing error",
+			processor: &EventProcessor{
+				matchState: &types.MatchState{
+					CurrentRound: -1,
+					Players:      make(map[string]*types.Player),
+				},
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "invalid round number",
+		},
+		{
+			name: "no players in round should return event processing error",
+			processor: &EventProcessor{
+				matchState: &types.MatchState{
+					CurrentRound: 1,
+					Players:      make(map[string]*types.Player), // Empty players map
+				},
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "no players found in round",
+		},
+		{
+			name: "empty player steam ID should return event processing error",
+			processor: &EventProcessor{
+				matchState: &types.MatchState{
+					CurrentRound: 1,
+					Players: map[string]*types.Player{
+						"": {}, // Empty steam ID
+					},
+				},
+			},
+			expectedError: true,
+			errorType:     types.ErrorTypeEventProcessing,
+			errorMessage:  "empty player steam ID found",
+		},
+		{
+			name: "valid round should process successfully",
+			processor: &EventProcessor{
+				matchState: &types.MatchState{
+					CurrentRound: 1,
+					Players: map[string]*types.Player{
+						"player1": {},
+						"player2": {},
+					},
+					PlayerRoundEvents: []types.PlayerRoundEvent{},
+				},
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			roundHandler := &RoundHandler{
+				processor: tt.processor,
+				logger:    logger,
+			}
+
+			err := roundHandler.ProcessRoundEnd()
+
+			if tt.expectedError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+					return
+				}
+
+				parseErr, ok := err.(*types.ParseError)
+				if !ok {
+					t.Errorf("Expected ParseError, got %T", err)
+					return
+				}
+
+				if parseErr.Type != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, parseErr.Type)
+				}
+
+				if parseErr.Message != tt.errorMessage {
+					t.Errorf("Expected error message %q, got %q", tt.errorMessage, parseErr.Message)
+				}
+
+				// Verify context is set
+				if parseErr.Context == nil {
+					t.Error("Expected error context to be set")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+
+				// Verify that player round events were created
+				if tt.processor != nil && tt.processor.matchState != nil {
+					expectedEvents := len(tt.processor.matchState.Players)
+					actualEvents := len(tt.processor.matchState.PlayerRoundEvents)
+					if actualEvents != expectedEvents {
+						t.Errorf("Expected %d player round events, got %d", expectedEvents, actualEvents)
+					}
+				}
+			}
+		})
+	}
+}
