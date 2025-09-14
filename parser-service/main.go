@@ -31,13 +31,14 @@ func main() {
 	logger.Info("Starting CS:GO Demo Parser Service")
 
 	demoParser := parser.NewDemoParser(cfg, logger)
-	batchSender := parser.NewBatchSender(cfg, logger)
 
 	// Create a no-op progress callback for the ProgressManager
 	progressCallback := func(update types.ProgressUpdate) {
 		// This will be overridden by the actual progress callback in the demo parser
 	}
 	progressManager := parser.NewProgressManager(logger, progressCallback, 100*time.Millisecond)
+
+	batchSender := parser.NewBatchSender(cfg, logger, progressManager)
 
 	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender, progressManager)
 	healthHandler := handlers.NewHealthHandler(logger)

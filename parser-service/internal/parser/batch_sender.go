@@ -17,16 +17,18 @@ import (
 )
 
 type BatchSender struct {
-	config  *config.Config
-	logger  *logrus.Logger
-	client  *http.Client
-	baseURL string
+	config          *config.Config
+	logger          *logrus.Logger
+	client          *http.Client
+	baseURL         string
+	progressManager *ProgressManager
 }
 
-func NewBatchSender(cfg *config.Config, logger *logrus.Logger) *BatchSender {
+func NewBatchSender(cfg *config.Config, logger *logrus.Logger, progressManager *ProgressManager) *BatchSender {
 	return &BatchSender{
-		config: cfg,
-		logger: logger,
+		config:          cfg,
+		logger:          logger,
+		progressManager: progressManager,
 		client: &http.Client{
 			Timeout: cfg.Batch.HTTPTimeout,
 		},
@@ -35,18 +37,19 @@ func NewBatchSender(cfg *config.Config, logger *logrus.Logger) *BatchSender {
 
 func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
 	if completionURL == "" {
-		return "", fmt.Errorf("empty completion URL")
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "empty completion URL", nil)
 	}
 
 	parsedURL, err := url.Parse(completionURL)
 	if err != nil {
-		bs.logger.WithError(err).Error("Failed to parse completion URL")
-		return "", fmt.Errorf("failed to parse completion URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "failed to parse completion URL", err)
+		bs.progressManager.ReportParseError(parseError)
+		return "", parseError
 	}
 
 	// Check if the URL has a valid scheme and host
 	if parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return "", fmt.Errorf("invalid URL: missing scheme or host")
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "invalid URL: missing scheme or host", nil)
 	}
 
 	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
@@ -61,7 +64,11 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send gunfight events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -133,7 +140,12 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeGunfight)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-			return fmt.Errorf("failed to send gunfight events batch %d: %w", i+1, err)
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send gunfight events", err)
+			parseError = parseError.WithContext("job_id", jobID)
+			parseError = parseError.WithContext("batch_number", i+1)
+			parseError = parseError.WithContext("url", url)
+			bs.progressManager.ReportParseError(parseError)
+			return parseError
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -155,7 +167,11 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send grenade events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -233,7 +249,12 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeGrenade)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-			return fmt.Errorf("failed to send grenade events batch %d: %w", i+1, err)
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send grenade events", err)
+			parseError = parseError.WithContext("job_id", jobID)
+			parseError = parseError.WithContext("batch_number", i+1)
+			parseError = parseError.WithContext("url", url)
+			bs.progressManager.ReportParseError(parseError)
+			return parseError
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -255,7 +276,11 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, compl
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send damage events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -304,7 +329,12 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, compl
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeDamage)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-			return fmt.Errorf("failed to send damage events batch %d: %w", i+1, err)
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send damage events", err)
+			parseError = parseError.WithContext("job_id", jobID)
+			parseError = parseError.WithContext("batch_number", i+1)
+			parseError = parseError.WithContext("url", url)
+			bs.progressManager.ReportParseError(parseError)
+			return parseError
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -326,7 +356,11 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send round events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -359,7 +393,11 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 
 	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeRound)
 	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-		return fmt.Errorf("failed to send round events: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send round events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("url", url)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	bs.logger.WithField("job_id", jobID).Debug("Sent round events")
@@ -374,7 +412,11 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player round events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -476,7 +518,12 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypePlayerRound)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-			return fmt.Errorf("failed to send player round events batch %d: %w", i+1, err)
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player round events", err)
+			parseError = parseError.WithContext("job_id", jobID)
+			parseError = parseError.WithContext("batch_number", i+1)
+			parseError = parseError.WithContext("url", url)
+			bs.progressManager.ReportParseError(parseError)
+			return parseError
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -498,7 +545,11 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract base URL: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player match events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	bs.baseURL = baseURL
 
@@ -583,7 +634,12 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypePlayerMatch)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
-			return fmt.Errorf("failed to send player round events batch %d: %w", i+1, err)
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player round events", err)
+			parseError = parseError.WithContext("job_id", jobID)
+			parseError = parseError.WithContext("batch_number", i+1)
+			parseError = parseError.WithContext("url", url)
+			bs.progressManager.ReportParseError(parseError)
+			return parseError
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -606,7 +662,11 @@ func (bs *BatchSender) SendCompletion(ctx context.Context, jobID string, complet
 	}
 
 	if err := bs.sendRequest(ctx, completionURL, payload); err != nil {
-		return fmt.Errorf("failed to send completion signal: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send completion signal", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	return nil
@@ -625,7 +685,12 @@ func (bs *BatchSender) SendError(ctx context.Context, jobID string, completionUR
 	}
 
 	if err := bs.sendRequest(ctx, completionURL, payload); err != nil {
-		return fmt.Errorf("failed to send error signal: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send error signal", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		parseError = parseError.WithContext("error_message", errorMsg)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	return nil
@@ -634,12 +699,16 @@ func (bs *BatchSender) SendError(ctx context.Context, jobID string, completionUR
 func (bs *BatchSender) sendRequest(ctx context.Context, url string, payload interface{}) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeUnknown, types.ErrorSeverityCritical, "failed to marshal JSON", err)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeUnknown, types.ErrorSeverityCritical, "failed to create request", err)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -651,12 +720,26 @@ func (bs *BatchSender) sendRequest(ctx context.Context, url string, payload inte
 
 	resp, err := bs.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityCritical, "failed to send request", err)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP request failed with status %d", resp.StatusCode)
+		// Determine severity based on status code
+		var severity types.ErrorSeverity
+		if resp.StatusCode >= 500 {
+			severity = types.ErrorSeverityCritical // 5xx errors are CRITICAL
+		} else {
+			severity = types.ErrorSeverityError // 4xx errors are ERROR
+		}
+
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, severity, fmt.Sprintf("HTTP request failed with status %d", resp.StatusCode), nil)
+		parseError = parseError.WithContext("status_code", resp.StatusCode)
+		parseError = parseError.WithContext("url", url)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
 	}
 
 	return nil
@@ -664,24 +747,40 @@ func (bs *BatchSender) sendRequest(ctx context.Context, url string, payload inte
 
 func (bs *BatchSender) sendRequestWithRetry(ctx context.Context, url string, payload interface{}) error {
 	var lastErr error
+	maxRetries := 2 // Limit to 2 retry attempts as per requirements
 
-	for attempt := 1; attempt <= bs.config.Batch.RetryAttempts; attempt++ {
+	for attempt := 1; attempt <= maxRetries+1; attempt++ { // +1 for initial attempt
 		err := bs.sendRequest(ctx, url, payload)
 		if err == nil {
 			return nil
 		}
 
 		lastErr = err
-		bs.logger.WithFields(logrus.Fields{
-			"url":     url,
-			"attempt": attempt,
-			"error":   err,
-		}).Warn("Request failed, retrying")
 
-		if attempt < bs.config.Batch.RetryAttempts {
+		// Log retry attempts with appropriate severity
+		if attempt <= maxRetries {
+			// First 2 attempts are WARNING level
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityWarning, "Request failed, retrying", err)
+			parseError = parseError.WithContext("url", url)
+			parseError = parseError.WithContext("attempt", attempt)
+			parseError = parseError.WithContext("max_retries", maxRetries)
+			bs.progressManager.ReportParseError(parseError)
+
+			bs.logger.WithFields(logrus.Fields{
+				"url":     url,
+				"attempt": attempt,
+				"error":   err,
+			}).Warn("Request failed, retrying")
+
 			time.Sleep(bs.config.Batch.RetryDelay)
 		}
 	}
 
-	return fmt.Errorf("request failed after %d attempts: %w", bs.config.Batch.RetryAttempts, lastErr)
+	// Final failure is ERROR level
+	parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, fmt.Sprintf("request failed after %d attempts", maxRetries+1), lastErr)
+	parseError = parseError.WithContext("url", url)
+	parseError = parseError.WithContext("total_attempts", maxRetries+1)
+	bs.progressManager.ReportParseError(parseError)
+
+	return parseError
 }
