@@ -98,18 +98,32 @@ func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
 }
 
 func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
+	if ep.matchHandler == nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match handler is nil", nil).
+			WithContext("event", "RoundStart")
+	}
 	return ep.matchHandler.HandleRoundStart(e)
 }
 
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
+	if ep.matchHandler == nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match handler is nil", nil).
+			WithContext("event", "RoundEnd")
+	}
 	if err := ep.matchHandler.HandleRoundEnd(e); err != nil {
 		ep.logger.WithError(err).Error("Failed to handle round end")
 		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to handle round end", err).
 			WithContext("event", "RoundEnd").
 			WithContext("round", ep.matchState.CurrentRound)
 	}
-	ep.grenadeHandler.AggregateAllGrenadeDamage()
-	ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+	if ep.grenadeHandler != nil {
+		ep.grenadeHandler.AggregateAllGrenadeDamage()
+		ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+	}
+	if ep.roundHandler == nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "round handler is nil", nil).
+			WithContext("event", "RoundEnd")
+	}
 	if err := ep.roundHandler.ProcessRoundEnd(); err != nil {
 		ep.logger.WithError(err).Error("Failed to process round end")
 		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process round end", err).

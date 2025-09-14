@@ -16,6 +16,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Helper function to create a test ProgressManager
+func createTestProgressManager() *ProgressManager {
+	logger := logrus.New()
+	progressCallback := func(update types.ProgressUpdate) {
+		// No-op for testing
+	}
+	return NewProgressManager(logger, progressCallback, 100*time.Millisecond)
+}
+
 func TestNewBatchSender(t *testing.T) {
 	cfg := &config.Config{
 		Batch: config.BatchConfig{
@@ -24,7 +33,7 @@ func TestNewBatchSender(t *testing.T) {
 	}
 	logger := logrus.New()
 
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	if sender == nil {
 		t.Fatal("Expected BatchSender to be created, got nil")
@@ -50,7 +59,7 @@ func TestNewBatchSender(t *testing.T) {
 func TestBatchSender_ExtractBaseURL(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	tests := []struct {
 		name          string
@@ -140,7 +149,7 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
@@ -186,7 +195,7 @@ func TestBatchSender_SendGunfightEvents_Empty(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.SendGunfightEvents(ctx, "test-job-123", "http://localhost:8080", []types.GunfightEvent{})
@@ -223,7 +232,7 @@ func TestBatchSender_SendGunfightEvents_IsFirstKillField(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
@@ -327,7 +336,7 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
@@ -394,7 +403,7 @@ func TestBatchSender_SendDamageEvents(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
@@ -457,7 +466,7 @@ func TestBatchSender_SendRoundEvents(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	// Set the baseURL for the test
 	baseURL, err := sender.extractBaseURL(server.URL)
@@ -507,7 +516,7 @@ func TestBatchSender_SendCompletion(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.SendCompletion(ctx, "test-job-123", server.URL)
@@ -533,7 +542,7 @@ func TestBatchSender_SendError(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.SendError(ctx, "test-job-123", server.URL, "Test error message")
@@ -553,7 +562,7 @@ func TestBatchSender_SendRequest_Error(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.sendRequest(ctx, "http://invalid-url-that-does-not-exist", map[string]string{"test": "data"})
@@ -579,7 +588,7 @@ func TestBatchSender_SendRequest_ServerError(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.sendRequest(ctx, server.URL, map[string]string{"test": "data"})
@@ -613,7 +622,7 @@ func TestBatchSender_SendRequestWithRetry(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.sendRequestWithRetry(ctx, server.URL, map[string]string{"test": "data"})
@@ -645,7 +654,7 @@ func TestBatchSender_SendRequestWithRetry_AllFail(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	sender := NewBatchSender(cfg, logger)
+	sender := NewBatchSender(cfg, logger, createTestProgressManager())
 
 	ctx := context.Background()
 	err := sender.sendRequestWithRetry(ctx, server.URL, map[string]string{"test": "data"})

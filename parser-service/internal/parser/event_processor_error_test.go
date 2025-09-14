@@ -3,12 +3,12 @@ package parser
 import (
 	"testing"
 
-	"github.com/markus-wa/demoinfocs-golang/v4/pkg/demoinfocs/common"
-	"github.com/markus-wa/demoinfocs-golang/v4/pkg/demoinfocs/events"
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/paul-ho/top-frag/parser-service/internal/types"
+	"parser-service/internal/types"
 )
 
 func TestEventProcessor_ErrorScenarios(t *testing.T) {
@@ -131,16 +131,15 @@ func TestEventProcessor_HandleRoundEnd_ErrorScenarios(t *testing.T) {
 				matchState := &types.MatchState{
 					Players: make(map[string]*types.Player),
 				}
-				matchHandler := &MatchHandler{
-					processor:  nil,
-					matchState: matchState,
+				processor := &EventProcessor{
+					matchState:      matchState,
+					logger:          logger,
+					playerStates:    make(map[uint64]*types.PlayerState),
+					teamAssignments: make(map[string]string),
 				}
-				return &EventProcessor{
-					matchState:   matchState,
-					logger:       logger,
-					matchHandler: matchHandler,
-					roundHandler: nil,
-				}
+				matchHandler := NewMatchHandler(processor, logger)
+				processor.matchHandler = matchHandler
+				return processor
 			},
 			expectError: true,
 			errorType:   types.ErrorTypeEventProcessing,
@@ -152,20 +151,17 @@ func TestEventProcessor_HandleRoundEnd_ErrorScenarios(t *testing.T) {
 				matchState := &types.MatchState{
 					Players: make(map[string]*types.Player),
 				}
-				matchHandler := &MatchHandler{
-					processor:  nil,
-					matchState: matchState,
+				processor := &EventProcessor{
+					matchState:      matchState,
+					logger:          logger,
+					playerStates:    make(map[uint64]*types.PlayerState),
+					teamAssignments: make(map[string]string),
 				}
-				roundHandler := &RoundHandler{
-					processor:  nil,
-					matchState: matchState,
-				}
-				return &EventProcessor{
-					matchState:   matchState,
-					logger:       logger,
-					matchHandler: matchHandler,
-					roundHandler: roundHandler,
-				}
+				matchHandler := NewMatchHandler(processor, logger)
+				roundHandler := NewRoundHandler(processor, logger)
+				processor.matchHandler = matchHandler
+				processor.roundHandler = roundHandler
+				return processor
 			},
 			expectError: false,
 		},
