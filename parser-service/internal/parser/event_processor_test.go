@@ -60,7 +60,10 @@ func TestEventProcessor_HandleRoundStart(t *testing.T) {
 	}
 
 	event := events.RoundStart{}
-	processor.HandleRoundStart(event)
+	err := processor.HandleRoundStart(event)
+	if err != nil {
+		t.Errorf("HandleRoundStart returned error: %v", err)
+	}
 
 	// Test round increment
 	if matchState.CurrentRound != 2 {
@@ -134,11 +137,21 @@ func TestEventProcessor_HandleRoundEnd(t *testing.T) {
 	logger := logrus.New()
 	processor := NewEventProcessor(matchState, logger)
 
+	// Add some players to avoid "no players found in round" error
+	matchState.Players["steam_123"] = &types.Player{
+		SteamID: "steam_123",
+		Name:    "TestPlayer",
+		Team:    "A",
+	}
+
 	// Test CT win
 	event := events.RoundEnd{
 		Winner: common.TeamCounterTerrorists,
 	}
-	processor.HandleRoundEnd(event)
+	err := processor.HandleRoundEnd(event)
+	if err != nil {
+		t.Errorf("HandleRoundEnd returned error: %v", err)
+	}
 
 	if len(matchState.RoundEvents) != 1 {
 		t.Errorf("Expected 1 round event, got %d", len(matchState.RoundEvents))
@@ -174,7 +187,10 @@ func TestEventProcessor_HandleRoundEnd(t *testing.T) {
 	event = events.RoundEnd{
 		Winner: common.TeamTerrorists,
 	}
-	processor.HandleRoundEnd(event)
+	err = processor.HandleRoundEnd(event)
+	if err != nil {
+		t.Errorf("HandleRoundEnd returned error: %v", err)
+	}
 
 	roundEvent = matchState.RoundEvents[0]
 	if *roundEvent.Winner != "T" {
@@ -414,7 +430,10 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		Player: player,
 	}
 
-	processor.HandlePlayerConnect(event)
+	err := processor.HandlePlayerConnect(event)
+	if err != nil {
+		t.Errorf("HandlePlayerConnect returned error: %v", err)
+	}
 
 	// Test player was added to match state
 	if len(matchState.Players) != 1 {
@@ -477,7 +496,10 @@ func TestEventProcessor_HandlePlayerDisconnected(t *testing.T) {
 	}
 
 	// Should not crash
-	processor.HandlePlayerDisconnected(event)
+	err := processor.HandlePlayerDisconnected(event)
+	if err != nil {
+		t.Errorf("HandlePlayerDisconnected returned error: %v", err)
+	}
 }
 
 func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
@@ -514,7 +536,10 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 		Player: player,
 	}
 
-	processor.HandlePlayerTeamChange(event)
+	err := processor.HandlePlayerTeamChange(event)
+	if err != nil {
+		t.Errorf("HandlePlayerTeamChange returned error: %v", err)
+	}
 
 	// Test player team was updated in match state
 	// Since this is round 1 and player switches to T side, they should be assigned to team B
@@ -724,7 +749,10 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 	}
 
 	// Reset for new round
-	processor.HandleRoundStart(events.RoundStart{})
+	err := processor.HandleRoundStart(events.RoundStart{})
+	if err != nil {
+		t.Errorf("HandleRoundStart returned error: %v", err)
+	}
 
 	// After round start, FirstKillPlayer should be nil again
 	if processor.matchState.FirstKillPlayer != nil {

@@ -97,17 +97,22 @@ func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
 	ep.demoParser = parser
 }
 
-func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) {
-	ep.matchHandler.HandleRoundStart(e)
+func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
+	return ep.matchHandler.HandleRoundStart(e)
 }
 
-func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) {
-	ep.matchHandler.HandleRoundEnd(e)
+func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
+	if err := ep.matchHandler.HandleRoundEnd(e); err != nil {
+		ep.logger.WithError(err).Error("Failed to handle round end")
+		return err
+	}
 	ep.grenadeHandler.AggregateAllGrenadeDamage()
 	ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
 	if err := ep.roundHandler.ProcessRoundEnd(); err != nil {
 		ep.logger.WithError(err).Error("Failed to process round end")
+		return err
 	}
+	return nil
 }
 
 func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) error {
@@ -138,32 +143,32 @@ func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) error {
 	return ep.grenadeHandler.HandleSmokeStart(e)
 }
 
-func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) {
-	ep.matchHandler.HandleWeaponFire(e)
+func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) error {
+	return ep.matchHandler.HandleWeaponFire(e)
 }
 
-func (ep *EventProcessor) HandleBombPlanted(e events.BombPlanted) {
-	ep.matchHandler.HandleBombPlanted(e)
+func (ep *EventProcessor) HandleBombPlanted(e events.BombPlanted) error {
+	return ep.matchHandler.HandleBombPlanted(e)
 }
 
-func (ep *EventProcessor) HandleBombDefused(e events.BombDefused) {
-	ep.matchHandler.HandleBombDefused(e)
+func (ep *EventProcessor) HandleBombDefused(e events.BombDefused) error {
+	return ep.matchHandler.HandleBombDefused(e)
 }
 
-func (ep *EventProcessor) HandleBombExplode(e events.BombExplode) {
-	ep.matchHandler.HandleBombExplode(e)
+func (ep *EventProcessor) HandleBombExplode(e events.BombExplode) error {
+	return ep.matchHandler.HandleBombExplode(e)
 }
 
-func (ep *EventProcessor) HandlePlayerConnect(e events.PlayerConnect) {
-	ep.matchHandler.HandlePlayerConnect(e)
+func (ep *EventProcessor) HandlePlayerConnect(e events.PlayerConnect) error {
+	return ep.matchHandler.HandlePlayerConnect(e)
 }
 
-func (ep *EventProcessor) HandlePlayerDisconnected(e events.PlayerDisconnected) {
-	ep.matchHandler.HandlePlayerDisconnected(e)
+func (ep *EventProcessor) HandlePlayerDisconnected(e events.PlayerDisconnected) error {
+	return ep.matchHandler.HandlePlayerDisconnected(e)
 }
 
-func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) {
-	ep.matchHandler.HandlePlayerTeamChange(e)
+func (ep *EventProcessor) HandlePlayerTeamChange(e events.PlayerTeamChange) error {
+	return ep.matchHandler.HandlePlayerTeamChange(e)
 }
 
 func (ep *EventProcessor) getPlayerPosition(player *common.Player) types.Position {

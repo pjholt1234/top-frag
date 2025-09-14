@@ -23,7 +23,27 @@ func NewMatchHandler(processor *EventProcessor, logger *logrus.Logger) *MatchHan
 }
 
 // HandleRoundStart handles round start events
-func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) {
+func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "RoundStart")
+	}
+
+	if mh.processor.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("event", "RoundStart")
+	}
+
+	if mh.processor.grenadeHandler == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "grenade handler is nil", nil).
+			WithContext("event", "RoundStart")
+	}
+
+	if mh.processor.grenadeHandler.movementService == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "movement service is nil", nil).
+			WithContext("event", "RoundStart")
+	}
+
 	mh.processor.matchState.CurrentRound++
 	mh.processor.currentRound = mh.processor.matchState.CurrentRound // Track current round for team assignment
 	mh.processor.matchState.RoundStartTick = mh.processor.currentTick
@@ -56,10 +76,22 @@ func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) {
 	mh.logger.WithFields(logrus.Fields{
 		"round": mh.processor.matchState.CurrentRound,
 	}).Debug("Round started")
+
+	return nil
 }
 
 // HandleRoundEnd handles round end events
-func (mh *MatchHandler) HandleRoundEnd(e events.RoundEnd) {
+func (mh *MatchHandler) HandleRoundEnd(e events.RoundEnd) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "RoundEnd")
+	}
+
+	if mh.processor.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("event", "RoundEnd")
+	}
+
 	mh.processor.matchState.RoundEndTick = 0
 
 	var winner string
@@ -94,27 +126,58 @@ func (mh *MatchHandler) HandleRoundEnd(e events.RoundEnd) {
 		"team_a_wins": mh.processor.teamAWins,
 		"team_b_wins": mh.processor.teamBWins,
 	}).Debug("Round ended")
+
+	return nil
 }
 
 // HandleBombPlanted handles bomb planted events
-func (mh *MatchHandler) HandleBombPlanted(e events.BombPlanted) {
+func (mh *MatchHandler) HandleBombPlanted(e events.BombPlanted) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "BombPlanted")
+	}
+
 	mh.logger.Debug("Bomb planted")
+	return nil
 }
 
 // HandleBombDefused handles bomb defused events
-func (mh *MatchHandler) HandleBombDefused(e events.BombDefused) {
+func (mh *MatchHandler) HandleBombDefused(e events.BombDefused) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "BombDefused")
+	}
+
 	mh.logger.Debug("Bomb defused")
+	return nil
 }
 
 // HandleBombExplode handles bomb explode events
-func (mh *MatchHandler) HandleBombExplode(e events.BombExplode) {
+func (mh *MatchHandler) HandleBombExplode(e events.BombExplode) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "BombExplode")
+	}
+
 	mh.logger.Debug("Bomb exploded")
+	return nil
 }
 
 // HandlePlayerConnect handles player connect events
-func (mh *MatchHandler) HandlePlayerConnect(e events.PlayerConnect) {
+func (mh *MatchHandler) HandlePlayerConnect(e events.PlayerConnect) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "PlayerConnect")
+	}
+
+	if mh.processor.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("event", "PlayerConnect")
+	}
+
 	if e.Player == nil {
-		return
+		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+			WithContext("event", "PlayerConnect")
 	}
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
@@ -148,12 +211,20 @@ func (mh *MatchHandler) HandlePlayerConnect(e events.PlayerConnect) {
 		"side":          side,
 		"assigned_team": assignedTeam,
 	}).Debug("Player connected")
+
+	return nil
 }
 
 // HandlePlayerDisconnected handles player disconnect events
-func (mh *MatchHandler) HandlePlayerDisconnected(e events.PlayerDisconnected) {
+func (mh *MatchHandler) HandlePlayerDisconnected(e events.PlayerDisconnected) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "PlayerDisconnected")
+	}
+
 	if e.Player == nil {
-		return
+		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+			WithContext("event", "PlayerDisconnected")
 	}
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
@@ -162,12 +233,25 @@ func (mh *MatchHandler) HandlePlayerDisconnected(e events.PlayerDisconnected) {
 		"steam_id": steamID,
 		"name":     e.Player.Name,
 	}).Debug("Player disconnected")
+
+	return nil
 }
 
 // HandlePlayerTeamChange handles player team change events
-func (mh *MatchHandler) HandlePlayerTeamChange(e events.PlayerTeamChange) {
+func (mh *MatchHandler) HandlePlayerTeamChange(e events.PlayerTeamChange) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "PlayerTeamChange")
+	}
+
+	if mh.processor.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("event", "PlayerTeamChange")
+	}
+
 	if e.Player == nil {
-		return
+		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+			WithContext("event", "PlayerTeamChange")
 	}
 
 	steamID := types.SteamIDToString(e.Player.SteamID64)
@@ -193,12 +277,25 @@ func (mh *MatchHandler) HandlePlayerTeamChange(e events.PlayerTeamChange) {
 		"side":          side,
 		"assigned_team": assignedTeam,
 	}).Debug("Player team changed")
+
+	return nil
 }
 
 // HandleWeaponFire handles weapon fire events
-func (mh *MatchHandler) HandleWeaponFire(e events.WeaponFire) {
+func (mh *MatchHandler) HandleWeaponFire(e events.WeaponFire) error {
+	if mh.processor == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+			WithContext("event", "WeaponFire")
+	}
+
 	if e.Shooter == nil {
-		return
+		return types.NewParseError(types.ErrorTypeValidation, "shooter is nil", nil).
+			WithContext("event", "WeaponFire")
+	}
+
+	if e.Weapon == nil {
+		return types.NewParseError(types.ErrorTypeValidation, "weapon is nil", nil).
+			WithContext("event", "WeaponFire")
 	}
 
 	// Ensure player is tracked
@@ -214,6 +311,8 @@ func (mh *MatchHandler) HandleWeaponFire(e events.WeaponFire) {
 		// For now, we'll keep the tracking logic here temporarily
 		mh.trackGrenadeThrow(e)
 	}
+
+	return nil
 }
 
 // getTeamString converts team enum to string

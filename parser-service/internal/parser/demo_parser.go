@@ -232,7 +232,9 @@ func (dp *DemoParser) validateDemoFile(demoPath string) error {
 
 func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProcessor *EventProcessor, progressCallback func(types.ProgressUpdate)) {
 	parser.RegisterEventHandler(func(e events.RoundStart) {
-		eventProcessor.HandleRoundStart(e)
+		if err := eventProcessor.HandleRoundStart(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle round start event")
+		}
 		progressCallback(types.ProgressUpdate{
 			Status:         types.StatusProcessingEvents,
 			Progress:       20 + (eventProcessor.matchState.CurrentRound * 2),
@@ -252,7 +254,9 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.RoundEnd) {
-		eventProcessor.HandleRoundEnd(e)
+		if err := eventProcessor.HandleRoundEnd(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle round end event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.Kill) {
@@ -323,31 +327,45 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.WeaponFire) {
-		eventProcessor.HandleWeaponFire(e)
+		if err := eventProcessor.HandleWeaponFire(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle weapon fire event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombPlanted) {
-		eventProcessor.HandleBombPlanted(e)
+		if err := eventProcessor.HandleBombPlanted(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle bomb planted event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombDefused) {
-		eventProcessor.HandleBombDefused(e)
+		if err := eventProcessor.HandleBombDefused(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle bomb defused event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombExplode) {
-		eventProcessor.HandleBombExplode(e)
+		if err := eventProcessor.HandleBombExplode(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle bomb explode event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerConnect) {
-		eventProcessor.HandlePlayerConnect(e)
+		if err := eventProcessor.HandlePlayerConnect(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle player connect event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerDisconnected) {
-		eventProcessor.HandlePlayerDisconnected(e)
+		if err := eventProcessor.HandlePlayerDisconnected(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle player disconnected event")
+		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerTeamChange) {
-		eventProcessor.HandlePlayerTeamChange(e)
+		if err := eventProcessor.HandlePlayerTeamChange(e); err != nil {
+			dp.logger.WithError(err).Error("Failed to handle player team change event")
+		}
 	})
 }
 
