@@ -50,8 +50,12 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) error {
 	}
 
 	// Ensure players are tracked
-	dh.processor.ensurePlayerTracked(e.Attacker)
-	dh.processor.ensurePlayerTracked(e.Player)
+	if err := dh.processor.ensurePlayerTracked(e.Attacker); err != nil {
+		return err
+	}
+	if err := dh.processor.ensurePlayerTracked(e.Player); err != nil {
+		return err
+	}
 
 	roundTime := dh.processor.getCurrentRoundTime()
 

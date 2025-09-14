@@ -41,8 +41,12 @@ func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) error {
 			WithContext("victim", types.SteamIDToString(e.Victim.SteamID64))
 	}
 
-	gh.processor.ensurePlayerTracked(e.Killer)
-	gh.processor.ensurePlayerTracked(e.Victim)
+	if err := gh.processor.ensurePlayerTracked(e.Killer); err != nil {
+		return err
+	}
+	if err := gh.processor.ensurePlayerTracked(e.Victim); err != nil {
+		return err
+	}
 
 	isFirstKill := gh.processor.matchState.FirstKillPlayer == nil
 

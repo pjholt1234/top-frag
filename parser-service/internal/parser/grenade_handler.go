@@ -59,7 +59,9 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	}
 
 	grenadeTypeString := e.Projectile.WeaponInstance.Type.String()
-	gh.processor.ensurePlayerTracked(e.Projectile.Thrower)
+	if err := gh.processor.ensurePlayerTracked(e.Projectile.Thrower); err != nil {
+		return err
+	}
 
 	projectileID := fmt.Sprintf("entity_%d", e.Projectile.Entity.ID())
 	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]

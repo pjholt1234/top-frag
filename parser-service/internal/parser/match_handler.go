@@ -299,7 +299,9 @@ func (mh *MatchHandler) HandleWeaponFire(e events.WeaponFire) error {
 	}
 
 	// Ensure player is tracked
-	mh.processor.ensurePlayerTracked(e.Shooter)
+	if err := mh.processor.ensurePlayerTracked(e.Shooter); err != nil {
+		return err
+	}
 
 	if playerState, exists := mh.processor.playerStates[e.Shooter.SteamID64]; exists {
 		playerState.CurrentWeapon = e.Weapon.String()

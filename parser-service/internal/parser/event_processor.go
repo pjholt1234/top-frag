@@ -104,13 +104,17 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 	if err := ep.matchHandler.HandleRoundEnd(e); err != nil {
 		ep.logger.WithError(err).Error("Failed to handle round end")
-		return err
+		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to handle round end", err).
+			WithContext("event", "RoundEnd").
+			WithContext("round", ep.matchState.CurrentRound)
 	}
 	ep.grenadeHandler.AggregateAllGrenadeDamage()
 	ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
 	if err := ep.roundHandler.ProcessRoundEnd(); err != nil {
 		ep.logger.WithError(err).Error("Failed to process round end")
-		return err
+		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process round end", err).
+			WithContext("event", "RoundEnd").
+			WithContext("round", ep.matchState.CurrentRound)
 	}
 	return nil
 }
@@ -227,15 +231,28 @@ func (ep *EventProcessor) getTeamString(team common.Team) string {
 	}
 }
 
-func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
+func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) error {
 	if player == nil {
-		return
+		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+			WithContext("method", "ensurePlayerTracked")
+	}
+
+	if ep.matchState == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+			WithContext("method", "ensurePlayerTracked")
+	}
+
+	if ep.playerStates == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "player states is nil", nil).
+			WithContext("method", "ensurePlayerTracked")
 	}
 
 	steamID := types.SteamIDToString(player.SteamID64)
 	side := ep.getTeamString(player.Team)
 
-	ep.assignTeamBasedOnRound1To12(steamID, side)
+	if err := ep.assignTeamBasedOnRound1To12(steamID, side); err != nil {
+		return err
+	}
 	assignedTeam := ep.getAssignedTeam(steamID)
 
 	if _, exists := ep.matchState.Players[steamID]; !exists {
@@ -253,9 +270,21 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) {
 			Team:    assignedTeam,
 		}
 	}
+
+	return nil
 }
 
-func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) {
+func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) error {
+	if ep.logger == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "logger is nil", nil).
+			WithContext("method", "assignTeamBasedOnRound1To12")
+	}
+
+	if ep.teamAssignments == nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "team assignments is nil", nil).
+			WithContext("method", "assignTeamBasedOnRound1To12")
+	}
+
 	ep.logger.WithFields(logrus.Fields{
 		"steam_id":            steamID,
 		"side":                side,
@@ -268,21 +297,21 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 			"steam_id":      steamID,
 			"current_round": ep.currentRound,
 		}).Debug("Skipping team assignment - round > 12")
-		return
+		return nil
 	}
 
 	if ep.assignmentComplete {
 		ep.logger.WithFields(logrus.Fields{
 			"steam_id": steamID,
 		}).Debug("Skipping team assignment - already complete")
-		return
+		return nil
 	}
 
 	if _, assigned := ep.teamAssignments[steamID]; assigned {
 		ep.logger.WithFields(logrus.Fields{
 			"steam_id": steamID,
 		}).Debug("Skipping team assignment - player already assigned")
-		return
+		return nil
 	}
 
 	if side == "CT" {
@@ -323,6 +352,8 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 			"assignments":         ep.teamAssignments,
 		})
 	}
+
+	return nil
 }
 
 func (ep *EventProcessor) getAssignedTeam(steamID string) string {

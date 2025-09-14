@@ -573,7 +573,10 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 	}
 
 	// Test ensurePlayerTracked
-	processor.ensurePlayerTracked(player)
+	err := processor.ensurePlayerTracked(player)
+	if err != nil {
+		t.Errorf("ensurePlayerTracked returned error: %v", err)
+	}
 
 	// Test player was added to match state
 	if len(matchState.Players) != 1 {
@@ -622,7 +625,10 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 	}
 
 	// Test that calling ensurePlayerTracked again doesn't duplicate
-	processor.ensurePlayerTracked(player)
+	err = processor.ensurePlayerTracked(player)
+	if err != nil {
+		t.Errorf("ensurePlayerTracked returned error: %v", err)
+	}
 
 	if len(matchState.Players) != 1 {
 		t.Errorf("Expected 1 player in match state after duplicate call, got %d", len(matchState.Players))
@@ -647,7 +653,10 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 
 	// Test that ensurePlayerTracked works correctly
 	// This is the core functionality we want to test
-	processor.ensurePlayerTracked(nil) // Should handle nil gracefully
+	err := processor.ensurePlayerTracked(nil) // Should return error for nil player
+	if err == nil {
+		t.Error("Expected error for nil player, got nil")
+	}
 
 	// Test with a simple player structure
 	simplePlayer := &common.Player{
@@ -656,7 +665,10 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		Team:      common.TeamCounterTerrorists,
 	}
 
-	processor.ensurePlayerTracked(simplePlayer)
+	err = processor.ensurePlayerTracked(simplePlayer)
+	if err != nil {
+		t.Errorf("ensurePlayerTracked returned error: %v", err)
+	}
 
 	// Test that player was added to match state
 	if len(matchState.Players) != 1 {
@@ -705,7 +717,10 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 	}
 
 	// Test that calling ensurePlayerTracked again doesn't duplicate
-	processor.ensurePlayerTracked(simplePlayer)
+	err = processor.ensurePlayerTracked(simplePlayer)
+	if err != nil {
+		t.Errorf("ensurePlayerTracked returned error: %v", err)
+	}
 
 	if len(matchState.Players) != 1 {
 		t.Errorf("Expected 1 player in match state after duplicate call, got %d", len(matchState.Players))
