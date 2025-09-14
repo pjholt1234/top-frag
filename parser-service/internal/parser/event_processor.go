@@ -233,17 +233,17 @@ func (ep *EventProcessor) getTeamString(team common.Team) string {
 
 func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) error {
 	if player == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "player is nil", nil).
 			WithContext("method", "ensurePlayerTracked")
 	}
 
 	if ep.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("method", "ensurePlayerTracked")
 	}
 
 	if ep.playerStates == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "player states is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "player states is nil", nil).
 			WithContext("method", "ensurePlayerTracked")
 	}
 
@@ -276,12 +276,12 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) error {
 
 func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side string) error {
 	if ep.logger == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "logger is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "logger is nil", nil).
 			WithContext("method", "assignTeamBasedOnRound1To12")
 	}
 
 	if ep.teamAssignments == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "team assignments is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "team assignments is nil", nil).
 			WithContext("method", "assignTeamBasedOnRound1To12")
 	}
 

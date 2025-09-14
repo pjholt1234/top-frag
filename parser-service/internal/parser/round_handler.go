@@ -24,19 +24,19 @@ func NewRoundHandler(processor *EventProcessor, logger *logrus.Logger) *RoundHan
 
 func (rh *RoundHandler) ProcessRoundEnd() error {
 	if rh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event_type", "ProcessRoundEnd")
 	}
 
 	if rh.processor.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("event_type", "ProcessRoundEnd")
 	}
 
 	roundNumber := rh.processor.matchState.CurrentRound
 
 	if roundNumber <= 0 {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "invalid round number", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "invalid round number", nil).
 			WithContext("round_number", roundNumber).
 			WithContext("event_type", "ProcessRoundEnd")
 	}
@@ -48,14 +48,14 @@ func (rh *RoundHandler) ProcessRoundEnd() error {
 	playersInRound := rh.getPlayersInRound(roundNumber)
 
 	if len(playersInRound) == 0 {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "no players found in round", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "no players found in round", nil).
 			WithContext("round_number", roundNumber).
 			WithContext("event_type", "ProcessRoundEnd")
 	}
 
 	for _, playerSteamID := range playersInRound {
 		if playerSteamID == "" {
-			return types.NewParseError(types.ErrorTypeEventProcessing, "empty player steam ID found", nil).
+			return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "empty player steam ID found", nil).
 				WithContext("round_number", roundNumber).
 				WithContext("event_type", "ProcessRoundEnd")
 		}

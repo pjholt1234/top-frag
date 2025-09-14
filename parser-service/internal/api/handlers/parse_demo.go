@@ -217,7 +217,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.CurrentStep = "Validating demo file"
 	job.Progress = 5
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send validation progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send validation progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	// Uploading (file was already saved, but we can indicate this step)
@@ -225,7 +230,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.CurrentStep = "File uploaded successfully"
 	job.Progress = 8
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send upload progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send upload progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	// Initializing
@@ -233,7 +243,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.CurrentStep = "Initializing parser"
 	job.Progress = 10
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send initializing progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send initializing progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	// Parsing
@@ -251,7 +266,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.CurrentStep = "Parsing demo file"
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send parsing progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send parsing progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
@@ -274,7 +294,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		}
 
 		if err := h.sendProgressUpdate(ctx, job); err != nil {
-			h.logger.WithError(err).Error("Failed to send progress update")
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
+			h.logger.WithFields(logrus.Fields{
+				"error_type":     parseError.Type.String(),
+				"error_severity": parseError.Severity.String(),
+				"error_message":  parseError.Message,
+			}).Info("Progress update failed - continuing parsing")
 		}
 	})
 
@@ -307,13 +332,13 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 	// Send match and players data via progress callback
 	if err := h.sendProgressUpdateWithMatchData(ctx, job, parsedData); err != nil {
-		h.logger.WithError(err).Error("Failed to send progress update with match data")
-		job.Status = types.StatusCallbackFailed
-		job.ErrorMessage = "Failed to send match metadata"
-		if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
-			h.logger.WithError(err).Error("Failed to send error to Laravel")
-		}
-		return
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update with match data", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
+		// Don't fail the job for progress update failures
 	}
 
 	// Sending events
@@ -326,7 +351,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Context["step"] = "sending_events"
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	if err := h.sendAllEvents(ctx, job, parsedData); err != nil {
@@ -350,7 +380,12 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Context["step"] = "finalization"
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
-		h.logger.WithError(err).Error("Failed to send progress update")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
+		h.logger.WithFields(logrus.Fields{
+			"error_type":     parseError.Type.String(),
+			"error_severity": parseError.Severity.String(),
+			"error_message":  parseError.Message,
+		}).Info("Progress update failed - continuing parsing")
 	}
 
 	if err := h.batchSender.SendCompletion(ctx, job.JobID, job.CompletionCallbackURL); err != nil {

@@ -25,22 +25,22 @@ func NewMatchHandler(processor *EventProcessor, logger *logrus.Logger) *MatchHan
 // HandleRoundStart handles round start events
 func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "RoundStart")
 	}
 
 	if mh.processor.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("event", "RoundStart")
 	}
 
 	if mh.processor.grenadeHandler == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "grenade handler is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "grenade handler is nil", nil).
 			WithContext("event", "RoundStart")
 	}
 
 	if mh.processor.grenadeHandler.movementService == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "movement service is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "movement service is nil", nil).
 			WithContext("event", "RoundStart")
 	}
 
@@ -83,12 +83,12 @@ func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) error {
 // HandleRoundEnd handles round end events
 func (mh *MatchHandler) HandleRoundEnd(e events.RoundEnd) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "RoundEnd")
 	}
 
 	if mh.processor.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("event", "RoundEnd")
 	}
 
@@ -133,7 +133,7 @@ func (mh *MatchHandler) HandleRoundEnd(e events.RoundEnd) error {
 // HandleBombPlanted handles bomb planted events
 func (mh *MatchHandler) HandleBombPlanted(e events.BombPlanted) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "BombPlanted")
 	}
 
@@ -144,7 +144,7 @@ func (mh *MatchHandler) HandleBombPlanted(e events.BombPlanted) error {
 // HandleBombDefused handles bomb defused events
 func (mh *MatchHandler) HandleBombDefused(e events.BombDefused) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "BombDefused")
 	}
 
@@ -155,7 +155,7 @@ func (mh *MatchHandler) HandleBombDefused(e events.BombDefused) error {
 // HandleBombExplode handles bomb explode events
 func (mh *MatchHandler) HandleBombExplode(e events.BombExplode) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "BombExplode")
 	}
 
@@ -166,17 +166,17 @@ func (mh *MatchHandler) HandleBombExplode(e events.BombExplode) error {
 // HandlePlayerConnect handles player connect events
 func (mh *MatchHandler) HandlePlayerConnect(e events.PlayerConnect) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "PlayerConnect")
 	}
 
 	if mh.processor.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("event", "PlayerConnect")
 	}
 
 	if e.Player == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "player is nil", nil).
 			WithContext("event", "PlayerConnect")
 	}
 
@@ -218,12 +218,12 @@ func (mh *MatchHandler) HandlePlayerConnect(e events.PlayerConnect) error {
 // HandlePlayerDisconnected handles player disconnect events
 func (mh *MatchHandler) HandlePlayerDisconnected(e events.PlayerDisconnected) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "PlayerDisconnected")
 	}
 
 	if e.Player == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "player is nil", nil).
 			WithContext("event", "PlayerDisconnected")
 	}
 
@@ -240,17 +240,17 @@ func (mh *MatchHandler) HandlePlayerDisconnected(e events.PlayerDisconnected) er
 // HandlePlayerTeamChange handles player team change events
 func (mh *MatchHandler) HandlePlayerTeamChange(e events.PlayerTeamChange) error {
 	if mh.processor == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "processor is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "processor is nil", nil).
 			WithContext("event", "PlayerTeamChange")
 	}
 
 	if mh.processor.matchState == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "match state is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match state is nil", nil).
 			WithContext("event", "PlayerTeamChange")
 	}
 
 	if e.Player == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "player is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "player is nil", nil).
 			WithContext("event", "PlayerTeamChange")
 	}
 
@@ -289,12 +289,12 @@ func (mh *MatchHandler) HandleWeaponFire(e events.WeaponFire) error {
 	}
 
 	if e.Shooter == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "shooter is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "shooter is nil", nil).
 			WithContext("event", "WeaponFire")
 	}
 
 	if e.Weapon == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "weapon is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "weapon is nil", nil).
 			WithContext("event", "WeaponFire")
 	}
 

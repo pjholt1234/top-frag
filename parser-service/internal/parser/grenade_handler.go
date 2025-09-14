@@ -40,19 +40,19 @@ func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *Grenad
 
 func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) error {
 	if e.Projectile == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "projectile is nil", nil).
 			WithContext("event_type", "GrenadeProjectileDestroy").
 			WithContext("tick", gh.processor.currentTick)
 	}
 
 	if e.Projectile.Thrower == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile thrower is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "projectile thrower is nil", nil).
 			WithContext("event_type", "GrenadeProjectileDestroy").
 			WithContext("tick", gh.processor.currentTick)
 	}
 
 	if e.Projectile.WeaponInstance == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile weapon instance is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "projectile weapon instance is nil", nil).
 			WithContext("event_type", "GrenadeProjectileDestroy").
 			WithContext("tick", gh.processor.currentTick).
 			WithContext("thrower", types.SteamIDToString(e.Projectile.Thrower.SteamID64))
@@ -67,7 +67,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
 
 	if !hasMovementInfo {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "no movement info found for projectile", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "no movement info found for projectile", nil).
 			WithContext("projectile_id", projectileID).
 			WithContext("thrower", types.SteamIDToString(e.Projectile.Thrower.SteamID64)).
 			WithContext("tick", gh.processor.currentTick)
@@ -110,7 +110,7 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileDestroy(e events.GrenadeProject
 
 func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) error {
 	if e.GrenadeEntityID == 0 {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "grenade entity ID is zero", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "grenade entity ID is zero", nil).
 			WithContext("event_type", "FlashExplode").
 			WithContext("tick", gh.processor.currentTick)
 	}
@@ -151,7 +151,7 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) error {
 	var movementThrowType string
 
 	if !hasMovementInfo {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "no movement info found for flash grenade", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "no movement info found for flash grenade", nil).
 			WithContext("projectile_id", projectileID).
 			WithContext("entity_id", e.GrenadeEntityID).
 			WithContext("tick", gh.processor.currentTick)
@@ -210,7 +210,7 @@ func (gh *GrenadeHandler) HandleFlashExplode(e events.FlashExplode) error {
 
 func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) error {
 	if e.Player == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "player is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "player is nil", nil).
 			WithContext("event_type", "PlayerFlashed").
 			WithContext("tick", gh.processor.currentTick)
 	}
@@ -219,7 +219,7 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) error {
 	flashDuration := e.FlashDuration().Seconds()
 
 	if flashDuration < 0 {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "flash duration cannot be negative", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "flash duration cannot be negative", nil).
 			WithContext("flash_duration", flashDuration).
 			WithContext("player", playerSteamID).
 			WithContext("tick", gh.processor.currentTick)
@@ -241,7 +241,7 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) error {
 	}
 
 	if targetFlashEffect == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "no matching flash effect found for player", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "no matching flash effect found for player", nil).
 			WithContext("player", playerSteamID).
 			WithContext("current_round", currentRound).
 			WithContext("current_tick", currentTick).
@@ -279,13 +279,13 @@ func (gh *GrenadeHandler) HandlePlayerFlashed(e events.PlayerFlashed) error {
 
 func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) error {
 	if e.Projectile == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "projectile is nil", nil).
 			WithContext("event_type", "GrenadeProjectileThrow").
 			WithContext("tick", gh.processor.currentTick)
 	}
 
 	if e.Projectile.Thrower == nil {
-		return types.NewParseError(types.ErrorTypeEventProcessing, "projectile thrower is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "projectile thrower is nil", nil).
 			WithContext("event_type", "GrenadeProjectileThrow").
 			WithContext("tick", gh.processor.currentTick)
 	}

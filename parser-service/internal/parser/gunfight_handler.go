@@ -22,20 +22,20 @@ func NewGunfightHandler(processor *EventProcessor, logger *logrus.Logger) *Gunfi
 
 func (gh *GunfightHandler) HandlePlayerKilled(e events.Kill) error {
 	if e.Killer == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "killer is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "killer is nil", nil).
 			WithContext("event_type", "Kill").
 			WithContext("tick", gh.processor.currentTick)
 	}
 
 	if e.Victim == nil {
-		return types.NewParseError(types.ErrorTypeValidation, "victim is nil", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "victim is nil", nil).
 			WithContext("event_type", "Kill").
 			WithContext("tick", gh.processor.currentTick).
 			WithContext("killer", types.SteamIDToString(e.Killer.SteamID64))
 	}
 
 	if e.PenetratedObjects < 0 {
-		return types.NewParseError(types.ErrorTypeValidation, "penetrated objects cannot be negative", nil).
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityWarning, "penetrated objects cannot be negative", nil).
 			WithContext("penetrated_objects", e.PenetratedObjects).
 			WithContext("killer", types.SteamIDToString(e.Killer.SteamID64)).
 			WithContext("victim", types.SteamIDToString(e.Victim.SteamID64))

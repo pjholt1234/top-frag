@@ -17,8 +17,9 @@ import (
 )
 
 type DemoParser struct {
-	config *config.Config
-	logger *logrus.Logger
+	config          *config.Config
+	logger          *logrus.Logger
+	progressManager *ProgressManager
 }
 
 func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
@@ -36,8 +37,23 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCa
 func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	dp.logger.WithField("demo_path", demoPath).Info("Starting demo parsing")
 
+	// Initialize progress manager
+	dp.progressManager = NewProgressManager(dp.logger, progressCallback, 100*time.Millisecond)
+
+	// Enhanced panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			errorMsg := fmt.Sprintf("panic during demo parsing: %v", r)
+			dp.progressManager.ReportError(errorMsg, "PARSING_PANIC")
+			dp.logger.WithField("panic", r).Error("Panic occurred during demo parsing")
+		}
+	}()
+
 	if err := dp.validateDemoFile(demoPath); err != nil {
-		return nil, fmt.Errorf("demo file validation failed: %w", err)
+		parseError := types.NewParseError(types.ErrorTypeValidation, "demo file validation failed", err).
+			WithContext("demo_path", demoPath)
+		dp.progressManager.ReportParseError(parseError)
+		return nil, parseError
 	}
 
 	matchState := &types.MatchState{
@@ -51,7 +67,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 	eventProcessor := NewEventProcessor(matchState, dp.logger)
 
-	progressCallback(types.ProgressUpdate{
+	dp.progressManager.UpdateProgress(types.ProgressUpdate{
 		Status:         types.StatusParsing,
 		Progress:       15,
 		CurrentStep:    "Parsing demo file",
@@ -59,7 +75,6 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		TotalSteps:     18, // Will be updated when we know round count
 		CurrentStepNum: 1,
 		StartTime:      time.Now(),
-		LastUpdateTime: time.Now(),
 		Context:        map[string]interface{}{"step": "file_validation"},
 		IsFinal:        false,
 	})
@@ -68,6 +83,11 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	var demoParser demoinfocs.Parser
 
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
+		// Check if error has already occurred
+		if dp.progressManager.HasError() {
+			return fmt.Errorf("parsing stopped due to previous error")
+		}
+
 		demoParser = parser
 		eventProcessor.SetDemoParser(parser)
 
@@ -76,7 +96,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 			dp.logger.WithField("map_name", mapName).Info("Map name extracted from demo header")
 		})
 
-		dp.registerEventHandlers(parser, eventProcessor, progressCallback)
+		dp.registerEventHandlers(parser, eventProcessor)
 
 		parser.RegisterEventHandler(func(e events.FrameDone) {
 			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.GameState().IngameTick()), parser.GameState())
@@ -98,7 +118,19 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse demo: %w", err)
+		parseError := types.NewParseError(types.ErrorTypeParsing, "failed to parse demo", err).
+			WithContext("demo_path", demoPath)
+		dp.progressManager.ReportParseError(parseError)
+		return nil, parseError
+	}
+
+	// Check if critical error occurred during parsing
+	if dp.progressManager.HasError() {
+		errorMsg, errorCode := dp.progressManager.GetError()
+		parseError := types.NewParseError(types.ErrorTypeEventProcessing, errorMsg, nil).
+			WithContext("demo_path", demoPath).
+			WithContext("error_code", errorCode)
+		return nil, parseError
 	}
 
 	playbackTicks := 0
@@ -107,7 +139,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		dp.logger.WithField("playback_ticks", playbackTicks).Info("Extracted playback ticks from demo parser")
 	}
 
-	progressCallback(types.ProgressUpdate{
+	dp.progressManager.UpdateProgress(types.ProgressUpdate{
 		Status:         types.StatusProcessingEvents,
 		Progress:       85,
 		CurrentStep:    "Processing final data",
@@ -115,7 +147,6 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		TotalSteps:     18, // Will be updated when we know round count
 		CurrentStepNum: 11, // Final data assembly step
 		StartTime:      time.Now(),
-		LastUpdateTime: time.Now(),
 		Context:        map[string]interface{}{"step": "final_data_assembly"},
 		IsFinal:        false,
 	})
@@ -127,6 +158,19 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
 		Info("Demo parsing completed")
+
+	// Report completion
+	dp.progressManager.ReportCompletion(types.ProgressUpdate{
+		Status:         types.StatusCompleted,
+		Progress:       100,
+		CurrentStep:    "Demo parsing completed",
+		StepProgress:   100,
+		TotalSteps:     18,
+		CurrentStepNum: 18,
+		StartTime:      time.Now(),
+		Context:        map[string]interface{}{"step": "completion"},
+		IsFinal:        true,
+	})
 
 	return parsedData, nil
 }
@@ -230,20 +274,29 @@ func (dp *DemoParser) validateDemoFile(demoPath string) error {
 	return nil
 }
 
-func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProcessor *EventProcessor, progressCallback func(types.ProgressUpdate)) {
+func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProcessor *EventProcessor) {
 	parser.RegisterEventHandler(func(e events.RoundStart) {
-		if err := eventProcessor.HandleRoundStart(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle round start event")
+		if dp.progressManager.HasError() {
+			return
 		}
-		progressCallback(types.ProgressUpdate{
+
+		if err := eventProcessor.HandleRoundStart(e); err != nil {
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "ROUND_START_FAILED")
+			}
+			return
+		}
+
+		dp.progressManager.UpdateProgress(types.ProgressUpdate{
 			Status:         types.StatusProcessingEvents,
 			Progress:       20 + (eventProcessor.matchState.CurrentRound * 2),
 			CurrentStep:    fmt.Sprintf("Processing round %d", eventProcessor.matchState.CurrentRound),
 			StepProgress:   0,
-			TotalSteps:     18 + eventProcessor.matchState.TotalRounds, // Update with actual round count
-			CurrentStepNum: 3,                                          // Round events processing step
+			TotalSteps:     18 + eventProcessor.matchState.TotalRounds,
+			CurrentStepNum: 3,
 			StartTime:      time.Now(),
-			LastUpdateTime: time.Now(),
 			Context: map[string]interface{}{
 				"step":         "round_events_processing",
 				"round":        eventProcessor.matchState.CurrentRound,
@@ -254,117 +307,232 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 
 	parser.RegisterEventHandler(func(e events.RoundEnd) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleRoundEnd(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle round end event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "ROUND_END_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.Kill) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandlePlayerKilled(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle player killed event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_KILLED_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerHurt) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandlePlayerHurt(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle player hurt event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_HURT_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileThrow) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleGrenadeProjectileThrow(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle grenade projectile throw event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "GRENADE_THROW_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.GrenadeProjectileDestroy) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleGrenadeProjectileDestroy(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle grenade projectile destroy event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "GRENADE_DESTROY_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.FlashExplode) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleFlashExplode(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle flash explode event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "FLASH_EXPLODE_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerFlashed) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		dp.logger.WithFields(logrus.Fields{
 			"player": e.Player.Name,
 			"tick":   eventProcessor.currentTick,
 		}).Info("PlayerFlashed event received")
+
 		if err := eventProcessor.HandlePlayerFlashed(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle player flashed event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_FLASHED_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.SmokeStart) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleSmokeStart(e); err != nil {
-			dp.logger.WithFields(logrus.Fields{
-				"error": err,
-				"tick":  eventProcessor.currentTick,
-			}).Error("Failed to handle smoke start event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "SMOKE_START_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.WeaponFire) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleWeaponFire(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle weapon fire event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "WEAPON_FIRE_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombPlanted) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleBombPlanted(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle bomb planted event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "BOMB_PLANTED_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombDefused) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleBombDefused(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle bomb defused event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "BOMB_DEFUSED_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.BombExplode) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandleBombExplode(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle bomb explode event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "BOMB_EXPLODE_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerConnect) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandlePlayerConnect(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle player connect event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_CONNECT_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerDisconnected) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandlePlayerDisconnected(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle player disconnected event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_DISCONNECTED_FAILED")
+			}
+			return
 		}
 	})
 
 	parser.RegisterEventHandler(func(e events.PlayerTeamChange) {
+		if dp.progressManager.HasError() {
+			return
+		}
+
 		if err := eventProcessor.HandlePlayerTeamChange(e); err != nil {
-			dp.logger.WithError(err).Error("Failed to handle player team change event")
+			if parseErr, ok := err.(*types.ParseError); ok {
+				dp.progressManager.ReportParseError(parseErr)
+			} else {
+				dp.progressManager.ReportError(err.Error(), "PLAYER_TEAM_CHANGE_FAILED")
+			}
+			return
 		}
 	})
 }
