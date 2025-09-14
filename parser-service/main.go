@@ -14,6 +14,7 @@ import (
 	"parser-service/internal/api/middleware"
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
+	"parser-service/internal/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,13 @@ func main() {
 	demoParser := parser.NewDemoParser(cfg, logger)
 	batchSender := parser.NewBatchSender(cfg, logger)
 
-	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender)
+	// Create a no-op progress callback for the ProgressManager
+	progressCallback := func(update types.ProgressUpdate) {
+		// This will be overridden by the actual progress callback in the demo parser
+	}
+	progressManager := parser.NewProgressManager(logger, progressCallback, 100*time.Millisecond)
+
+	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender, progressManager)
 	healthHandler := handlers.NewHealthHandler(logger)
 
 	router := setupRouter(parseDemoHandler, healthHandler, cfg)

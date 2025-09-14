@@ -24,20 +24,22 @@ import (
 )
 
 type ParseDemoHandler struct {
-	config      *config.Config
-	logger      *logrus.Logger
-	demoParser  *parser.DemoParser
-	batchSender *parser.BatchSender
-	jobs        map[string]*types.ProcessingJob
+	config          *config.Config
+	logger          *logrus.Logger
+	demoParser      *parser.DemoParser
+	batchSender     *parser.BatchSender
+	progressManager *parser.ProgressManager
+	jobs            map[string]*types.ProcessingJob
 }
 
-func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *parser.DemoParser, batchSender *parser.BatchSender) *ParseDemoHandler {
+func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *parser.DemoParser, batchSender *parser.BatchSender, progressManager *parser.ProgressManager) *ParseDemoHandler {
 	return &ParseDemoHandler{
-		config:      cfg,
-		logger:      logger,
-		demoParser:  demoParser,
-		batchSender: batchSender,
-		jobs:        make(map[string]*types.ProcessingJob),
+		config:          cfg,
+		logger:          logger,
+		demoParser:      demoParser,
+		batchSender:     batchSender,
+		progressManager: progressManager,
+		jobs:            make(map[string]*types.ProcessingJob),
 	}
 }
 
@@ -54,7 +56,8 @@ func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *
 func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	var req types.ParseDemoRequest
 	if err := c.ShouldBind(&req); err != nil {
-		h.logger.WithError(err).Error("Failed to bind file upload request")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "Failed to bind file upload request", err)
+		h.progressManager.ReportParseError(parseError)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "Invalid file upload request format",
@@ -64,7 +67,8 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 
 	// Validate file
 	if err := h.validateUploadedFile(req.DemoFile); err != nil {
-		h.logger.WithError(err).Error("File validation failed")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "File validation failed", err)
+		h.progressManager.ReportParseError(parseError)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   err.Error(),
@@ -77,6 +81,9 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	}
 
 	if _, exists := h.jobs[req.JobID]; exists {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "Job already exists", nil)
+		parseError = parseError.WithContext("job_id", req.JobID)
+		h.progressManager.ReportParseError(parseError)
 		c.JSON(http.StatusConflict, gin.H{
 			"success": false,
 			"error":   "Job already exists",
@@ -88,7 +95,8 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	// Save uploaded file to temporary location
 	tempFilePath, err := h.saveUploadedFile(req.DemoFile)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to save uploaded file")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "Failed to save uploaded file", err)
+		h.progressManager.ReportParseError(parseError)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "Failed to save uploaded file",
@@ -122,17 +130,17 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 // validateUploadedFile validates the uploaded demo file
 func (h *ParseDemoHandler) validateUploadedFile(file *multipart.FileHeader) error {
 	if file == nil {
-		return fmt.Errorf("demo file is required")
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "demo file is required", nil)
 	}
 
 	// Check file extension
 	if !strings.HasSuffix(strings.ToLower(file.Filename), ".dem") {
-		return fmt.Errorf("invalid file extension, expected .dem file")
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "invalid file extension, expected .dem file", nil)
 	}
 
 	// Check file size
 	if file.Size > h.config.Parser.MaxDemoSize {
-		return fmt.Errorf("demo file too large: %d bytes (max: %d)", file.Size, h.config.Parser.MaxDemoSize)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, fmt.Sprintf("demo file too large: %d bytes (max: %d)", file.Size, h.config.Parser.MaxDemoSize), nil)
 	}
 
 	return nil
@@ -145,7 +153,9 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 	}
 
 	if err := os.Remove(filePath); err != nil {
-		h.logger.WithError(err).WithField("temp_file", filePath).Error("Failed to clean up temporary file")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "Failed to clean up temporary file", err)
+		parseError = parseError.WithContext("temp_file", filePath)
+		h.progressManager.ReportParseError(parseError)
 	} else {
 		h.logger.WithField("temp_file", filePath).Info("Cleaned up temporary file")
 	}
@@ -155,7 +165,7 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string, error) {
 	// Create temp directory if it doesn't exist
 	if err := os.MkdirAll(h.config.Parser.TempDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create temp directory: %w", err)
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to create temp directory", err)
 	}
 
 	// Generate unique filename
@@ -165,20 +175,20 @@ func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string,
 	// Open the uploaded file
 	src, err := file.Open()
 	if err != nil {
-		return "", fmt.Errorf("failed to open uploaded file: %w", err)
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to open uploaded file", err)
 	}
 	defer src.Close()
 
 	// Create the destination file
 	dst, err := os.Create(tempFilePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %w", err)
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to create temp file", err)
 	}
 	defer dst.Close()
 
 	// Copy the file content
 	if _, err = io.Copy(dst, src); err != nil {
-		return "", fmt.Errorf("failed to copy file content: %w", err)
+		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to copy file content", err)
 	}
 
 	h.logger.WithField("temp_file", tempFilePath).Info("Saved uploaded demo file")
@@ -196,16 +206,17 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		h.cleanupTempFile(job.TempFilePath)
 
 		if r := recover(); r != nil {
-			h.logger.WithFields(logrus.Fields{
-				"job_id": job.JobID,
-				"panic":  r,
-			}).Error("Panic in demo processing")
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeUnknown, types.ErrorSeverityCritical, "Panic in demo processing", nil)
+			parseError = parseError.WithContext("job_id", job.JobID)
+			parseError = parseError.WithContext("panic", r)
+			h.progressManager.ReportParseError(parseError)
 
 			job.Status = types.StatusFailed
 			job.ErrorMessage = "Internal processing error"
 
 			if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
-				h.logger.WithError(err).Error("Failed to send error to Laravel")
+				parseError = types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityCritical, "Failed to send error to Laravel", err)
+				h.progressManager.ReportParseError(parseError)
 			}
 		}
 	}()
@@ -218,11 +229,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Progress = 5
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send validation progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	// Uploading (file was already saved, but we can indicate this step)
@@ -231,11 +238,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Progress = 8
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send upload progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	// Initializing
@@ -244,11 +247,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Progress = 10
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send initializing progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	// Parsing
@@ -267,11 +266,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send parsing progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
@@ -295,25 +290,27 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 		if err := h.sendProgressUpdate(ctx, job); err != nil {
 			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
-			h.logger.WithFields(logrus.Fields{
-				"error_type":     parseError.Type.String(),
-				"error_severity": parseError.Severity.String(),
-				"error_message":  parseError.Message,
-			}).Info("Progress update failed - continuing parsing")
+			h.progressManager.ReportParseError(parseError)
 		}
 	})
 
 	if err != nil {
-		h.logger.WithFields(logrus.Fields{
-			"job_id": job.JobID,
-			"error":  err,
-		}).Error("Demo parsing failed")
+		// Check if it's a ParseError with severity information
+		if parseErr, ok := err.(*types.ParseError); ok {
+			h.progressManager.ReportParseError(parseErr)
+		} else {
+			// Convert generic error to ParseError with CRITICAL severity
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeParsing, types.ErrorSeverityCritical, "Demo parsing failed", err)
+			parseError = parseError.WithContext("job_id", job.JobID)
+			h.progressManager.ReportParseError(parseError)
+		}
 
 		job.Status = types.StatusParseFailed
 		job.ErrorMessage = err.Error()
 
 		if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
-			h.logger.WithError(err).Error("Failed to send error to Laravel")
+			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityCritical, "Failed to send error to Laravel", err)
+			h.progressManager.ReportParseError(parseError)
 		}
 
 		return
@@ -333,11 +330,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	// Send match and players data via progress callback
 	if err := h.sendProgressUpdateWithMatchData(ctx, job, parsedData); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update with match data", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 		// Don't fail the job for progress update failures
 	}
 
@@ -352,19 +345,19 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	if err := h.sendAllEvents(ctx, job, parsedData); err != nil {
-		h.logger.WithError(err).Error("Failed to send events")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "Failed to send events", err)
+		parseError = parseError.WithContext("job_id", job.JobID)
+		h.progressManager.ReportParseError(parseError)
+
 		job.Status = types.StatusCallbackFailed
 		job.ErrorMessage = "Failed to send events"
 		if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
-			h.logger.WithError(err).Error("Failed to send error to Laravel")
+			parseError = types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityCritical, "Failed to send error to Laravel", err)
+			h.progressManager.ReportParseError(parseError)
 		}
 		return
 	}
@@ -381,19 +374,19 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 	if err := h.sendProgressUpdate(ctx, job); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeProgressUpdate, types.ErrorSeverityInfo, "Failed to send progress update", err)
-		h.logger.WithFields(logrus.Fields{
-			"error_type":     parseError.Type.String(),
-			"error_severity": parseError.Severity.String(),
-			"error_message":  parseError.Message,
-		}).Info("Progress update failed - continuing parsing")
+		h.progressManager.ReportParseError(parseError)
 	}
 
 	if err := h.batchSender.SendCompletion(ctx, job.JobID, job.CompletionCallbackURL); err != nil {
-		h.logger.WithError(err).Error("Failed to send completion signal")
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "Failed to send completion signal", err)
+		parseError = parseError.WithContext("job_id", job.JobID)
+		h.progressManager.ReportParseError(parseError)
+
 		job.Status = types.StatusCallbackFailed
 		job.ErrorMessage = "Failed to send completion signal"
 		if err := h.batchSender.SendError(ctx, job.JobID, job.CompletionCallbackURL, job.ErrorMessage); err != nil {
-			h.logger.WithError(err).Error("Failed to send error to Laravel")
+			parseError = types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityCritical, "Failed to send error to Laravel", err)
+			h.progressManager.ReportParseError(parseError)
 		}
 		return
 	}
@@ -546,27 +539,27 @@ func (h *ParseDemoHandler) sendProgressUpdateWithMatchData(ctx context.Context, 
 
 func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.ProcessingJob, parsedData *types.ParsedDemoData) error {
 	if err := h.batchSender.SendRoundEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.RoundEvents); err != nil {
-		return fmt.Errorf("failed to send round events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send round events", err)
 	}
 
 	if err := h.batchSender.SendDamageEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.DamageEvents); err != nil {
-		return fmt.Errorf("failed to send damage events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send damage events", err)
 	}
 
 	if err := h.batchSender.SendGrenadeEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.GrenadeEvents); err != nil {
-		return fmt.Errorf("failed to send grenade events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send grenade events", err)
 	}
 
 	if err := h.batchSender.SendGunfightEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.GunfightEvents); err != nil {
-		return fmt.Errorf("failed to send gunfight events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send gunfight events", err)
 	}
 
 	if err := h.batchSender.SendPlayerRoundEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.PlayerRoundEvents); err != nil {
-		return fmt.Errorf("failed to send player round events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player round events", err)
 	}
 
 	if err := h.batchSender.SendPlayerMatchEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.PlayerMatchEvents); err != nil {
-		return fmt.Errorf("failed to send player match events: %w", err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player match events", err)
 	}
 
 	return nil
