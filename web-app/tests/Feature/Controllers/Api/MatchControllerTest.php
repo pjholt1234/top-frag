@@ -3,6 +3,7 @@
 namespace Tests\Feature\Controllers\Api;
 
 use App\Enums\MatchType;
+use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\User;
@@ -49,11 +50,11 @@ class MatchControllerTest extends TestCase
             'data' => [],
             'pagination' => [
                 'current_page' => 1,
-                'per_page' => 1,
+                'per_page' => 10,
                 'total' => 0,
-                'last_page' => 1,
+                'last_page' => 0,
                 'from' => 1,
-                'to' => 1,
+                'to' => 0,
             ],
         ]);
     }
@@ -65,16 +66,17 @@ class MatchControllerTest extends TestCase
         $response = $this->actingAs($user)
             ->getJson('/api/matches');
 
-        $response->assertStatus(404)
+        $response->assertStatus(200)
             ->assertJson([
                 'data' => [],
                 'pagination' => [
                     'current_page' => 1,
                     'per_page' => 10,
                     'total' => 0,
-                    'last_page' => 1,
+                    'last_page' => 0,
+                    'from' => 1,
+                    'to' => 0,
                 ],
-                'message' => 'Player not found',
             ]);
     }
 
@@ -138,6 +140,8 @@ class MatchControllerTest extends TestCase
 
         foreach ([$match1, $match2] as $match) {
             $match->players()->attach($this->player->id, ['team' => 'A']);
+            // Create completed demo processing job for each match
+            DemoProcessingJob::factory()->completed()->forMatch($match)->create();
         }
 
         $response = $this->actingAs($this->user)
@@ -157,6 +161,8 @@ class MatchControllerTest extends TestCase
 
         foreach ([$match1, $match2] as $match) {
             $match->players()->attach($this->player->id, ['team' => 'A']);
+            // Create completed demo processing job for each match
+            DemoProcessingJob::factory()->completed()->forMatch($match)->create();
         }
 
         $response = $this->actingAs($this->user)

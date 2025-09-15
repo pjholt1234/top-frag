@@ -69,4 +69,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(GrenadeFavourite::class, 'user_id');
     }
+
+    public function uploadedGames(): HasMany
+    {
+        return $this->hasMany(GameMatch::class, 'uploaded_by');
+    }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Services;
 
 use App\Enums\MatchType;
 use App\Enums\Team;
+use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\GunfightEvent;
 use App\Models\Player;
@@ -59,6 +60,9 @@ class MatchHistoryServiceTest extends TestCase
         // Attach player to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
         $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
         $this->assertArrayHasKey('data', $result);
@@ -101,6 +105,9 @@ class MatchHistoryServiceTest extends TestCase
         // Attach player to losing team
         $match->players()->attach($this->player->id, ['team' => 'B']);
 
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
         $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
         $matchDetails = $result['data'][0]['match_details'];
 
@@ -116,6 +123,9 @@ class MatchHistoryServiceTest extends TestCase
 
         // Attach player to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
 
         // Create PlayerMatchEvent with the stats
         PlayerMatchEvent::factory()->create([
@@ -149,6 +159,9 @@ class MatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
         // Create PlayerMatchEvent with zero deaths
         PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
@@ -176,6 +189,9 @@ class MatchHistoryServiceTest extends TestCase
         ]);
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
 
         // Create PlayerMatchEvent with specific ADR
         PlayerMatchEvent::factory()->create([
@@ -209,6 +225,9 @@ class MatchHistoryServiceTest extends TestCase
         // Attach both players to match
         $match->players()->attach($this->player->id, ['team' => 'A']);
         $match->players()->attach($otherPlayer->id, ['team' => 'B']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
 
         // Create PlayerMatchEvent for both players
         PlayerMatchEvent::factory()->create([
@@ -273,6 +292,10 @@ class MatchHistoryServiceTest extends TestCase
 
         // Attach player to match and get match history
         $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
         $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
         $this->assertCount(1, $result['data']);
@@ -286,8 +309,13 @@ class MatchHistoryServiceTest extends TestCase
             'steam_id' => null,
         ]);
 
-        $this->expectException(\App\Exceptions\PlayerNotFound::class);
-        $this->service->getPaginatedMatchHistory($userWithoutPlayer, 10, 1);
+        $result = $this->service->getPaginatedMatchHistory($userWithoutPlayer, 10, 1);
+
+        // Should return empty results since user has no player relationship
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('pagination', $result);
+        $this->assertEmpty($result['data']);
+        $this->assertEquals(0, $result['pagination']['total']);
     }
 
     #[Test]
@@ -298,6 +326,9 @@ class MatchHistoryServiceTest extends TestCase
         ]);
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
 
         // Create PlayerMatchEvent with zero stats
         PlayerMatchEvent::factory()->create([
@@ -329,6 +360,9 @@ class MatchHistoryServiceTest extends TestCase
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
         // Create PlayerMatchEvent with kills but no damage
         PlayerMatchEvent::factory()->create([
             'match_id' => $match->id,
@@ -356,6 +390,9 @@ class MatchHistoryServiceTest extends TestCase
         ]);
 
         $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create a completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
 
         // Create PlayerMatchEvent with first kill stats
         PlayerMatchEvent::factory()->create([
@@ -398,6 +435,10 @@ class MatchHistoryServiceTest extends TestCase
         // Attach player to both matches
         $match1->players()->attach($this->player->id, ['team' => 'A']);
         $match2->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create completed demo processing jobs for both matches
+        DemoProcessingJob::factory()->completed()->forMatch($match1)->create();
+        DemoProcessingJob::factory()->completed()->forMatch($match2)->create();
 
         $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
@@ -448,5 +489,75 @@ class MatchHistoryServiceTest extends TestCase
         // Since the player didn't participate, there should be no matches returned
         $this->assertArrayHasKey('data', $result);
         $this->assertEmpty($result['data']);
+    }
+
+    #[Test]
+    public function it_includes_uploaded_matches_in_results()
+    {
+        // Create a match that the user uploaded but didn't participate in
+        $uploadedMatch = GameMatch::factory()->create([
+            'map' => 'de_inferno',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 12,
+            'uploaded_by' => $this->user->id,
+        ]);
+
+        // Create another player to participate in the match
+        $otherPlayer = Player::factory()->create([
+            'steam_id' => 'STEAM_987654321',
+            'name' => 'OtherPlayer',
+        ]);
+        $uploadedMatch->players()->attach($otherPlayer->id, ['team' => 'A']);
+
+        // Create completed demo processing job for uploaded match
+        DemoProcessingJob::factory()->completed()->forMatch($uploadedMatch)->create();
+
+        // Create a match where the user participated
+        $participatedMatch = GameMatch::factory()->create([
+            'map' => 'de_dust2',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+        ]);
+        $participatedMatch->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create completed demo processing job for participated match
+        DemoProcessingJob::factory()->completed()->forMatch($participatedMatch)->create();
+
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+
+        // Should include both the uploaded match and the participated match
+        $this->assertCount(2, $result['data']);
+        $this->assertEquals(2, $result['pagination']['total']);
+
+        // Verify both matches are present
+        $matchMaps = collect($result['data'])->pluck('match_details.map')->toArray();
+        $this->assertContains('de_inferno', $matchMaps);
+        $this->assertContains('de_dust2', $matchMaps);
+    }
+
+    #[Test]
+    public function it_deduplicates_matches_when_user_both_uploaded_and_participated()
+    {
+        // Create a match where the user both uploaded and participated
+        $match = GameMatch::factory()->create([
+            'map' => 'de_mirage',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 10,
+            'uploaded_by' => $this->user->id,
+        ]);
+        $match->players()->attach($this->player->id, ['team' => 'A']);
+
+        // Create completed demo processing job for the match
+        DemoProcessingJob::factory()->completed()->forMatch($match)->create();
+
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
+
+        // Should only return one match (deduplicated)
+        $this->assertCount(1, $result['data']);
+        $this->assertEquals(1, $result['pagination']['total']);
+        $this->assertEquals('de_mirage', $result['data'][0]['match_details']['map']);
     }
 }

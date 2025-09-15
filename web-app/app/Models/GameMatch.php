@@ -7,6 +7,7 @@ use App\Enums\ProcessingStatus;
 use App\Services\MatchCacheManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -27,6 +28,7 @@ class GameMatch extends Model
         'end_timestamp',
         'total_rounds',
         'playback_ticks',
+        'uploaded_by',
     ];
 
     protected $casts = [
@@ -81,6 +83,11 @@ class GameMatch extends Model
     public function playerRoundEvents(): HasMany
     {
         return $this->hasMany(PlayerRoundEvent::class, 'match_id');
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(GameMatch::class, 'uploaded_by', 'id');
     }
 
     public function playerMatchEvents(): HasMany

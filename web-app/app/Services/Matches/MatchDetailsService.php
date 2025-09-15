@@ -25,9 +25,12 @@ class MatchDetailsService
         $playerWonMatch = true;
 
         if (! empty($user->player->steam_id)) {
-            $playerTeam = $match->players->where('steam_id', $user->player->steam_id)->first()?->pivot->team;
-            $playerWasParticipant = true;
-            $playerWonMatch = $match->winning_team === $playerTeam;
+            $playerParticipant = $match->players->where('steam_id', $user->player->steam_id)->first();
+            if ($playerParticipant) {
+                $playerTeam = $playerParticipant->pivot->team;
+                $playerWasParticipant = true;
+                $playerWonMatch = $match->winning_team === $playerTeam;
+            }
         }
 
         return [

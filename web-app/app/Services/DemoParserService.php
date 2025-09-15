@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Enums\MatchEventType;
 use App\Enums\MatchType;
+use App\Enums\ProcessingStatus;
 use App\Enums\Team;
-use App\Exceptions\DemoParserJobEventValidationException;
 use App\Exceptions\DemoParserJobNotFoundException;
 use App\Exceptions\DemoParserMatchNotFoundException;
 use App\Models\DamageEvent;
@@ -18,6 +18,7 @@ use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRoundEvent;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DemoParserService
 {
@@ -31,7 +32,7 @@ class DemoParserService
         $job = $this->getJob($jobId);
 
         $updateData = [
-            'processing_status' => $data['status'],
+            'processing_status' => $isCompleted ? ProcessingStatus::COMPLETED->value : $data['status'],
             'progress_percentage' => $isCompleted ? 100 : $data['progress'],
             'completed_at' => $isCompleted ? now() : null,
             'current_step' => $data['current_step'] ?? ($isCompleted ? 'Completed' : null),
@@ -147,7 +148,9 @@ class DemoParserService
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
                 MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
                 MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
-                default => throw new DemoParserJobEventValidationException('Event type not found'),
+                default => Log::warning('Match event not found', [
+                    'event_name' => $eventName,
+                ]),
             };
         });
     }

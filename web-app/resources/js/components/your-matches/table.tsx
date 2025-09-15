@@ -324,9 +324,9 @@ export function MatchesTable({
                     })()}
                   </TableCell>
                   <TableCell>
-                    {match.match_details
+                    {match.match_details && match.match_details.match_type
                       ? capitalizeFirst(match.match_details.match_type) ||
-                      'Unknown'
+                        'Unknown'
                       : 'Processing...'}
                   </TableCell>
                   <TableCell>

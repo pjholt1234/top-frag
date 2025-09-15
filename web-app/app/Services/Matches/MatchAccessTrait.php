@@ -8,6 +8,12 @@ trait MatchAccessTrait
 {
     private function hasUserAccessToMatch(User $user, int $matchId): bool
     {
-        return $user->player?->matches()->where('matches.id', $matchId)->exists() ?? false;
+        // Check if user participated in the match
+        $participated = $user->player?->matches()->where('matches.id', $matchId)->exists() ?? false;
+
+        // Check if user uploaded the match
+        $uploaded = $user->uploadedGames()->where('matches.id', $matchId)->exists();
+
+        return $participated || $uploaded;
     }
 }

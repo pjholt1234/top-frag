@@ -481,16 +481,6 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(0, $grenadeEvent->flash_duration);
     }
 
-    public function test_it_logs_error_for_invalid_event_name()
-    {
-        $job = DemoProcessingJob::factory()->create();
-        $match = GameMatch::factory()->create();
-        $job->update(['match_id' => $match->id]);
-
-        $this->expectException(\App\Exceptions\DemoParserJobEventValidationException::class);
-        $this->service->createMatchEvent($job->uuid, [], 'invalid_event');
-    }
-
     public function test_it_logs_error_when_match_not_found_for_event_creation()
     {
         $job = DemoProcessingJob::factory()->create();

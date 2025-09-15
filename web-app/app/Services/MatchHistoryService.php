@@ -4,10 +4,11 @@ namespace App\Services;
 
 use App\Enums\ProcessingStatus;
 use App\Exceptions\PlayerNotFound;
-use App\Models\DemoProcessingJob;
+use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\User;
 use App\Services\Matches\MatchDetailsService;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class MatchHistoryService
 {
@@ -19,19 +20,9 @@ class MatchHistoryService
         private readonly MatchDetailsService $matchDetailsService,
     ) {}
 
-    /**
-     * @throws PlayerNotFound
-     */
     public function setUser(User $user): void
     {
         $this->user = $user;
-
-        if (! $user->player) {
-            throw new PlayerNotFound('Player not found', [
-                'user_id' => $user->id,
-            ]);
-        }
-
         $this->player = $user->player;
     }
 
@@ -41,18 +32,6 @@ class MatchHistoryService
     public function getPaginatedMatchHistory(User $user, int $perPage = 10, int $page = 1, array $filters = []): array
     {
         $this->setUser($user);
-
-        if (! $this->player) {
-            return [
-                'data' => [],
-                'pagination' => [
-                    'current_page' => $page,
-                    'per_page' => $perPage,
-                    'total' => 0,
-                    'last_page' => 1,
-                ],
-            ];
-        }
 
         $completedMatches = $this->getCompletedMatches($filters);
         $inProgressJobs = $this->getInProgressJobs($filters);
@@ -92,8 +71,40 @@ class MatchHistoryService
 
     private function getFilteredMatchIds(array $filters = []): array
     {
-        $query = $this->player->matches()->select('matches.id');
+        $matchIds = [];
+        if ($this->player) {
+            $matchIds = $this->getMatchIds($this->player?->matches(), $filters);
+        }
 
+        if ($this->user) {
+            $matchIds = [
+                ...$matchIds,
+                ...$this->getMatchIds($this->user?->uploadedGames(), $filters),
+            ];
+        }
+
+        if (! empty($matchIds)) {
+            return GameMatch::whereIn('id', array_unique($matchIds))
+                ->whereHas('demoProcessingJob', function ($query) {
+                    $query->whereIn('processing_status', [ProcessingStatus::COMPLETED->value, ProcessingStatus::FAILED->value]);
+                })
+                ->orderBy('created_at', 'desc')
+                ->pluck('id')
+                ->toArray();
+        }
+
+        return [];
+    }
+
+    private function getMatchIds(Builder $query, array $filters = []): array
+    {
+        $this->applyFiltersToQuery($query, $filters);
+
+        return $query->pluck('matches.id')->toArray();
+    }
+
+    private function applyFiltersToQuery($query, array $filters): void
+    {
         if (! empty($filters['map'])) {
             $query->where('map', 'like', '%'.$filters['map'].'%');
         }
@@ -102,14 +113,21 @@ class MatchHistoryService
             $query->where('match_type', $filters['match_type']);
         }
 
-        if (isset($filters['player_was_participant']) && $filters['player_was_participant'] !== '') {
-            $query->whereHas('players', function ($q) {
-                $q->where('steam_id', $this->player->steam_id);
-            });
+        if (! empty($filters['player_was_participant'])) {
+            $isParticipant = $this->convertToBoolean($filters['player_was_participant']);
+            if ($isParticipant) {
+                $query->whereHas('players', function ($q) {
+                    $q->where('steam_id', $this->player->steam_id);
+                });
+            } else {
+                $query->whereDoesntHave('players', function ($q) {
+                    $q->where('steam_id', $this->player->steam_id);
+                });
+            }
         }
 
-        if (isset($filters['player_won_match']) && $filters['player_won_match'] !== '') {
-            $isWin = $filters['player_won_match'] === 'true';
+        if (! empty($filters['player_won_match'])) {
+            $isWin = $this->convertToBoolean($filters['player_won_match']);
             $query->where(function ($q) use ($isWin) {
                 if ($isWin) {
                     $q->where('winning_team', 'A')->whereHas('players', function ($pq) {
@@ -130,14 +148,12 @@ class MatchHistoryService
         }
 
         if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', $filters['date_from']);
+            $query->where('matches.created_at', '>=', $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('matches.created_at', '<=', $filters['date_to'].' 23:59:59');
         }
-
-        return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
     }
 
     private function getInProgressJobs(array $filters = []): array
@@ -160,63 +176,62 @@ class MatchHistoryService
         }
 
         if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', $filters['date_from']);
+            $query->where('demo_processing_jobs.created_at', '>=', $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', $filters['date_to'].' 23:59:59');
+            $query->where('demo_processing_jobs.created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
-        $jobs = $query->orderBy('created_at', 'desc')->get();
+        $jobs = $query->orderBy('demo_processing_jobs.created_at', 'desc')->get();
 
         return $jobs->map(function ($job) {
-            return $this->createMatchResponseArray($job);
+            $match = $job->match;
+
+            $matchDetails = null;
+            if ($match) {
+                $matchDetails = [
+                    'id' => $match->id,
+                    'map' => $match->map,
+                    'winning_team_score' => $match->winning_team_score,
+                    'losing_team_score' => $match->losing_team_score,
+                    'winning_team' => $match->winning_team,
+                    'match_type' => $match->match_type,
+                    'created_at' => $match->created_at,
+                ];
+            }
+
+            return [
+                'id' => $job->id,
+                'created_at' => $job->created_at,
+                'is_completed' => false,
+                'match_details' => $matchDetails,
+                'player_stats' => null, // Not available for in-progress jobs
+                'processing_status' => $job->processing_status,
+                'progress_percentage' => $job->progress_percentage,
+                'current_step' => $job->current_step,
+                'error_message' => $job->error_message,
+            ];
         })->toArray();
     }
 
-    private function getInProgressJobById(User $user, int $jobId): ?array
+    /**
+     * Convert various string representations to boolean
+     */
+    private function convertToBoolean($value): bool
     {
-        $job = $user->demoProcessingJobs()
-            ->where('id', $jobId)
-            ->where('progress_percentage', '<', 100)
-            ->where('processing_status', '!=', \App\Enums\ProcessingStatus::COMPLETED->value)
-            ->with('match')
-            ->first();
-
-        if (! $job) {
-            return null;
+        if (is_bool($value)) {
+            return $value;
         }
 
-        return $this->createMatchResponseArray($job);
-    }
-
-    private function createMatchResponseArray(DemoProcessingJob $job): array
-    {
-        $match = $job->match;
-
-        $matchDetails = null;
-        if ($match) {
-            $matchDetails = [
-                'id' => $match->id,
-                'map' => $match->map,
-                'winning_team_score' => $match->winning_team_score,
-                'losing_team_score' => $match->losing_team_score,
-                'winning_team' => $match->winning_team,
-                'match_type' => $match->match_type,
-                'created_at' => $match->created_at,
-            ];
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['true', '1', 'yes', 'on'], true);
         }
 
-        return [
-            'id' => $job->id,
-            'created_at' => $job->created_at,
-            'is_completed' => false,
-            'match_details' => $matchDetails,
-            'player_stats' => null,
-            'processing_status' => $job->processing_status,
-            'progress_percentage' => $job->progress_percentage,
-            'current_step' => $job->current_step,
-            'error_message' => $job->error_message,
-        ];
+        if (is_numeric($value)) {
+            return (int) $value === 1;
+        }
+
+        return false;
     }
 }

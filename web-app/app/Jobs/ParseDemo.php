@@ -25,7 +25,10 @@ class ParseDemo implements ShouldQueue
     public function handle(): void
     {
         try {
-            $match = GameMatch::create();
+            $match = GameMatch::create([
+                'uploaded_by' => $this->user?->id,
+            ]);
+
             $job = DemoProcessingJob::create([
                 'match_id' => $match->id,
                 'user_id' => $this->user?->id,

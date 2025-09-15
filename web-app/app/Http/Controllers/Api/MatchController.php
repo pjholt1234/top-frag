@@ -40,21 +40,6 @@ class MatchController extends Controller
             return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
-        // @todo Add check for user uploaded demos they're not a part of
-        if (empty($user->steam_id)) {
-            return response()->json([
-                'data' => [],
-                'pagination' => [
-                    'current_page' => 1,
-                    'per_page' => 1,
-                    'total' => 0,
-                    'last_page' => 1,
-                    'from' => 1,
-                    'to' => 1,
-                ],
-            ]);
-        }
-
         $perPage = $request->get('per_page', 10);
         $page = $request->get('page', 1);
 
