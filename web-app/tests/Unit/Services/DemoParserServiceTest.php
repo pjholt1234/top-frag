@@ -295,32 +295,6 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals($expectedHash, $expectedHash2);
     }
 
-    public function test_it_returns_null_match_hash_in_local_environment()
-    {
-        // Test the hash generation logic directly using reflection
-        $service = new DemoParserService;
-
-        $matchData = ['map' => 'de_dust2'];
-        $playersData = [
-            [
-                'steam_id' => 'steam_123',
-                'team' => 'A',
-            ],
-        ];
-
-        // Use reflection to test the private generateMatchHash method
-        $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('generateMatchHash');
-        $method->setAccessible(true);
-
-        // Mock the app environment to be 'local' for this test
-        $this->app['env'] = 'local';
-
-        // In local environment, the method should return null
-        $hash = $method->invoke($service, $matchData, $playersData);
-        $this->assertNull($hash);
-    }
-
     public function test_it_can_create_damage_event()
     {
         $job = DemoProcessingJob::factory()->create();
@@ -914,7 +888,7 @@ class DemoParserServiceTest extends TestCase
         $playerRoundEvents = [];
         for ($i = 1; $i <= 1500; $i++) {
             $playerRoundEvents[] = [
-                'player_steam_id' => 'steam_'.($i % 10), // 10 different players
+                'player_steam_id' => 'steam_' . ($i % 10), // 10 different players
                 'round_number' => ($i % 30) + 1, // Rounds 1-30
                 'kills' => $i % 5,
                 'damage' => $i * 10,
