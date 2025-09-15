@@ -58,14 +58,14 @@ class MatchControllerTest extends TestCase
         ]);
     }
 
-    public function test_index_returns_empty_data_for_user_without_player()
+    public function test_index_returns_404_for_user_without_player()
     {
         $user = User::factory()->create(['steam_id' => '76561198087654321']);
 
         $response = $this->actingAs($user)
             ->getJson('/api/matches');
 
-        $response->assertStatus(200)
+        $response->assertStatus(404)
             ->assertJson([
                 'data' => [],
                 'pagination' => [
@@ -74,6 +74,7 @@ class MatchControllerTest extends TestCase
                     'total' => 0,
                     'last_page' => 1,
                 ],
+                'message' => 'Player not found',
             ]);
     }
 

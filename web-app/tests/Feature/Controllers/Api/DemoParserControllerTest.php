@@ -21,7 +21,10 @@ class DemoParserControllerTest extends TestCase
 
     public function test_handle_event_with_valid_gunfight_data()
     {
-        $jobId = 'test-job-123';
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+        $jobId = $job->uuid;
         $eventName = 'gunfight';
 
         $payload = [
@@ -45,8 +48,12 @@ class DemoParserControllerTest extends TestCase
                     'player_2_weapon' => 'm4a1',
                     'player_1_equipment_value' => 2700,
                     'player_2_equipment_value' => 3100,
-                    'player_1_position' => ['x' => 100.5, 'y' => 200.3, 'z' => 50.0],
-                    'player_2_position' => ['x' => 150.2, 'y' => 180.7, 'z' => 50.0],
+                    'player_1_x' => 100.5,
+                    'player_1_y' => 200.3,
+                    'player_1_z' => 50.0,
+                    'player_2_x' => 150.2,
+                    'player_2_y' => 180.7,
+                    'player_2_z' => 50.0,
                     'distance' => 50.0,
                     'headshot' => true,
                     'wallbang' => false,
@@ -73,12 +80,16 @@ class DemoParserControllerTest extends TestCase
 
     public function test_handle_event_with_valid_round_data()
     {
-        $jobId = 'test-job-456';
-        $eventName = 'round';
+        $job = DemoProcessingJob::factory()->create();
+        $match = GameMatch::factory()->create();
+        $job->update(['match_id' => $match->id]);
+        $jobId = $job->uuid;
+        $eventName = 'player-round';
 
         $payload = [
             'data' => [
                 [
+                    'player_steam_id' => 'steam_123',
                     'round_number' => 1,
                     'tick_timestamp' => 12345,
                     'event_type' => 'start',

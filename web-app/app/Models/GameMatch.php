@@ -26,8 +26,6 @@ class GameMatch extends Model
         'start_timestamp',
         'end_timestamp',
         'total_rounds',
-        'total_fight_events',
-        'total_grenade_events',
         'playback_ticks',
     ];
 

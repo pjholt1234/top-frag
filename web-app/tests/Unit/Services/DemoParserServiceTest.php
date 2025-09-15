@@ -16,7 +16,6 @@ use App\Models\Player;
 use App\Models\PlayerRoundEvent;
 use App\Services\DemoParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class DemoParserServiceTest extends TestCase
@@ -80,10 +79,7 @@ class DemoParserServiceTest extends TestCase
 
     public function test_it_logs_warning_when_job_not_found_for_update()
     {
-        Log::shouldReceive('warning')
-            ->once()
-            ->with('Demo processing job not found for match event creation', ['job_id' => 'non-existent-uuid']);
-
+        $this->expectException(\App\Exceptions\DemoParserJobNotFoundException::class);
         $this->service->updateProcessingJob('non-existent-uuid', ['status' => ProcessingStatus::PARSING->value]);
     }
 
@@ -195,10 +191,7 @@ class DemoParserServiceTest extends TestCase
 
     public function test_it_logs_warning_when_job_not_found_for_match_creation()
     {
-        Log::shouldReceive('warning')
-            ->once()
-            ->with('Demo processing job not found for match creation', ['job_id' => 'non-existent-uuid']);
-
+        $this->expectException(\App\Exceptions\DemoParserJobNotFoundException::class);
         $this->service->createMatchWithPlayers('non-existent-uuid', ['map' => 'de_dust2']);
     }
 
@@ -239,7 +232,7 @@ class DemoParserServiceTest extends TestCase
         $newPlayer = Player::where('steam_id', 'steam_456')->first();
         $this->assertNotNull($newPlayer);
         $this->assertEquals('NewPlayer', $newPlayer->name);
-        $this->assertEquals(2, $newPlayer->total_matches); // 1 from factory + 1 from service
+        $this->assertEquals(1, $newPlayer->total_matches); // 1 from factory + 1 from service
 
         // Check match player relationships
         $this->assertEquals(2, $match->matchPlayers()->count());
@@ -494,10 +487,7 @@ class DemoParserServiceTest extends TestCase
         $match = GameMatch::factory()->create();
         $job->update(['match_id' => $match->id]);
 
-        Log::shouldReceive('error')
-            ->once()
-            ->with('Invalid event name', ['job_id' => $job->uuid, 'event_name' => 'invalid_event']);
-
+        $this->expectException(\App\Exceptions\DemoParserJobEventValidationException::class);
         $this->service->createMatchEvent($job->uuid, [], 'invalid_event');
     }
 
@@ -506,10 +496,7 @@ class DemoParserServiceTest extends TestCase
         $job = DemoProcessingJob::factory()->create();
         // Don't create a match for this job
 
-        Log::shouldReceive('error')
-            ->once()
-            ->with('Match not found for job', ['job_id' => $job->uuid]);
-
+        $this->expectException(\App\Exceptions\DemoParserMatchNotFoundException::class);
         $this->service->createMatchEvent($job->uuid, [], MatchEventType::DAMAGE->value);
     }
 

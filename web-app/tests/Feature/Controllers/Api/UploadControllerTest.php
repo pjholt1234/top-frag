@@ -38,7 +38,7 @@ class UploadControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Demo uploaded successfully',
+                'message' => 'Demo process received',
             ]);
 
         // Assert file was stored - check that a file was stored in the demos directory
@@ -101,7 +101,7 @@ class UploadControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Demo uploaded successfully',
+                'message' => 'Demo process received',
             ]);
     }
 

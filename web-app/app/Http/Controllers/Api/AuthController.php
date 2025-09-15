@@ -28,7 +28,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'User registered successfully',
+            'message' => config('messaging.registered') ?? 'User registered successfully',
             'user' => $user,
             'token' => $token,
         ], 201);
@@ -41,7 +41,7 @@ class AuthController extends Controller
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => [config('messaging.generic.critical-error')],
             ]);
         }
 
@@ -49,7 +49,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login successful',
+            'message' => config('messaging.auth.login') ?? 'User login successfully',
             'user' => $user,
             'token' => $token,
         ]);
@@ -67,7 +67,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Successfully logged out',
+            'message' => config('messaging.auth.logout') ?? 'User logout successfully',
         ]);
     }
 

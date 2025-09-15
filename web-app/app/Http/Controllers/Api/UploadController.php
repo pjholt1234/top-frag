@@ -31,7 +31,7 @@ class UploadController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Demo uploaded successfully',
+                'message' => config('messaging.parsing.demo.success') ?? 'Demo process received',
             ]);
         } catch (\Exception $e) {
             Log::channel('parser')->error('Unexpected error in demo upload via user API', [
@@ -45,7 +45,7 @@ class UploadController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Internal server error',
-                'message' => 'An unexpected error occurred while uploading the demo',
+                'message' => config('messaging.parsing.demo.error') ?? 'An unexpected error occurred while uploading the demo',
             ], 500);
         }
     }

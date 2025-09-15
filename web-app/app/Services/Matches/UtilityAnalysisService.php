@@ -37,12 +37,18 @@ class UtilityAnalysisService
 
     private function buildAnalysis(User $user, int $matchId, ?string $playerSteamId = null, ?int $roundNumber = null): array
     {
-        $match = $this->getMatchForUser($user, $matchId);
+        $match = GameMatch::find($matchId);
+
         if (! $match) {
             return [];
         }
 
-        $query = GrenadeEvent::where('match_id', $matchId);
+        // Check if user has access to this match
+        if (! $user->steam_id || ! $user->player || ! $match->playerWasParticipant($user->player)) {
+            return [];
+        }
+
+        $query = $match->grenadeEvents();
 
         if ($playerSteamId) {
             $query->where('player_steam_id', $playerSteamId);
@@ -54,8 +60,6 @@ class UtilityAnalysisService
 
         $grenadeEvents = $query->get();
 
-        // Always return a valid response structure, even if no grenade events are found
-        // This allows for proper filtering behavior where empty results are valid
         return [
             'utility_usage' => $this->getUtilityUsageStats($grenadeEvents),
             'grenade_effectiveness' => $this->getGrenadeEffectivenessByRound($grenadeEvents),
@@ -67,20 +71,8 @@ class UtilityAnalysisService
         ];
     }
 
-    private function getMatchForUser(User $user, int $matchId): ?GameMatch
-    {
-        if (! $user->player) {
-            return null;
-        }
-
-        return $user->player->matches()
-            ->where('matches.id', $matchId)
-            ->first();
-    }
-
     private function getUtilityUsageStats(Collection $grenadeEvents): array
     {
-        // Group by grenade type, but combine Incendiary and Molotov into "Fire"
         $groupedEvents = $grenadeEvents->groupBy(function (GrenadeEvent $event) {
             $type = $event->grenade_type;
             if ($type === GrenadeType::INCENDIARY || $type === GrenadeType::MOLOTOV) {
@@ -94,7 +86,7 @@ class UtilityAnalysisService
             return [
                 'type' => $type,
                 'count' => $events->count(),
-                'percentage' => 0, // Will be calculated after total
+                'percentage' => 0,
             ];
         })
             ->values()
@@ -145,7 +137,7 @@ class UtilityAnalysisService
                 'type' => $type,
                 'timing_data' => $events->map(function (GrenadeEvent $event) {
                     return [
-                        'round_time' => max(0, $event->round_time), // Ensure round_time is never negative
+                        'round_time' => max(0, $event->round_time),
                         'round_number' => $event->round_number,
                         'effectiveness' => $event->effectiveness_rating ?? 0,
                     ];

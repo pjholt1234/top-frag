@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\GrenadeType;
+use App\Enums\MapType;
+use App\Enums\PlayerSide;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateGrenadeFavouriteRequest;
 use App\Models\GameMatch;
@@ -14,14 +16,10 @@ use Illuminate\Support\Facades\Auth;
 
 class GrenadeFavouriteController extends Controller
 {
-    /**
-     * Get favourited grenade data with filters
-     */
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        // Get filter parameters
         $map = $request->get('map');
         $matchId = $request->get('match_id');
         $roundNumber = $request->get('round_number');
@@ -29,7 +27,6 @@ class GrenadeFavouriteController extends Controller
         $playerSteamId = $request->get('player_steam_id');
         $playerSide = $request->get('player_side');
 
-        // Start with base query for user's favourited grenades
         $query = GrenadeFavourite::query()
             ->join('matches', 'grenade_favourites.match_id', '=', 'matches.id')
             ->where('grenade_favourites.user_id', $user->id)
@@ -51,7 +48,6 @@ class GrenadeFavouriteController extends Controller
 
         if ($grenadeType) {
             if ($grenadeType === 'fire_grenades') {
-                // Special case: Fire Grenades (Molotov + Incendiary)
                 $query->whereIn('grenade_favourites.grenade_type', [
                     GrenadeType::MOLOTOV->value,
                     GrenadeType::INCENDIARY->value,
@@ -84,45 +80,12 @@ class GrenadeFavouriteController extends Controller
         ]);
     }
 
-    /**
-     * Get filter options for the favourited grenades
-     */
     public function filterOptions(Request $request): JsonResponse
     {
         $user = Auth::user();
         $map = $request->get('map');
         $matchId = $request->get('match_id');
 
-        // Hardcoded maps as specified
-        $maps = [
-            ['name' => 'de_ancient', 'displayName' => 'Ancient'],
-            ['name' => 'de_dust2', 'displayName' => 'Dust II'],
-            ['name' => 'de_mirage', 'displayName' => 'Mirage'],
-            ['name' => 'de_inferno', 'displayName' => 'Inferno'],
-            ['name' => 'de_nuke', 'displayName' => 'Nuke'],
-            ['name' => 'de_overpass', 'displayName' => 'Overpass'],
-            ['name' => 'de_train', 'displayName' => 'Train'],
-            ['name' => 'de_cache', 'displayName' => 'Cache'],
-            ['name' => 'de_anubis', 'displayName' => 'Anubis'],
-            ['name' => 'de_vertigo', 'displayName' => 'Vertigo'],
-        ];
-
-        // Hardcoded grenade types with special "Fire Grenades" option
-        $grenadeTypes = [
-            ['type' => 'fire_grenades', 'displayName' => 'Fire Grenades'],
-            ['type' => GrenadeType::SMOKE_GRENADE->value, 'displayName' => 'Smoke Grenade'],
-            ['type' => GrenadeType::HE_GRENADE->value, 'displayName' => 'HE Grenade'],
-            ['type' => GrenadeType::FLASHBANG->value, 'displayName' => 'Flashbang'],
-            ['type' => GrenadeType::DECOY->value, 'displayName' => 'Decoy Grenade'],
-        ];
-
-        // Hardcoded player sides
-        $playerSides = [
-            ['side' => 'CT', 'displayName' => 'Counter-Terrorist'],
-            ['side' => 'T', 'displayName' => 'Terrorist'],
-        ];
-
-        // Dynamic matches based on selected map and user's favourited grenades
         $matches = [];
         if ($map) {
             $matches = GameMatch::query()
@@ -141,7 +104,6 @@ class GrenadeFavouriteController extends Controller
                 ->toArray();
         }
 
-        // Add "All Matches" option if map is selected and there are matches
         if ($map && ! empty($matches)) {
             array_unshift($matches, [
                 'id' => 'all',
@@ -149,7 +111,6 @@ class GrenadeFavouriteController extends Controller
             ]);
         }
 
-        // Dynamic rounds based on selected match and user's favourited grenades
         $rounds = [];
         if ($matchId) {
             $rounds = GrenadeFavourite::query()
@@ -163,7 +124,6 @@ class GrenadeFavouriteController extends Controller
                 ->toArray();
         }
 
-        // Dynamic players based on selected match and user's favourited grenades
         $players = [];
         if ($matchId) {
             $players = Player::query()
@@ -179,23 +139,19 @@ class GrenadeFavouriteController extends Controller
         }
 
         return response()->json([
-            'maps' => $maps,
+            'maps' => MapType::options(),
             'matches' => $matches,
             'rounds' => $rounds,
-            'grenadeTypes' => $grenadeTypes,
+            'grenadeTypes' => GrenadeType::options(),
             'players' => $players,
-            'playerSides' => $playerSides,
+            'playerSides' => PlayerSide::options(),
         ]);
     }
 
-    /**
-     * Create a new grenade favourite
-     */
     public function create(CreateGrenadeFavouriteRequest $request): JsonResponse
     {
         $user = Auth::user();
 
-        // Check if this grenade is already favourited by this user
         $existingFavourite = $user->grenadeFavourites()
             ->where('match_id', $request->match_id)
             ->where('round_number', $request->round_number)
@@ -205,21 +161,25 @@ class GrenadeFavouriteController extends Controller
 
         if ($existingFavourite) {
             return response()->json([
-                'message' => 'This grenade is already in your favourites',
+                'message' => config('messaging.grenade.favourites.duplicate-error'),
             ], 409);
         }
 
         $favourite = $user->grenadeFavourites()->create($request->all());
 
+        if (! $favourite) {
+            return response()->json([
+                'message' => config('messaging.grenade.favourites.not-found-error'),
+                'favourite' => null,
+            ], 500);
+        }
+
         return response()->json([
-            'message' => 'Grenade added to favourites successfully',
+            'message' => config('messaging.grenade.favourites.created'),
             'favourite' => $favourite->load('match'),
         ], 201);
     }
 
-    /**
-     * Check if a specific grenade is favourited by the user
-     */
     public function check(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -248,7 +208,7 @@ class GrenadeFavouriteController extends Controller
 
         if (! $favourite) {
             return response()->json([
-                'message' => 'Favourite not found',
+                'message' => config('messaging.grenade.favourites.not-found-error'),
             ], 404);
         }
 

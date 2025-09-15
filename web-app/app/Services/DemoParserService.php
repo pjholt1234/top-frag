@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Enums\MatchEventType;
 use App\Enums\MatchType;
 use App\Enums\Team;
+use App\Exceptions\DemoParserJobEventValidationException;
+use App\Exceptions\DemoParserJobNotFoundException;
+use App\Exceptions\DemoParserMatchNotFoundException;
 use App\Models\DamageEvent;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
@@ -15,21 +18,17 @@ use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRoundEvent;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class DemoParserService
 {
     private array $jobCache = [];
 
+    /**
+     * @throws DemoParserJobNotFoundException
+     */
     public function updateProcessingJob(string $jobId, array $data, bool $isCompleted = false): void
     {
         $job = $this->getJob($jobId);
-
-        if (! $job) {
-            Log::warning('Demo processing job not found for match event creation', ['job_id' => $jobId]);
-
-            return;
-        }
 
         $updateData = [
             'processing_status' => $data['status'],
@@ -71,26 +70,21 @@ class DemoParserService
 
         $job->update($updateData);
 
-        // Clear cache after update to ensure fresh data
         $this->clearJobCache($jobId);
     }
 
+    /**
+     * @throws DemoParserJobNotFoundException
+     */
     public function createMatchWithPlayers(string $jobId, array $matchData, ?array $playersData = null): void
     {
         $job = $this->getJob($jobId);
-
-        if (! $job) {
-            Log::warning('Demo processing job not found for match creation', ['job_id' => $jobId]);
-
-            return;
-        }
 
         $matchHash = $this->generateMatchHash($matchData, $playersData);
 
         $match = $job->match;
 
         if (! $match) {
-            // Create a new match if it doesn't exist
             $match = GameMatch::create([
                 'match_hash' => $matchHash,
                 'map' => $matchData['map'] ?? 'Unknown',
@@ -101,15 +95,11 @@ class DemoParserService
                 'start_timestamp' => null, // todo: add this
                 'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
-                'total_fight_events' => 0, // Will be updated when events are processed
-                'total_grenade_events' => 0, // Will be updated when events are processed
                 'playback_ticks' => $matchData['playback_ticks'] ?? 0,
             ]);
 
-            // Update the job to reference the new match
             $job->update(['match_id' => $match->id]);
         } else {
-            // Update existing match
             $match->update([
                 'match_hash' => $matchHash,
                 'map' => $matchData['map'] ?? 'Unknown',
@@ -120,26 +110,22 @@ class DemoParserService
                 'start_timestamp' => null, // todo: add this
                 'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
-                'total_fight_events' => 0, // Will be updated when events are processed
-                'total_grenade_events' => 0, // Will be updated when events are processed
                 'playback_ticks' => $matchData['playback_ticks'] ?? 0,
             ]);
         }
 
-        if ($playersData && is_array($playersData)) {
-            foreach ($playersData as $playerData) {
-                $this->createOrUpdatePlayer($match, $playerData);
-            }
+        if (empty($playersData)) {
+            return;
         }
 
-        Log::info('Match created successfully', [
-            'job_id' => $jobId,
-            'match_id' => $match->id,
-            'match_hash' => $matchHash,
-            'players_count' => $playersData ? count($playersData) : 0,
-        ]);
+        foreach ($playersData as $playerData) {
+            $this->createOrUpdatePlayer($match, $playerData);
+        }
     }
 
+    /**
+     * @throws DemoParserMatchNotFoundException|DemoParserJobNotFoundException
+     */
     public function createMatchEvent(string $jobId, array $eventData, string $eventName): void
     {
         $job = $this->getJob($jobId);
@@ -148,34 +134,37 @@ class DemoParserService
             return;
         }
 
-        $match = $job->match;
-
-        if (! $match) {
-            Log::error('Match not found for job', ['job_id' => $jobId]);
-
-            return;
+        if (! $job->match) {
+            throw new DemoParserMatchNotFoundException('Match not found for match creation');
         }
 
-        // Use database transaction for better performance and data consistency
-        DB::transaction(function () use ($match, $eventData, $eventName, $jobId) {
+        $match = $job->match;
+
+        DB::transaction(function () use ($match, $eventData, $eventName) {
             match ($eventName) {
                 MatchEventType::DAMAGE->value => $this->createDamageEvent($match, $eventData),
                 MatchEventType::GUNFIGHT->value => $this->createGunfightEvent($match, $eventData),
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
                 MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
                 MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
-                default => Log::error('Invalid event name', ['job_id' => $jobId, 'event_name' => $eventName]),
+                default => throw new DemoParserJobEventValidationException('Event type not found'),
             };
         });
     }
 
     /**
      * Get job with caching to avoid repeated database queries
+     *
+     * @throws DemoParserJobNotFoundException
      */
     private function getJob(string $jobId): ?DemoProcessingJob
     {
         if (! isset($this->jobCache[$jobId])) {
             $this->jobCache[$jobId] = DemoProcessingJob::with('match')->where('uuid', $jobId)->first();
+        }
+
+        if (empty($this->jobCache[$jobId])) {
+            throw new DemoParserJobNotFoundException('Job not found for match creation');
         }
 
         return $this->jobCache[$jobId];
@@ -201,7 +190,7 @@ class DemoParserService
                 'name' => $playerData['name'] ?? 'Unknown',
                 'first_seen_at' => now(),
                 'last_seen_at' => now(),
-                'total_matches' => 1,
+                'total_matches' => 0,
             ]
         );
 
@@ -232,7 +221,7 @@ class DemoParserService
             $matchData['playback_ticks'] ?? 0,
         ];
 
-        if ($playersData && is_array($playersData)) {
+        if ($playersData) {
             usort($playersData, function ($a, $b) {
                 return ($a['steam_id'] ?? '') <=> ($b['steam_id'] ?? '');
             });

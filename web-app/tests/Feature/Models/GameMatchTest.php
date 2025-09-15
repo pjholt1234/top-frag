@@ -30,8 +30,6 @@ class GameMatchTest extends TestCase
             'start_timestamp' => '2023-01-01 12:00:00',
             'end_timestamp' => '2023-01-01 13:30:00',
             'total_rounds' => 30,
-            'total_fight_events' => 150,
-            'total_grenade_events' => 75,
         ]);
 
         $this->assertInstanceOf(GameMatch::class, $match);
@@ -56,8 +54,6 @@ class GameMatchTest extends TestCase
             'start_timestamp',
             'end_timestamp',
             'total_rounds',
-            'total_fight_events',
-            'total_grenade_events',
             'playback_ticks',
         ];
         $this->assertEquals($expectedFillable, $match->getFillable());
@@ -71,16 +67,12 @@ class GameMatchTest extends TestCase
             'start_timestamp' => '2023-01-01 12:00:00',
             'end_timestamp' => '2023-01-01 13:30:00',
             'total_rounds' => 30,
-            'total_fight_events' => 150,
-            'total_grenade_events' => 75,
         ]);
 
         $this->assertInstanceOf(MatchType::class, $match->match_type);
         $this->assertInstanceOf(\Carbon\Carbon::class, $match->start_timestamp);
         $this->assertInstanceOf(\Carbon\Carbon::class, $match->end_timestamp);
         $this->assertIsInt($match->total_rounds);
-        $this->assertIsInt($match->total_fight_events);
-        $this->assertIsInt($match->total_grenade_events);
     }
 
     #[Test]

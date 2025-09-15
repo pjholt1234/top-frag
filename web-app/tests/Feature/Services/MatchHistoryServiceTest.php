@@ -243,7 +243,7 @@ class MatchHistoryServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_gets_all_player_gunfight_events_correctly()
+    public function it_handles_gunfight_events_correctly()
     {
         $match = GameMatch::factory()->create();
 
@@ -271,13 +271,12 @@ class MatchHistoryServiceTest extends TestCase
             'victor_steam_id' => 'STEAM_111111111',
         ]);
 
-        $events = $this->service->getAllPlayerGunfightEvents($match, $this->player);
+        // Attach player to match and get match history
+        $match->players()->attach($this->player->id, ['team' => 'A']);
+        $result = $this->service->getPaginatedMatchHistory($this->user, 10, 1);
 
-        $this->assertCount(2, $events);
-        $this->assertTrue($events->every(function ($event) {
-            return $event->player_1_steam_id === $this->player->steam_id ||
-                $event->player_2_steam_id === $this->player->steam_id;
-        }));
+        $this->assertCount(1, $result['data']);
+        $this->assertArrayHasKey('match_details', $result['data'][0]);
     }
 
     #[Test]
@@ -287,11 +286,8 @@ class MatchHistoryServiceTest extends TestCase
             'steam_id' => null,
         ]);
 
-        $result = $this->service->getPaginatedMatchHistory($userWithoutPlayer, 10, 1);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('data', $result);
-        $this->assertEmpty($result['data']);
+        $this->expectException(\App\Exceptions\PlayerNotFound::class);
+        $this->service->getPaginatedMatchHistory($userWithoutPlayer, 10, 1);
     }
 
     #[Test]

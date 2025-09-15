@@ -48,14 +48,14 @@ class MatchControllerUtilityAnalysisTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function test_utility_analysis_returns_404_for_user_without_steam_id()
+    public function test_utility_analysis_returns_200_for_user_without_steam_id()
     {
         $user = User::factory()->create(['steam_id' => null]);
 
         $response = $this->actingAs($user)
             ->getJson("/api/matches/{$this->match->id}/utility-analysis");
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
     }
 
     public function test_utility_analysis_returns_404_for_nonexistent_match()

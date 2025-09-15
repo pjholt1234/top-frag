@@ -2,7 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PlayerNotFound;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GrenadeExplorerFilterOptionsRequest;
+use App\Http\Requests\GrenadeExplorerRequest;
+use App\Http\Requests\HeadToHeadRequest;
+use App\Http\Requests\IndexMatchHistoryRequest;
+use App\Http\Requests\PlayerStatsRequest;
+use App\Http\Requests\UtilityAnalysisRequest;
 use App\Services\Matches\GrenadeExplorerService;
 use App\Services\Matches\HeadToHeadService;
 use App\Services\Matches\MatchDetailsService;
@@ -12,6 +19,7 @@ use App\Services\Matches\UtilityAnalysisService;
 use App\Services\MatchHistoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MatchController extends Controller
 {
@@ -25,13 +33,14 @@ class MatchController extends Controller
         private readonly HeadToHeadService $headToHeadService,
     ) {}
 
-    public function index(Request $request)
+    public function index(IndexMatchHistoryRequest $request): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
+        // @todo Add check for user uploaded demos they're not a part of
         if (empty($user->steam_id)) {
             return response()->json([
                 'data' => [],
@@ -67,20 +76,44 @@ class MatchController extends Controller
             return $value !== null && $value !== '';
         });
 
-        $matchHistory = $this->matchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
+        try {
+            $matchHistory = $this->matchHistoryService->getPaginatedMatchHistory($user, $perPage, $page, $filters);
+        } catch (PlayerNotFound $e) {
+            Log::warning($e->getMessage());
+
+            return response()->json([
+                'data' => [],
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => 0,
+                    'last_page' => 1,
+                ],
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json([
+                'data' => [],
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => 0,
+                    'last_page' => 1,
+                ],
+                'message' => $e->getMessage(),
+            ], 500);
+        }
 
         return response()->json($matchHistory);
     }
 
-    public function utilityAnalysis(Request $request, int $matchId): JsonResponse
+    public function utilityAnalysis(UtilityAnalysisRequest $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
         $playerSteamId = $request->get('player_steam_id');
@@ -92,17 +125,45 @@ class MatchController extends Controller
             $roundNumber = null;
         }
 
-        $analysis = $this->utilityAnalysisService->getAnalysis(
-            $user,
-            $matchId,
-            $playerSteamId,
-            $roundNumber
-        );
+        try {
+            $analysis = $this->utilityAnalysisService->getAnalysis(
+                $user,
+                $matchId,
+                $playerSteamId,
+                $roundNumber
+            );
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         // Only return 404 if the match itself doesn't exist or user doesn't have access
         // Empty analysis data (e.g., no grenade events for a specific round) is valid
         if (empty($analysis)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            // If user doesn't have steam_id, return empty data instead of 404
+            if (! $user->steam_id) {
+                return response()->json([
+                    'utility_usage' => [],
+                    'grenade_effectiveness' => [],
+                    'grenade_timing' => [],
+                    'overall_stats' => [
+                        'overall_grenade_rating' => 0,
+                        'flash_stats' => [
+                            'enemy_avg_duration' => 0,
+                            'friendly_avg_duration' => 0,
+                            'enemy_avg_blinded' => 0,
+                            'friendly_avg_blinded' => 0,
+                        ],
+                        'he_stats' => ['avg_damage' => 0],
+                    ],
+                    'players' => [],
+                    'rounds' => [],
+                    'current_user_steam_id' => null,
+                ]);
+            }
+
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($analysis);
@@ -112,103 +173,115 @@ class MatchController extends Controller
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
-        }
+        try {
+            $details = $this->matchDetailsService->getDetails($user, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
 
-        $details = $this->matchDetailsService->getDetails($user, $matchId);
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($details)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($details);
     }
 
-    public function playerStats(Request $request, int $matchId): JsonResponse
+    public function playerStats(PlayerStatsRequest $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
         $filters = $request->only(['player_steam_id']);
-        $stats = $this->playerStatsService->get($user, $filters, $matchId);
+        try {
+            $stats = $this->playerStatsService->get($user, $filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($stats)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($stats);
     }
 
-    public function grenadeExplorer(Request $request, int $matchId)
+    public function grenadeExplorer(GrenadeExplorerRequest $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
         $filters = $request->only(['map', 'match_id', 'round_number', 'grenade_type', 'player_steam_id', 'player_side']);
-        $explorer = $this->grenadeExplorerService->getExplorer($user, $filters, $matchId);
+
+        try {
+            $explorer = $this->grenadeExplorerService->getExplorer($filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($explorer)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($explorer);
     }
 
-    public function grenadeExplorerFilterOptions(Request $request, int $matchId): JsonResponse
+    public function grenadeExplorerFilterOptions(GrenadeExplorerFilterOptionsRequest $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
         $filters = $request->only(['map']);
-        $filterOptions = $this->grenadeExplorerService->getFilterOptions($user, $filters, $matchId);
+
+        try {
+            $filterOptions = $this->grenadeExplorerService->getFilterOptions($filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($filterOptions)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($filterOptions);
     }
 
-    public function headToHead(Request $request, int $matchId)
+    public function headToHead(HeadToHeadRequest $request, int $matchId): JsonResponse
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
         $player1SteamId = $request->get('player1_steam_id');
         $player2SteamId = $request->get('player2_steam_id');
 
-        $headToHead = $this->headToHeadService->getHeadToHead($user, $matchId, $player1SteamId, $player2SteamId);
+        try {
+            $headToHead = $this->headToHeadService->getHeadToHead($user, $matchId, $player1SteamId, $player2SteamId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($headToHead)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($headToHead);
@@ -218,17 +291,19 @@ class MatchController extends Controller
     {
         $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
-        if (empty($user->steam_id)) {
-            return response()->json(['message' => 'Player not found'], 404);
-        }
+        try {
+            $topRolePlayers = $this->topRolePlayerService->get($matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
 
-        $topRolePlayers = $this->topRolePlayerService->get($matchId);
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
 
         if (empty($topRolePlayers)) {
-            return response()->json(['message' => 'Match not found'], 404);
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
         return response()->json($topRolePlayers);

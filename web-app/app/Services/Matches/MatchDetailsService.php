@@ -20,9 +20,15 @@ class MatchDetailsService
 
     private function getMatchDetails(User $user, GameMatch $match): array
     {
-        $playerTeam = $match->players->where('steam_id', $user->player->steam_id)->first()?->pivot->team;
-        $playerWasParticipant = $playerTeam !== null;
-        $playerWonMatch = $playerWasParticipant && $match->winning_team === $playerTeam;
+        $playerTeam = null;
+        $playerWasParticipant = false;
+        $playerWonMatch = true;
+
+        if (! empty($user->player->steam_id)) {
+            $playerTeam = $match->players->where('steam_id', $user->player->steam_id)->first()?->pivot->team;
+            $playerWasParticipant = true;
+            $playerWonMatch = $match->winning_team === $playerTeam;
+        }
 
         return [
             'id' => $match->id,

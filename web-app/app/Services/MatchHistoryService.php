@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\GameMatch;
+use App\Enums\ProcessingStatus;
+use App\Exceptions\PlayerNotFound;
+use App\Models\DemoProcessingJob;
 use App\Models\Player;
 use App\Models\User;
 use App\Services\Matches\MatchDetailsService;
@@ -17,14 +19,24 @@ class MatchHistoryService
         private readonly MatchDetailsService $matchDetailsService,
     ) {}
 
+    /**
+     * @throws PlayerNotFound
+     */
     public function setUser(User $user): void
     {
         $this->user = $user;
+
+        if (! $user->player) {
+            throw new PlayerNotFound('Player not found', [
+                'user_id' => $user->id,
+            ]);
+        }
+
         $this->player = $user->player;
     }
 
     /**
-     * Get paginated match history for better performance with large datasets
+     * @throws PlayerNotFound
      */
     public function getPaginatedMatchHistory(User $user, int $perPage = 10, int $page = 1, array $filters = []): array
     {
@@ -42,8 +54,8 @@ class MatchHistoryService
             ];
         }
 
-        $completedMatches = $this->getCompletedMatches($user, $filters);
-        $inProgressJobs = $this->getInProgressJobs($user, $filters);
+        $completedMatches = $this->getCompletedMatches($filters);
+        $inProgressJobs = $this->getInProgressJobs($filters);
 
         $allMatches = collect([...$completedMatches, ...$inProgressJobs])
             ->sortByDesc('created_at')
@@ -66,24 +78,18 @@ class MatchHistoryService
         ];
     }
 
-    /**
-     * Get completed matches with filters
-     */
-    private function getCompletedMatches(User $user, array $filters = []): array
+    private function getCompletedMatches(array $filters = []): array
     {
         $matchIds = $this->getFilteredMatchIds($filters);
         $completedMatches = [];
 
         foreach ($matchIds as $matchId) {
-            $completedMatches[] = $this->matchDetailsService->getDetails($user, $matchId);
+            $completedMatches[] = $this->matchDetailsService->getDetails($this->user, $matchId);
         }
 
         return $completedMatches;
     }
 
-    /**
-     * Get filtered match IDs without loading full match data
-     */
     private function getFilteredMatchIds(array $filters = []): array
     {
         $query = $this->player->matches()->select('matches.id');
@@ -134,17 +140,13 @@ class MatchHistoryService
         return $query->orderBy('matches.created_at', 'desc')->pluck('id')->toArray();
     }
 
-    /**
-     * Get in-progress jobs with filters
-     */
-    private function getInProgressJobs(User $user, array $filters = []): array
+    private function getInProgressJobs(array $filters = []): array
     {
-        $query = $user->demoProcessingJobs()
+        $query = $this->user->demoProcessingJobs()
             ->where('progress_percentage', '<', 100)
-            ->where('processing_status', '!=', \App\Enums\ProcessingStatus::COMPLETED->value)
+            ->where('processing_status', '!=', ProcessingStatus::COMPLETED->value)
             ->with('match');
 
-        // Apply filters that work for in-progress jobs
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
                 $q->where('map', 'like', '%'.$filters['map'].'%');
@@ -168,38 +170,10 @@ class MatchHistoryService
         $jobs = $query->orderBy('created_at', 'desc')->get();
 
         return $jobs->map(function ($job) {
-            $match = $job->match;
-
-            $matchDetails = null;
-            if ($match) {
-                $matchDetails = [
-                    'id' => $match->id,
-                    'map' => $match->map,
-                    'winning_team_score' => $match->winning_team_score,
-                    'losing_team_score' => $match->losing_team_score,
-                    'winning_team' => $match->winning_team,
-                    'match_type' => $match->match_type,
-                    'created_at' => $match->created_at,
-                ];
-            }
-
-            return [
-                'id' => $job->id,
-                'created_at' => $job->created_at,
-                'is_completed' => false,
-                'match_details' => $matchDetails,
-                'player_stats' => null, // Not available for in-progress jobs
-                'processing_status' => $job->processing_status,
-                'progress_percentage' => $job->progress_percentage,
-                'current_step' => $job->current_step,
-                'error_message' => $job->error_message,
-            ];
+            return $this->createMatchResponseArray($job);
         })->toArray();
     }
 
-    /**
-     * Get a single in-progress job by ID
-     */
     private function getInProgressJobById(User $user, int $jobId): ?array
     {
         $job = $user->demoProcessingJobs()
@@ -213,6 +187,11 @@ class MatchHistoryService
             return null;
         }
 
+        return $this->createMatchResponseArray($job);
+    }
+
+    private function createMatchResponseArray(DemoProcessingJob $job): array
+    {
         $match = $job->match;
 
         $matchDetails = null;
@@ -233,25 +212,11 @@ class MatchHistoryService
             'created_at' => $job->created_at,
             'is_completed' => false,
             'match_details' => $matchDetails,
-            'player_stats' => null, // Not available for in-progress jobs
+            'player_stats' => null,
             'processing_status' => $job->processing_status,
             'progress_percentage' => $job->progress_percentage,
             'current_step' => $job->current_step,
             'error_message' => $job->error_message,
         ];
-    }
-
-    /**
-     * Legacy method for backward compatibility
-     */
-    public function getAllPlayerGunfightEvents(GameMatch $match, Player $player)
-    {
-        return $match
-            ->gunfightEvents()
-            ->where(function ($query) use ($player) {
-                $query->where('player_1_steam_id', $player->steam_id)
-                    ->orWhere('player_2_steam_id', $player->steam_id);
-            })
-            ->get();
     }
 }

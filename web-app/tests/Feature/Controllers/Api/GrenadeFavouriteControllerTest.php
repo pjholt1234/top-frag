@@ -181,7 +181,7 @@ class GrenadeFavouriteControllerTest extends TestCase
 
         $response->assertStatus(409)
             ->assertJson([
-                'message' => 'This grenade is already in your favourites',
+                'message' => 'Grenade already exists in favourites',
             ]);
     }
 
@@ -224,7 +224,7 @@ class GrenadeFavouriteControllerTest extends TestCase
 
         $response->assertStatus(404)
             ->assertJson([
-                'message' => 'Favourite not found',
+                'message' => 'Grenade favourite not found',
             ]);
     }
 
@@ -241,7 +241,7 @@ class GrenadeFavouriteControllerTest extends TestCase
 
         $response->assertStatus(404)
             ->assertJson([
-                'message' => 'Favourite not found',
+                'message' => 'Grenade favourite not found',
             ]);
 
         // Favourite should still exist

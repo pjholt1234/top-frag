@@ -12,7 +12,7 @@ class PlayerStatsService
     use MatchAccessTrait;
 
     public function __construct(
-        private PlayerComplexionService $playerComplexionService
+        private readonly PlayerComplexionService $playerComplexionService
     ) {}
 
     public function get(User $user, array $filters, int $matchId): array
@@ -33,13 +33,8 @@ class PlayerStatsService
 
     private function buildStats(User $user, array $filters, int $matchId): array
     {
-        // Get the match first to access players
-        $match = $this->getMatchForUser($user, $matchId);
-        if (! $match) {
-            return [];
-        }
+        $match = GameMatch::find($matchId);
 
-        // If no player specified, return just the players list and current user info
         if (empty($filters['player_steam_id'])) {
             return [
                 'players' => $this->getAvailablePlayers($match),
@@ -127,16 +122,5 @@ class PlayerStatsService
                 'name' => $player->name,
             ];
         })->toArray();
-    }
-
-    private function getMatchForUser(User $user, int $matchId): ?GameMatch
-    {
-        if (! $user->player) {
-            return null;
-        }
-
-        return $user->player->matches()
-            ->where('matches.id', $matchId)
-            ->first();
     }
 }

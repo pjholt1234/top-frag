@@ -117,7 +117,7 @@ class AuthControllerTest extends TestCase
                 'token',
             ])
             ->assertJson([
-                'message' => 'Login successful',
+                'message' => 'User login successfully',
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -215,7 +215,7 @@ class AuthControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Successfully logged out',
+                'message' => 'User logout successfully',
             ]);
 
         // Verify the specific token was deleted

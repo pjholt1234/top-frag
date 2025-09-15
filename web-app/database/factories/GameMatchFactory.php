@@ -37,8 +37,6 @@ class GameMatchFactory extends Factory
             'start_timestamp' => $startTime,
             'end_timestamp' => $endTime,
             'total_rounds' => $this->faker->numberBetween(15, 50),
-            'total_fight_events' => $this->faker->numberBetween(50, 300),
-            'total_grenade_events' => $this->faker->numberBetween(20, 150),
         ];
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 
 class MatchCacheManager
 {
-    private const CACHE_TTL = 1800; // 30 minutes
+    private const int CACHE_TTL = 1800; // 30 minutes
 
     /**
      * Check if caching is enabled via environment variable

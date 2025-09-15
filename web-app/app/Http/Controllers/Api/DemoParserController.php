@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\DemoParserJobNotFoundException;
+use App\Exceptions\DemoParserMatchNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompletionCallbackRequest;
 use App\Http\Requests\ProgressCallbackRequest;
@@ -16,17 +18,31 @@ class DemoParserController extends Controller
 
     public function handleEvent(Request $request, string $jobId, string $eventName): JsonResponse
     {
-        Log::channel('parser')->info('Demo parser event received', [
-            'job_id' => $jobId,
-            'event_name' => $eventName,
-            'data' => $request->input('data', []),
-        ]);
+        try {
+            $this->demoParserService->createMatchEvent($jobId, $request->input('data', []), $eventName);
+        } catch (DemoParserMatchNotFoundException|DemoParserJobNotFoundException $e) {
+            Log::warning($e->getMessage());
 
-        $this->demoParserService->createMatchEvent($jobId, $request->input('data', []), $eventName);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $jobId,
+                'event_name' => $eventName,
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $jobId,
+                'event_name' => $eventName,
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Event processed successfully',
+            'message' => config('messaging.parsing.events.created'),
             'job_id' => $jobId,
             'event_name' => $eventName,
         ]);
@@ -36,16 +52,34 @@ class DemoParserController extends Controller
     {
         $validated = $request->validated();
 
-        $this->demoParserService->updateProcessingJob($validated['job_id'], $validated);
+        try {
+            $this->demoParserService->updateProcessingJob($validated['job_id'], $validated);
 
-        if (isset($validated['match'])) {
-            $playersData = $validated['players'] ?? null;
-            $this->demoParserService->createMatchWithPlayers($validated['job_id'], $validated['match'], $playersData);
+            if (isset($validated['match'])) {
+                $playersData = $validated['players'] ?? null;
+                $this->demoParserService->createMatchWithPlayers($validated['job_id'], $validated['match'], $playersData);
+            }
+        } catch (DemoParserJobNotFoundException $e) {
+            Log::warning($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $validated['job_id'],
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $validated['job_id'],
+            ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Progress update received',
+            'message' => config('messaging.parsing.progress.updated'),
             'job_id' => $validated['job_id'],
         ], 200);
     }
@@ -54,12 +88,30 @@ class DemoParserController extends Controller
     {
         $validated = $request->validated();
 
-        $this->demoParserService->updateProcessingJob($validated['job_id'], $validated, true);
+        try {
+            $this->demoParserService->updateProcessingJob($validated['job_id'], $validated, true);
+        } catch (DemoParserJobNotFoundException $e) {
+            Log::warning($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $validated['job_id'],
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'job_id' => $validated['job_id'],
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Completion update received',
+            'message' => config('messaging.parsing.progress.completed'),
             'job_id' => $validated['job_id'],
-        ], 200);
+        ]);
     }
 }

@@ -113,7 +113,7 @@ class AuthControllerTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
 
         $responseData = json_decode($response->getContent(), true);
-        $this->assertEquals('Login successful', $responseData['message']);
+        $this->assertEquals('User login successfully', $responseData['message']);
         $this->assertEquals($user->id, $responseData['user']['id']);
         $this->assertEquals($user->name, $responseData['user']['name']);
         $this->assertEquals($user->email, $responseData['user']['email']);
@@ -187,7 +187,7 @@ class AuthControllerTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
 
         $responseData = json_decode($response->getContent(), true);
-        $this->assertEquals('Successfully logged out', $responseData['message']);
+        $this->assertEquals('User logout successfully', $responseData['message']);
 
         // For unit tests, we just verify the method doesn't throw an error
         // The actual token deletion is tested in feature tests
