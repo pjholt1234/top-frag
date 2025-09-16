@@ -43,12 +43,11 @@ class UtilityAnalysisService
             return [];
         }
 
-        // Check if user has access to this match
-        if (! $user->steam_id || ! $user->player || ! $match->playerWasParticipant($user->player)) {
-            return [];
+        if(empty($playerSteamId)){
+            $playerSteamId = $this->getDefaultPlayerSteamId($match, $user);
         }
 
-        $query = $match->grenadeEvents();
+        $query = $match->grenadeEvents()->where('player_steam_id', $playerSteamId);
 
         if ($playerSteamId) {
             $query->where('player_steam_id', $playerSteamId);
@@ -218,6 +217,15 @@ class UtilityAnalysisService
                 'name' => $player->name,
             ];
         })->toArray();
+    }
+
+    private function getDefaultPlayerSteamId(GameMatch $match, User $user): int
+    {
+        if($user->steam_id){
+            return $user->steam_id;
+        } else {
+            return $match->players->first()->steam_id;
+        }
     }
 
     private function getAvailableRounds(GameMatch $match): array

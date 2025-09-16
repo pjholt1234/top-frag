@@ -123,31 +123,7 @@ class MatchController extends Controller
             return response()->json(['message' => config('messaging.generic.critical-error')], 500);
         }
 
-        // Only return 404 if the match itself doesn't exist or user doesn't have access
-        // Empty analysis data (e.g., no grenade events for a specific round) is valid
         if (empty($analysis)) {
-            // If user doesn't have steam_id, return empty data instead of 404
-            if (! $user->steam_id) {
-                return response()->json([
-                    'utility_usage' => [],
-                    'grenade_effectiveness' => [],
-                    'grenade_timing' => [],
-                    'overall_stats' => [
-                        'overall_grenade_rating' => 0,
-                        'flash_stats' => [
-                            'enemy_avg_duration' => 0,
-                            'friendly_avg_duration' => 0,
-                            'enemy_avg_blinded' => 0,
-                            'friendly_avg_blinded' => 0,
-                        ],
-                        'he_stats' => ['avg_damage' => 0],
-                    ],
-                    'players' => [],
-                    'rounds' => [],
-                    'current_user_steam_id' => null,
-                ]);
-            }
-
             return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
         }
 
