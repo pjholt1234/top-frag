@@ -43,7 +43,7 @@ class UtilityAnalysisService
             return [];
         }
 
-        if(empty($playerSteamId)){
+        if (empty($playerSteamId)) {
             $playerSteamId = $this->getDefaultPlayerSteamId($match, $user);
         }
 
@@ -221,7 +221,7 @@ class UtilityAnalysisService
 
     private function getDefaultPlayerSteamId(GameMatch $match, User $user): int
     {
-        if($user->steam_id){
+        if ($user->steam_id) {
             return $user->steam_id;
         } else {
             return $match->players->first()->steam_id;
