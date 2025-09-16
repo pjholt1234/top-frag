@@ -219,7 +219,7 @@ class UtilityAnalysisService
         })->toArray();
     }
 
-    private function getDefaultPlayerSteamId(GameMatch $match, User $user): int
+    private function getDefaultPlayerSteamId(GameMatch $match, User $user): string
     {
         if ($user->steam_id) {
             return $user->steam_id;
