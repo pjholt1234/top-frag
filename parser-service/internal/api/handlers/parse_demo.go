@@ -538,6 +538,11 @@ func (h *ParseDemoHandler) sendProgressUpdateWithMatchData(ctx context.Context, 
 }
 
 func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.ProcessingJob, parsedData *types.ParsedDemoData) error {
+	// Send match data first (includes game mode and match type)
+	if err := h.batchSender.SendMatchData(ctx, job.JobID, job.CompletionCallbackURL, parsedData.Match); err != nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send match data", err)
+	}
+
 	if err := h.batchSender.SendRoundEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.RoundEvents); err != nil {
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send round events", err)
 	}

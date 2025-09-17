@@ -169,5 +169,10 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 	playerMatchEvent.AverageGrenadeValueLost = float64(totalGrenadeValueLostOnDeath) / float64(numberOfRoundsParticipated)
 	playerMatchEvent.ADR = float64(playerMatchEvent.Damage) / float64(numberOfRoundsParticipated)
 
+	// Set the matchmaking rank from the player data
+	if player, exists := mh.processor.matchState.Players[playerSteamID]; exists && player.Rank != nil {
+		playerMatchEvent.MatchmakingRank = player.Rank
+	}
+
 	return playerMatchEvent
 }

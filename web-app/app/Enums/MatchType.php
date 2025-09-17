@@ -9,4 +9,5 @@ enum MatchType: string
     case FACEIT = 'faceit';
     case ESPORTAL = 'esportal';
     case OTHER = 'other';
+    case VALVE = 'valve';
 }

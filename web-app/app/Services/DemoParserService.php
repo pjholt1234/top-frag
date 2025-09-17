@@ -148,6 +148,7 @@ class DemoParserService
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
                 MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
                 MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
+                MatchEventType::MATCH->value => $this->updateMatchData($match, $eventData),
                 default => Log::warning('Match event not found', [
                     'event_name' => $eventName,
                 ]),
@@ -550,5 +551,37 @@ class DemoParserService
         }
 
         PlayerMatchEvent::insert($records);
+    }
+
+    private function updateMatchData(GameMatch $match, array $matchData): void
+    {
+        $updateData = [];
+
+        // Update match type if provided
+        if (isset($matchData['match_type'])) {
+            $updateData['match_type'] = $matchData['match_type'];
+        }
+
+        // Update game mode if provided
+        if (isset($matchData['game_mode']) && isset($matchData['game_mode']['mode'])) {
+            $updateData['game_mode'] = $matchData['game_mode']['mode'];
+        }
+
+        // Update other match fields if provided
+        if (isset($matchData['total_rounds'])) {
+            $updateData['total_rounds'] = $matchData['total_rounds'];
+        }
+        if (isset($matchData['playback_ticks'])) {
+            $updateData['playback_ticks'] = $matchData['playback_ticks'];
+        }
+
+        if (! empty($updateData)) {
+            $match->update($updateData);
+
+            Log::info('Updated match data', [
+                'match_id' => $match->id,
+                'updated_fields' => array_keys($updateData),
+            ]);
+        }
     }
 }

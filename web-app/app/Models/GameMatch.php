@@ -29,6 +29,7 @@ class GameMatch extends Model
         'total_rounds',
         'playback_ticks',
         'uploaded_by',
+        'game_mode',
     ];
 
     protected $casts = [

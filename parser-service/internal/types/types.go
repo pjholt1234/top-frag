@@ -24,9 +24,10 @@ type Vector struct {
 }
 
 type Player struct {
-	SteamID string `json:"steam_id"`
-	Name    string `json:"name"`
-	Team    string `json:"team"` // "A" or "B" (arbitrary team assignment)
+	SteamID string  `json:"steam_id"`
+	Name    string  `json:"name"`
+	Team    string  `json:"team"`           // "A" or "B" (arbitrary team assignment)
+	Rank    *string `json:"rank,omitempty"` // Player's matchmaking rank
 }
 
 type GunfightEvent struct {
@@ -268,11 +269,20 @@ type Match struct {
 	WinningTeam      string     `json:"winning_team"` // "A" or "B"
 	WinningTeamScore int        `json:"winning_team_score"`
 	LosingTeamScore  int        `json:"losing_team_score"`
-	MatchType        string     `json:"match_type"`
+	MatchType        string     `json:"match_type"`          // Legacy field for backward compatibility
+	GameMode         *GameMode  `json:"game_mode,omitempty"` // Detailed game mode information
 	StartTimestamp   *time.Time `json:"start_timestamp,omitempty"`
 	EndTimestamp     *time.Time `json:"end_timestamp,omitempty"`
 	TotalRounds      int        `json:"total_rounds"`
 	PlaybackTicks    int        `json:"playback_ticks"` // Match duration in ticks from demo header
+}
+
+// GameMode represents the detected game mode
+type GameMode struct {
+	Mode        string `json:"mode"`         // "premier", "competitive", "wingman", "casual", "unknown"
+	DisplayName string `json:"display_name"` // Human-readable name
+	MaxRounds   int    `json:"max_rounds"`   // Maximum rounds for this mode
+	HasHalftime bool   `json:"has_halftime"` // Whether this mode has halftime
 }
 
 type ParsedDemoData struct {
@@ -446,8 +456,8 @@ const (
 )
 
 const (
+	MatchTypeValve    = "valve"
 	MatchTypeHLTV     = "hltv"
-	MatchTypeMM       = "mm"
 	MatchTypeFaceit   = "faceit"
 	MatchTypeESPortal = "esportal"
 	MatchTypeOther    = "other"

@@ -5,12 +5,28 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"parser-service/internal/config"
 	"parser-service/internal/types"
 
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	"github.com/sirupsen/logrus"
 )
+
+// createMockParser creates a mock demoinfocs.Parser for testing
+func createMockParser() demoinfocs.Parser {
+	// Return nil as a mock - the buildParsedData method should handle nil gracefully
+	return nil
+}
+
+// setupTestParser creates a DemoParser with initialized progress manager for testing
+func setupTestParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
+	parser := NewDemoParser(cfg, logger)
+	// Initialize progress manager with a no-op callback
+	parser.progressManager = NewProgressManager(logger, func(update types.ProgressUpdate) {}, 100*time.Millisecond)
+	return parser
+}
 
 func TestNewDemoParser(t *testing.T) {
 	cfg := &config.Config{}
@@ -129,7 +145,7 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 func TestDemoParser_BuildParsedData(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	// Create a test match state
 	matchState := &types.MatchState{
@@ -196,7 +212,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	eventProcessor.teamAWins = 1 // CT wins 1 round
 	eventProcessor.teamBWins = 2 // T wins 2 rounds
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -252,7 +268,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	// Create a test match state with no rounds
 	matchState := &types.MatchState{
@@ -265,7 +281,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	// Create an event processor
 	eventProcessor := NewEventProcessor(matchState, logger)
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -292,7 +308,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	// Create a test match state with tied rounds
 	matchState := &types.MatchState{
@@ -320,7 +336,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	eventProcessor.teamAWins = 1 // CT wins 1 round
 	eventProcessor.teamBWins = 1 // T wins 1 round
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -343,7 +359,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	// Create a test match state simulating CS2 halftime switch
 	// First half: CT wins 7, T wins 5
@@ -401,7 +417,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	eventProcessor.teamAWins = 10 // CT wins 10 rounds total
 	eventProcessor.teamBWins = 11 // T wins 11 rounds total
 
-	parsedData := parser.buildParsedData(matchState, "de_ancient", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_ancient", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -428,7 +444,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	matchState := &types.MatchState{
 		CurrentRound: 1,
@@ -450,7 +466,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	eventProcessor.teamAWins = 1
 	eventProcessor.teamBWins = 0
 
-	parsedData := parser.buildParsedData(matchState, "", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -516,7 +532,7 @@ func TestDemoParser_ParseDemo_InvalidExtension(t *testing.T) {
 func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	cfg := &config.Config{}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser := setupTestParser(cfg, logger)
 
 	// Create a test match state simulating overtime with side switches
 	// First half: CT wins 6, T wins 6 (tied 6-6)
@@ -619,7 +635,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	eventProcessor.teamAWins = 14
 	eventProcessor.teamBWins = 16
 
-	parsedData := parser.buildParsedData(matchState, "de_mirage", 1000, eventProcessor)
+	parsedData := parser.buildParsedData(matchState, "de_mirage", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")

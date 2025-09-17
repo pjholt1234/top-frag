@@ -10,4 +10,5 @@ enum MatchEventType: string
     case ROUND = 'round';
     case PLAYER_ROUND = 'player-round';
     case PLAYER_MATCH = 'player-match';
+    case MATCH = 'match';
 }

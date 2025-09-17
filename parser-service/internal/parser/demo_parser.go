@@ -17,15 +17,17 @@ import (
 )
 
 type DemoParser struct {
-	config          *config.Config
-	logger          *logrus.Logger
-	progressManager *ProgressManager
+	config           *config.Config
+	logger           *logrus.Logger
+	progressManager  *ProgressManager
+	gameModeDetector *GameModeDetector
 }
 
 func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
 	return &DemoParser{
-		config: cfg,
-		logger: logger,
+		config:           cfg,
+		logger:           logger,
+		gameModeDetector: NewGameModeDetector(logger),
 	}
 }
 
@@ -154,7 +156,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	dp.postProcessGrenadeMovement(eventProcessor)
 	dp.postProcessDamageAssists(eventProcessor)
 
-	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor)
+	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor, demoParser)
 
 	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
 		Info("Demo parsing completed")
@@ -537,7 +539,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 }
 
-func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, playbackTicks int, eventProcessor *EventProcessor) *types.ParsedDemoData {
+func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, playbackTicks int, eventProcessor *EventProcessor, demoParser demoinfocs.Parser) *types.ParsedDemoData {
 	players := make([]types.Player, 0, len(matchState.Players))
 	for _, player := range matchState.Players {
 		players = append(players, *player)
@@ -570,12 +572,28 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		losingTeamScore = teamAWins
 	}
 
+	// Detect game mode
+	gameMode, gameModeError := dp.gameModeDetector.DetectGameMode(demoParser)
+
+	// Log game mode detection errors but continue parsing
+	if gameModeError != nil {
+		if parseErr, ok := gameModeError.(*types.ParseError); ok {
+			dp.progressManager.ReportParseError(parseErr)
+		} else {
+			dp.progressManager.ReportError(gameModeError.Error(), "GAME_MODE_DETECTION_FAILED")
+		}
+	}
+
+	// Determine match type based on player ranks
+	matchType := dp.detectMatchType(demoParser)
+
 	match := types.Match{
 		Map:              mapName,
 		WinningTeam:      winningTeam,
 		WinningTeamScore: winningTeamScore,
 		LosingTeamScore:  losingTeamScore,
-		MatchType:        types.MatchTypeOther,
+		MatchType:        matchType,
+		GameMode:         gameMode,
 		StartTimestamp:   nil,
 		EndTimestamp:     nil,
 		TotalRounds:      totalRounds,
@@ -584,6 +602,9 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 
 	now := time.Now()
 	match.EndTimestamp = &now
+
+	// Aggregate player match events before logging
+	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
 	dp.logger.WithFields(logrus.Fields{
 		"map_name":            mapName,
@@ -596,6 +617,9 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"team_a_started_as":   eventProcessor.teamAStartedAs,
 		"team_b_started_as":   eventProcessor.teamBStartedAs,
 		"playback_ticks":      match.PlaybackTicks,
+		"match_type":          match.MatchType,
+		"game_mode":           gameMode.Mode,
+		"game_mode_display":   gameMode.DisplayName,
 		"gunfight_events":     len(matchState.GunfightEvents),
 		"grenade_events":      len(matchState.GrenadeEvents),
 		"damage_events":       len(matchState.DamageEvents),
@@ -603,8 +627,6 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		"player_round_events": len(matchState.PlayerRoundEvents),
 		"player_match_events": len(matchState.PlayerMatchEvents),
 	}).Info("Match data built with event counts")
-
-	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
 	return &types.ParsedDemoData{
 		Match:             match,
@@ -616,4 +638,64 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		PlayerRoundEvents: matchState.PlayerRoundEvents,
 		PlayerMatchEvents: matchState.PlayerMatchEvents,
 	}
+}
+
+// detectMatchType determines the match type based on player ranks
+func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
+	if parser == nil {
+		dp.logger.Warn("Parser is nil, defaulting to 'other' match type")
+		return types.MatchTypeOther
+	}
+
+	gameState := parser.GameState()
+	if gameState == nil {
+		dp.logger.Warn("Game state is nil, defaulting to 'other' match type")
+		return types.MatchTypeOther
+	}
+
+	players := gameState.Participants().All()
+	if len(players) == 0 {
+		dp.logger.Warn("No players found, defaulting to 'other' match type")
+		return types.MatchTypeOther
+	}
+
+	// Check if any player has a valid rank (not unranked)
+	hasValidRank := false
+	rankTypeCounts := make(map[int]int)
+
+	for _, player := range players {
+		if player != nil {
+			rank := player.Rank()
+			rankType := player.RankType()
+			rankTypeCounts[rankType]++
+
+			// A valid rank is one that's not 0 (unranked) and has a valid rank type
+			if rank > 0 && rankType > 0 {
+				hasValidRank = true
+			}
+
+			dp.logger.WithFields(logrus.Fields{
+				"player_name": player.Name,
+				"steam_id":    player.SteamID64,
+				"rank":        rank,
+				"rank_type":   rankType,
+			}).Debug("Match type detection - player rank analysis")
+		}
+	}
+
+	dp.logger.WithFields(logrus.Fields{
+		"rank_type_counts": rankTypeCounts,
+		"has_valid_rank":   hasValidRank,
+		"total_players":    len(players),
+	}).Debug("Match type detection analysis")
+
+	// If any player has a valid rank, it's a Valve match
+	if hasValidRank {
+		dp.logger.Info("Valid ranks detected, match type: valve")
+		return types.MatchTypeValve
+	}
+
+	// No valid ranks found, default to other
+	dp.logger.Info("No valid ranks detected, match type: other")
+	return types.MatchTypeOther
 }

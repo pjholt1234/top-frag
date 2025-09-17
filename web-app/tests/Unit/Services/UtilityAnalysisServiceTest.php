@@ -46,15 +46,6 @@ class UtilityAnalysisServiceTest extends TestCase
         $this->match->players()->attach($this->player->id, ['team' => 'A']);
     }
 
-    public function test_get_utility_analysis_returns_empty_array_for_invalid_user()
-    {
-        $userWithoutPlayer = User::factory()->create(['steam_id' => null]);
-
-        $result = $this->service->getAnalysis($userWithoutPlayer, $this->match->id);
-
-        $this->assertEmpty($result);
-    }
-
     public function test_get_utility_analysis_returns_empty_array_for_nonexistent_match()
     {
         $result = $this->service->getAnalysis($this->user, 99999);

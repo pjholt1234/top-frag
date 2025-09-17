@@ -149,13 +149,21 @@ func TestEventProcessor_HandleRoundEnd_ErrorScenarios(t *testing.T) {
 			setup: func() *EventProcessor {
 				logger := logrus.New()
 				matchState := &types.MatchState{
-					Players: make(map[string]*types.Player),
+					Players:      make(map[string]*types.Player),
+					CurrentRound: 1, // Set a valid round number in match state
+				}
+				// Add some players to avoid "no players found in round" error
+				matchState.Players["steam_123"] = &types.Player{
+					SteamID: "steam_123",
+					Name:    "TestPlayer",
+					Team:    "A",
 				}
 				processor := &EventProcessor{
 					matchState:      matchState,
 					logger:          logger,
 					playerStates:    make(map[uint64]*types.PlayerState),
 					teamAssignments: make(map[string]string),
+					currentRound:    1, // Set a valid round number
 				}
 				matchHandler := NewMatchHandler(processor, logger)
 				roundHandler := NewRoundHandler(processor, logger)

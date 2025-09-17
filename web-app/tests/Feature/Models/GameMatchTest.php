@@ -56,6 +56,7 @@ class GameMatchTest extends TestCase
             'total_rounds',
             'playback_ticks',
             'uploaded_by',
+            'game_mode',
         ];
         $this->assertEquals($expectedFillable, $match->getFillable());
     }

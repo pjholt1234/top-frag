@@ -39,6 +39,7 @@ type EventProcessor struct {
 	matchHandler       *MatchHandler
 	roundHandler       *RoundHandler
 	playerMatchHandler *PlayerMatchHandler
+	rankExtractor      *RankExtractor
 }
 
 type FlashEffect struct {
@@ -89,6 +90,7 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	ep.matchHandler = NewMatchHandler(ep, logger)
 	ep.roundHandler = NewRoundHandler(ep, logger)
 	ep.playerMatchHandler = NewPlayerMatchHandler(ep, logger)
+	ep.rankExtractor = NewRankExtractor(logger)
 
 	return ep
 }
@@ -269,11 +271,23 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) error {
 	}
 	assignedTeam := ep.getAssignedTeam(steamID)
 
+	// Extract player rank
+	var matchmakingRank *string
+	if ep.rankExtractor != nil {
+		matchmakingRank = ep.rankExtractor.ExtractPlayerRank(player)
+	}
+
 	if _, exists := ep.matchState.Players[steamID]; !exists {
 		ep.matchState.Players[steamID] = &types.Player{
 			SteamID: steamID,
 			Name:    player.Name,
 			Team:    assignedTeam,
+			Rank:    matchmakingRank,
+		}
+	} else {
+		// Update the rank if the player already exists but doesn't have a rank
+		if ep.matchState.Players[steamID].Rank == nil && matchmakingRank != nil {
+			ep.matchState.Players[steamID].Rank = matchmakingRank
 		}
 	}
 

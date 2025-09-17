@@ -619,7 +619,7 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 				"kills_vs_eco":                  event.KillsVsEco,
 				"kills_vs_force_buy":            event.KillsVsForceBuy,
 				"kills_vs_full_buy":             event.KillsVsFullBuy,
-				//"matchmaking_rank":              nil,
+				"matchmaking_rank":              event.MatchmakingRank,
 			}
 
 			flatEvents[j] = flatEvent
@@ -649,6 +649,49 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 			"events":        len(batch),
 		}).Debug("Sent player round events batch")
 	}
+
+	return nil
+}
+
+func (bs *BatchSender) SendMatchData(ctx context.Context, jobID string, completionURL string, match types.Match) error {
+	bs.logger.WithFields(logrus.Fields{
+		"job_id":       jobID,
+		"map":          match.Map,
+		"match_type":   match.MatchType,
+		"game_mode":    match.GameMode,
+		"total_rounds": match.TotalRounds,
+	}).Info("Sending match data")
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send match data", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+	bs.baseURL = baseURL
+
+	payload := map[string]interface{}{
+		"job_id": jobID,
+		"data":   match,
+	}
+
+	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeMatch)
+	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send match data", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+
+	bs.logger.WithFields(logrus.Fields{
+		"job_id":     jobID,
+		"map":        match.Map,
+		"match_type": match.MatchType,
+	}).Info("Successfully sent match data")
 
 	return nil
 }
