@@ -109,7 +109,7 @@ export const useGrenadeFavourites = () => {
             if (
               isAxiosError &&
               (error as { response: { status: number } }).response?.status ===
-              409
+                409
             ) {
               // Already favourited, update state
               setFavouritedGrenades(prev => new Set(prev).add(key));

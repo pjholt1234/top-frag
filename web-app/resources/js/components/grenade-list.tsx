@@ -111,7 +111,10 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
   // Initialize favourite status when grenades change (only for regular grenade library)
   useEffect(() => {
     if (showFavourites && memoizedGrenades.length > 0 && matchId) {
-      initializeFavouriteStatus(memoizedGrenades as GrenadeData[], parseInt(matchId));
+      initializeFavouriteStatus(
+        memoizedGrenades as GrenadeData[],
+        parseInt(matchId)
+      );
     }
   }, [memoizedGrenades, showFavourites, matchId, initializeFavouriteStatus]);
 
@@ -188,8 +191,9 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
             return (
               <Card
                 key={grenade.id}
-                className={`cursor-pointer transition-all hover:shadow-md py-2 ${isSelected ? 'ring-2 ring-orange-500' : ''
-                  }`}
+                className={`cursor-pointer transition-all hover:shadow-md py-2 ${
+                  isSelected ? 'ring-2 ring-orange-500' : ''
+                }`}
                 onClick={() => onGrenadeClick(grenade)}
               >
                 <CardContent className="px-3">

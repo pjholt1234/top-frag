@@ -90,7 +90,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson('/api/grenade-favourites?map=de_dust2&match_id=' . $this->match->id);
+            ->getJson('/api/grenade-favourites?map=de_dust2&match_id='.$this->match->id);
 
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('grenades'));
@@ -205,7 +205,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
+            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -237,7 +237,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
+            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
 
         $response->assertStatus(404)
             ->assertJson([

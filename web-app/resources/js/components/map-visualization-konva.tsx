@@ -132,7 +132,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     if (onGrenadeSelect) {
       const grenadeId =
         newSelectedIndex !== null &&
-          filteredGrenadePositions[newSelectedIndex]?.id
+        filteredGrenadePositions[newSelectedIndex]?.id
           ? filteredGrenadePositions[newSelectedIndex].id
           : null;
       onGrenadeSelect(grenadeId);
