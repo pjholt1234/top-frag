@@ -90,7 +90,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson('/api/grenade-favourites?map=de_dust2&match_id='.$this->match->id);
+            ->getJson('/api/grenade-favourites?map=de_dust2&match_id=' . $this->match->id);
 
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('grenades'));
@@ -205,7 +205,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
+            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -237,7 +237,7 @@ class GrenadeFavouriteControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson('/api/grenade-favourites/'.$favourite->id);
+            ->deleteJson('/api/grenade-favourites/' . $favourite->id);
 
         $response->assertStatus(404)
             ->assertJson([
@@ -248,5 +248,79 @@ class GrenadeFavouriteControllerTest extends TestCase
         $this->assertDatabaseHas('grenade_favourites', [
             'id' => $favourite->id,
         ]);
+    }
+
+    public function test_get_match_favourites_returns_favourite_keys_for_match(): void
+    {
+        // Create a player record for the steam_id that will be used in the factory
+        $player = \App\Models\Player::factory()->create([
+            'steam_id' => 'STEAM_123456789',
+            'name' => 'Test Player',
+        ]);
+
+        // Create some favourites for the user in this match
+        $favourite1 = GrenadeFavourite::factory()->create([
+            'user_id' => $this->user->id,
+            'match_id' => $this->match->id,
+            'player_steam_id' => $player->steam_id,
+            'round_number' => 1,
+            'tick_timestamp' => 1000,
+        ]);
+
+        $favourite2 = GrenadeFavourite::factory()->create([
+            'user_id' => $this->user->id,
+            'match_id' => $this->match->id,
+            'player_steam_id' => $player->steam_id,
+            'round_number' => 2,
+            'tick_timestamp' => 2000,
+        ]);
+
+        // Create a favourite for a different match (should not be included)
+        $otherMatch = GameMatch::factory()->create(['map' => 'de_mirage']);
+        GrenadeFavourite::factory()->create([
+            'user_id' => $this->user->id,
+            'match_id' => $otherMatch->id,
+            'player_steam_id' => $player->steam_id,
+            'round_number' => 1,
+            'tick_timestamp' => 1000,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/matches/{$this->match->id}/grenade-favourites");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'favourite_keys' => [],
+                'favourite_ids' => [],
+            ]);
+
+        $data = $response->json();
+
+        // Should have 2 favourite keys
+        $this->assertCount(2, $data['favourite_keys']);
+        $this->assertCount(2, $data['favourite_ids']);
+
+        // Check that the keys are in the correct format
+        $expectedKey1 = "{$this->match->id}-1-1000-{$player->steam_id}";
+        $expectedKey2 = "{$this->match->id}-2-2000-{$player->steam_id}";
+
+        $this->assertContains($expectedKey1, $data['favourite_keys']);
+        $this->assertContains($expectedKey2, $data['favourite_keys']);
+
+        // Check that the favourite IDs are mapped correctly
+        $this->assertEquals($favourite1->id, $data['favourite_ids'][$expectedKey1]);
+        $this->assertEquals($favourite2->id, $data['favourite_ids'][$expectedKey2]);
+    }
+
+    public function test_get_match_favourites_returns_empty_for_match_with_no_favourites(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson("/api/matches/{$this->match->id}/grenade-favourites");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'favourite_keys' => [],
+                'favourite_ids' => [],
+            ]);
     }
 }

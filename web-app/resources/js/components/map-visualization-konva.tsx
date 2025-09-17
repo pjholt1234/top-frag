@@ -132,7 +132,7 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
     if (onGrenadeSelect) {
       const grenadeId =
         newSelectedIndex !== null &&
-        filteredGrenadePositions[newSelectedIndex]?.id
+          filteredGrenadePositions[newSelectedIndex]?.id
           ? filteredGrenadePositions[newSelectedIndex].id
           : null;
       onGrenadeSelect(grenadeId);
@@ -292,8 +292,10 @@ const MapVisualizationKonva: React.FC<MapVisualizationProps> = ({
                     ? 0.3
                     : 1.0;
 
+                // Generate a truly unique key that includes position data to ensure uniqueness
+                const key = `grenade-${position.id || 'no-id'}-${position.x}-${position.y}-${position.z}-${index}`;
                 return (
-                  <React.Fragment key={index}>
+                  <React.Fragment key={key}>
                     {/* Grenade Marker */}
                     <Circle
                       x={pixelCoords.x}

@@ -33,7 +33,7 @@ export const useGrenadeFavourites = () => {
               match_id: grenade.match_id,
               round_number: grenade.round_number,
               tick_timestamp: grenade.tick_timestamp || 0,
-              player_steam_id: grenade.player_steam_id,
+              player_steam_id: grenade.player_steam_id ?? '',
             },
             requireAuth: true,
           }
@@ -50,7 +50,7 @@ export const useGrenadeFavourites = () => {
 
   // Add a grenade to favourites
   const addToFavourites = useCallback(
-    (grenade: GrenadeData): void => {
+    (grenade: GrenadeData) => {
       const key = getGrenadeKey(grenade);
 
       if (loading.get(key)) return false;
@@ -66,7 +66,7 @@ export const useGrenadeFavourites = () => {
               round_number: grenade.round_number,
               round_time: grenade.round_time || 0,
               tick_timestamp: grenade.tick_timestamp || 0,
-              player_steam_id: grenade.player_steam_id || '',
+              player_steam_id: grenade.player_steam_id ?? '',
               player_side: grenade.player_side || 'CT',
               grenade_type: grenade.grenade_type,
               player_x: grenade.player_x,
@@ -98,7 +98,7 @@ export const useGrenadeFavourites = () => {
 
             setFavouritedGrenades(prev => new Set(prev).add(key));
             setFavouriteIds(prev =>
-              new Map(prev).set(key, response.data.favourite.id)
+              new Map(prev).set(key, (response.data as any).favourite.id)
             );
 
             return true;
@@ -109,7 +109,7 @@ export const useGrenadeFavourites = () => {
             if (
               isAxiosError &&
               (error as { response: { status: number } }).response?.status ===
-                409
+              409
             ) {
               // Already favourited, update state
               setFavouritedGrenades(prev => new Set(prev).add(key));
@@ -136,7 +136,7 @@ export const useGrenadeFavourites = () => {
 
   // Remove a grenade from favourites
   const removeFromFavourites = useCallback(
-    (grenade: GrenadeData): void => {
+    (grenade: GrenadeData) => {
       const key = getGrenadeKey(grenade);
       const favouriteId = favouriteIds.get(key);
 
@@ -186,7 +186,7 @@ export const useGrenadeFavourites = () => {
 
   // Toggle favourite status
   const toggleFavourite = useCallback(
-    (grenade: GrenadeData): void => {
+    (grenade: GrenadeData) => {
       const key = getGrenadeKey(grenade);
       const isFavourited = favouritedGrenades.has(key);
 
@@ -219,22 +219,40 @@ export const useGrenadeFavourites = () => {
 
   // Initialize favourite status for a list of grenades
   const initializeFavouriteStatus = useCallback(
-    async (grenades: GrenadeData[]) => {
-      const promises = grenades.map(async grenade => {
-        const status = await checkFavouriteStatus(grenade);
-        const key = getGrenadeKey(grenade);
+    async (grenades: GrenadeData[], matchId: number) => {
+      try {
+        // Get all favourited grenades for this match in a single request
+        const response = await api.get<{
+          favourite_keys: string[];
+          favourite_ids: Record<string, number>;
+        }>(`/matches/${matchId}/grenade-favourites`, {
+          requireAuth: true,
+        });
 
-        if (status.is_favourited) {
-          setFavouritedGrenades(prev => new Set(prev).add(key));
-          if (status.favourite_id) {
-            setFavouriteIds(prev =>
-              new Map(prev).set(key, status.favourite_id)
-            );
+        const { favourite_keys, favourite_ids } = response.data;
+
+        // Update state with all favourited grenades
+        setFavouritedGrenades(new Set(favourite_keys));
+        setFavouriteIds(new Map(Object.entries(favourite_ids)));
+      } catch (error) {
+        console.error('Error initializing favourite status:', error);
+        // Fallback to individual checks if the batch endpoint fails
+        const promises = grenades.map(async grenade => {
+          const status = await checkFavouriteStatus(grenade);
+          const key = getGrenadeKey(grenade);
+
+          if (status.is_favourited) {
+            setFavouritedGrenades(prev => new Set(prev).add(key));
+            if (status.favourite_id) {
+              setFavouriteIds(prev =>
+                new Map(prev).set(key, status.favourite_id!)
+              );
+            }
           }
-        }
-      });
+        });
 
-      await Promise.all(promises);
+        await Promise.all(promises);
+      }
     },
     [checkFavouriteStatus, getGrenadeKey]
   );

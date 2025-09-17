@@ -197,6 +197,27 @@ class GrenadeFavouriteController extends Controller
         ]);
     }
 
+    public function getMatchFavourites(Request $request, int $matchId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $favourites = $user->grenadeFavourites()
+            ->where('match_id', $matchId)
+            ->get();
+
+        // Create a map of grenade keys to favourite IDs
+        $favouriteMap = [];
+        foreach ($favourites as $favourite) {
+            $key = "{$favourite->match_id}-{$favourite->round_number}-{$favourite->tick_timestamp}-{$favourite->player_steam_id}";
+            $favouriteMap[$key] = $favourite->id;
+        }
+
+        return response()->json([
+            'favourite_keys' => array_keys($favouriteMap),
+            'favourite_ids' => $favouriteMap,
+        ]);
+    }
+
     /**
      * Delete a grenade favourite
      */

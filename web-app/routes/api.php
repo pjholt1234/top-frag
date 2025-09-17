@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/grenade-favourites/filter-options', [GrenadeFavouriteController::class, 'filterOptions']);
     Route::post('/grenade-favourites', [GrenadeFavouriteController::class, 'create']);
     Route::get('/grenade-favourites/check', [GrenadeFavouriteController::class, 'check']);
+    Route::get('/matches/{matchId}/grenade-favourites', [GrenadeFavouriteController::class, 'getMatchFavourites']);
     Route::delete('/grenade-favourites/{id}', [GrenadeFavouriteController::class, 'delete']);
 });
 

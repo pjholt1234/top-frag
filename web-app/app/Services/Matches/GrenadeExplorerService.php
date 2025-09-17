@@ -50,7 +50,8 @@ class GrenadeExplorerService
             ->join('match_players', 'matches.id', '=', 'match_players.match_id')
             ->join('players as match_players_player', 'match_players.player_id', '=', 'match_players_player.id')
             ->select('grenade_events.*', 'matches.map', 'players.name as player_name')
-            ->join('players', 'grenade_events.player_steam_id', '=', 'players.steam_id');
+            ->join('players', 'grenade_events.player_steam_id', '=', 'players.steam_id')
+            ->distinct();
 
         // Apply filters (same as controller)
         if ($map) {

@@ -45,7 +45,7 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
   const grenadePositions = useMemo(() => {
     if (!grenades.length) return [];
 
-    return grenades.map(grenade => ({
+    const positions = grenades.map(grenade => ({
       x: grenade.grenade_final_x,
       y: grenade.grenade_final_y,
       z: grenade.grenade_final_z,
@@ -57,6 +57,8 @@ const MatchGrenadesViewContent: React.FC<MatchGrenadesViewProps> = ({
       player_z: grenade.player_z,
       id: grenade.id,
     }));
+
+    return positions;
   }, [grenades]);
 
   // Memoize event handlers to prevent unnecessary re-renders

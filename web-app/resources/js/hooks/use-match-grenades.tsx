@@ -68,6 +68,7 @@ export interface UseMatchGrenadesReturn {
   // Data
   grenades: GrenadeData[];
   filterOptions: FilterOptions;
+  matchId: string;
 
   // Filters
   filters: GrenadeFilters;
@@ -465,6 +466,7 @@ export const MatchGrenadesProvider: React.FC<MatchGrenadesProviderProps> = ({
     // Data
     grenades,
     filterOptions,
+    matchId,
 
     // Filters
     filters,
@@ -515,6 +517,7 @@ export const useMatchGrenades = (): UseMatchGrenadesReturn => {
         players: [],
         playerSides: [],
       },
+      matchId: '',
       filters: {
         map: '',
         roundNumber: 'all',
@@ -522,18 +525,18 @@ export const useMatchGrenades = (): UseMatchGrenadesReturn => {
         playerSteamId: 'all',
         playerSide: 'all',
       },
-      setFilter: () => {},
-      setFilters: () => {},
-      resetFilters: () => {},
+      setFilter: () => { },
+      setFilters: () => { },
+      resetFilters: () => { },
       isLoading: false,
       isInitialized: false,
       error: null,
-      refreshData: async () => {},
-      loadFilterOptions: async () => {},
+      refreshData: async () => { },
+      loadFilterOptions: async () => { },
       grenadeStates: new Map(),
-      selectGrenade: () => {},
-      selectGrenades: () => {},
-      clearSelection: () => {},
+      selectGrenade: () => { },
+      selectGrenades: () => { },
+      clearSelection: () => { },
       getSelectedGrenades: () => [],
       selectedGrenadeCount: 0,
       hasValidFilters: false,

@@ -45,7 +45,7 @@ class CreateGrenadeFavouriteRequest extends FormRequest
             'friendly_players_affected' => 'nullable|integer|min:0',
             'enemy_players_affected' => 'nullable|integer|min:0',
             'throw_type' => 'nullable|string',
-            'effectiveness_rating' => 'nullable|numeric|min:0|max:10',
+            'effectiveness_rating' => 'nullable|numeric',
         ];
     }
 

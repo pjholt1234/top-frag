@@ -40,6 +40,7 @@ const GrenadeListWithFavourites: React.FC<
     <GrenadeListContent
       {...props}
       grenades={grenades}
+      matchId={undefined} // Not needed for favourites context
       removeFavourite={removeFavourite}
       isFavourited={isFavourited}
       isLoading={isLoading}
@@ -54,7 +55,7 @@ const GrenadeListWithFavourites: React.FC<
 const GrenadeListWithMatchGrenades: React.FC<
   Omit<GrenadeListProps, 'useFavouritesContext'>
 > = props => {
-  const { grenades } = useMatchGrenades();
+  const { grenades, matchId } = useMatchGrenades();
   const {
     isFavourited,
     isLoading,
@@ -66,6 +67,7 @@ const GrenadeListWithMatchGrenades: React.FC<
     <GrenadeListContent
       {...props}
       grenades={grenades}
+      matchId={matchId}
       removeFavourite={null}
       isFavourited={isFavourited}
       isLoading={isLoading}
@@ -80,11 +82,12 @@ const GrenadeListWithMatchGrenades: React.FC<
 interface GrenadeListContentProps
   extends Omit<GrenadeListProps, 'useFavouritesContext'> {
   grenades: (GrenadeData | FavouritedGrenadeData)[];
+  matchId?: string;
   removeFavourite: ((favouriteId: number) => void) | null;
   isFavourited: (grenade: GrenadeData) => boolean;
   isLoading: (grenade: GrenadeData) => boolean;
   toggleFavourite: (grenade: GrenadeData) => void;
-  initializeFavouriteStatus: (grenades: GrenadeData[]) => void;
+  initializeFavouriteStatus: (grenades: GrenadeData[], matchId: number) => void;
   useFavouritesContext: boolean;
 }
 
@@ -94,6 +97,7 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
   showFavourites = false,
   hideRoundNumber = false,
   grenades,
+  matchId,
   removeFavourite,
   isFavourited,
   isLoading,
@@ -106,10 +110,10 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
 
   // Initialize favourite status when grenades change (only for regular grenade library)
   useEffect(() => {
-    if (showFavourites && memoizedGrenades.length > 0) {
-      initializeFavouriteStatus(memoizedGrenades as GrenadeData[]);
+    if (showFavourites && memoizedGrenades.length > 0 && matchId) {
+      initializeFavouriteStatus(memoizedGrenades as GrenadeData[], parseInt(matchId));
     }
-  }, [memoizedGrenades, showFavourites, initializeFavouriteStatus]);
+  }, [memoizedGrenades, showFavourites, matchId, initializeFavouriteStatus]);
 
   const generatePositionString = (
     grenade: GrenadeData | FavouritedGrenadeData
@@ -184,9 +188,8 @@ const GrenadeListContent: React.FC<GrenadeListContentProps> = ({
             return (
               <Card
                 key={grenade.id}
-                className={`cursor-pointer transition-all hover:shadow-md py-2 ${
-                  isSelected ? 'ring-2 ring-orange-500' : ''
-                }`}
+                className={`cursor-pointer transition-all hover:shadow-md py-2 ${isSelected ? 'ring-2 ring-orange-500' : ''
+                  }`}
                 onClick={() => onGrenadeClick(grenade)}
               >
                 <CardContent className="px-3">
