@@ -167,7 +167,17 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
                   </div>
                 </div>
                 <div className="text-white flex flex-col items-center justify-center">
-                  <div className="font-medium text-3xl">{player.name}</div>
+                  <div
+                    className="font-medium text-center leading-tight my-3"
+                    style={{
+                      fontSize:
+                        player.name && player.name.length > 12
+                          ? `${Math.max(1.2, 1.875 - (player.name.length - 12) * 0.08)}rem`
+                          : '1.875rem', // 3xl = 1.875rem
+                    }}
+                  >
+                    {player.name}
+                  </div>
                   <div className="text-gray-400 text-xs mt-1 group-hover:opacity-0 transition-opacity duration-300">
                     Score: {player.score} / 100
                   </div>
