@@ -272,22 +272,35 @@ func (ep *EventProcessor) ensurePlayerTracked(player *common.Player) error {
 	assignedTeam := ep.getAssignedTeam(steamID)
 
 	// Extract player rank
-	var matchmakingRank *string
+	var rankInfo *RankInfo
 	if ep.rankExtractor != nil {
-		matchmakingRank = ep.rankExtractor.ExtractPlayerRank(player)
+		rankInfo = ep.rankExtractor.ExtractPlayerRank(player)
 	}
 
 	if _, exists := ep.matchState.Players[steamID]; !exists {
-		ep.matchState.Players[steamID] = &types.Player{
+		playerData := &types.Player{
 			SteamID: steamID,
 			Name:    player.Name,
 			Team:    assignedTeam,
-			Rank:    matchmakingRank,
 		}
+
+		// Set rank fields if available
+		if rankInfo != nil {
+			playerData.Rank = rankInfo.RankString // Legacy field
+			playerData.RankString = rankInfo.RankString
+			playerData.RankType = rankInfo.RankType
+			playerData.RankValue = rankInfo.RankValue
+		}
+
+		ep.matchState.Players[steamID] = playerData
 	} else {
 		// Update the rank if the player already exists but doesn't have a rank
-		if ep.matchState.Players[steamID].Rank == nil && matchmakingRank != nil {
-			ep.matchState.Players[steamID].Rank = matchmakingRank
+		existingPlayer := ep.matchState.Players[steamID]
+		if existingPlayer.Rank == nil && rankInfo != nil {
+			existingPlayer.Rank = rankInfo.RankString // Legacy field
+			existingPlayer.RankString = rankInfo.RankString
+			existingPlayer.RankType = rankInfo.RankType
+			existingPlayer.RankValue = rankInfo.RankValue
 		}
 	}
 

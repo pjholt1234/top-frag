@@ -27,7 +27,11 @@ type Player struct {
 	SteamID string  `json:"steam_id"`
 	Name    string  `json:"name"`
 	Team    string  `json:"team"`           // "A" or "B" (arbitrary team assignment)
-	Rank    *string `json:"rank,omitempty"` // Player's matchmaking rank
+	Rank    *string `json:"rank,omitempty"` // Player's matchmaking rank (legacy field)
+	// New rank fields
+	RankString *string `json:"rank_string,omitempty"`
+	RankType   *string `json:"rank_type,omitempty"`
+	RankValue  *int    `json:"rank_value,omitempty"`
 }
 
 type GunfightEvent struct {
@@ -251,6 +255,8 @@ type PlayerMatchEvent struct {
 
 	// Ranking
 	MatchmakingRank *string `json:"matchmaking_rank"`
+	RankType        *string `json:"rank_type"`
+	RankValue       *int    `json:"rank_value"`
 }
 
 // GrenadeThrowInfo stores information about a grenade throw

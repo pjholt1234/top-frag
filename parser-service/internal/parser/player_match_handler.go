@@ -170,8 +170,22 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 	playerMatchEvent.ADR = float64(playerMatchEvent.Damage) / float64(numberOfRoundsParticipated)
 
 	// Set the matchmaking rank from the player data
-	if player, exists := mh.processor.matchState.Players[playerSteamID]; exists && player.Rank != nil {
-		playerMatchEvent.MatchmakingRank = player.Rank
+	if player, exists := mh.processor.matchState.Players[playerSteamID]; exists {
+		// Set legacy rank field
+		if player.Rank != nil {
+			playerMatchEvent.MatchmakingRank = player.Rank
+		}
+
+		// Set new rank fields
+		if player.RankString != nil {
+			playerMatchEvent.MatchmakingRank = player.RankString
+		}
+		if player.RankType != nil {
+			playerMatchEvent.RankType = player.RankType
+		}
+		if player.RankValue != nil {
+			playerMatchEvent.RankValue = player.RankValue
+		}
 	}
 
 	return playerMatchEvent

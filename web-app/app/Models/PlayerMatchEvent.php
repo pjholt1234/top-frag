@@ -56,9 +56,13 @@ class PlayerMatchEvent extends Model
         'kills_vs_full_buy',
         'average_grenade_value_lost',
         'matchmaking_rank',
+        'rank_type',
+        'rank_value',
     ];
 
-    protected $casts = [];
+    protected $casts = [
+        'rank_value' => 'integer',
+    ];
 
     public function match(): BelongsTo
     {

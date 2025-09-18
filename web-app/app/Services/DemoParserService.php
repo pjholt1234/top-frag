@@ -16,6 +16,7 @@ use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\Player;
 use App\Models\PlayerMatchEvent;
+use App\Models\PlayerRank;
 use App\Models\PlayerRoundEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -545,12 +546,80 @@ class DemoParserService
                 'kills_vs_full_buy' => $playerMatchEvent['kills_vs_full_buy'],
                 'average_grenade_value_lost' => $playerMatchEvent['average_grenade_value_lost'],
                 'matchmaking_rank' => $playerMatchEvent['matchmaking_rank'] ?? null,
+                'rank_type' => $playerMatchEvent['rank_type'] ?? null,
+                'rank_value' => $playerMatchEvent['rank_value'] ?? null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
         }
 
         PlayerMatchEvent::insert($records);
+
+        // Record player ranks
+        $this->recordPlayerRanks($match, $playerMatchEvents);
+    }
+
+    private function recordPlayerRanks(GameMatch $match, array $playerMatchEvents): void
+    {
+        Log::info('Recording player ranks', [
+            'match_id' => $match->id,
+            'map' => $match->map,
+            'total_events' => count($playerMatchEvents),
+        ]);
+
+        foreach ($playerMatchEvents as $playerMatchEvent) {
+            Log::debug('Processing player match event for rank recording', [
+                'player_steam_id' => $playerMatchEvent['player_steam_id'] ?? 'unknown',
+                'rank_type' => $playerMatchEvent['rank_type'] ?? 'null',
+                'rank_value' => $playerMatchEvent['rank_value'] ?? 'null',
+                'matchmaking_rank' => $playerMatchEvent['matchmaking_rank'] ?? 'null',
+            ]);
+
+            // Only record rank if we have rank data
+            if (empty($playerMatchEvent['rank_type']) || empty($playerMatchEvent['matchmaking_rank'])) {
+                Log::debug('Skipping rank recording - missing rank data', [
+                    'player_steam_id' => $playerMatchEvent['player_steam_id'] ?? 'unknown',
+                    'has_rank_type' => ! empty($playerMatchEvent['rank_type']),
+                    'has_matchmaking_rank' => ! empty($playerMatchEvent['matchmaking_rank']),
+                ]);
+
+                continue;
+            }
+
+            // Find the player by steam_id
+            $player = Player::where('steam_id', $playerMatchEvent['player_steam_id'])->first();
+            if (! $player) {
+                continue;
+            }
+
+            // Use match upload time as the timestamp for rank tracking
+            $rankTimestamp = $match->created_at ?? now();
+
+            // Create or update player rank record
+            $playerRank = PlayerRank::updateOrCreate(
+                [
+                    'player_id' => $player->id,
+                    'rank_type' => $playerMatchEvent['rank_type'],
+                    'map' => $match->map, // Include map for CS2 competitive mode
+                    'created_at' => $rankTimestamp,
+                ],
+                [
+                    'rank' => $playerMatchEvent['matchmaking_rank'],
+                    'rank_value' => $playerMatchEvent['rank_value'] ?? 0,
+                    'updated_at' => $rankTimestamp,
+                ]
+            );
+
+            Log::info('Successfully recorded player rank', [
+                'player_rank_id' => $playerRank->id,
+                'player_id' => $player->id,
+                'player_steam_id' => $playerMatchEvent['player_steam_id'],
+                'rank_type' => $playerMatchEvent['rank_type'],
+                'rank' => $playerMatchEvent['matchmaking_rank'],
+                'rank_value' => $playerMatchEvent['rank_value'] ?? 0,
+                'map' => $match->map,
+            ]);
+        }
     }
 
     private function updateMatchData(GameMatch $match, array $matchData): void

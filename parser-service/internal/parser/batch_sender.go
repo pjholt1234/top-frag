@@ -620,6 +620,8 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 				"kills_vs_force_buy":            event.KillsVsForceBuy,
 				"kills_vs_full_buy":             event.KillsVsFullBuy,
 				"matchmaking_rank":              event.MatchmakingRank,
+				"rank_type":                     event.RankType,
+				"rank_value":                    event.RankValue,
 			}
 
 			flatEvents[j] = flatEvent

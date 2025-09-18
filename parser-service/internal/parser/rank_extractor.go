@@ -8,6 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// RankInfo holds all rank-related information for a player
+type RankInfo struct {
+	RankString *string
+	RankType   *string
+	RankValue  *int
+}
+
 // RankExtractor handles extraction of player matchmaking ranks from demos
 type RankExtractor struct {
 	logger *logrus.Logger
@@ -21,7 +28,7 @@ func NewRankExtractor(logger *logrus.Logger) *RankExtractor {
 }
 
 // ExtractPlayerRank attempts to extract the matchmaking rank for a player
-func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *string {
+func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 	if player == nil {
 		return nil
 	}
@@ -38,34 +45,66 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *string {
 		"rank":             rank,
 		"rank_type":        rankType,
 		"competitive_wins": competitiveWins,
-	}).Debug("Extracted raw rank data from player")
+	}).Info("Extracted raw rank data from player")
 
-	// Convert rank to string representation
+	// Convert rank to string representation and determine rank type
 	rankStr := re.convertRankToString(rank, rankType)
+	rankTypeStr := re.convertRankTypeToString(rankType)
+
+	rankInfo := &RankInfo{
+		RankString: rankStr,
+		RankType:   rankTypeStr,
+		RankValue:  &rank,
+	}
 
 	if rankStr != nil {
 		re.logger.WithFields(logrus.Fields{
 			"player_name":      player.Name,
 			"steam_id":         player.SteamID64,
-			"rank_value":       *rankStr,
+			"rank_string":      *rankStr,
+			"rank_type":        *rankTypeStr,
+			"rank_value":       rank,
 			"competitive_wins": competitiveWins,
 		}).Info("Successfully extracted player rank")
+	} else {
+		re.logger.WithFields(logrus.Fields{
+			"player_name":      player.Name,
+			"steam_id":         player.SteamID64,
+			"rank":             rank,
+			"rank_type":        rankType,
+			"competitive_wins": competitiveWins,
+		}).Debug("No rank string generated for player")
 	}
 
-	return rankStr
+	return rankInfo
 }
 
 // convertRankToString converts the rank number to a string representation
 func (re *RankExtractor) convertRankToString(rank, rankType int) *string {
-	// Only process if we have a valid rank and rank type
-	if rank <= 0 || rankType != 12 {
-		// Rank type 12 appears to be the standard competitive rank type
-		// If rank is 0 or rankType is not 12, the player might be unranked
-		if rank == 0 && rankType == 12 {
-			rankStr := "Unranked"
+	// Handle different rank types
+	switch rankType {
+	case 12: // Competitive mode
+		return re.convertCompetitiveRankToString(rank)
+	case 11: // Premier mode
+		return re.convertPremierRankToString(rank)
+	case 14: // FaceIT mode (if detected)
+		return re.convertFaceITRankToString(rank)
+	default:
+		// For unknown rank types, return the raw rank value
+		if rank > 0 {
+			rankStr := fmt.Sprintf("Rank %d", rank)
 			return &rankStr
 		}
 		return nil
+	}
+}
+
+// convertCompetitiveRankToString converts competitive rank numbers to string representation
+func (re *RankExtractor) convertCompetitiveRankToString(rank int) *string {
+	// Handle unranked players
+	if rank == 0 {
+		rankStr := "Unranked"
+		return &rankStr
 	}
 
 	// CS2 competitive ranks mapping (1-18)
@@ -94,9 +133,53 @@ func (re *RankExtractor) convertRankToString(rank, rankType int) *string {
 		return &rankName
 	}
 
-	// Fallback for unknown ranks
+	// Fallback for unknown competitive ranks
 	rankStr := fmt.Sprintf("Rank %d", rank)
 	return &rankStr
+}
+
+// convertPremierRankToString converts Premier mode rating to string representation
+func (re *RankExtractor) convertPremierRankToString(rating int) *string {
+	// Premier mode uses rating points (0-30,000+)
+	// For Premier, the rank string should be the numeric rating
+	if rating > 0 {
+		rankStr := fmt.Sprintf("%d", rating)
+		return &rankStr
+	}
+	// Handle unranked Premier players
+	rankStr := "Unranked"
+	return &rankStr
+}
+
+// convertFaceITRankToString converts FaceIT ELO rating to string representation
+func (re *RankExtractor) convertFaceITRankToString(rating int) *string {
+	// FaceIT uses ELO rating system (typically 0-3000+)
+	// For FaceIT, the rank string should be the numeric ELO rating
+	if rating > 0 {
+		rankStr := fmt.Sprintf("%d", rating)
+		return &rankStr
+	}
+	// Handle unranked FaceIT players
+	rankStr := "Unranked"
+	return &rankStr
+}
+
+// convertRankTypeToString converts the rank type number to a string representation
+func (re *RankExtractor) convertRankTypeToString(rankType int) *string {
+	// Map rank types to their string representations
+	rankTypeNames := map[int]string{
+		11: "premier",     // Premier mode
+		12: "competitive", // Standard CS2 competitive rank type
+		14: "faceit",      // FaceIT mode
+	}
+
+	if rankTypeName, exists := rankTypeNames[rankType]; exists {
+		return &rankTypeName
+	}
+
+	// Fallback for unknown rank types
+	rankTypeStr := fmt.Sprintf("rank_type_%d", rankType)
+	return &rankTypeStr
 }
 
 // GetRankDisplayName converts a rank number to a human-readable rank name

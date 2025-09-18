@@ -77,6 +77,11 @@ class Player extends Model
         return $this->hasMany(PlayerMatchEvent::class, 'player_steam_id', 'steam_id');
     }
 
+    public function playerRanks(): HasMany
+    {
+        return $this->hasMany(PlayerRank::class);
+    }
+
     public function playerWonMatch(GameMatch $match): bool
     {
         $team = $match->players?->where('steam_id', $this->steam_id)->first()?->pivot->team;
