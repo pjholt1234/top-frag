@@ -629,9 +629,10 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	eventProcessor.teamACurrentSide = "CT"
 	eventProcessor.teamBCurrentSide = "T"
 
-	// Manually set the win counts based on our expected calculation
+	// Manually set the win counts based on our expected calculation with corrected overtime logic
 	// Team A (started CT): 6 CT wins in first half + 6 T wins in second half + 1 T win in OT1 + 1 CT win in OT2 = 14 wins
 	// Team B (started T): 6 T wins in first half + 6 CT wins in second half + 2 CT wins in OT1 + 2 T wins in OT2 = 16 wins
+	// Note: With the fix, OT1 (rounds 25-27) teams stay on their current sides, OT2 (rounds 28-30) teams switch sides
 	eventProcessor.teamAWins = 14
 	eventProcessor.teamBWins = 16
 
@@ -656,5 +657,54 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 
 	if parsedData.Match.TotalRounds != 30 {
 		t.Errorf("Expected total rounds 30, got %d", parsedData.Match.TotalRounds)
+	}
+}
+
+func TestDemoParser_OvertimeSideSwitchingLogic(t *testing.T) {
+	logger := logrus.New()
+
+	// Test the corrected overtime side switching logic
+	// This test verifies that side switches happen at the correct rounds
+	eventProcessor := NewEventProcessor(&types.MatchState{}, logger)
+	eventProcessor.teamAStartedAs = "CT"
+	eventProcessor.teamBStartedAs = "T"
+	eventProcessor.teamACurrentSide = "CT"
+	eventProcessor.teamBCurrentSide = "T"
+
+	// Test halftime switch (round 13)
+	eventProcessor.currentRound = 13
+	matchHandler := NewMatchHandler(eventProcessor, logger)
+	matchHandler.checkForSideSwitch()
+
+	if eventProcessor.teamACurrentSide != "T" || eventProcessor.teamBCurrentSide != "CT" {
+		t.Errorf("Expected halftime switch at round 13. Team A: %s, Team B: %s",
+			eventProcessor.teamACurrentSide, eventProcessor.teamBCurrentSide)
+	}
+
+	// Test overtime round 25 (should NOT switch - this was the bug)
+	eventProcessor.currentRound = 25
+	matchHandler.checkForSideSwitch()
+
+	if eventProcessor.teamACurrentSide != "T" || eventProcessor.teamBCurrentSide != "CT" {
+		t.Errorf("Expected NO switch at round 25 (overtime round 1). Team A: %s, Team B: %s",
+			eventProcessor.teamACurrentSide, eventProcessor.teamBCurrentSide)
+	}
+
+	// Test overtime round 28 (should switch - this is correct)
+	eventProcessor.currentRound = 28
+	matchHandler.checkForSideSwitch()
+
+	if eventProcessor.teamACurrentSide != "CT" || eventProcessor.teamBCurrentSide != "T" {
+		t.Errorf("Expected switch at round 28 (overtime round 4). Team A: %s, Team B: %s",
+			eventProcessor.teamACurrentSide, eventProcessor.teamBCurrentSide)
+	}
+
+	// Test overtime round 31 (should switch again)
+	eventProcessor.currentRound = 31
+	matchHandler.checkForSideSwitch()
+
+	if eventProcessor.teamACurrentSide != "T" || eventProcessor.teamBCurrentSide != "CT" {
+		t.Errorf("Expected switch at round 31 (overtime round 7). Team A: %s, Team B: %s",
+			eventProcessor.teamACurrentSide, eventProcessor.teamBCurrentSide)
 	}
 }

@@ -358,8 +358,9 @@ func (mh *MatchHandler) checkForSideSwitch() {
 	if mh.processor.currentRound > 24 {
 		// Calculate which overtime period we're in
 		overtimeRounds := mh.processor.currentRound - 24
-		// Switch sides every 3 rounds (rounds 1-3, 4-6, 7-9, etc.)
-		if overtimeRounds%3 == 1 {
+		// Switch sides at the start of each new overtime period (rounds 28, 31, 34, etc.)
+		// This means: overtime rounds 4, 7, 10, etc. (every 3rd overtime round starting from round 4)
+		if overtimeRounds%3 == 1 && overtimeRounds > 3 {
 			mh.switchTeamSides()
 			mh.logger.Info("Overtime side switch occurred", logrus.Fields{
 				"round":               mh.processor.currentRound,
