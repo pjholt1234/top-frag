@@ -622,12 +622,12 @@ func NormalizeVector(v Vector) Vector {
 }
 
 func SteamIDToString(steamID uint64) string {
-	return fmt.Sprintf("steam_%d", steamID)
+	return fmt.Sprintf("%d", steamID)
 }
 
 func StringToSteamID(steamIDString string) uint64 {
 	var steamID uint64
-	fmt.Sscanf(steamIDString, "steam_%d", &steamID)
+	fmt.Sscanf(steamIDString, "%d", &steamID)
 	return steamID
 }
 

@@ -676,7 +676,7 @@ func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
 
 			dp.logger.WithFields(logrus.Fields{
 				"player_name": player.Name,
-				"steam_id":    player.SteamID64,
+				"steam_id":    types.SteamIDToString(player.SteamID64),
 				"rank":        rank,
 				"rank_type":   rankType,
 			}).Debug("Match type detection - player rank analysis")

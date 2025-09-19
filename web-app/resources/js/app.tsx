@@ -13,6 +13,8 @@ import GrenadeLibrary from '@/pages/grenade-library';
 import MatchDetail from '@/pages/match-detail';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
+import { SteamCallbackPage } from '@/pages/steam-callback';
+import AccountSettingsPage from '@/pages/account-settings';
 import { Toaster } from '@/components/ui/sonner';
 
 const App: React.FC = () => {
@@ -38,6 +40,7 @@ const App: React.FC = () => {
                 </PublicRoute>
               }
             />
+            <Route path="/steam-callback" element={<SteamCallbackPage />} />
 
             {/* Protected routes - only accessible when authenticated */}
             <Route
@@ -52,6 +55,7 @@ const App: React.FC = () => {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="grenade-library" element={<GrenadeLibrary />} />
               <Route path="matches/:id" element={<MatchDetail />} />
+              <Route path="settings" element={<AccountSettingsPage />} />
             </Route>
 
             {/* Catch all route - redirect to root if authenticated, login if not */}

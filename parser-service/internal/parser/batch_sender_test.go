@@ -162,20 +162,20 @@ func TestBatchSender_SendGunfightEvents(t *testing.T) {
 	events := []types.GunfightEvent{
 		{
 			RoundNumber:    1,
-			Player1SteamID: "steam_123",
-			Player2SteamID: "steam_456",
+			Player1SteamID: "123",
+			Player2SteamID: "456",
 			IsFirstKill:    false,
 		},
 		{
 			RoundNumber:    1,
-			Player1SteamID: "steam_789",
-			Player2SteamID: "steam_012",
+			Player1SteamID: "789",
+			Player2SteamID: "012",
 			IsFirstKill:    false,
 		},
 		{
 			RoundNumber:    2,
-			Player1SteamID: "steam_345",
-			Player2SteamID: "steam_678",
+			Player1SteamID: "345",
+			Player2SteamID: "678",
 			IsFirstKill:    false,
 		},
 	}
@@ -245,14 +245,14 @@ func TestBatchSender_SendGunfightEvents_IsFirstKillField(t *testing.T) {
 	events := []types.GunfightEvent{
 		{
 			RoundNumber:    1,
-			Player1SteamID: "steam_123",
-			Player2SteamID: "steam_456",
+			Player1SteamID: "123",
+			Player2SteamID: "456",
 			IsFirstKill:    true, // First kill of the round
 		},
 		{
 			RoundNumber:    1,
-			Player1SteamID: "steam_789",
-			Player2SteamID: "steam_012",
+			Player1SteamID: "789",
+			Player2SteamID: "012",
 			IsFirstKill:    false, // Not first kill
 		},
 	}
@@ -349,21 +349,21 @@ func TestBatchSender_SendGrenadeEvents(t *testing.T) {
 	events := []types.GrenadeEvent{
 		{
 			RoundNumber:       1,
-			PlayerSteamID:     "steam_123",
+			PlayerSteamID:     "123",
 			GrenadeType:       "flash",
 			FlashLeadsToKill:  false,
 			FlashLeadsToDeath: false,
 		},
 		{
 			RoundNumber:       1,
-			PlayerSteamID:     "steam_456",
+			PlayerSteamID:     "456",
 			GrenadeType:       "smoke",
 			FlashLeadsToKill:  false,
 			FlashLeadsToDeath: false,
 		},
 		{
 			RoundNumber:       2,
-			PlayerSteamID:     "steam_789",
+			PlayerSteamID:     "789",
 			GrenadeType:       "he",
 			FlashLeadsToKill:  false,
 			FlashLeadsToDeath: false,
@@ -416,20 +416,20 @@ func TestBatchSender_SendDamageEvents(t *testing.T) {
 	events := []types.DamageEvent{
 		{
 			RoundNumber:     1,
-			AttackerSteamID: "steam_123",
-			VictimSteamID:   "steam_456",
+			AttackerSteamID: "123",
+			VictimSteamID:   "456",
 			Damage:          25,
 		},
 		{
 			RoundNumber:     1,
-			AttackerSteamID: "steam_789",
-			VictimSteamID:   "steam_012",
+			AttackerSteamID: "789",
+			VictimSteamID:   "012",
 			Damage:          50,
 		},
 		{
 			RoundNumber:     2,
-			AttackerSteamID: "steam_345",
-			VictimSteamID:   "steam_678",
+			AttackerSteamID: "345",
+			VictimSteamID:   "678",
 			Damage:          75,
 		},
 	}

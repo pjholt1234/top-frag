@@ -11,7 +11,8 @@ import { api } from '@/lib/api';
 interface User {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
+  steam_id?: string;
 }
 
 interface AuthContextType {
@@ -25,6 +26,16 @@ interface AuthContextType {
     password_confirmation: string
   ) => Promise<void>;
   logout: () => Promise<void>;
+  loginWithSteam: () => void;
+  linkSteamAccount: () => Promise<void>;
+  unlinkSteamAccount: () => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ) => Promise<any>;
+  changeUsername: (newUsername: string) => Promise<any>;
+  changeEmail: (newEmail: string) => Promise<any>;
   loading: boolean;
 }
 
@@ -143,12 +154,129 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const loginWithSteam = () => {
+    // Redirect to Steam authentication
+    window.location.href = '/api/auth/steam/redirect';
+  };
+
+  const linkSteamAccount = async () => {
+    setLoading(true);
+    try {
+      const response = await api.post(
+        '/auth/steam/link',
+        {},
+        { requireAuth: true }
+      );
+
+      if (response.data.steam_redirect_url) {
+        // Redirect to Steam for account linking
+        window.location.href = response.data.steam_redirect_url;
+      }
+    } catch (error) {
+      console.error('Steam linking error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unlinkSteamAccount = async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/steam/unlink', {}, { requireAuth: true });
+      // Refresh user data to reflect the change
+      await fetchUser();
+    } catch (error) {
+      console.error('Steam unlinking error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ) => {
+    setLoading(true);
+    try {
+      const response = await api.post(
+        '/auth/change-password',
+        {
+          current_password: currentPassword,
+          new_password: newPassword,
+          new_password_confirmation: confirmPassword,
+        },
+        { requireAuth: true }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Password change error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeUsername = async (newUsername: string) => {
+    setLoading(true);
+    try {
+      const response = await api.post(
+        '/auth/change-username',
+        {
+          new_username: newUsername,
+        },
+        { requireAuth: true }
+      );
+      // Update user data with new username
+      if (response.data.user) {
+        setUser(response.data.user);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Username change error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeEmail = async (newEmail: string) => {
+    setLoading(true);
+    try {
+      const response = await api.post(
+        '/auth/change-email',
+        {
+          new_email: newEmail,
+        },
+        { requireAuth: true }
+      );
+      // Update user data with new email
+      if (response.data.user) {
+        setUser(response.data.user);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Email change error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
     login,
     register,
     logout,
+    loginWithSteam,
+    linkSteamAccount,
+    unlinkSteamAccount,
+    changePassword,
+    changeUsername,
+    changeEmail,
     loading,
   };
 

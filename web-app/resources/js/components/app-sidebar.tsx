@@ -5,12 +5,10 @@ import {
   IconDashboard,
   IconInnerShadowTop,
   IconListDetails,
-  IconSettings,
 } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/use-auth';
 
 import { NavMain } from '@/components/nav-main';
-import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
 import {
   Sidebar,
@@ -40,13 +38,7 @@ const data = {
       icon: IconBook,
     },
   ],
-  navSecondary: [
-    {
-      title: 'Settings',
-      url: '/settings',
-      icon: IconSettings,
-    },
-  ],
+  navSecondary: [],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -81,7 +73,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} currentPath={location.pathname} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"parser-service/internal/types"
+
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/sirupsen/logrus"
 )
@@ -41,7 +43,7 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 	// Log the raw values for debugging
 	re.logger.WithFields(logrus.Fields{
 		"player_name":      player.Name,
-		"steam_id":         player.SteamID64,
+		"steam_id":         types.SteamIDToString(player.SteamID64),
 		"rank":             rank,
 		"rank_type":        rankType,
 		"competitive_wins": competitiveWins,
@@ -60,7 +62,7 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 	if rankStr != nil {
 		re.logger.WithFields(logrus.Fields{
 			"player_name":      player.Name,
-			"steam_id":         player.SteamID64,
+			"steam_id":         types.SteamIDToString(player.SteamID64),
 			"rank_string":      *rankStr,
 			"rank_type":        *rankTypeStr,
 			"rank_value":       rank,
@@ -69,7 +71,7 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 	} else {
 		re.logger.WithFields(logrus.Fields{
 			"player_name":      player.Name,
-			"steam_id":         player.SteamID64,
+			"steam_id":         types.SteamIDToString(player.SteamID64),
 			"rank":             rank,
 			"rank_type":        rankType,
 			"competitive_wins": competitiveWins,

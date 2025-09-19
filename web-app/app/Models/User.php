@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'steam_id',
+        'steam_link_hash',
     ];
 
     /**
@@ -73,5 +74,19 @@ class User extends Authenticatable
     public function uploadedGames(): HasMany
     {
         return $this->hasMany(GameMatch::class, 'uploaded_by');
+    }
+
+    /**
+     * Get the Steam link hash for this user
+     */
+    public function getSteamLinkHash(): string
+    {
+        // The observer should have already created this, but just in case
+        if (! $this->steam_link_hash) {
+            $this->steam_link_hash = hash('sha256', $this->id.config('app.key').time().uniqid());
+            $this->save();
+        }
+
+        return $this->steam_link_hash;
     }
 }

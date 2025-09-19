@@ -201,7 +201,7 @@ func TestParseDemoHandler_SendProgressUpdateWithMatchData_EnhancedFields(t *test
 		},
 		Players: []types.Player{
 			{
-				SteamID: "steam_123",
+				SteamID: "123",
 				Name:    "TestPlayer1",
 				Team:    "A",
 			},

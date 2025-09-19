@@ -6,14 +6,17 @@ use App\Models\DamageEvent;
 use App\Models\DemoProcessingJob;
 use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
+use App\Models\User;
 use App\Observers\DamageEventObserver;
 use App\Observers\DemoProcessingJobObserver;
 use App\Observers\GrenadeEventObserver;
 use App\Observers\GunfightEventObserver;
+use App\Observers\UserObserver;
 use App\Services\DemoParserService;
 use App\Services\MatchHistoryService;
 use App\Services\ParserServiceConnector;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Socialite\Contracts\Factory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,5 +51,14 @@ class AppServiceProvider extends ServiceProvider
         DamageEvent::observe(DamageEventObserver::class);
         GunfightEvent::observe(GunfightEventObserver::class);
         GrenadeEvent::observe(GrenadeEventObserver::class);
+        User::observe(UserObserver::class);
+
+        // Register Steam provider with Socialite
+        $socialite = $this->app->make(Factory::class);
+        $socialite->extend('steam', function ($app) use ($socialite) {
+            $config = $app['config']['services.steam'];
+
+            return $socialite->buildProvider(\SocialiteProviders\Steam\Provider::class, $config);
+        });
     }
 }

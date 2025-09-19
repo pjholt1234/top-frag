@@ -92,7 +92,7 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 		grenadeEvent := &types.GrenadeEvent{
 			RoundNumber:   1,
 			TickTimestamp: 1500,
-			PlayerSteamID: "steam_123",
+			PlayerSteamID: "123",
 			GrenadeType:   "HE Grenade",
 		}
 
@@ -101,8 +101,8 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 			{
 				RoundNumber:     1,
 				TickTimestamp:   1550, // 50 ticks after grenade (within 64 tick window)
-				AttackerSteamID: "steam_123",
-				VictimSteamID:   "steam_456",
+				AttackerSteamID: "123",
+				VictimSteamID:   "456",
 				Damage:          50, // Use Damage field instead of HealthDamage
 				HealthDamage:    50,
 				ArmorDamage:     25,
@@ -111,8 +111,8 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 			{
 				RoundNumber:     1,
 				TickTimestamp:   1560, // 60 ticks after grenade (within 64 tick window)
-				AttackerSteamID: "steam_123",
-				VictimSteamID:   "steam_789",
+				AttackerSteamID: "123",
+				VictimSteamID:   "789",
 				Damage:          30, // Use Damage field instead of HealthDamage
 				HealthDamage:    30,
 				ArmorDamage:     15,
@@ -127,9 +127,9 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 		processor.matchState.GrenadeEvents = append(processor.matchState.GrenadeEvents, *grenadeEvent)
 
 		// Set up player teams for damage aggregation
-		processor.teamAssignments["steam_123"] = "A"
-		processor.teamAssignments["steam_456"] = "B"
-		processor.teamAssignments["steam_789"] = "B"
+		processor.teamAssignments["123"] = "A"
+		processor.teamAssignments["456"] = "B"
+		processor.teamAssignments["789"] = "B"
 
 		// Aggregate damage using the new deferred method
 		grenadeHandler.AggregateAllGrenadeDamage()
@@ -152,10 +152,10 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 
 		// Verify individual player damage
 		for _, player := range updatedGrenadeEvent.AffectedPlayers {
-			if player.SteamID == "steam_456" && *player.DamageTaken != 50 {
+			if player.SteamID == "456" && *player.DamageTaken != 50 {
 				t.Errorf("Player 456 damage = %d, expected 50", *player.DamageTaken)
 			}
-			if player.SteamID == "steam_789" && *player.DamageTaken != 30 {
+			if player.SteamID == "789" && *player.DamageTaken != 30 {
 				t.Errorf("Player 789 damage = %d, expected 30", *player.DamageTaken)
 			}
 		}
@@ -166,7 +166,7 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 		// Create a flash effect
 		flashEffect := &FlashEffect{
 			EntityID:        12345,
-			ThrowerSteamID:  "steam_123",
+			ThrowerSteamID:  "123",
 			ExplosionTick:   1500,
 			AffectedPlayers: make(map[uint64]*PlayerFlashInfo),
 		}
@@ -174,13 +174,13 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 		processor.activeFlashEffects[12345] = flashEffect
 
 		// Set up team assignments
-		processor.teamAssignments["steam_123"] = "A"
-		processor.teamAssignments["steam_456"] = "B"
+		processor.teamAssignments["123"] = "A"
+		processor.teamAssignments["456"] = "B"
 
 		// Test the friendly/enemy detection logic directly
-		throwerTeam := processor.getAssignedTeam("steam_123")
-		playerTeam := processor.getAssignedTeam("steam_456")
-		isFriendly := throwerTeam == playerTeam && "steam_123" != "steam_456"
+		throwerTeam := processor.getAssignedTeam("123")
+		playerTeam := processor.getAssignedTeam("456")
+		isFriendly := throwerTeam == playerTeam && "123" != "456"
 
 		// Since teams are different, this should be an enemy flash
 		if isFriendly {
@@ -192,8 +192,8 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 			t.Errorf("Flash effect entity ID = %d, expected 12345", flashEffect.EntityID)
 		}
 
-		if flashEffect.ThrowerSteamID != "steam_123" {
-			t.Errorf("Flash effect thrower Steam ID = %s, expected 'steam_123'", flashEffect.ThrowerSteamID)
+		if flashEffect.ThrowerSteamID != "123" {
+			t.Errorf("Flash effect thrower Steam ID = %s, expected '123'", flashEffect.ThrowerSteamID)
 		}
 	})
 
@@ -204,7 +204,7 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 			RoundNumber:   1,
 			RoundTime:     8,    // 8 seconds into round (throw time)
 			TickTimestamp: 1500, // Throw tick
-			PlayerSteamID: "steam_123",
+			PlayerSteamID: "123",
 			GrenadeType:   "HE Grenade",
 		}
 
@@ -280,8 +280,8 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 	grenadeHandler := NewGrenadeHandler(processor, logger)
 
 	// Set up team assignments
-	processor.teamAssignments["steam_123"] = "A"
-	processor.teamAssignments["steam_456"] = "B"
+	processor.teamAssignments["123"] = "A"
+	processor.teamAssignments["456"] = "B"
 
 	// Test complete grenade flow: throw -> damage -> explosion
 	t.Run("CompleteGrenadeFlow", func(t *testing.T) {
@@ -301,8 +301,8 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 			{
 				RoundNumber:     1,
 				TickTimestamp:   1550, // 50 ticks after grenade (within 64 tick window)
-				AttackerSteamID: "steam_123",
-				VictimSteamID:   "steam_456",
+				AttackerSteamID: "123",
+				VictimSteamID:   "456",
 				Damage:          75, // Use Damage field instead of HealthDamage
 				HealthDamage:    75,
 				ArmorDamage:     25,
@@ -317,7 +317,7 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 			RoundNumber:       1,
 			RoundTime:         throwInfo.RoundTime, // Use throw time
 			TickTimestamp:     throwInfo.Tick,      // Use throw tick
-			PlayerSteamID:     "steam_123",
+			PlayerSteamID:     "123",
 			PlayerSide:        "A",
 			GrenadeType:       grenadeHandler.getGrenadeDisplayName("hegrenade"),
 			PlayerPosition:    throwInfo.PlayerPos, // Use throw position
@@ -335,8 +335,8 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 		processor.matchState.GrenadeEvents = append(processor.matchState.GrenadeEvents, grenadeEvent)
 
 		// Set up player teams for damage aggregation
-		processor.teamAssignments["steam_123"] = "A"
-		processor.teamAssignments["steam_456"] = "B"
+		processor.teamAssignments["123"] = "A"
+		processor.teamAssignments["456"] = "B"
 
 		// Aggregate damage from damage events using deferred method
 		grenadeHandler.AggregateAllGrenadeDamage()
@@ -379,8 +379,8 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 			t.Errorf("Affected players count = %d, expected 1", len(grenadeEvent.AffectedPlayers))
 		}
 
-		if grenadeEvent.AffectedPlayers[0].SteamID != "steam_456" {
-			t.Errorf("Affected player Steam ID = %s, expected 'steam_456'", grenadeEvent.AffectedPlayers[0].SteamID)
+		if grenadeEvent.AffectedPlayers[0].SteamID != "456" {
+			t.Errorf("Affected player Steam ID = %s, expected '456'", grenadeEvent.AffectedPlayers[0].SteamID)
 		}
 
 		if *grenadeEvent.AffectedPlayers[0].DamageTaken != 75 {

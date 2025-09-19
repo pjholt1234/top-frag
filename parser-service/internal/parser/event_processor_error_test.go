@@ -153,8 +153,8 @@ func TestEventProcessor_HandleRoundEnd_ErrorScenarios(t *testing.T) {
 					CurrentRound: 1, // Set a valid round number in match state
 				}
 				// Add some players to avoid "no players found in round" error
-				matchState.Players["steam_123"] = &types.Player{
-					SteamID: "steam_123",
+				matchState.Players["123"] = &types.Player{
+					SteamID: "123",
 					Name:    "TestPlayer",
 					Team:    "A",
 				}

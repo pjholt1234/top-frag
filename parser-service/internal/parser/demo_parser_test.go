@@ -152,13 +152,13 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		CurrentRound: 3,
 		TotalRounds:  3,
 		Players: map[string]*types.Player{
-			"steam_123": {
-				SteamID: "steam_123",
+			"123": {
+				SteamID: "123",
 				Name:    "Player1",
 				Team:    "A",
 			},
-			"steam_456": {
-				SteamID: "steam_456",
+			"456": {
+				SteamID: "456",
 				Name:    "Player2",
 				Team:    "B",
 			},
@@ -183,15 +183,15 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		GunfightEvents: []types.GunfightEvent{
 			{
 				RoundNumber:    1,
-				Player1SteamID: "steam_123",
-				Player2SteamID: "steam_456",
+				Player1SteamID: "123",
+				Player2SteamID: "456",
 				IsFirstKill:    false,
 			},
 		},
 		GrenadeEvents: []types.GrenadeEvent{
 			{
 				RoundNumber:       1,
-				PlayerSteamID:     "steam_123",
+				PlayerSteamID:     "123",
 				FlashLeadsToKill:  false,
 				FlashLeadsToDeath: false,
 			},
@@ -199,8 +199,8 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 		DamageEvents: []types.DamageEvent{
 			{
 				RoundNumber:     1,
-				AttackerSteamID: "steam_123",
-				VictimSteamID:   "steam_456",
+				AttackerSteamID: "123",
+				VictimSteamID:   "456",
 			},
 		},
 	}
@@ -370,13 +370,13 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 		CurrentRound: 21,
 		TotalRounds:  21,
 		Players: map[string]*types.Player{
-			"steam_123": {
-				SteamID: "steam_123",
+			"123": {
+				SteamID: "123",
 				Name:    "Player1",
 				Team:    "A",
 			},
-			"steam_456": {
-				SteamID: "steam_456",
+			"456": {
+				SteamID: "456",
 				Name:    "Player2",
 				Team:    "B",
 			},
@@ -544,13 +544,13 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 		CurrentRound: 30,
 		TotalRounds:  30,
 		Players: map[string]*types.Player{
-			"steam_123": {
-				SteamID: "steam_123",
+			"123": {
+				SteamID: "123",
 				Name:    "Player1",
 				Team:    "A",
 			},
-			"steam_456": {
-				SteamID: "steam_456",
+			"456": {
+				SteamID: "456",
 				Name:    "Player2",
 				Team:    "B",
 			},

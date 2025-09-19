@@ -42,10 +42,20 @@ Route::get('/test-utility/{matchId}', function ($matchId) {
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+// Steam authentication routes
+Route::get('/auth/steam/redirect', [AuthController::class, 'steamRedirect']);
+Route::get('/auth/steam/callback', [AuthController::class, 'steamCallback']);
+Route::get('/auth/steam/link-callback', [AuthController::class, 'steamLinkCallback']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/steam/link', [AuthController::class, 'linkSteam']);
+    Route::post('/auth/steam/unlink', [AuthController::class, 'unlinkSteam']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/auth/change-username', [AuthController::class, 'changeUsername']);
+    Route::post('/auth/change-email', [AuthController::class, 'changeEmail']);
     Route::get('/matches', [MatchController::class, 'index']);
 
     // Match detail sections

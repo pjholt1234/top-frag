@@ -51,7 +51,7 @@ func TestEventProcessor_HandleRoundStart(t *testing.T) {
 
 	// Add some player states
 	processor.playerStates[123] = &types.PlayerState{
-		SteamID:        "steam_123",
+		SteamID:        "123",
 		CurrentHP:      50,
 		CurrentArmor:   100,
 		IsFlashed:      true,
@@ -138,8 +138,8 @@ func TestEventProcessor_HandleRoundEnd(t *testing.T) {
 	processor := NewEventProcessor(matchState, logger)
 
 	// Add some players to avoid "no players found in round" error
-	matchState.Players["steam_123"] = &types.Player{
-		SteamID: "steam_123",
+	matchState.Players["123"] = &types.Player{
+		SteamID: "123",
 		Name:    "TestPlayer",
 		Team:    "A",
 	}
@@ -209,11 +209,11 @@ func TestEventProcessor_HandlePlayerKilled(t *testing.T) {
 
 	// Add player states directly to avoid player method calls
 	processor.playerStates[123] = &types.PlayerState{
-		SteamID: "steam_123",
+		SteamID: "123",
 		Kills:   0,
 	}
 	processor.playerStates[456] = &types.PlayerState{
-		SteamID: "steam_456",
+		SteamID: "456",
 		Deaths:  0,
 	}
 
@@ -367,25 +367,25 @@ func TestEventProcessor_GetPlayerCurrentSide(t *testing.T) {
 	processor := NewEventProcessor(matchState, logger)
 
 	// Set up team assignments and current sides
-	processor.teamAssignments["steam_123"] = "A"
-	processor.teamAssignments["steam_456"] = "B"
+	processor.teamAssignments["123"] = "A"
+	processor.teamAssignments["456"] = "B"
 	processor.teamACurrentSide = "CT"
 	processor.teamBCurrentSide = "T"
 
 	// Test player on team A (should be CT)
-	side := processor.getPlayerCurrentSide("steam_123")
+	side := processor.getPlayerCurrentSide("123")
 	if side != "CT" {
 		t.Errorf("Expected 'CT' for team A player, got %s", side)
 	}
 
 	// Test player on team B (should be T)
-	side = processor.getPlayerCurrentSide("steam_456")
+	side = processor.getPlayerCurrentSide("456")
 	if side != "T" {
 		t.Errorf("Expected 'T' for team B player, got %s", side)
 	}
 
 	// Test unassigned player (should return "Unknown")
-	side = processor.getPlayerCurrentSide("steam_789")
+	side = processor.getPlayerCurrentSide("789")
 	if side != "Unknown" {
 		t.Errorf("Expected 'Unknown' for unassigned player, got %s", side)
 	}
@@ -395,13 +395,13 @@ func TestEventProcessor_GetPlayerCurrentSide(t *testing.T) {
 	processor.teamBCurrentSide = "CT"
 
 	// Test player on team A after switch (should be T)
-	side = processor.getPlayerCurrentSide("steam_123")
+	side = processor.getPlayerCurrentSide("123")
 	if side != "T" {
 		t.Errorf("Expected 'T' for team A player after switch, got %s", side)
 	}
 
 	// Test player on team B after switch (should be CT)
-	side = processor.getPlayerCurrentSide("steam_456")
+	side = processor.getPlayerCurrentSide("456")
 	if side != "CT" {
 		t.Errorf("Expected 'CT' for team B player after switch, got %s", side)
 	}
@@ -440,9 +440,9 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		t.Errorf("Expected 1 player, got %d", len(matchState.Players))
 	}
 
-	playerData := matchState.Players["steam_123"]
-	if playerData.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	playerData := matchState.Players["123"]
+	if playerData.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerData.SteamID)
 	}
 
 	if playerData.Name != "TestPlayer" {
@@ -464,8 +464,8 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		t.Fatal("Expected player state to be created")
 	}
 
-	if playerState.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	if playerState.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerState.SteamID)
 	}
 
 	if playerState.Name != "TestPlayer" {
@@ -505,8 +505,8 @@ func TestEventProcessor_HandlePlayerDisconnected(t *testing.T) {
 func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 	matchState := &types.MatchState{
 		Players: map[string]*types.Player{
-			"steam_123": {
-				SteamID: "steam_123",
+			"123": {
+				SteamID: "123",
 				Name:    "TestPlayer",
 				Team:    "A", // Already assigned to team A
 			},
@@ -520,7 +520,7 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 
 	// Add player state
 	processor.playerStates[123] = &types.PlayerState{
-		SteamID: "steam_123",
+		SteamID: "123",
 		Name:    "TestPlayer",
 		Team:    "A", // Already assigned to team A
 	}
@@ -543,7 +543,7 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 
 	// Test player team was updated in match state
 	// Since this is round 1 and player switches to T side, they should be assigned to team B
-	playerData := matchState.Players["steam_123"]
+	playerData := matchState.Players["123"]
 	if playerData.Team != "B" {
 		t.Errorf("Expected team 'B', got %s", playerData.Team)
 	}
@@ -583,13 +583,13 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
 	}
 
-	playerData, exists := matchState.Players["steam_123"]
+	playerData, exists := matchState.Players["123"]
 	if !exists {
 		t.Fatal("Expected player to be added to match state")
 	}
 
-	if playerData.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	if playerData.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerData.SteamID)
 	}
 
 	if playerData.Name != "TestPlayer" {
@@ -611,8 +611,8 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 		t.Fatal("Expected player state to be created")
 	}
 
-	if playerState.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	if playerState.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerState.SteamID)
 	}
 
 	if playerState.Name != "TestPlayer" {
@@ -675,13 +675,13 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		t.Errorf("Expected 1 player in match state, got %d", len(matchState.Players))
 	}
 
-	playerData, exists := matchState.Players["steam_123"]
+	playerData, exists := matchState.Players["123"]
 	if !exists {
 		t.Fatal("Expected player to be added to match state")
 	}
 
-	if playerData.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerData.SteamID)
+	if playerData.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerData.SteamID)
 	}
 
 	if playerData.Name != "TestPlayer" {
@@ -703,8 +703,8 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		t.Fatal("Expected player state to be created")
 	}
 
-	if playerState.SteamID != "steam_123" {
-		t.Errorf("Expected steam ID 'steam_123', got %s", playerState.SteamID)
+	if playerState.SteamID != "123" {
+		t.Errorf("Expected steam ID '123', got %s", playerState.SteamID)
 	}
 
 	if playerState.Name != "TestPlayer" {
@@ -749,7 +749,7 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 	}
 
 	// Simulate first kill by setting FirstKillPlayer
-	firstKillerSteamID := "steam_123"
+	firstKillerSteamID := "123"
 	processor.matchState.FirstKillPlayer = &firstKillerSteamID
 
 	// Now FirstKillPlayer should not be nil
@@ -787,7 +787,7 @@ func TestEventProcessor_FlashTracking(t *testing.T) {
 	processor := NewEventProcessor(matchState, logger)
 
 	// Set up team assignments for side tracking
-	processor.teamAssignments["steam_76561198012345678"] = "A"
+	processor.teamAssignments["76561198012345678"] = "A"
 	processor.teamACurrentSide = "CT"
 	processor.teamBCurrentSide = "T"
 
@@ -845,18 +845,18 @@ func TestEventProcessor_SideInformationInEvents(t *testing.T) {
 	processor := NewEventProcessor(matchState, logger)
 
 	// Set up team assignments and current sides
-	processor.teamAssignments["steam_123"] = "A"
-	processor.teamAssignments["steam_456"] = "B"
+	processor.teamAssignments["123"] = "A"
+	processor.teamAssignments["456"] = "B"
 	processor.teamACurrentSide = "CT"
 	processor.teamBCurrentSide = "T"
 
 	// Test that side information is correctly determined
-	player1Side := processor.getPlayerCurrentSide("steam_123")
+	player1Side := processor.getPlayerCurrentSide("123")
 	if player1Side != "CT" {
 		t.Errorf("Expected player 1 side 'CT', got %s", player1Side)
 	}
 
-	player2Side := processor.getPlayerCurrentSide("steam_456")
+	player2Side := processor.getPlayerCurrentSide("456")
 	if player2Side != "T" {
 		t.Errorf("Expected player 2 side 'T', got %s", player2Side)
 	}
@@ -866,18 +866,18 @@ func TestEventProcessor_SideInformationInEvents(t *testing.T) {
 	processor.teamBCurrentSide = "CT"
 
 	// Test that side information is correctly updated after switch
-	player1SideAfterSwitch := processor.getPlayerCurrentSide("steam_123")
+	player1SideAfterSwitch := processor.getPlayerCurrentSide("123")
 	if player1SideAfterSwitch != "T" {
 		t.Errorf("Expected player 1 side 'T' after switch, got %s", player1SideAfterSwitch)
 	}
 
-	player2SideAfterSwitch := processor.getPlayerCurrentSide("steam_456")
+	player2SideAfterSwitch := processor.getPlayerCurrentSide("456")
 	if player2SideAfterSwitch != "CT" {
 		t.Errorf("Expected player 2 side 'CT' after switch, got %s", player2SideAfterSwitch)
 	}
 
 	// Test unassigned player
-	unassignedSide := processor.getPlayerCurrentSide("steam_789")
+	unassignedSide := processor.getPlayerCurrentSide("789")
 	if unassignedSide != "Unknown" {
 		t.Errorf("Expected unassigned player side 'Unknown', got %s", unassignedSide)
 	}
@@ -891,12 +891,12 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 	processor := NewEventProcessor(matchState, logger)
 
 	// Set up team assignments for side tracking
-	processor.teamAssignments["steam_76561198012345678"] = "A"
+	processor.teamAssignments["76561198012345678"] = "A"
 	processor.teamACurrentSide = "CT"
 	processor.teamBCurrentSide = "T"
 
 	// Test that the side information is correctly determined
-	playerSide := processor.getPlayerCurrentSide("steam_76561198012345678")
+	playerSide := processor.getPlayerCurrentSide("76561198012345678")
 	if playerSide != "CT" {
 		t.Errorf("Expected player side 'CT', got %s", playerSide)
 	}
@@ -907,8 +907,8 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 		RoundNumber:       1,
 		RoundTime:         30,
 		TickTimestamp:     1000,
-		PlayerSteamID:     "steam_76561198012345678",
-		PlayerSide:        processor.getPlayerCurrentSide("steam_76561198012345678"),
+		PlayerSteamID:     "76561198012345678",
+		PlayerSide:        processor.getPlayerCurrentSide("76561198012345678"),
 		GrenadeType:       "HE Grenade",
 		PlayerPosition:    types.Position{X: 100, Y: 200, Z: 50},
 		PlayerAim:         types.Vector{X: 0, Y: 0, Z: 0},
@@ -921,8 +921,8 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 		t.Errorf("Expected grenade event player side 'CT', got %s", grenadeEvent.PlayerSide)
 	}
 
-	if grenadeEvent.PlayerSteamID != "steam_76561198012345678" {
-		t.Errorf("Expected grenade event player steam ID 'steam_76561198012345678', got %s", grenadeEvent.PlayerSteamID)
+	if grenadeEvent.PlayerSteamID != "76561198012345678" {
+		t.Errorf("Expected grenade event player steam ID '76561198012345678', got %s", grenadeEvent.PlayerSteamID)
 	}
 
 	if grenadeEvent.GrenadeType != "HE Grenade" {
@@ -1022,9 +1022,9 @@ func TestEventProcessor_GetCurrentRoundTime(t *testing.T) {
 func TestEventProcessor_GetRoundScenario(t *testing.T) {
 	matchState := &types.MatchState{
 		Players: map[string]*types.Player{
-			"steam_123": {SteamID: "steam_123", Name: "Player1", Team: "A"},
-			"steam_456": {SteamID: "steam_456", Name: "Player2", Team: "A"},
-			"steam_789": {SteamID: "steam_789", Name: "Player3", Team: "B"},
+			"123": {SteamID: "123", Name: "Player1", Team: "A"},
+			"456": {SteamID: "456", Name: "Player2", Team: "A"},
+			"789": {SteamID: "789", Name: "Player3", Team: "B"},
 		},
 	}
 	logger := logrus.New()

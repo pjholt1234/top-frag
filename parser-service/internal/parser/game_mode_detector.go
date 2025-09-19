@@ -67,7 +67,7 @@ func (gmd *GameModeDetector) DetectGameMode(parser demoinfocs.Parser) (*types.Ga
 
 			gmd.logger.WithFields(logrus.Fields{
 				"player_name": player.Name,
-				"steam_id":    player.SteamID64,
+				"steam_id":    types.SteamIDToString(player.SteamID64),
 				"rank_type":   rankType,
 				"rank":        player.Rank(),
 			}).Debug("Player rank type analysis")
