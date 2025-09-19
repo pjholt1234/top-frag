@@ -30,7 +30,7 @@ class UserTest extends TestCase
     {
         $user = new User;
 
-        $expectedFillable = ['name', 'email', 'password', 'steam_id'];
+        $expectedFillable = ['name', 'email', 'password', 'steam_id', 'steam_link_hash'];
         $this->assertEquals($expectedFillable, $user->getFillable());
     }
 
