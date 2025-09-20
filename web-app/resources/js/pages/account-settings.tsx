@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,20 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  Code,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+} from 'lucide-react';
 import { IconBrandSteam } from '@tabler/icons-react';
+import { useSteamSharecode } from '@/hooks/use-steam-sharecode';
 
 const AccountSettingsPage: React.FC = () => {
   const {
@@ -24,6 +36,16 @@ const AccountSettingsPage: React.FC = () => {
     linkSteamAccount,
     unlinkSteamAccount,
   } = useAuth();
+
+  const {
+    hasSharecode,
+    sharecodeAddedAt,
+    loading: sharecodeLoading,
+    saveSharecode,
+    removeSharecode,
+    toggleProcessing,
+    checkSharecodeStatus,
+  } = useSteamSharecode();
   const [activeSection, setActiveSection] = useState<string>('password');
 
   // Password reset state
@@ -61,6 +83,28 @@ const AccountSettingsPage: React.FC = () => {
   const [steamError, setSteamError] = useState('');
   const [steamSuccess, setSteamSuccess] = useState('');
   const [steamLoading, setSteamLoading] = useState(false);
+
+  // Steam sharecode state
+  const [sharecodeData, setSharecodeData] = useState({
+    steam_sharecode: user?.steam_sharecode || '',
+  });
+  const [sharecodeError, setSharecodeError] = useState('');
+  const [sharecodeSuccess, setSharecodeSuccess] = useState('');
+  const [processingEnabled, setProcessingEnabled] = useState(
+    user?.steam_match_processing_enabled || false
+  );
+
+  // Sync form state with user data
+  useEffect(() => {
+    if (user) {
+      setSharecodeData({
+        steam_sharecode: user.steam_sharecode || '',
+      });
+      setProcessingEnabled(user.steam_match_processing_enabled || false);
+      // Check sharecode status to ensure we have the latest data
+      checkSharecodeStatus();
+    }
+  }, [user, checkSharecodeStatus]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +254,75 @@ const AccountSettingsPage: React.FC = () => {
     }
   };
 
+  const handleSharecodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSharecodeError('');
+    setSharecodeSuccess('');
+
+    if (!sharecodeData.steam_sharecode.trim()) {
+      setSharecodeError('Please enter a Steam sharecode');
+      return;
+    }
+
+    const pattern =
+      /^CSGO-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
+    if (!pattern.test(sharecodeData.steam_sharecode.trim())) {
+      setSharecodeError(
+        'Invalid sharecode format. Expected: CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX'
+      );
+      return;
+    }
+
+    try {
+      await saveSharecode(sharecodeData.steam_sharecode.trim());
+      setSharecodeSuccess('Steam sharecode saved successfully');
+    } catch (err: any) {
+      setSharecodeError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to save sharecode'
+      );
+    }
+  };
+
+  const handleSharecodeRemove = async () => {
+    setSharecodeError('');
+    setSharecodeSuccess('');
+
+    try {
+      await removeSharecode();
+      setSharecodeData({ steam_sharecode: '' });
+      setSharecodeSuccess('Steam sharecode removed successfully');
+    } catch (err: any) {
+      setSharecodeError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to remove sharecode'
+      );
+    }
+  };
+
+  const handleToggleProcessing = async () => {
+    setSharecodeError('');
+    setSharecodeSuccess('');
+
+    try {
+      const newState = await toggleProcessing();
+      setProcessingEnabled(newState);
+      setSharecodeSuccess(
+        newState
+          ? 'Steam match processing enabled'
+          : 'Steam match processing disabled'
+      );
+    } catch (err: any) {
+      setSharecodeError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to toggle processing'
+      );
+    }
+  };
+
   const settingsSections = [
     {
       id: 'password',
@@ -234,6 +347,12 @@ const AccountSettingsPage: React.FC = () => {
       title: 'Steam Account',
       description: 'Link or unlink your Steam account',
       icon: IconBrandSteam,
+    },
+    {
+      id: 'sharecode',
+      title: 'Steam Sharecode',
+      description: 'Manage your Steam sharecode for match import',
+      icon: Code,
     },
   ];
 
@@ -650,6 +769,144 @@ const AccountSettingsPage: React.FC = () => {
                         <li>Sync your gaming profile across platforms</li>
                       </ul>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Steam Sharecode Section */}
+          {activeSection === 'sharecode' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Code className="h-5 w-5" />
+                  <span>Steam Sharecode</span>
+                </CardTitle>
+                <CardDescription>
+                  Manage your Steam sharecode for automatic match history import
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {sharecodeError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{sharecodeError}</AlertDescription>
+                    </Alert>
+                  )}
+                  {sharecodeSuccess && (
+                    <Alert>
+                      <AlertDescription>{sharecodeSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Current Sharecode Status */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Code className="h-8 w-8 text-blue-600" />
+                        <div>
+                          <p className="font-medium">Steam Sharecode</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {hasSharecode
+                              ? `Configured (added ${sharecodeAddedAt ? new Date(sharecodeAddedAt).toLocaleDateString() : 'recently'})`
+                              : 'Not configured'}
+                          </p>
+                        </div>
+                      </div>
+                      {hasSharecode && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleSharecodeRemove}
+                          disabled={sharecodeLoading}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {sharecodeLoading ? 'Removing...' : 'Remove'}
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Match Processing Toggle */}
+                    {hasSharecode && (
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <p className="font-medium">
+                            Automatic Match Processing
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Automatically import matches from your Steam history
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={handleToggleProcessing}
+                          disabled={sharecodeLoading}
+                          className="flex items-center gap-2"
+                        >
+                          {processingEnabled ? (
+                            <ToggleRight className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4 text-gray-400" />
+                          )}
+                          {processingEnabled ? 'Enabled' : 'Disabled'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sharecode Input Form */}
+                  <form onSubmit={handleSharecodeSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="steam_sharecode">Steam Sharecode</Label>
+                      <Input
+                        id="steam_sharecode"
+                        type="text"
+                        placeholder="CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                        value={sharecodeData.steam_sharecode}
+                        onChange={e => {
+                          setSharecodeData({
+                            ...sharecodeData,
+                            steam_sharecode: e.target.value.toUpperCase(),
+                          });
+                        }}
+                        className="font-mono"
+                        disabled={sharecodeLoading}
+                      />
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Find your sharecode in CS:GO match history → Share
+                        button
+                      </p>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={
+                        sharecodeLoading ||
+                        !sharecodeData.steam_sharecode.trim()
+                      }
+                      className="w-full"
+                    >
+                      {sharecodeLoading
+                        ? 'Saving...'
+                        : hasSharecode
+                          ? 'Update Sharecode'
+                          : 'Save Sharecode'}
+                    </Button>
+                  </form>
+
+                  {/* Help Text */}
+                  <div className="bg-muted p-4 rounded-lg">
+                    <h4 className="text-sm font-medium mb-2">
+                      How to find your sharecode:
+                    </h4>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Open CS:GO and go to your match history</li>
+                      <li>Click on any recent match</li>
+                      <li>Click the &quot;Share&quot; button</li>
+                      <li>Copy the sharecode (starts with CSGO-)</li>
+                    </ol>
                   </div>
                 </div>
               </CardContent>

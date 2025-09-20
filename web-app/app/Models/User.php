@@ -26,6 +26,9 @@ class User extends Authenticatable
         'password',
         'steam_id',
         'steam_link_hash',
+        'steam_sharecode',
+        'steam_sharecode_added_at',
+        'steam_match_processing_enabled',
     ];
 
     /**
@@ -48,6 +51,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'steam_sharecode_added_at' => 'datetime',
+            'steam_match_processing_enabled' => 'boolean',
         ];
     }
 
@@ -88,5 +93,24 @@ class User extends Authenticatable
         }
 
         return $this->steam_link_hash;
+    }
+
+    /**
+     * Check if user has a Steam sharecode configured
+     */
+    public function hasSteamSharecode(): bool
+    {
+        return ! empty($this->steam_sharecode);
+    }
+
+    /**
+     * Validate Steam sharecode format
+     */
+    public static function isValidSharecode(string $sharecode): bool
+    {
+        // Steam sharecode format: CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
+        $pattern = '/^CSGO-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/';
+
+        return preg_match($pattern, $sharecode) === 1;
     }
 }

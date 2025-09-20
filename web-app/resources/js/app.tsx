@@ -14,6 +14,7 @@ import MatchDetail from '@/pages/match-detail';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
 import { SteamCallbackPage } from '@/pages/steam-callback';
+import { OnboardingPage } from '@/pages/onboarding';
 import AccountSettingsPage from '@/pages/account-settings';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -41,6 +42,7 @@ const App: React.FC = () => {
               }
             />
             <Route path="/steam-callback" element={<SteamCallbackPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
 
             {/* Protected routes - only accessible when authenticated */}
             <Route

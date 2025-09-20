@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MatchController;
+use App\Http\Controllers\Api\SteamSharecodeController;
 use App\Http\Controllers\Api\UploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/change-username', [AuthController::class, 'changeUsername']);
     Route::post('/auth/change-email', [AuthController::class, 'changeEmail']);
+
+    // Steam sharecode routes
+    Route::post('/steam-sharecode', [SteamSharecodeController::class, 'store']);
+    Route::get('/steam-sharecode/has-sharecode', [SteamSharecodeController::class, 'hasSharecode']);
+    Route::delete('/steam-sharecode', [SteamSharecodeController::class, 'destroy']);
+    Route::post('/steam-sharecode/toggle-processing', [SteamSharecodeController::class, 'toggleProcessing']);
+
     Route::get('/matches', [MatchController::class, 'index']);
 
     // Match detail sections

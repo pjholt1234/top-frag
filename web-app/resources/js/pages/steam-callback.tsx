@@ -50,7 +50,7 @@ export const SteamCallbackPage: React.FC = () => {
 
             // Trigger a page reload to reinitialize auth context
             setTimeout(() => {
-              window.location.href = '/';
+              window.location.href = '/onboarding';
             }, 2000);
           } else {
             // Account linking - no token needed
@@ -110,9 +110,7 @@ export const SteamCallbackPage: React.FC = () => {
                 Success!
               </h2>
               <p className="text-gray-600 mb-4">{message}</p>
-              <p className="text-sm text-gray-500">
-                Redirecting to your matches...
-              </p>
+              <p className="text-sm text-gray-500">Redirecting to setup...</p>
             </>
           )}
 
