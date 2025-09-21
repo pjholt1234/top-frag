@@ -14,16 +14,6 @@ class SteamApiServiceTest extends TestCase
     {
         parent::setUp();
         $this->steamApiService = new SteamAPIConnector;
-
-        // Set rate limit to high value to avoid rate limiting in tests
-        $reflection = new \ReflectionClass($this->steamApiService);
-        $rateLimitRemaining = $reflection->getProperty('rateLimitRemaining');
-        $rateLimitRemaining->setAccessible(true);
-        $rateLimitRemaining->setValue($this->steamApiService, 100);
-
-        $rateLimitResetTime = $reflection->getProperty('rateLimitResetTime');
-        $rateLimitResetTime->setAccessible(true);
-        $rateLimitResetTime->setValue($this->steamApiService, time() + 300);
     }
 
     public function test_check_service_health_returns_true_when_api_is_healthy(): void
@@ -55,21 +45,6 @@ class SteamApiServiceTest extends TestCase
         // Create a new instance to ensure it picks up the config
         $steamApiService = new SteamAPIConnector;
 
-        // Set rate limit to high value to avoid rate limiting in tests
-        $reflection = new \ReflectionClass($steamApiService);
-        $rateLimitRemaining = $reflection->getProperty('rateLimitRemaining');
-        $rateLimitRemaining->setAccessible(true);
-        $rateLimitRemaining->setValue($steamApiService, 100);
-
-        $rateLimitResetTime = $reflection->getProperty('rateLimitResetTime');
-        $rateLimitResetTime->setAccessible(true);
-        $rateLimitResetTime->setValue($steamApiService, time() + 300);
-
-        // Check if API key is set
-        $apiKey = $reflection->getProperty('apiKey');
-        $apiKey->setAccessible(true);
-        $this->assertEquals('test-api-key', $apiKey->getValue($steamApiService));
-
         Http::fake([
             '*' => Http::response([
                 'result' => [
@@ -89,16 +64,6 @@ class SteamApiServiceTest extends TestCase
 
         // Create a new instance to ensure it picks up the config
         $steamApiService = new SteamAPIConnector;
-
-        // Set rate limit to high value to avoid rate limiting in tests
-        $reflection = new \ReflectionClass($steamApiService);
-        $rateLimitRemaining = $reflection->getProperty('rateLimitRemaining');
-        $rateLimitRemaining->setAccessible(true);
-        $rateLimitRemaining->setValue($steamApiService, 100);
-
-        $rateLimitResetTime = $reflection->getProperty('rateLimitResetTime');
-        $rateLimitResetTime->setAccessible(true);
-        $rateLimitResetTime->setValue($steamApiService, time() + 300);
 
         Http::fake([
             '*' => Http::response([
@@ -126,16 +91,6 @@ class SteamApiServiceTest extends TestCase
 
         // Create a new instance to ensure it picks up the config
         $steamApiService = new SteamAPIConnector;
-
-        // Set rate limit to high value to avoid rate limiting in tests
-        $reflection = new \ReflectionClass($steamApiService);
-        $rateLimitRemaining = $reflection->getProperty('rateLimitRemaining');
-        $rateLimitRemaining->setAccessible(true);
-        $rateLimitRemaining->setValue($steamApiService, 100);
-
-        $rateLimitResetTime = $reflection->getProperty('rateLimitResetTime');
-        $rateLimitResetTime->setAccessible(true);
-        $rateLimitResetTime->setValue($steamApiService, time() + 300);
 
         Http::fake([
             '*' => Http::response([], 500),
