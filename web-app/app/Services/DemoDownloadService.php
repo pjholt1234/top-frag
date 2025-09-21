@@ -12,17 +12,15 @@ class DemoDownloadService
 
     private const int RETRY_INTERVAL = 2000;
 
+    private const int MAX_FILE_SIZE = 1073741824;
+
+    private const int TIMEOUT = 300;
+
     private string $tempDirectory;
-
-    private int $maxFileSize;
-
-    private int $timeout;
 
     public function __construct()
     {
         $this->tempDirectory = storage_path('app/temp/demos');
-        $this->maxFileSize = 1073741824; // 1GB
-        $this->timeout = 300; // 5 minutes
     }
 
     public function downloadDemo(string $sharecode): ?string
@@ -41,22 +39,21 @@ class DemoDownloadService
             return null;
         }
 
-        // Check if the demo URL is compressed (.bz2)
         $isCompressed = str_ends_with($demoUrl, '.bz2');
         $tempFilePath = $this->getTempFilePath($sharecode, $isCompressed);
 
         try {
             $this->ensureTempDirectoryExists();
 
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout(self::TIMEOUT)
                 ->withOptions([
                     'sink' => $tempFilePath,
                     'progress' => function ($downloadTotal, $downloadedBytes) use ($sharecode) {
-                        if ($downloadTotal > $this->maxFileSize) {
+                        if ($downloadTotal > self::MAX_FILE_SIZE) {
                             Log::error('Demo file too large', [
                                 'sharecode' => $sharecode,
                                 'size' => $downloadTotal,
-                                'max_size' => $this->maxFileSize,
+                                'max_size' => self::MAX_FILE_SIZE,
                             ]);
                             throw new Exception('File too large');
                         }
@@ -86,11 +83,11 @@ class DemoDownloadService
             }
 
             $fileSize = filesize($tempFilePath);
-            if ($fileSize > $this->maxFileSize) {
+            if ($fileSize > self::MAX_FILE_SIZE) {
                 Log::error('Downloaded demo file exceeds size limit', [
                     'sharecode' => $sharecode,
                     'size' => $fileSize,
-                    'max_size' => $this->maxFileSize,
+                    'max_size' => self::MAX_FILE_SIZE,
                 ]);
                 $this->cleanupTempFile($tempFilePath);
 
