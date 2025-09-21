@@ -193,4 +193,178 @@ class UploadControllerTest extends TestCase
 
         $response->assertStatus(500);
     }
+
+    public function test_get_in_progress_jobs_returns_unauthorized_for_unauthenticated_user()
+    {
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_get_in_progress_jobs_returns_empty_array_when_no_jobs()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'jobs' => [],
+            ]);
+    }
+
+    public function test_get_in_progress_jobs_returns_only_incomplete_jobs()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // Create some demo processing jobs with different statuses
+        $incompleteJob1 = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 50,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $incompleteJob2 = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 75,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $completedJob = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 100,
+            'processing_status' => \App\Enums\ProcessingStatus::COMPLETED,
+        ]);
+
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonStructure([
+                'jobs' => [
+                    '*' => [
+                        'processing_status',
+                        'progress_percentage',
+                        'current_step',
+                    ],
+                ],
+            ]);
+
+        $jobs = $response->json('jobs');
+        $this->assertCount(2, $jobs);
+
+        // Verify that only incomplete jobs are returned by checking progress percentages
+        $progressPercentages = collect($jobs)->pluck('progress_percentage')->toArray();
+        $this->assertContains(50, $progressPercentages);
+        $this->assertContains(75, $progressPercentages);
+        $this->assertNotContains(100, $progressPercentages);
+    }
+
+    public function test_get_in_progress_jobs_returns_jobs_for_authenticated_user_only()
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        $this->actingAs($user1);
+
+        // Create jobs for both users
+        $user1Job = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user1->id,
+            'progress_percentage' => 50,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $user2Job = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user2->id,
+            'progress_percentage' => 30,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(200);
+        $jobs = $response->json('jobs');
+
+        $this->assertCount(1, $jobs);
+        $this->assertEquals(50, $jobs[0]['progress_percentage']);
+    }
+
+    public function test_get_in_progress_jobs_filters_by_progress_percentage()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // Create jobs with different progress percentages
+        $job1 = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 0,
+            'processing_status' => \App\Enums\ProcessingStatus::PENDING,
+        ]);
+
+        $job2 = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 50,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $job3 = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 100,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(200);
+        $jobs = $response->json('jobs');
+
+        $this->assertCount(2, $jobs);
+
+        $progressPercentages = collect($jobs)->pluck('progress_percentage')->toArray();
+        $this->assertContains(0, $progressPercentages);
+        $this->assertContains(50, $progressPercentages);
+        $this->assertNotContains(100, $progressPercentages);
+    }
+
+    public function test_get_in_progress_jobs_filters_by_processing_status()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // Create jobs with different processing statuses
+        $pendingJob = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 0,
+            'processing_status' => \App\Enums\ProcessingStatus::PENDING,
+        ]);
+
+        $processingJob = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 50,
+            'processing_status' => \App\Enums\ProcessingStatus::PROCESSING,
+        ]);
+
+        $completedJob = \App\Models\DemoProcessingJob::factory()->create([
+            'user_id' => $user->id,
+            'progress_percentage' => 100,
+            'processing_status' => \App\Enums\ProcessingStatus::COMPLETED,
+        ]);
+
+        $response = $this->getJson('/api/user/upload/in-progress-jobs');
+
+        $response->assertStatus(200);
+        $jobs = $response->json('jobs');
+
+        $this->assertCount(2, $jobs);
+
+        $processingStatuses = collect($jobs)->pluck('processing_status')->toArray();
+        $this->assertContains('Pending', $processingStatuses);
+        $this->assertContains('Processing', $processingStatuses);
+        $this->assertNotContains('Completed', $processingStatuses);
+    }
 }

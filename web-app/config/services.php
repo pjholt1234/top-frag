@@ -41,8 +41,8 @@ return [
     ],
 
     'steam' => [
-        'client_id' => env('STEAM_CLIENT_ID'),
-        'client_secret' => env('STEAM_CLIENT_SECRET'),
+        'client_id' => env('STEAM_API_KEY'),
+        'client_secret' => env('STEAM_API_KEY'),
         'redirect' => env('STEAM_REDIRECT_URI'),
         'api_key' => env('STEAM_API_KEY'),
         'max_sharecodes_per_run' => env('STEAM_MAX_SHARECODES_PER_RUN', 50),

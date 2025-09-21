@@ -2,18 +2,18 @@
 
 namespace Tests\Unit\Services;
 
-use App\Services\SteamApiService;
+use App\Services\SteamAPIConnector;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class SteamApiServiceTest extends TestCase
 {
-    private SteamApiService $steamApiService;
+    private SteamAPIConnector $steamApiService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->steamApiService = new SteamApiService;
+        $this->steamApiService = new SteamAPIConnector;
 
         // Set rate limit to high value to avoid rate limiting in tests
         $reflection = new \ReflectionClass($this->steamApiService);
@@ -53,7 +53,7 @@ class SteamApiServiceTest extends TestCase
         config(['services.steam.api_key' => 'test-api-key']);
 
         // Create a new instance to ensure it picks up the config
-        $steamApiService = new SteamApiService;
+        $steamApiService = new SteamAPIConnector;
 
         // Set rate limit to high value to avoid rate limiting in tests
         $reflection = new \ReflectionClass($steamApiService);
@@ -72,7 +72,7 @@ class SteamApiServiceTest extends TestCase
 
         Http::fake([
             '*' => Http::response([
-                'response' => [
+                'result' => [
                     'nextcode' => 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY',
                 ],
             ], 200),
@@ -88,7 +88,7 @@ class SteamApiServiceTest extends TestCase
         config(['services.steam.api_key' => 'test-api-key']);
 
         // Create a new instance to ensure it picks up the config
-        $steamApiService = new SteamApiService;
+        $steamApiService = new SteamAPIConnector;
 
         // Set rate limit to high value to avoid rate limiting in tests
         $reflection = new \ReflectionClass($steamApiService);
@@ -102,7 +102,7 @@ class SteamApiServiceTest extends TestCase
 
         Http::fake([
             '*' => Http::response([
-                'response' => [],
+                'result' => [],
             ], 200),
         ]);
 
@@ -125,7 +125,7 @@ class SteamApiServiceTest extends TestCase
         config(['services.steam.api_key' => 'test-api-key']);
 
         // Create a new instance to ensure it picks up the config
-        $steamApiService = new SteamApiService;
+        $steamApiService = new SteamAPIConnector;
 
         // Set rate limit to high value to avoid rate limiting in tests
         $reflection = new \ReflectionClass($steamApiService);

@@ -3,14 +3,14 @@
 namespace Tests\Feature\Controllers\Api;
 
 use App\Services\ParserServiceConnector;
-use App\Services\SteamApiService;
+use App\Services\SteamAPIConnector;
 use Tests\TestCase;
 
 class HealthControllerTest extends TestCase
 {
     public function test_health_check_returns_healthy_when_all_services_healthy(): void
     {
-        $steamApiService = $this->createMock(SteamApiService::class);
+        $steamApiService = $this->createMock(SteamAPIConnector::class);
         $parserServiceConnector = $this->createMock(ParserServiceConnector::class);
 
         $steamApiService->expects($this->once())
@@ -20,7 +20,7 @@ class HealthControllerTest extends TestCase
         $parserServiceConnector->expects($this->once())
             ->method('checkServiceHealth');
 
-        $this->app->instance(SteamApiService::class, $steamApiService);
+        $this->app->instance(SteamAPIConnector::class, $steamApiService);
         $this->app->instance(ParserServiceConnector::class, $parserServiceConnector);
 
         $response = $this->get('/api/health');
@@ -48,7 +48,7 @@ class HealthControllerTest extends TestCase
 
     public function test_health_check_returns_degraded_when_steam_api_unhealthy(): void
     {
-        $steamApiService = $this->createMock(SteamApiService::class);
+        $steamApiService = $this->createMock(SteamAPIConnector::class);
         $parserServiceConnector = $this->createMock(ParserServiceConnector::class);
 
         $steamApiService->expects($this->once())
@@ -58,7 +58,7 @@ class HealthControllerTest extends TestCase
         $parserServiceConnector->expects($this->once())
             ->method('checkServiceHealth');
 
-        $this->app->instance(SteamApiService::class, $steamApiService);
+        $this->app->instance(SteamAPIConnector::class, $steamApiService);
         $this->app->instance(ParserServiceConnector::class, $parserServiceConnector);
 
         $response = $this->get('/api/health');
@@ -73,7 +73,7 @@ class HealthControllerTest extends TestCase
 
     public function test_health_check_returns_degraded_when_parser_service_unhealthy(): void
     {
-        $steamApiService = $this->createMock(SteamApiService::class);
+        $steamApiService = $this->createMock(SteamAPIConnector::class);
         $parserServiceConnector = $this->createMock(ParserServiceConnector::class);
 
         $steamApiService->expects($this->once())
@@ -84,7 +84,7 @@ class HealthControllerTest extends TestCase
             ->method('checkServiceHealth')
             ->willThrowException(new \Exception('Parser service unavailable'));
 
-        $this->app->instance(SteamApiService::class, $steamApiService);
+        $this->app->instance(SteamAPIConnector::class, $steamApiService);
         $this->app->instance(ParserServiceConnector::class, $parserServiceConnector);
 
         $response = $this->get('/api/health');

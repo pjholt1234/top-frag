@@ -20,9 +20,20 @@ class DemoDownloadServiceTest extends TestCase
     {
         $sharecode = 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY';
         $demoContent = 'fake demo content';
+        $demoUrl = 'https://replay123.valve.net/demo.dem';
 
+        // Mock the valve demo URL service response
         Http::fake([
+            'valve-demo-url-service.test/*' => Http::response([
+                'demoUrl' => $demoUrl,
+            ], 200),
             'replay*.valve.net/*' => Http::response($demoContent, 200),
+        ]);
+
+        // Set the configuration for the valve demo URL service
+        config([
+            'services.valve_demo_url_service.base_url' => 'https://valve-demo-url-service.test',
+            'services.valve_demo_url_service.api_key' => 'test-api-key',
         ]);
 
         $result = $this->demoDownloadService->downloadDemo($sharecode);

@@ -46,6 +46,8 @@ class GameMatchTest extends TestCase
         $match = new GameMatch;
         $expectedFillable = [
             'match_hash',
+            'sharecode',
+            'demo_url',
             'map',
             'winning_team',
             'winning_team_score',

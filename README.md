@@ -21,6 +21,7 @@ Top Frag is a complete CS2 demo analysis platform that parses demo files to extr
 - **Backend Parser**: Go 1.21+ - High-performance demo parsing microservice
 - **Web Backend**: Laravel 12 - PHP framework with API endpoints and job processing
 - **Frontend**: React 19 + TypeScript - Modern SPA with Tailwind CSS
+- **Demo URL Service**: Node.js 18+ - Microservice for Steam Game Coordinator integration
 - **Database**: MySQL/PostgreSQL - Relational database for match data
 
 ---
@@ -29,17 +30,26 @@ Top Frag is a complete CS2 demo analysis platform that parses demo files to extr
 
 ### System Architecture
 ```
+                       ┌─────────────────┐    ┌─────────────────┐
+                       │ Valve Demo URL  │───▶│ Steam Game      │
+                       │   Service       │    │ Coordinator     │
+                       │   (Node.js)     │    │                 │
+                       └─────────────────┘    └─────────────────┘
+                                ▲
+                                │ 
+                                ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web App       │    │ Parser Service  │    │  Test Harness   │
-│   (Laravel/     │◀───│   (Go)          │◀───│   (Go CLI)      │
-│    React)       │    │                 │    │                 │
+│   React SPA     │    │   Laravel API   │    │ Parser Service  │
+│   (Frontend)    │◀──▶│   (Backend)     │◀──▶│   (Go)          │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Database      │    │ Demo Files      │    │ Test Results    │
-│   (MySQL)       │    │ (.dem)          │    │ (JSON/Text)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                ▲
+                                │ 
+                                ▼               
+                        ┌─────────────────┐
+                        │   Database      │
+                        │   (MySQL)       │
+                        └─────────────────┘                  
+        
 ```
 
 ### Project Structure
@@ -47,6 +57,7 @@ Top Frag is a complete CS2 demo analysis platform that parses demo files to extr
 top-frag/
 ├── parser-service/          # Go microservice for demo parsing
 ├── web-app/                 # Laravel/React web application
+├── valve-demo-url-service/  # Node.js service for demo URL retrieval
 ├── parser-test/             # Go CLI testing harness
 ├── docs/                    # Documentation and guides
 ├── bruno/                   # API testing collections
@@ -56,6 +67,7 @@ top-frag/
 ### Key Components
 - **Parser Service**: High-performance Go service that parses CS2 demo files and extracts game events
 - **Web Application**: Laravel backend with React frontend for user interface and data management
+- **Valve Demo URL Service**: Node.js microservice that decodes CS2 sharecodes and retrieves demo download URLs via Steam Game Coordinator
 - **Test Harness**: Comprehensive CLI tool for testing parser service functionality
 - **Documentation**: Detailed guides for development, coding standards, and task execution
 
@@ -68,6 +80,7 @@ top-frag/
 - [ ] PHP 8.3 or higher
 - [ ] Node.js 18+ and npm
 - [ ] MySQL 8.0+ or PostgreSQL 13+
+- [ ] Steam account with CS2 access (for valve-demo-url-service)
 
 ### Installation
 ```bash
@@ -86,6 +99,11 @@ composer install
 npm install
 cp .env.example .env
 
+# Set up valve demo URL service
+cd ../valve-demo-url-service
+npm install
+cp env.example .env
+
 # Set up test harness
 cd ../parser-test
 go mod download
@@ -101,6 +119,10 @@ go test
 cd ../web-app
 php artisan test
 npm run test
+
+# Test valve demo URL service
+cd ../valve-demo-url-service
+npm test
 
 # Test harness
 cd ../parser-test
@@ -122,6 +144,11 @@ cp .env.example .env
 cd ../parser-service
 cp config.yaml.backup config.yaml
 # Edit config.yaml with your service settings
+
+# Valve demo URL service configuration
+cd ../valve-demo-url-service
+cp env.example .env
+# Edit .env with your Steam credentials and API keys
 ```
 
 ### Development Workflow
@@ -146,6 +173,13 @@ npm run test             # Run frontend tests
 npm run lint             # Check TypeScript code
 npm run format           # Format TypeScript code
 
+# Valve Demo URL Service
+cd valve-demo-url-service
+npm test                 # Run tests
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run lint             # Check TypeScript code
+
 # Test Harness
 cd parser-test
 go test                  # Run tests
@@ -156,6 +190,7 @@ go build -o parser-test . # Build CLI tool
 - **Go**: `golangci-lint` - Comprehensive Go linting
 - **PHP**: `Laravel Pint` - PHP code formatting
 - **TypeScript**: `ESLint` + `Prettier` - Code quality and formatting
+- **Node.js**: `ESLint` + `Jest` - TypeScript linting and testing
 
 ---
 
@@ -166,6 +201,7 @@ go build -o parser-test . # Build CLI tool
 - **[Coding Standards](docs/CODING_STANDARDS.md)** - Code style and conventions
 - **[Parser Service README](parser-service/README.md)** - Parser service architecture and API
 - **[Web App README](web-app/README.md)** - Web application setup and features
+- **[Valve Demo URL Service README](valve-demo-url-service/README.md)** - Demo URL service setup and API
 - **[Test Harness README](parser-test/README.md)** - Testing framework and usage
 
 ### Additional Resources
@@ -181,6 +217,7 @@ go build -o parser-test . # Build CLI tool
 tests/
 ├── parser-service/        # Go unit and integration tests
 ├── web-app/tests/         # PHP feature and unit tests
+├── valve-demo-url-service/ # Node.js unit and integration tests
 ├── parser-test/           # CLI testing harness
 └── bruno/                 # API integration tests
 ```
@@ -197,6 +234,11 @@ go test -cover             # With coverage
 cd web-app
 php artisan test          # All tests
 npm run test             # Frontend tests
+
+# Valve Demo URL Service Tests
+cd valve-demo-url-service
+npm test                 # All tests
+npm run test:coverage    # With coverage
 
 # Integration Tests
 cd parser-test
@@ -221,11 +263,14 @@ cd parser-test
 | `DB_DATABASE` | Database name | - | ✅ |
 | `PARSER_SERVICE_URL` | Parser service URL | `http://localhost:8080` | ✅ |
 | `PARSER_SERVICE_API_KEY` | Parser service API key | - | ✅ |
+| `VALVE_DEMO_URL_SERVICE_URL` | Valve demo URL service URL | `http://localhost:3001` | ✅ |
+| `VALVE_DEMO_URL_SERVICE_API_KEY` | Valve demo URL service API key | - | ✅ |
 | `APP_KEY` | Laravel application key | - | ✅ |
 
 ### Configuration Files
 - **`.env`** - Web application environment variables
 - **`config.yaml`** - Parser service configuration
+- **`valve-demo-url-service/.env`** - Valve demo URL service environment variables
 - **`package.json`** - Frontend dependencies and scripts
 - **`composer.json`** - Backend dependencies and scripts
 
@@ -239,28 +284,21 @@ cd parser-test
 
 ---
 
----
-
----
-
 ## 📊 Monitoring & Observability
 
 ### Health Checks
 - **Parser Service**: `GET /health` and `GET /ready`
 - **Web Application**: `GET /up` (Laravel health check)
+- **Valve Demo URL Service**: `GET /health` and `GET /metrics`
 - **Database**: Connection status monitoring
 
 ### Logging
-- **Format**: JSON for parser service, Laravel logs for web app
+- **Format**: JSON for parser service, Laravel logs for web app, Winston for valve-demo-url-service
 - **Levels**: `debug`, `info`, `warn`, `error`
-- **Location**: `parser-service/logs/` and `web-app/storage/logs/`
+- **Location**: `parser-service/logs/`, `web-app/storage/logs/`, and `valve-demo-url-service/logs/`
 
 ### Metrics
-- **Performance**: Demo parsing time, API response times
-- **Business**: Matches processed, users registered
-- **Infrastructure**: CPU, memory, disk usage
-
----
+- **Performance**: Demo parsing time, API response times, Steam GC connection status
 
 ---
 
@@ -271,14 +309,6 @@ cd parser-test
 - **API Response**: <200ms for most endpoints
 - **Concurrent Processing**: Up to 3 demos simultaneously
 - **Resource Usage**: ~512MB RAM per parser instance
-
-### Optimization Guidelines
-- [ ] Use appropriate batch sizes for event processing
-- [ ] Implement caching for frequently accessed data
-- [ ] Optimize database queries with proper indexing
-- [ ] Monitor performance metrics regularly
-
----
 
 ---
 
@@ -297,6 +327,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 - [Laravel](https://laravel.com) - PHP web framework
 - [React](https://reactjs.org) - JavaScript UI library
 - [Tailwind CSS](https://tailwindcss.com) - CSS framework
+- [Express](https://expressjs.com) - Node.js web framework for valve-demo-url-service
+- [Winston](https://github.com/winstonjs/winston) - Logging library for valve-demo-url-service
 
 ### Assets & Resources
 - [Counter-Strike Wiki](https://counterstrike.fandom.com/wiki) - Map logs and background images
@@ -335,11 +367,12 @@ This is a CS2 demo analysis platform that processes Counter-Strike 2 demo files 
 ### File Organization
 - **Parser Service**: Go microservice in `parser-service/` with clean architecture
 - **Web Application**: Laravel backend and React frontend in `web-app/`
+- **Valve Demo URL Service**: Node.js microservice in `valve-demo-url-service/` with TypeScript
 - **Test Harness**: CLI testing tool in `parser-test/` with comprehensive assertions
 - **Documentation**: Detailed guides in `docs/` folder
 
 ### Dependencies
-- **Critical**: demoinfocs-golang, Laravel, React, MySQL/PostgreSQL
+- **Critical**: demoinfocs-golang, Laravel, React, Node.js, MySQL/PostgreSQL
 - **Optional**: Docker for deployment, Bruno for API testing
 - **Avoid**: Breaking changes to database schema without explicit permission
 

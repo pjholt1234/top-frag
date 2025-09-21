@@ -528,4 +528,137 @@ class DemoParserControllerTest extends TestCase
             'current_step' => 'Parsing demo file',
         ]);
     }
+
+    public function test_handle_event_returns_404_for_nonexistent_job()
+    {
+        $jobId = 'nonexistent-job-123';
+        $eventName = 'gunfight';
+
+        $payload = [
+            'data' => [],
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson("/api/job/{$jobId}/event/{$eventName}", $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Job not found for match creation',
+                'job_id' => $jobId,
+                'event_name' => $eventName,
+            ]);
+    }
+
+    public function test_handle_event_returns_404_for_nonexistent_match()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $jobId = $job->uuid;
+        $eventName = 'gunfight';
+
+        $payload = [
+            'data' => [],
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson("/api/job/{$jobId}/event/{$eventName}", $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Match not found for match creation',
+                'job_id' => $jobId,
+                'event_name' => $eventName,
+            ]);
+    }
+
+    public function test_progress_callback_returns_404_for_nonexistent_job()
+    {
+        $jobId = 'nonexistent-job-456';
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => 'Processing',
+            'progress' => 50,
+            'current_step' => 'Processing demo',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/progress', $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Job not found for match creation',
+                'job_id' => $jobId,
+            ]);
+    }
+
+    public function test_completion_callback_returns_404_for_nonexistent_job()
+    {
+        $jobId = 'nonexistent-job-789';
+
+        $payload = [
+            'job_id' => $jobId,
+            'status' => 'Completed',
+            'progress' => 100,
+            'current_step' => 'Processing complete',
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/completion', $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Job not found for match creation',
+                'job_id' => $jobId,
+            ]);
+    }
+
+    public function test_progress_callback_with_missing_required_fields()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $jobId = $job->uuid;
+
+        $payload = [
+            'job_id' => $jobId,
+            // Missing required fields: status, progress, current_step
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/progress', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['status', 'progress', 'current_step']);
+    }
+
+    public function test_completion_callback_with_missing_required_fields()
+    {
+        $job = DemoProcessingJob::factory()->create();
+        $jobId = $job->uuid;
+
+        $payload = [
+            'job_id' => $jobId,
+            // Missing required fields: status, progress, current_step
+        ];
+
+        $response = $this->withHeaders([
+            'X-API-Key' => 'test-api-key',
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/job/callback/completion', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+    }
 }

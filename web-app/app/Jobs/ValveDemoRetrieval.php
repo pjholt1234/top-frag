@@ -7,7 +7,7 @@ use App\Models\GameMatch;
 use App\Models\User;
 use App\Services\DemoDownloadService;
 use App\Services\ParserServiceConnector;
-use App\Services\SteamApiService;
+use App\Services\SteamAPIConnector;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +16,7 @@ class ValveDemoRetrieval implements ShouldQueue
 {
     use Queueable;
 
-    private readonly SteamApiService $steamApiService;
+    private readonly SteamAPIConnector $steamApiService;
 
     private readonly DemoDownloadService $demoDownloadService;
 
@@ -26,10 +26,10 @@ class ValveDemoRetrieval implements ShouldQueue
 
     public function __construct()
     {
-        $this->steamApiService = app(SteamApiService::class);
+        $this->steamApiService = app(SteamAPIConnector::class);
         $this->demoDownloadService = app(DemoDownloadService::class);
         $this->parserServiceConnector = app(ParserServiceConnector::class);
-        $this->maxSharecodesPerRun = config('steam.max_sharecodes_per_run', 50);
+        $this->maxSharecodesPerRun = config('services.steam.max_sharecodes_per_run', 50);
     }
 
     public function handle(): void
@@ -224,12 +224,12 @@ class ValveDemoRetrieval implements ShouldQueue
         $match = GameMatch::create([
             'sharecode' => $sharecode,
             'demo_url' => $demoUrl,
-            'uploaded_by' => null, // Automated download, not user upload
+            'uploaded_by' => null,
         ]);
 
         $job = DemoProcessingJob::create([
             'match_id' => $match->id,
-            'user_id' => null, // Automated download, not user upload
+            'user_id' => null,
         ]);
 
         ParseDemo::dispatch($demoFilePath, null, $match->id);

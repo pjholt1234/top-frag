@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\ParserServiceConnector;
-use App\Services\SteamApiService;
+use App\Services\SteamAPIConnector;
 use Illuminate\Http\Request;
 
 class HealthController extends Controller
@@ -49,7 +49,7 @@ class HealthController extends Controller
     private function checkSteamApi(array &$health): void
     {
         try {
-            $steamApi = app(SteamApiService::class);
+            $steamApi = app(SteamAPIConnector::class);
             $isHealthy = $steamApi->checkServiceHealth();
 
             $health['services']['steam_api'] = [
