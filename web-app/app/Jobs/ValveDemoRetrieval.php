@@ -2,8 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\DemoProcessingJob;
-use App\Models\GameMatch;
 use App\Models\User;
 use App\Services\DemoDownloadService;
 use App\Services\ParserServiceConnector;
@@ -57,7 +55,8 @@ class ValveDemoRetrieval implements ShouldQueue
         ]);
 
         foreach ($users as $user) {
-            $this->processUser($user);
+            ProcessUserSharecodesJob::dispatch($user->id)
+                ->onQueue('steam-processing');
         }
 
         Log::info('ValveDemoRetrieval job completed');
@@ -109,154 +108,5 @@ class ValveDemoRetrieval implements ShouldQueue
                     ->orWhere('steam_last_processed_at', '<', now()->subMinutes(15));
             })
             ->get();
-    }
-
-    private function processUser(User $user): void
-    {
-        Log::info('Processing user for Steam demo retrieval', [
-            'user_id' => $user->id,
-            'steam_id' => $user->steam_id,
-            'current_sharecode' => $user->steam_sharecode,
-        ]);
-
-        $processedCount = 0;
-        $currentSharecode = $user->steam_sharecode;
-
-        try {
-            while ($processedCount < $this->maxSharecodesPerRun) {
-                $nextSharecode = $this->steamApiService->getNextMatchSharingCode(
-                    $user->steam_id,
-                    $user->steam_game_auth_code,
-                    $currentSharecode
-                );
-
-                // Handle the "n/a" case from Steam API
-                if (! $nextSharecode || $nextSharecode === 'n/a') {
-                    Log::info('No more sharecodes available for user (reached end of history)', [
-                        'user_id' => $user->id,
-                        'steam_id' => $user->steam_id,
-                        'processed_count' => $processedCount,
-                    ]);
-                    break;
-                }
-
-                // Check if this sharecode already exists
-                if ($this->sharecodeAlreadyExists($nextSharecode)) {
-                    Log::info('Sharecode already exists, updating user sharecode and continuing', [
-                        'user_id' => $user->id,
-                        'sharecode' => $nextSharecode,
-                        'processed_count' => $processedCount,
-                    ]);
-                    $currentSharecode = $nextSharecode;
-                    $this->updateUserSharecode($user, $nextSharecode);
-
-                    continue;
-                }
-
-                // Get the demo URL first
-                $demoUrl = $this->demoDownloadService->fetchDemoUrl($nextSharecode);
-                if (! $demoUrl) {
-                    Log::error('Failed to get demo URL for user', [
-                        'user_id' => $user->id,
-                        'sharecode' => $nextSharecode,
-                        'processed_count' => $processedCount,
-                    ]);
-                    // Continue to next sharecode instead of breaking
-                    $currentSharecode = $nextSharecode;
-                    $this->updateUserSharecode($user, $nextSharecode);
-
-                    continue;
-                }
-
-                $demoFilePath = $this->demoDownloadService->downloadDemo($nextSharecode);
-
-                if (! $demoFilePath) {
-                    Log::error('Failed to download demo for user', [
-                        'user_id' => $user->id,
-                        'sharecode' => $nextSharecode,
-                        'processed_count' => $processedCount,
-                    ]);
-                    // Continue to next sharecode instead of breaking
-                    $currentSharecode = $nextSharecode;
-                    $this->updateUserSharecode($user, $nextSharecode);
-
-                    continue;
-                }
-
-                // Successfully processed a new demo
-                $this->queueDemoForParsing($user, $nextSharecode, $demoFilePath, $demoUrl);
-                $currentSharecode = $nextSharecode;
-                $this->updateUserSharecode($user, $nextSharecode);
-                $processedCount++;
-
-                Log::info('Successfully processed sharecode for user', [
-                    'user_id' => $user->id,
-                    'sharecode' => $nextSharecode,
-                    'processed_count' => $processedCount,
-                ]);
-            }
-
-            // Update last processed time after all sharecodes are processed
-            $this->updateUserLastProcessed($user);
-
-            Log::info('Completed processing user for Steam demo retrieval', [
-                'user_id' => $user->id,
-                'total_processed' => $processedCount,
-                'final_sharecode' => $currentSharecode,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error processing user for Steam demo retrieval', [
-                'user_id' => $user->id,
-                'processed_count' => $processedCount,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-        }
-    }
-
-    private function sharecodeAlreadyExists(string $sharecode): bool
-    {
-        return GameMatch::where('sharecode', $sharecode)->exists();
-    }
-
-    private function queueDemoForParsing(User $user, string $sharecode, string $demoFilePath, string $demoUrl): void
-    {
-        $match = GameMatch::create([
-            'sharecode' => $sharecode,
-            'demo_url' => $demoUrl,
-            'uploaded_by' => null,
-        ]);
-
-        $job = DemoProcessingJob::create([
-            'match_id' => $match->id,
-            'user_id' => null,
-        ]);
-
-        ParseDemo::dispatch($demoFilePath, null, $match->id);
-
-        Log::info('Queued demo for parsing', [
-            'user_id' => $user->id,
-            'match_id' => $match->id,
-            'job_id' => $job->uuid,
-            'sharecode' => $sharecode,
-            'demo_url' => $demoUrl,
-        ]);
-    }
-
-    private function updateUserLastProcessed(User $user): void
-    {
-        $user->update(['steam_last_processed_at' => now()]);
-    }
-
-    private function updateUserSharecode(User $user, string $newSharecode): void
-    {
-        $previousSharecode = $user->steam_sharecode;
-        $user->update(['steam_sharecode' => $newSharecode]);
-
-        Log::info('Updated user steam sharecode', [
-            'user_id' => $user->id,
-            'previous_sharecode' => $previousSharecode,
-            'new_sharecode' => $newSharecode,
-        ]);
     }
 }

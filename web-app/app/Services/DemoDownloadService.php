@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 class DemoDownloadService
 {
+    private const int MAX_DEMO_URL_RETRIES = 2;
+
+    private const int RETRY_INTERVAL = 2000;
+
     private string $tempDirectory;
 
     private int $maxFileSize;
@@ -155,6 +159,13 @@ class DemoDownloadService
 
     public function fetchDemoUrl(string $sharecode): ?string
     {
+        $rateLimiter = app(RateLimiterService::class);
+
+        if (! $rateLimiter->checkValveDemoUrlLimit()) {
+            Log::warning('Valve demo URL service rate limit reached, waiting');
+            $rateLimiter->waitForRateLimit('valve_demo_url', 20, 60);
+        }
+
         $baseUrl = config('services.valve_demo_url_service.base_url');
         $apiKey = config('services.valve_demo_url_service.api_key');
 
@@ -174,7 +185,8 @@ class DemoDownloadService
                 'service_url' => $baseUrl,
             ]);
 
-            $response = Http::timeout(30)
+            $response = Http::timeout(60)
+                ->retry(self::MAX_DEMO_URL_RETRIES, self::RETRY_INTERVAL)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'X-API-Key' => $apiKey,

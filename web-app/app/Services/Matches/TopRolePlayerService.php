@@ -33,28 +33,7 @@ class TopRolePlayerService
     {
         $match = GameMatch::find($matchId);
         if (! $match) {
-            return [
-                'opener' => [
-                    'name' => null,
-                    'steam_id' => null,
-                    'score' => 0,
-                ],
-                'closer' => [
-                    'name' => null,
-                    'steam_id' => null,
-                    'score' => 0,
-                ],
-                'support' => [
-                    'name' => null,
-                    'steam_id' => null,
-                    'score' => 0,
-                ],
-                'fragger' => [
-                    'name' => null,
-                    'steam_id' => null,
-                    'score' => 0,
-                ],
-            ];
+            return [];
         }
 
         $players = $this->getAvailablePlayers($match);

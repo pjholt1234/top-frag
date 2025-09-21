@@ -39,6 +39,11 @@ class GrenadeExplorerService
 
     private function buildExplorer(array $filters, int $matchId): array
     {
+        $match = GameMatch::find($matchId);
+        if (! $match) {
+            return [];
+        }
+
         $map = $filters['map'] ?? null;
         $roundNumber = $filters['round_number'] ?? null;
         $grenadeType = $filters['grenade_type'] ?? null;
@@ -105,6 +110,11 @@ class GrenadeExplorerService
 
     private function buildFilterOptions(array $filters, int $matchId): array
     {
+        $match = GameMatch::find($matchId);
+        if (! $match) {
+            return [];
+        }
+
         $map = $filters['map'] ?? null;
         $matches = [];
         if ($map) {

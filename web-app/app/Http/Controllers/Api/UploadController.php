@@ -27,7 +27,7 @@ class UploadController extends Controller
             $publicPath = $file->storeAs('demos', $fileName, 'public');
             $fullPath = storage_path("app/public/{$publicPath}");
 
-            ParseDemo::dispatch($fullPath, Auth::user());
+            ParseDemo::dispatch($fullPath, Auth::user())->onQueue('high');
 
             return response()->json([
                 'success' => true,

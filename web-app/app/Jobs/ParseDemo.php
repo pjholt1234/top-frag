@@ -7,6 +7,7 @@ use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Services\ParserServiceConnector;
+use App\Services\RateLimiterService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +28,18 @@ class ParseDemo implements ShouldQueue
 
     public function handle(): void
     {
+        $rateLimiter = app(RateLimiterService::class);
+
+        $rateLimiter->incrementParserServiceUsage();
+
+        if (! $rateLimiter->checkParserServiceLimit()) {
+            Log::warning('Parser service rate limit reached, requeuing job');
+            $rateLimiter->decrementParserServiceUsage();
+            $this->release(60);
+
+            return;
+        }
+
         try {
             if ($this->matchId) {
                 $match = GameMatch::findOrFail($this->matchId);
@@ -66,6 +79,8 @@ class ParseDemo implements ShouldQueue
             ]);
 
             throw $e;
+        } finally {
+            $rateLimiter->decrementParserServiceUsage();
         }
     }
 }

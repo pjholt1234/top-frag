@@ -109,4 +109,22 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Priorities
+    |--------------------------------------------------------------------------
+    |
+    | Define priority queues for different job types to ensure proper
+    | processing order and resource allocation.
+    |
+    */
+
+    'queues' => [
+        'high' => ['database'],           // User uploads
+        'normal' => ['database'],         // Steam processing
+        'low' => ['database'],            // Cleanup tasks
+        'steam-processing' => ['database'], // Steam-specific
+        'demo-download' => ['database'],    // Demo downloads
+    ],
+
 ];

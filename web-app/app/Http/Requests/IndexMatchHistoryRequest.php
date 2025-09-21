@@ -66,8 +66,8 @@ class IndexMatchHistoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'per_page' => 'nullable|integer|min:1|max:50',
-            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer',
+            'page' => 'nullable|integer',
             'map' => 'nullable|string|max:255',
             'match_type' => 'nullable|string|max:255',
             'player_was_participant' => ['nullable', new BooleanOrString],

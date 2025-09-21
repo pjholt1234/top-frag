@@ -55,16 +55,7 @@ class TopRolePlayerServiceTest extends TestCase
         $result = $this->service->get(99999);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('opener', $result);
-        $this->assertArrayHasKey('closer', $result);
-        $this->assertArrayHasKey('support', $result);
-        $this->assertArrayHasKey('fragger', $result);
-
-        foreach (['opener', 'closer', 'support', 'fragger'] as $role) {
-            $this->assertNull($result[$role]['name']);
-            $this->assertNull($result[$role]['steam_id']);
-            $this->assertEquals(0, $result[$role]['score']);
-        }
+        $this->assertEmpty($result);
     }
 
     public function test_get_returns_correct_structure_with_single_player()

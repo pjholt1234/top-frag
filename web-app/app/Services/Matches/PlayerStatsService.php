@@ -35,6 +35,10 @@ class PlayerStatsService
     {
         $match = GameMatch::find($matchId);
 
+        if (! $match) {
+            return [];
+        }
+
         if (empty($filters['player_steam_id'])) {
             return [
                 'players' => $this->getAvailablePlayers($match),

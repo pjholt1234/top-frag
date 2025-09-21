@@ -53,4 +53,21 @@ return [
         'api_key' => env('VALVE_DEMO_URL_SERVICE_API_KEY'),
     ],
 
+    'rate_limiting' => [
+        'steam_api' => [
+            'max_requests' => 100,
+            'window_seconds' => 300,
+            'redis_key' => 'rate_limit:steam_api',
+        ],
+        'valve_demo_url' => [
+            'max_requests' => 20,
+            'window_seconds' => 60,
+            'redis_key' => 'rate_limit:valve_demo_url',
+        ],
+        'parser_service' => [
+            'max_concurrent' => 3,
+            'redis_key' => 'rate_limit:parser_service',
+        ],
+    ],
+
 ];

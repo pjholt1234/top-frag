@@ -12,10 +12,6 @@ class SteamAPIConnector
 
     private string $baseUrl = 'https://api.steampowered.com';
 
-    private int $rateLimitRemaining = 100;
-
-    private int $rateLimitResetTime = 0;
-
     public function __construct()
     {
         $this->apiKey = config('services.steam.api_key');
@@ -111,37 +107,11 @@ class SteamAPIConnector
 
     private function checkRateLimit(): void
     {
-        $currentTime = time();
+        $rateLimiter = app(RateLimiterService::class);
 
-        if ($this->rateLimitResetTime <= $currentTime) {
-            $this->rateLimitRemaining = 100;
-            $this->rateLimitResetTime = $currentTime + 300;
+        if (! $rateLimiter->checkSteamApiLimit()) {
+            Log::warning('Steam API rate limit reached, waiting');
+            $rateLimiter->waitForRateLimit('steam_api', 100, 300);
         }
-
-        if ($this->rateLimitRemaining <= 0) {
-            $waitTime = $this->rateLimitResetTime - $currentTime;
-            Log::warning('Steam API rate limit reached, waiting', [
-                'wait_time_seconds' => $waitTime,
-            ]);
-
-            if (app()->environment('testing')) {
-                return;
-            }
-
-            sleep($waitTime);
-            $this->rateLimitRemaining = 100;
-            $this->rateLimitResetTime = time() + 300;
-        }
-
-        $this->rateLimitRemaining--;
-    }
-
-    public function getRateLimitStatus(): array
-    {
-        return [
-            'remaining' => $this->rateLimitRemaining,
-            'reset_time' => $this->rateLimitResetTime,
-            'current_time' => time(),
-        ];
     }
 }

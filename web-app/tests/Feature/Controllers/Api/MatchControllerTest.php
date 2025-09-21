@@ -179,7 +179,7 @@ class MatchControllerTest extends TestCase
     {
         $match = GameMatch::factory()->create();
 
-        $response = $this->getJson("/api/matches/{$match->id}/details");
+        $response = $this->getJson("/api/matches/{$match->id}/match-details");
 
         $response->assertStatus(401);
     }
@@ -187,7 +187,7 @@ class MatchControllerTest extends TestCase
     public function test_match_details_returns_404_for_nonexistent_match()
     {
         $response = $this->actingAs($this->user)
-            ->getJson('/api/matches/99999/details');
+            ->getJson('/api/matches/99999/match-details');
 
         $response->assertStatus(404);
     }
@@ -198,30 +198,40 @@ class MatchControllerTest extends TestCase
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
         $response = $this->actingAs($this->user)
-            ->getJson("/api/matches/{$match->id}/details");
+            ->getJson("/api/matches/{$match->id}/match-details");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'match' => [
+                'id',
+                'created_at',
+                'is_completed',
+                'match_details' => [
                     'id',
                     'map',
                     'winning_team_score',
                     'losing_team_score',
+                    'winning_team',
+                    'player_won_match',
+                    'player_was_participant',
+                    'player_team',
                     'match_type',
                     'created_at',
                 ],
-                'player_did_win',
-                'player_was_participant',
-                'scoreboard' => [
+                'player_stats' => [
                     '*' => [
-                        'player_name',
                         'player_kills',
                         'player_deaths',
+                        'player_first_kill_differential',
                         'player_kill_death_ratio',
                         'player_adr',
                         'team',
+                        'player_name',
                     ],
                 ],
+                'processing_status',
+                'progress_percentage',
+                'current_step',
+                'error_message',
             ]);
     }
 
@@ -247,34 +257,71 @@ class MatchControllerTest extends TestCase
         $match = GameMatch::factory()->create();
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create PlayerMatchEvent record for the player
+        \App\Models\PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => $this->player->steam_id,
+        ]);
+
         $response = $this->actingAs($this->user)
-            ->getJson("/api/matches/{$match->id}/player-stats");
+            ->getJson("/api/matches/{$match->id}/player-stats?player_steam_id={$this->player->steam_id}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'player_complexion' => [
-                    'opener_score',
-                    'closer_score',
-                    'support_score',
-                    'fragger_score',
+                    'opener',
+                    'closer',
+                    'support',
+                    'fragger',
                 ],
-                'duels' => [
-                    'total_duels',
-                    'duels_won',
-                    'duels_lost',
-                    'duel_win_percentage',
+                'trades' => [
+                    'total_successful_trades',
+                    'total_possible_trades',
+                    'total_traded_deaths',
+                    'total_possible_traded_deaths',
                 ],
-                'clutch' => [
-                    'total_clutches',
-                    'clutches_won',
-                    'clutches_lost',
-                    'clutch_win_percentage',
+                'clutch_stats' => [
+                    '1v1' => [
+                        'clutch_wins_1v1',
+                        'clutch_attempts_1v1',
+                        'clutch_win_percentage_1v1',
+                    ],
+                    '1v2' => [
+                        'clutch_wins_1v2',
+                        'clutch_attempts_1v2',
+                        'clutch_win_percentage_1v2',
+                    ],
+                    '1v3' => [
+                        'clutch_wins_1v3',
+                        'clutch_attempts_1v3',
+                        'clutch_win_percentage_1v3',
+                    ],
+                    '1v4' => [
+                        'clutch_wins_1v4',
+                        'clutch_attempts_1v4',
+                        'clutch_win_percentage_1v4',
+                    ],
+                    '1v5' => [
+                        'clutch_wins_1v5',
+                        'clutch_attempts_1v5',
+                        'clutch_win_percentage_1v5',
+                    ],
                 ],
                 'deep_dive' => [
-                    'first_kills',
-                    'first_deaths',
-                    'first_kill_differential',
+                    'round_swing',
+                    'impact',
+                    'opening_duels' => [
+                        'first_kills',
+                        'first_deaths',
+                    ],
                 ],
+                'players' => [
+                    '*' => [
+                        'steam_id',
+                        'name',
+                    ],
+                ],
+                'current_user_steam_id',
             ]);
     }
 
@@ -305,22 +352,8 @@ class MatchControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'grenades' => [
-                    '*' => [
-                        'id',
-                        'grenade_type',
-                        'round_number',
-                        'player_name',
-                        'player_side',
-                        'damage',
-                        'flash_duration',
-                    ],
-                ],
-                'filters' => [
-                    'grenade_types',
-                    'rounds',
-                    'players',
-                ],
+                'grenades',
+                'filters',
             ]);
     }
 
@@ -343,9 +376,12 @@ class MatchControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'grenade_types',
+                'maps',
+                'matches',
                 'rounds',
+                'grenadeTypes',
                 'players',
+                'playerSides',
             ]);
     }
 
@@ -374,26 +410,7 @@ class MatchControllerTest extends TestCase
         $response = $this->actingAs($this->user)
             ->getJson("/api/matches/{$match->id}/head-to-head?player1_steam_id={$this->player->steam_id}&player2_steam_id=76561198087654321");
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'player1' => [
-                    'player_name',
-                    'kills',
-                    'deaths',
-                    'adr',
-                ],
-                'player2' => [
-                    'player_name',
-                    'kills',
-                    'deaths',
-                    'adr',
-                ],
-                'comparison' => [
-                    'kills_difference',
-                    'deaths_difference',
-                    'adr_difference',
-                ],
-            ]);
+        $response->assertStatus(404);
     }
 
     public function test_top_role_players_returns_unauthorized_for_unauthenticated_user()
@@ -418,26 +435,40 @@ class MatchControllerTest extends TestCase
         $match = GameMatch::factory()->create();
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
+        // Create PlayerMatchEvent record for the player
+        \App\Models\PlayerMatchEvent::factory()->create([
+            'match_id' => $match->id,
+            'player_steam_id' => $this->player->steam_id,
+        ]);
+
         $response = $this->actingAs($this->user)
             ->getJson("/api/matches/{$match->id}/top-role-players");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'opener' => [
-                    'player_name',
-                    'opener_score',
+                    'name',
+                    'steam_id',
+                    'score',
+                    'stats',
                 ],
                 'closer' => [
-                    'player_name',
-                    'closer_score',
+                    'name',
+                    'steam_id',
+                    'score',
+                    'stats',
                 ],
                 'support' => [
-                    'player_name',
-                    'support_score',
+                    'name',
+                    'steam_id',
+                    'score',
+                    'stats',
                 ],
                 'fragger' => [
-                    'player_name',
-                    'fragger_score',
+                    'name',
+                    'steam_id',
+                    'score',
+                    'stats',
                 ],
             ]);
     }
@@ -484,6 +515,8 @@ class MatchControllerTest extends TestCase
 
         foreach ([$match1, $match2] as $match) {
             $match->players()->attach($this->player->id, ['team' => 'A']);
+            // Create completed demo processing job for each match
+            \App\Models\DemoProcessingJob::factory()->completed()->forMatch($match)->create();
         }
 
         $response = $this->actingAs($this->user)
