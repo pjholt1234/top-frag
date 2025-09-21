@@ -292,6 +292,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ### Core Dependencies
 - [demoinfocs-golang](https://github.com/markus-wa/demoinfocs-golang) - Main Go parser package that the parser service is built from
+- [node-globaloffensive](https://github.com/DoctorMcKay/node-globaloffensive) - Used for interacting with CS2 Game Coordinator for valve demo fetching
+- [node-steam-user](https://github.com/DoctorMcKay/node-steam-user) - Used for interacting with steam client on behave of bot user
 - [Laravel](https://laravel.com) - PHP web framework
 - [React](https://reactjs.org) - JavaScript UI library
 - [Tailwind CSS](https://tailwindcss.com) - CSS framework
