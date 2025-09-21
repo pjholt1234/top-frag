@@ -33,36 +33,41 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
     };
   };
 
-  const saveSharecode = useCallback(async (sharecode: string, gameAuthCode: string) => {
-    setLoading(true);
-    setError(null);
+  const saveSharecode = useCallback(
+    async (sharecode: string, gameAuthCode: string) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch('/api/steam-sharecode', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          steam_sharecode: sharecode,
-          steam_game_auth_code: gameAuthCode
-        }),
-      });
+      try {
+        const response = await fetch('/api/steam-sharecode', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            steam_sharecode: sharecode,
+            steam_game_auth_code: gameAuthCode,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save sharecode');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to save sharecode');
+        }
+
+        const data = await response.json();
+        setHasSharecode(true);
+        setHasCompleteSetup(true);
+        setSharecodeAddedAt(data.user.steam_sharecode_added_at);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to save sharecode'
+        );
+        throw err;
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-      setHasSharecode(true);
-      setHasCompleteSetup(true);
-      setSharecodeAddedAt(data.user.steam_sharecode_added_at);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save sharecode');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const removeSharecode = useCallback(async () => {
     setLoading(true);

@@ -142,8 +142,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setPasswordError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to change password'
+          err?.message ||
+          'Failed to change password'
       );
     } finally {
       setPasswordLoading(false);
@@ -174,8 +174,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setUsernameError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to change username'
+          err?.message ||
+          'Failed to change username'
       );
     } finally {
       setUsernameLoading(false);
@@ -230,8 +230,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSteamError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to link Steam account'
+          err?.message ||
+          'Failed to link Steam account'
       );
     } finally {
       setSteamLoading(false);
@@ -249,8 +249,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSteamError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to unlink Steam account'
+          err?.message ||
+          'Failed to unlink Steam account'
       );
     } finally {
       setSteamLoading(false);
@@ -294,12 +294,14 @@ const AccountSettingsPage: React.FC = () => {
         sharecodeData.steam_sharecode.trim(),
         sharecodeData.steam_game_auth_code.trim()
       );
-      setSharecodeSuccess('Steam sharecode and game authentication code saved successfully');
+      setSharecodeSuccess(
+        'Steam sharecode and game authentication code saved successfully'
+      );
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to save sharecode'
+          err?.message ||
+          'Failed to save sharecode'
       );
     }
   };
@@ -315,8 +317,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to remove sharecode'
+          err?.message ||
+          'Failed to remove sharecode'
       );
     }
   };
@@ -336,8 +338,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-        err?.message ||
-        'Failed to toggle processing'
+          err?.message ||
+          'Failed to toggle processing'
       );
     }
   };
@@ -412,10 +414,11 @@ const AccountSettingsPage: React.FC = () => {
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${activeSection === section.id
-                        ? 'bg-custom-orange text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                      className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${
+                        activeSection === section.id
+                          ? 'bg-custom-orange text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
                     >
                       <div className="flex items-center space-x-3">
                         <Icon className="h-4 w-4" />
@@ -895,12 +898,15 @@ const AccountSettingsPage: React.FC = () => {
                         disabled={sharecodeLoading}
                       />
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Find your sharecode in CS:GO match history → Share button
+                        Find your sharecode in CS:GO match history → Share
+                        button
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="steam_game_auth_code">Steam Game Authentication Code</Label>
+                      <Label htmlFor="steam_game_auth_code">
+                        Steam Game Authentication Code
+                      </Label>
                       <Input
                         id="steam_game_auth_code"
                         type="text"
@@ -923,7 +929,7 @@ const AccountSettingsPage: React.FC = () => {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          Steam's help wizard
+                          Steam help wizard
                         </a>
                       </p>
                     </div>
@@ -964,7 +970,8 @@ const AccountSettingsPage: React.FC = () => {
                         How to get your game authentication code:
                       </h4>
                       <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>Visit the{' '}
+                        <li>
+                          Visit the{' '}
                           <a
                             href="https://help.steampowered.com/en/wizard/HelpWithGameIssue/?appid=730&issueid=128"
                             target="_blank"
@@ -975,8 +982,12 @@ const AccountSettingsPage: React.FC = () => {
                           </a>
                         </li>
                         <li>Sign in with your Steam account</li>
-                        <li>Follow the wizard to generate your authentication code</li>
-                        <li>Copy the generated code (format: AAAA-AAAAA-AAAA)</li>
+                        <li>
+                          Follow the wizard to generate your authentication code
+                        </li>
+                        <li>
+                          Copy the generated code (format: AAAA-AAAAA-AAAA)
+                        </li>
                       </ol>
                     </div>
                   </div>
