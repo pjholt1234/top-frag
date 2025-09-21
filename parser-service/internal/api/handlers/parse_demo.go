@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bytes"
+	"compress/bzip2"
 	"io"
 	"mime/multipart"
 	"os"
@@ -133,9 +134,10 @@ func (h *ParseDemoHandler) validateUploadedFile(file *multipart.FileHeader) erro
 		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "demo file is required", nil)
 	}
 
-	// Check file extension
-	if !strings.HasSuffix(strings.ToLower(file.Filename), ".dem") {
-		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "invalid file extension, expected .dem file", nil)
+	// Check file extension - support both .dem and .dem.bz2 files
+	filename := strings.ToLower(file.Filename)
+	if !strings.HasSuffix(filename, ".dem") && !strings.HasSuffix(filename, ".dem.bz2") {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "invalid file extension, expected .dem or .dem.bz2 file", nil)
 	}
 
 	// Check file size
@@ -162,14 +164,25 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 }
 
 // saveUploadedFile saves the uploaded file to a temporary location
+// If the file is a .dem.bz2 file, it will be decompressed to a .dem file
 func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string, error) {
 	// Create temp directory if it doesn't exist
 	if err := os.MkdirAll(h.config.Parser.TempDir, 0755); err != nil {
 		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to create temp directory", err)
 	}
 
-	// Generate unique filename
-	filename := fmt.Sprintf("demo_%s_%s", uuid.New().String(), file.Filename)
+	// Determine if this is a compressed file
+	isCompressed := strings.HasSuffix(strings.ToLower(file.Filename), ".dem.bz2")
+
+	// Generate unique filename - always save as .dem for the parser
+	var filename string
+	if isCompressed {
+		// Remove .bz2 extension and add .dem
+		baseFilename := strings.TrimSuffix(file.Filename, ".bz2")
+		filename = fmt.Sprintf("demo_%s_%s", uuid.New().String(), baseFilename)
+	} else {
+		filename = fmt.Sprintf("demo_%s_%s", uuid.New().String(), file.Filename)
+	}
 	tempFilePath := filepath.Join(h.config.Parser.TempDir, filename)
 
 	// Open the uploaded file
@@ -186,13 +199,36 @@ func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string,
 	}
 	defer dst.Close()
 
-	// Copy the file content
-	if _, err = io.Copy(dst, src); err != nil {
-		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to copy file content", err)
+	if isCompressed {
+		// Decompress bz2 file
+		h.logger.WithField("temp_file", tempFilePath).Info("Decompressing bz2 demo file")
+		if err := h.decompressBz2File(src, dst); err != nil {
+			return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to decompress bz2 file", err)
+		}
+		h.logger.WithField("temp_file", tempFilePath).Info("Successfully decompressed bz2 demo file")
+	} else {
+		// Copy the file content directly
+		if _, err = io.Copy(dst, src); err != nil {
+			return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to copy file content", err)
+		}
+		h.logger.WithField("temp_file", tempFilePath).Info("Saved uploaded demo file")
 	}
 
-	h.logger.WithField("temp_file", tempFilePath).Info("Saved uploaded demo file")
 	return tempFilePath, nil
+}
+
+// decompressBz2File decompresses a bz2 file from src to dst
+func (h *ParseDemoHandler) decompressBz2File(src io.Reader, dst io.Writer) error {
+	// Create a bzip2 reader
+	bz2Reader := bzip2.NewReader(src)
+
+	// Copy the decompressed content to the destination
+	_, err := io.Copy(dst, bz2Reader)
+	if err != nil {
+		return fmt.Errorf("failed to decompress bz2 content: %w", err)
+	}
+
+	return nil
 }
 
 // Handles the main demo parsing logic

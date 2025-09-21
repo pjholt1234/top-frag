@@ -27,8 +27,10 @@ class User extends Authenticatable
         'steam_id',
         'steam_link_hash',
         'steam_sharecode',
+        'steam_game_auth_code',
         'steam_sharecode_added_at',
         'steam_match_processing_enabled',
+        'steam_last_processed_at',
     ];
 
     /**
@@ -53,6 +55,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'steam_sharecode_added_at' => 'datetime',
             'steam_match_processing_enabled' => 'boolean',
+            'steam_last_processed_at' => 'datetime',
         ];
     }
 
@@ -108,9 +111,29 @@ class User extends Authenticatable
      */
     public static function isValidSharecode(string $sharecode): bool
     {
-        // Steam sharecode format: CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
-        $pattern = '/^CSGO-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/';
+        // Steam sharecode format: CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX (case insensitive)
+        $pattern = '/^CSGO-[A-Za-z0-9]{5}-[A-Za-z0-9]{5}-[A-Za-z0-9]{5}-[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/';
 
         return preg_match($pattern, $sharecode) === 1;
+    }
+
+    /**
+     * Validate Steam game authentication code format
+     */
+    public static function isValidGameAuthCode(string $authCode): bool
+    {
+        // Steam game auth code format: AAAA-AAAAA-AAAA (example format)
+        // The actual format may vary, but typically contains alphanumeric characters and hyphens
+        $pattern = '/^[A-Z0-9]{4}-[A-Z0-9]{5}-[A-Z0-9]{4}$/';
+
+        return preg_match($pattern, $authCode) === 1;
+    }
+
+    /**
+     * Check if user has both required Steam codes for match processing
+     */
+    public function hasCompleteSteamSetup(): bool
+    {
+        return ! empty($this->steam_sharecode) && ! empty($this->steam_game_auth_code);
     }
 }

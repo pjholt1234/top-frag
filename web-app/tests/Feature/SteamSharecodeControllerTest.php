@@ -15,6 +15,7 @@ class SteamSharecodeControllerTest extends TestCase
     {
         $response = $this->postJson('/api/steam-sharecode', [
             'steam_sharecode' => 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY',
+            'steam_game_auth_code' => 'AAAA-AAAAA-AAAA',
         ]);
 
         $response->assertStatus(401);
@@ -27,6 +28,7 @@ class SteamSharecodeControllerTest extends TestCase
 
         $response = $this->postJson('/api/steam-sharecode', [
             'steam_sharecode' => 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY',
+            'steam_game_auth_code' => 'AAAA-AAAAA-AAAA',
         ]);
 
         $response->assertStatus(200);
@@ -37,6 +39,7 @@ class SteamSharecodeControllerTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'steam_sharecode' => 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY',
+            'steam_game_auth_code' => 'AAAA-AAAAA-AAAA',
         ]);
 
         $this->assertNotNull($user->fresh()->steam_sharecode_added_at);
@@ -152,6 +155,7 @@ class SteamSharecodeControllerTest extends TestCase
     {
         $user = User::factory()->create([
             'steam_sharecode' => 'CSGO-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY',
+            'steam_game_auth_code' => 'AAAA-AAAAA-AAAA',
             'steam_match_processing_enabled' => false,
         ]);
         Sanctum::actingAs($user);
@@ -176,7 +180,7 @@ class SteamSharecodeControllerTest extends TestCase
 
         $response->assertStatus(400);
         $response->assertJson([
-            'error' => 'no_sharecode',
+            'error' => 'incomplete_setup',
         ]);
     }
 

@@ -17,22 +17,33 @@ class ParseDemo implements ShouldQueue
 
     private readonly ParserServiceConnector $parserServiceConnector;
 
-    public function __construct(private readonly string $filePath, private readonly ?User $user = null)
-    {
+    public function __construct(
+        private readonly string $filePath,
+        private readonly ?User $user = null,
+        private readonly ?int $matchId = null
+    ) {
         $this->parserServiceConnector = app(ParserServiceConnector::class);
     }
 
     public function handle(): void
     {
         try {
-            $match = GameMatch::create([
-                'uploaded_by' => $this->user?->id,
-            ]);
+            if ($this->matchId) {
+                $match = GameMatch::findOrFail($this->matchId);
+            } else {
+                $match = GameMatch::create([
+                    'uploaded_by' => $this->user?->id,
+                ]);
+            }
 
-            $job = DemoProcessingJob::create([
-                'match_id' => $match->id,
-                'user_id' => $this->user?->id,
-            ]);
+            $job = DemoProcessingJob::where('match_id', $match->id)->first();
+
+            if (empty($job)) {
+                $job = DemoProcessingJob::create([
+                    'match_id' => $match->id,
+                    'user_id' => $this->user?->id,
+                ]);
+            }
 
             $this->parserServiceConnector->checkServiceHealth();
             $response = $this->parserServiceConnector->uploadDemo($this->filePath, $job->uuid);
@@ -43,6 +54,8 @@ class ParseDemo implements ShouldQueue
                 'response' => $response,
             ]);
         } catch (ParserServiceConnectorException $e) {
+            report($e);
+
             return;
         } catch (\Exception $e) {
             Log::channel('parser')->error('Unexpected error in demo parsing job', [

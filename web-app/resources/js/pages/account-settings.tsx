@@ -39,6 +39,7 @@ const AccountSettingsPage: React.FC = () => {
 
   const {
     hasSharecode,
+    hasCompleteSetup,
     sharecodeAddedAt,
     loading: sharecodeLoading,
     saveSharecode,
@@ -87,6 +88,7 @@ const AccountSettingsPage: React.FC = () => {
   // Steam sharecode state
   const [sharecodeData, setSharecodeData] = useState({
     steam_sharecode: user?.steam_sharecode || '',
+    steam_game_auth_code: user?.steam_game_auth_code || '',
   });
   const [sharecodeError, setSharecodeError] = useState('');
   const [sharecodeSuccess, setSharecodeSuccess] = useState('');
@@ -99,6 +101,7 @@ const AccountSettingsPage: React.FC = () => {
     if (user) {
       setSharecodeData({
         steam_sharecode: user.steam_sharecode || '',
+        steam_game_auth_code: user.steam_game_auth_code || '',
       });
       setProcessingEnabled(user.steam_match_processing_enabled || false);
       // Check sharecode status to ensure we have the latest data
@@ -139,8 +142,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setPasswordError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to change password'
+        err?.message ||
+        'Failed to change password'
       );
     } finally {
       setPasswordLoading(false);
@@ -171,8 +174,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setUsernameError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to change username'
+        err?.message ||
+        'Failed to change username'
       );
     } finally {
       setUsernameLoading(false);
@@ -227,8 +230,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSteamError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to link Steam account'
+        err?.message ||
+        'Failed to link Steam account'
       );
     } finally {
       setSteamLoading(false);
@@ -246,8 +249,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSteamError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to unlink Steam account'
+        err?.message ||
+        'Failed to unlink Steam account'
       );
     } finally {
       setSteamLoading(false);
@@ -264,23 +267,39 @@ const AccountSettingsPage: React.FC = () => {
       return;
     }
 
-    const pattern =
+    if (!sharecodeData.steam_game_auth_code.trim()) {
+      setSharecodeError('Please enter a Steam game authentication code');
+      return;
+    }
+
+    const sharecodePattern =
       /^CSGO-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
-    if (!pattern.test(sharecodeData.steam_sharecode.trim())) {
+    if (!sharecodePattern.test(sharecodeData.steam_sharecode.trim())) {
       setSharecodeError(
         'Invalid sharecode format. Expected: CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX'
       );
       return;
     }
 
+    const authCodePattern = /^[A-Z0-9]{4}-[A-Z0-9]{5}-[A-Z0-9]{4}$/;
+    if (!authCodePattern.test(sharecodeData.steam_game_auth_code.trim())) {
+      setSharecodeError(
+        'Invalid game authentication code format. Expected: AAAA-AAAAA-AAAA'
+      );
+      return;
+    }
+
     try {
-      await saveSharecode(sharecodeData.steam_sharecode.trim());
-      setSharecodeSuccess('Steam sharecode saved successfully');
+      await saveSharecode(
+        sharecodeData.steam_sharecode.trim(),
+        sharecodeData.steam_game_auth_code.trim()
+      );
+      setSharecodeSuccess('Steam sharecode and game authentication code saved successfully');
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to save sharecode'
+        err?.message ||
+        'Failed to save sharecode'
       );
     }
   };
@@ -296,8 +315,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to remove sharecode'
+        err?.message ||
+        'Failed to remove sharecode'
       );
     }
   };
@@ -317,8 +336,8 @@ const AccountSettingsPage: React.FC = () => {
     } catch (err: any) {
       setSharecodeError(
         err?.response?.data?.message ||
-          err?.message ||
-          'Failed to toggle processing'
+        err?.message ||
+        'Failed to toggle processing'
       );
     }
   };
@@ -393,11 +412,10 @@ const AccountSettingsPage: React.FC = () => {
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${
-                        activeSection === section.id
-                          ? 'bg-custom-orange text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                      className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${activeSection === section.id
+                        ? 'bg-custom-orange text-white'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <Icon className="h-4 w-4" />
@@ -807,15 +825,17 @@ const AccountSettingsPage: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <Code className="h-8 w-8 text-blue-600" />
                         <div>
-                          <p className="font-medium">Steam Sharecode</p>
+                          <p className="font-medium">Steam Configuration</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {hasSharecode
-                              ? `Configured (added ${sharecodeAddedAt ? new Date(sharecodeAddedAt).toLocaleDateString() : 'recently'})`
-                              : 'Not configured'}
+                            {hasCompleteSetup
+                              ? `Complete setup (added ${sharecodeAddedAt ? new Date(sharecodeAddedAt).toLocaleDateString() : 'recently'})`
+                              : hasSharecode
+                                ? 'Partial setup - missing game authentication code'
+                                : 'Not configured'}
                           </p>
                         </div>
                       </div>
-                      {hasSharecode && (
+                      {hasCompleteSetup && (
                         <Button
                           variant="destructive"
                           size="sm"
@@ -829,7 +849,7 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
 
                     {/* Match Processing Toggle */}
-                    {hasSharecode && (
+                    {hasCompleteSetup && (
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <p className="font-medium">
@@ -875,8 +895,36 @@ const AccountSettingsPage: React.FC = () => {
                         disabled={sharecodeLoading}
                       />
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Find your sharecode in CS:GO match history → Share
-                        button
+                        Find your sharecode in CS:GO match history → Share button
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="steam_game_auth_code">Steam Game Authentication Code</Label>
+                      <Input
+                        id="steam_game_auth_code"
+                        type="text"
+                        placeholder="AAAA-AAAAA-AAAA"
+                        value={sharecodeData.steam_game_auth_code}
+                        onChange={e => {
+                          setSharecodeData({
+                            ...sharecodeData,
+                            steam_game_auth_code: e.target.value.toUpperCase(),
+                          });
+                        }}
+                        className="font-mono"
+                        disabled={sharecodeLoading}
+                      />
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Generate this code from{' '}
+                        <a
+                          href="https://help.steampowered.com/en/wizard/HelpWithGameIssue/?appid=730&issueid=128"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          Steam's help wizard
+                        </a>
                       </p>
                     </div>
 
@@ -884,29 +932,53 @@ const AccountSettingsPage: React.FC = () => {
                       type="submit"
                       disabled={
                         sharecodeLoading ||
-                        !sharecodeData.steam_sharecode.trim()
+                        !sharecodeData.steam_sharecode.trim() ||
+                        !sharecodeData.steam_game_auth_code.trim()
                       }
                       className="w-full"
                     >
                       {sharecodeLoading
                         ? 'Saving...'
-                        : hasSharecode
-                          ? 'Update Sharecode'
-                          : 'Save Sharecode'}
+                        : hasCompleteSetup
+                          ? 'Update Configuration'
+                          : 'Save Configuration'}
                     </Button>
                   </form>
 
                   {/* Help Text */}
-                  <div className="bg-muted p-4 rounded-lg">
-                    <h4 className="text-sm font-medium mb-2">
-                      How to find your sharecode:
-                    </h4>
-                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                      <li>Open CS:GO and go to your match history</li>
-                      <li>Click on any recent match</li>
-                      <li>Click the &quot;Share&quot; button</li>
-                      <li>Copy the sharecode (starts with CSGO-)</li>
-                    </ol>
+                  <div className="bg-muted p-4 rounded-lg space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">
+                        How to find your sharecode:
+                      </h4>
+                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Open CS:GO and go to your match history</li>
+                        <li>Click on any recent match</li>
+                        <li>Click the &quot;Share&quot; button</li>
+                        <li>Copy the sharecode (starts with CSGO-)</li>
+                      </ol>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">
+                        How to get your game authentication code:
+                      </h4>
+                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Visit the{' '}
+                          <a
+                            href="https://help.steampowered.com/en/wizard/HelpWithGameIssue/?appid=730&issueid=128"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            Steam help wizard
+                          </a>
+                        </li>
+                        <li>Sign in with your Steam account</li>
+                        <li>Follow the wizard to generate your authentication code</li>
+                        <li>Copy the generated code (format: AAAA-AAAAA-AAAA)</li>
+                      </ol>
+                    </div>
                   </div>
                 </div>
               </CardContent>

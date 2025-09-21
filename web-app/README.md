@@ -71,6 +71,7 @@ web-app/
 - **Demo Upload**: Upload CS2 demo files for processing
 - **Match History**: View and browse your match history
 - **Match Details**: Detailed match analysis and statistics
+- **Sharecode Integration**: Automatic demo URL retrieval via valve-demo-url-service
 
 ### Grenade Library
 - **Browse Grenades**: Filter and search grenade throws
@@ -95,6 +96,11 @@ npm install
 
 # Copy environment file
 cp .env.example .env
+
+# Configure environment variables
+# Add the following to your .env file:
+# VALVE_DEMO_URL_SERVICE_BASE_URL=http://localhost:3001
+# VALVE_DEMO_URL_SERVICE_API_KEY=your_api_key
 
 # Generate application key
 php artisan key:generate
@@ -150,12 +156,29 @@ npm run test
 - `POST /api/grenade-favourites` - Add favorite
 - `DELETE /api/grenade-favourites/{id}` - Remove favorite
 
+## 🔧 Configuration
+
+### Valve Demo URL Service
+The application integrates with the valve-demo-url-service for automatic demo URL retrieval from sharecodes:
+
+```bash
+# Environment variables for valve-demo-url-service
+VALVE_DEMO_URL_SERVICE_BASE_URL=http://localhost:3001
+VALVE_DEMO_URL_SERVICE_API_KEY=your_api_key
+```
+
+The service provides:
+- **Sharecode Decoding**: Converts CS2 sharecodes to demo URLs
+- **Steam Integration**: Connects to Steam Game Coordinator
+- **Rate Limiting**: Built-in request throttling
+- **API Authentication**: Secure API key-based access
+
 ## 🔒 Security
 
 ### Authentication & Authorization
 - **Laravel Sanctum**: Token-based API authentication
 - **Protected Routes**: Middleware protection for authenticated endpoints
-- **API Key Authentication**: Secure communication with parser service
+- **API Key Authentication**: Secure communication with parser service and valve-demo-url-service
 
 ### Data Protection
 - **Input Validation**: Form request validation for all inputs

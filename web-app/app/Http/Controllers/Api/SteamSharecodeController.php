@@ -25,6 +25,7 @@ class SteamSharecodeController extends Controller
 
         $user->update([
             'steam_sharecode' => $request->steam_sharecode,
+            'steam_game_auth_code' => $request->steam_game_auth_code,
             'steam_sharecode_added_at' => now(),
         ]);
 
@@ -49,6 +50,7 @@ class SteamSharecodeController extends Controller
 
         return response()->json([
             'has_sharecode' => $user->hasSteamSharecode(),
+            'has_complete_setup' => $user->hasCompleteSteamSetup(),
             'steam_sharecode_added_at' => $user->steam_sharecode_added_at,
         ]);
     }
@@ -75,6 +77,7 @@ class SteamSharecodeController extends Controller
 
         $user->update([
             'steam_sharecode' => null,
+            'steam_game_auth_code' => null,
             'steam_sharecode_added_at' => null,
             'steam_match_processing_enabled' => false,
         ]);
@@ -98,10 +101,10 @@ class SteamSharecodeController extends Controller
             ], 401);
         }
 
-        if (! $user->hasSteamSharecode()) {
+        if (! $user->hasCompleteSteamSetup()) {
             return response()->json([
-                'message' => 'Steam sharecode must be configured before enabling match processing',
-                'error' => 'no_sharecode',
+                'message' => 'Both Steam sharecode and game authentication code must be configured before enabling match processing',
+                'error' => 'incomplete_setup',
             ], 400);
         }
 

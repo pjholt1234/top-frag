@@ -33,6 +33,16 @@ class StoreSteamSharecodeRequest extends FormRequest
                     }
                 },
             ],
+            'steam_game_auth_code' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    if (! User::isValidGameAuthCode($value)) {
+                        $fail('The game authentication code format is invalid. Expected format: AAAA-AAAAA-AAAA');
+                    }
+                },
+            ],
         ];
     }
 
@@ -47,6 +57,9 @@ class StoreSteamSharecodeRequest extends FormRequest
             'steam_sharecode.required' => 'A Steam sharecode is required.',
             'steam_sharecode.string' => 'The sharecode must be a string.',
             'steam_sharecode.max' => 'The sharecode cannot exceed 255 characters.',
+            'steam_game_auth_code.required' => 'A Steam game authentication code is required.',
+            'steam_game_auth_code.string' => 'The game authentication code must be a string.',
+            'steam_game_auth_code.max' => 'The game authentication code cannot exceed 255 characters.',
         ];
     }
 }

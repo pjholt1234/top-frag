@@ -2,15 +2,17 @@ import { useState, useCallback } from 'react';
 
 interface SteamSharecodeData {
   has_sharecode: boolean;
+  has_complete_setup: boolean;
   steam_sharecode_added_at: string | null;
 }
 
 interface UseSteamSharecodeReturn {
   hasSharecode: boolean;
+  hasCompleteSetup: boolean;
   sharecodeAddedAt: string | null;
   loading: boolean;
   error: string | null;
-  saveSharecode: (sharecode: string) => Promise<void>;
+  saveSharecode: (sharecode: string, gameAuthCode: string) => Promise<void>;
   removeSharecode: () => Promise<void>;
   toggleProcessing: () => Promise<boolean>;
   checkSharecodeStatus: () => Promise<void>;
@@ -18,6 +20,7 @@ interface UseSteamSharecodeReturn {
 
 export function useSteamSharecode(): UseSteamSharecodeReturn {
   const [hasSharecode, setHasSharecode] = useState(false);
+  const [hasCompleteSetup, setHasCompleteSetup] = useState(false);
   const [sharecodeAddedAt, setSharecodeAddedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +33,7 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
     };
   };
 
-  const saveSharecode = useCallback(async (sharecode: string) => {
+  const saveSharecode = useCallback(async (sharecode: string, gameAuthCode: string) => {
     setLoading(true);
     setError(null);
 
@@ -38,7 +41,10 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
       const response = await fetch('/api/steam-sharecode', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ steam_sharecode: sharecode }),
+        body: JSON.stringify({
+          steam_sharecode: sharecode,
+          steam_game_auth_code: gameAuthCode
+        }),
       });
 
       if (!response.ok) {
@@ -48,6 +54,7 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
 
       const data = await response.json();
       setHasSharecode(true);
+      setHasCompleteSetup(true);
       setSharecodeAddedAt(data.user.steam_sharecode_added_at);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save sharecode');
@@ -73,6 +80,7 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
       }
 
       setHasSharecode(false);
+      setHasCompleteSetup(false);
       setSharecodeAddedAt(null);
     } catch (err) {
       setError(
@@ -130,6 +138,7 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
 
       const data: SteamSharecodeData = await response.json();
       setHasSharecode(data.has_sharecode);
+      setHasCompleteSetup(data.has_complete_setup);
       setSharecodeAddedAt(data.steam_sharecode_added_at);
     } catch (err) {
       setError(
@@ -142,6 +151,7 @@ export function useSteamSharecode(): UseSteamSharecodeReturn {
 
   return {
     hasSharecode,
+    hasCompleteSetup,
     sharecodeAddedAt,
     loading,
     error,

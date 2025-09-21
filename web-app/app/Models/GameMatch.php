@@ -19,6 +19,8 @@ class GameMatch extends Model
 
     protected $fillable = [
         'match_hash',
+        'sharecode',
+        'demo_url',
         'map',
         'winning_team',
         'winning_team_score',
