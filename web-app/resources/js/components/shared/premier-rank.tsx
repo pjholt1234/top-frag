@@ -4,6 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getPremierRankColors } from '@/constants/colors';
 
 interface PremierRankProps {
   rank: number;
@@ -13,35 +14,11 @@ interface PremierRankProps {
   height?: number;
 }
 
-interface RankColors {
-  barColor: string;
-  backgroundColor: string;
-}
-
-const getRankColors = (rank: number): RankColors => {
-  // Define rank tiers with their colors
-  const rankTiers = [
-    { min: 0, max: 4999, barColor: '#a7b1c3', backgroundColor: '#434955' },
-    { min: 5000, max: 9999, barColor: '#7aaad6', backgroundColor: '#2a4259' },
-    { min: 10000, max: 14999, barColor: '#455cda', backgroundColor: '#121d60' },
-    { min: 15000, max: 19999, barColor: '#aa53f1', backgroundColor: '#461861' },
-    { min: 20000, max: 24999, barColor: '#aa53f1', backgroundColor: '#461861' },
-    { min: 25000, max: 29999, barColor: '#f12431', backgroundColor: '#6b050c' },
-    {
-      min: 30000,
-      max: Infinity,
-      barColor: '#ebc507',
-      backgroundColor: '#635001',
-    },
-  ];
-
-  // Find the matching tier
-  const tier = rankTiers.find(tier => rank >= tier.min && rank <= tier.max);
-
-  return tier || rankTiers[0]; // Fallback to first tier if no match
-};
 
 const formatRank = (rank: number): string => {
+  if (rank === 0) {
+    return "---"
+  }
   return rank.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
@@ -62,7 +39,7 @@ export const PremierRank: React.FC<PremierRankProps> = ({
   width,
   height,
 }) => {
-  const colors = getRankColors(rank);
+  const colors = getPremierRankColors(rank);
   const formattedRank = formatRank(rank);
   const sizeConfig = getSizeConfig(size);
 

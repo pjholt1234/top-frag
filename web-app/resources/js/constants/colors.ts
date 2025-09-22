@@ -142,3 +142,36 @@ export function getCustomRatingColor(
   if (value >= fairThreshold) return getQualityColor('fair', format);
   return getQualityColor('poor', format);
 }
+
+// Premier rank colors
+export interface PremierRankColors {
+  barColor: string;
+  backgroundColor: string;
+}
+
+export interface PremierRankTier {
+  min: number;
+  max: number;
+  barColor: string;
+  backgroundColor: string;
+}
+
+export const PREMIER_RANK_TIERS: PremierRankTier[] = [
+  { min: 0, max: 4999, barColor: '#a7b1c3', backgroundColor: '#434955' },
+  { min: 5000, max: 9999, barColor: '#7aaad6', backgroundColor: '#1f2f3f' },
+  { min: 10000, max: 14999, barColor: '#455cda', backgroundColor: '#0d1440' },
+  { min: 15000, max: 19999, barColor: '#aa53f1', backgroundColor: '#2f0f3f' },
+  { min: 20000, max: 24999, barColor: '#aa53f1', backgroundColor: '#2f0f3f' },
+  { min: 25000, max: 29999, barColor: '#f12431', backgroundColor: '#4a0308' },
+  { min: 30000, max: Infinity, barColor: '#ebc507', backgroundColor: '#4a3a00' },
+];
+
+/**
+ * Get Premier rank colors based on rank value
+ * @param rank - The Premier rank value
+ * @returns The colors for the rank tier
+ */
+export function getPremierRankColors(rank: number): PremierRankColors {
+  const tier = PREMIER_RANK_TIERS.find(tier => rank >= tier.min && rank <= tier.max);
+  return tier || PREMIER_RANK_TIERS[0]; // Fallback to first tier if no match
+}
