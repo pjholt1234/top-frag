@@ -15,8 +15,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
 import { QUALITY_COLORS } from '@/constants/colors';
+import CompetitiveRank from './competitive-rank';
+import PremierRank from './premier-rank';
 
 interface Scoreboard {
+  rank_value: number;
   player_name: string;
   player_kills: number;
   player_deaths: number;
@@ -34,6 +37,7 @@ interface MatchDetails {
   winning_team: string;
   match_type: string;
   created_at: string;
+  game_mode: string | null;
 }
 
 interface Match {
@@ -46,6 +50,7 @@ interface Match {
   progress_percentage: number | null;
   current_step: string | null;
   error_message: string | null;
+  match_type: string | null;
 }
 
 type SortColumn =
@@ -54,7 +59,8 @@ type SortColumn =
   | 'player_kills'
   | 'player_deaths'
   | 'player_first_kill_differential'
-  | 'player_adr';
+  | 'player_adr'
+  | 'rank_value';
 type SortDirection = 'asc' | 'desc';
 
 interface ScoreboardProps {
@@ -175,6 +181,28 @@ export function Scoreboard({
     // Check if match details are available
     const hasMatchDetails = match?.match_details != null;
 
+    const hasMatchRank = match?.match_details?.match_type === 'valve';
+    console.log('hasMatchRank', hasMatchRank);
+
+    const getMatchIcon = (
+      gameMode: string | null | undefined,
+      rank_value: number
+    ) => {
+      if (!hasMatchRank || !gameMode) {
+        return null;
+      }
+
+      if (gameMode === 'competitive') {
+        return <CompetitiveRank rank={rank_value} size="sm" />;
+      }
+
+      if (gameMode === 'premier') {
+        return <PremierRank rank={rank_value} size="sm" />;
+      }
+
+      return null;
+    };
+
     return (
       <div className={`bg-muted/50 ${className}`}>
         <div className="flex flex-col lg:flex-row">
@@ -212,6 +240,17 @@ export function Scoreboard({
             <Table className="border-0 w-full table-fixed">
               <TableHeader>
                 <TableRow className="border-b border-border">
+                  {hasMatchRank && (
+                    <TableHead
+                      className="text-sm py-2 pl-6 pr-3 border-0 w-1/5 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleSort('rank_value')}
+                    >
+                      <div className="flex items-center">
+                        Rank
+                        {getSortIcon('rank_value')}
+                      </div>
+                    </TableHead>
+                  )}
                   <TableHead
                     className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleSort('player_name')}
@@ -271,6 +310,14 @@ export function Scoreboard({
               <TableBody className="border-b border-border">
                 {teamAPlayers.map((player, index) => (
                   <TableRow key={index} className="border-b border-border">
+                    {hasMatchRank && (
+                      <TableCell className="text-sm py-2 px-3 border-0 flex items-center justify-center">
+                        {getMatchIcon(
+                          match?.match_details?.game_mode,
+                          player.rank_value
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
                       {player.player_name || `Player ${index + 1}`}
                     </TableCell>
@@ -350,6 +397,17 @@ export function Scoreboard({
             <Table className="border-0 w-full table-fixed">
               <TableHeader>
                 <TableRow className="border-b border-border">
+                  {hasMatchRank && (
+                    <TableHead
+                      className="text-sm py-2 pl-6 pr-3 border-0 w-1/5 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleSort('rank_value')}
+                    >
+                      <div className="flex items-center">
+                        Rank
+                        {getSortIcon('rank_value')}
+                      </div>
+                    </TableHead>
+                  )}
                   <TableHead
                     className="text-sm py-2 pl-6 pr-3 border-0 w-1/3 cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleSort('player_name')}
@@ -409,6 +467,14 @@ export function Scoreboard({
               <TableBody className="border-b border-border">
                 {teamBPlayers.map((player, index) => (
                   <TableRow key={index} className="border-b border-border">
+                    {hasMatchRank && (
+                      <TableCell className="text-sm py-2 px-3 border-0 flex items-center justify-center">
+                        {getMatchIcon(
+                          match?.match_details?.game_mode,
+                          player.rank_value
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
                       {player.player_name || `Player ${index + 1}`}
                     </TableCell>

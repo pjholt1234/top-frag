@@ -43,6 +43,7 @@ class MatchDetailsService
             'player_was_participant' => $playerWasParticipant,
             'player_team' => $playerTeam,
             'match_type' => $match->match_type,
+            'game_mode' => $match->game_mode,
             'created_at' => $match->created_at,
         ];
     }
@@ -80,6 +81,7 @@ class MatchDetailsService
             $openingKills = $playerMatchEvent['first_kills'] - $playerMatchEvent['first_deaths'];
 
             return [
+                'rank_value' => $playerMatchEvent['rank_value'],
                 'player_kills' => $playerMatchEvent['kills'],
                 'player_deaths' => $playerMatchEvent['deaths'],
                 'player_first_kill_differential' => $openingKills,
