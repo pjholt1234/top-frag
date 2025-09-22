@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Services\DemoDownloadService;
+use App\Services\RateLimiterService;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -13,6 +14,13 @@ class DemoDownloadServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Mock the RateLimiterService to avoid Redis dependency
+        $this->mock(RateLimiterService::class, function ($mock) {
+            $mock->shouldReceive('checkValveDemoUrlLimit')->andReturn(true);
+            $mock->shouldReceive('waitForRateLimit')->andReturn();
+        });
+
         $this->demoDownloadService = new DemoDownloadService;
     }
 
