@@ -404,13 +404,18 @@ class MatchControllerTest extends TestCase
 
     public function test_head_to_head_returns_comparison_for_accessible_match()
     {
-        $match = GameMatch::factory()->create();
+        $match = GameMatch::factory()->create(['uploaded_by' => $this->user->id]);
         $match->players()->attach($this->player->id, ['team' => 'A']);
 
         $response = $this->actingAs($this->user)
             ->getJson("/api/matches/{$match->id}/head-to-head?player1_steam_id={$this->player->steam_id}&player2_steam_id=76561198087654321");
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'players',
+            'current_user_steam_id',
+            'match_data',
+        ]);
     }
 
     public function test_top_role_players_returns_unauthorized_for_unauthenticated_user()

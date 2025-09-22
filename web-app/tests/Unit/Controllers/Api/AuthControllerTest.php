@@ -6,12 +6,14 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\SteamAPIConnector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\TestCase;
 
 class AuthControllerTest extends TestCase
@@ -23,7 +25,8 @@ class AuthControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->controller = new AuthController;
+        $steamApiConnector = Mockery::mock(SteamAPIConnector::class);
+        $this->controller = new AuthController($steamApiConnector);
     }
 
     public function test_register_creates_user_with_hashed_password()
