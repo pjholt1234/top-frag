@@ -390,4 +390,42 @@ class PlayerComplexionServiceTest extends TestCase
         $this->assertArrayHasKey('opener', $result);
         $this->assertArrayHasKey('fragger', $result);
     }
+
+    public function test_weighted_mean_calculation()
+    {
+        // Use reflection to test the private calculateWeightedMean method
+        $reflection = new \ReflectionClass($this->service);
+        $method = $reflection->getMethod('calculateWeightedMean');
+        $method->setAccessible(true);
+
+        // Test with equal weights
+        $scores1 = [
+            ['score' => 50, 'weight' => 1.0],
+            ['score' => 70, 'weight' => 1.0],
+            ['score' => 30, 'weight' => 1.0],
+        ];
+        $result1 = $method->invoke($this->service, $scores1);
+        $this->assertEquals(50, $result1); // (50 + 70 + 30) / 3 = 50
+
+        // Test with different weights
+        $scores2 = [
+            ['score' => 50, 'weight' => 2.0],
+            ['score' => 70, 'weight' => 1.0],
+            ['score' => 30, 'weight' => 1.0],
+        ];
+        $result2 = $method->invoke($this->service, $scores2);
+        $this->assertEquals(50, $result2); // (50*2 + 70*1 + 30*1) / (2+1+1) = 200/4 = 50
+
+        // Test with empty array
+        $result3 = $method->invoke($this->service, []);
+        $this->assertEquals(0, $result3);
+
+        // Test with zero total weight
+        $scores4 = [
+            ['score' => 50, 'weight' => 0.0],
+            ['score' => 70, 'weight' => 0.0],
+        ];
+        $result4 = $method->invoke($this->service, $scores4);
+        $this->assertEquals(0, $result4);
+    }
 }

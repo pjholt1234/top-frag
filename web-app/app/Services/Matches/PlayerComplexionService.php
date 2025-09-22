@@ -7,47 +7,12 @@ use App\Services\MatchCacheManager;
 
 class PlayerComplexionService
 {
-    // Opener metrics
-    private const int LOWEST_AVERAGE_TIME_OF_DEATH = 25;
+    private array $config;
 
-    private const int LOWEST_AVERAGE_TIME_TO_CONTACT = 20;
-
-    private const int MAX_FIRST_KILLS_PLUS_MINUS = 3;
-
-    private const int MAX_FIRST_KILL_ATTEMPTS = 4;
-
-    private const int MAX_TRADED_DEATH_PERCENTAGE = 50;
-
-    // Closer metrics
-    private const int MAX_AVERAGE_ROUND_TIME_TO_DEATH = 40;
-
-    private const int MAX_AVERAGE_ROUND_TIME_TO_CONTACT = 35;
-
-    private const int MAX_CLUTCH_WIN_PERCENTAGE = 25;
-
-    private const int MAX_TOTAL_CLUTCH_ATTEMPTS = 5;
-
-    // Support metrics
-    private const int MAX_TOTAL_GRENADES_THROWN = 25;
-
-    private const int MAX_DAMAGE_DEATH_FROM_GRENADES = 200;
-
-    private const int MAX_ENEMY_FLASH_DURATION = 30;
-
-    private const int MAX_AVERAGE_GRENADE_EFFECTIVENESS = 50;
-
-    private const int MAX_TOTAL_FLASHES_LEADING_TO_KILLS = 5;
-
-    // Fragger metrics
-    private const float MAX_KILL_DEATH_RATION = 1.5;
-
-    private const float MAX_TOTAL_KILLS_PER_ROUND = 0.9;
-
-    private const int MAX_AVERAGE_DAMAGE_PER_ROUND = 90;
-
-    private const int MAX_TRADE_KILL_PERCENTAGE = 50;
-
-    private const float MAX_TRADE_OPPORTUNITY_PER_ROUND = 1.5;
+    public function __construct()
+    {
+        $this->config = config('player-complexion');
+    }
 
     public function get(string $playerSteamId, int $matchId): array
     {
@@ -84,153 +49,234 @@ class PlayerComplexionService
 
     private function playerOpenerScore(PlayerMatchEvent $playerMatchEvent): int
     {
-        $averageRoundTimeOfDeathScore = $this->normaliseScore(
-            $playerMatchEvent->average_round_time_of_death,
-            self::LOWEST_AVERAGE_TIME_OF_DEATH,
-            false
-        );
+        $openerConfig = $this->config['opener'];
+        $scores = [];
 
-        $averageRoundTimeOfContactScore = $this->normaliseScore(
-            $playerMatchEvent->average_time_to_contact,
-            self::LOWEST_AVERAGE_TIME_TO_CONTACT,
-            false
-        );
+        // Average round time of death
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->average_round_time_of_death,
+                $openerConfig['average_round_time_of_death']['score'],
+                $openerConfig['average_round_time_of_death']['higher_better']
+            ),
+            'weight' => $openerConfig['average_round_time_of_death']['weight'],
+        ];
 
+        // Average time to contact
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->average_time_to_contact,
+                $openerConfig['average_time_to_contact']['score'],
+                $openerConfig['average_time_to_contact']['higher_better']
+            ),
+            'weight' => $openerConfig['average_time_to_contact']['weight'],
+        ];
+
+        // First kills plus minus
         $firstKillPlusMinus = $playerMatchEvent->first_kills - $playerMatchEvent->first_deaths;
-        $firstKillPlusMinusScore = $this->normaliseScore(
-            $firstKillPlusMinus,
-            self::MAX_FIRST_KILLS_PLUS_MINUS
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $firstKillPlusMinus,
+                $openerConfig['first_kills_plus_minus']['score'],
+                $openerConfig['first_kills_plus_minus']['higher_better']
+            ),
+            'weight' => $openerConfig['first_kills_plus_minus']['weight'],
+        ];
 
+        // First kill attempts
         $firstKillAttempts = $playerMatchEvent->first_kills + $playerMatchEvent->first_deaths;
-        $firstKillAttemptsScore = $this->normaliseScore(
-            $firstKillAttempts,
-            self::MAX_FIRST_KILL_ATTEMPTS
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $firstKillAttempts,
+                $openerConfig['first_kill_attempts']['score'],
+                $openerConfig['first_kill_attempts']['higher_better']
+            ),
+            'weight' => $openerConfig['first_kill_attempts']['weight'],
+        ];
 
+        // Traded deaths percentage
         $tradedDeathsPercentage = calculatePercentage($playerMatchEvent->total_successful_trades, $playerMatchEvent->total_possible_traded_deaths);
-        $tradedDeathsPercentageScore = $this->normaliseScore(
-            $tradedDeathsPercentage,
-            self::MAX_TRADED_DEATH_PERCENTAGE
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $tradedDeathsPercentage,
+                $openerConfig['traded_death_percentage']['score'],
+                $openerConfig['traded_death_percentage']['higher_better']
+            ),
+            'weight' => $openerConfig['traded_death_percentage']['weight'],
+        ];
 
-        return (int) calculateMean([
-            $averageRoundTimeOfDeathScore,
-            $averageRoundTimeOfContactScore,
-            $firstKillPlusMinusScore,
-            $firstKillAttemptsScore,
-            $tradedDeathsPercentageScore,
-        ]);
+        return $this->calculateWeightedMean($scores);
     }
 
     private function playerCloserScore(PlayerMatchEvent $playerMatchEvent): int
     {
-        $averageRoundTimeToDeathScore = $this->normaliseScore(
-            $playerMatchEvent->average_round_time_of_death,
-            self::MAX_AVERAGE_ROUND_TIME_TO_DEATH,
-        );
+        $closerConfig = $this->config['closer'];
+        $scores = [];
 
-        $averageRoundTimeToContactScore = $this->normaliseScore(
-            $playerMatchEvent->average_time_to_contact,
-            self::MAX_AVERAGE_ROUND_TIME_TO_CONTACT,
-        );
+        // Average round time to death
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->average_round_time_of_death,
+                $closerConfig['average_round_time_to_death']['score'],
+                $closerConfig['average_round_time_to_death']['higher_better']
+            ),
+            'weight' => $closerConfig['average_round_time_to_death']['weight'],
+        ];
 
-        $clutchWinPercentage = $playerMatchEvent->clutch_win_percentage;
-        $clutchWinPercentageScore = $this->normaliseScore(
-            $clutchWinPercentage,
-            self::MAX_CLUTCH_WIN_PERCENTAGE,
-        );
+        // Average round time to contact
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->average_time_to_contact,
+                $closerConfig['average_round_time_to_contact']['score'],
+                $closerConfig['average_round_time_to_contact']['higher_better']
+            ),
+            'weight' => $closerConfig['average_round_time_to_contact']['weight'],
+        ];
 
-        $totalClutchAttemptsScore = $this->normaliseScore(
-            $playerMatchEvent->clutch_attempts,
-            self::MAX_TOTAL_CLUTCH_ATTEMPTS,
-        );
+        // Clutch win percentage
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->clutch_win_percentage,
+                $closerConfig['clutch_win_percentage']['score'],
+                $closerConfig['clutch_win_percentage']['higher_better']
+            ),
+            'weight' => $closerConfig['clutch_win_percentage']['weight'],
+        ];
 
-        return (int) calculateMean([
-            $averageRoundTimeToDeathScore,
-            $averageRoundTimeToContactScore,
-            $clutchWinPercentageScore,
-            $totalClutchAttemptsScore,
-        ]);
+        // Total clutch attempts
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->clutch_attempts,
+                $closerConfig['total_clutch_attempts']['score'],
+                $closerConfig['total_clutch_attempts']['higher_better']
+            ),
+            'weight' => $closerConfig['total_clutch_attempts']['weight'],
+        ];
+
+        return $this->calculateWeightedMean($scores);
     }
 
     private function playerSupportScore(PlayerMatchEvent $playerMatchEvent): int
     {
-        $totalGrenadesThrownScore = $this->normaliseScore(
-            $playerMatchEvent->grenades_thrown,
-            self::MAX_TOTAL_GRENADES_THROWN,
-        );
+        $supportConfig = $this->config['support'];
+        $scores = [];
 
-        $damageDealtFromGrenadesScore = $this->normaliseScore(
-            $playerMatchEvent->damage_dealt,
-            self::MAX_DAMAGE_DEATH_FROM_GRENADES,
-        );
+        // Total grenades thrown
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->grenades_thrown,
+                $supportConfig['total_grenades_thrown']['score'],
+                $supportConfig['total_grenades_thrown']['higher_better']
+            ),
+            'weight' => $supportConfig['total_grenades_thrown']['weight'],
+        ];
 
-        $enemyFlashDurationScore = $this->normaliseScore(
-            $playerMatchEvent->enemy_flash_duration,
-            self::MAX_ENEMY_FLASH_DURATION,
-        );
+        // Damage dealt from grenades
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->damage_dealt,
+                $supportConfig['damage_dealt_from_grenades']['score'],
+                $supportConfig['damage_dealt_from_grenades']['higher_better']
+            ),
+            'weight' => $supportConfig['damage_dealt_from_grenades']['weight'],
+        ];
 
-        $averageGrenadeEffectivenessScore = $this->normaliseScore(
-            $playerMatchEvent->average_grenade_effectiveness,
-            self::MAX_AVERAGE_GRENADE_EFFECTIVENESS,
-        );
+        // Enemy flash duration
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->enemy_flash_duration,
+                $supportConfig['enemy_flash_duration']['score'],
+                $supportConfig['enemy_flash_duration']['higher_better']
+            ),
+            'weight' => $supportConfig['enemy_flash_duration']['weight'],
+        ];
 
-        $totalFlashesLeadingToKillsScore = $this->normaliseScore(
-            $playerMatchEvent->flashes_leading_to_kills,
-            self::MAX_TOTAL_FLASHES_LEADING_TO_KILLS,
-        );
+        // Average grenade effectiveness
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->average_grenade_effectiveness,
+                $supportConfig['average_grenade_effectiveness']['score'],
+                $supportConfig['average_grenade_effectiveness']['higher_better']
+            ),
+            'weight' => $supportConfig['average_grenade_effectiveness']['weight'],
+        ];
 
-        return (int) calculateMean([
-            $totalGrenadesThrownScore,
-            $damageDealtFromGrenadesScore,
-            $enemyFlashDurationScore,
-            $averageGrenadeEffectivenessScore,
-            $totalFlashesLeadingToKillsScore,
-        ]);
+        // Total flashes leading to kills
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->flashes_leading_to_kills,
+                $supportConfig['total_flashes_leading_to_kills']['score'],
+                $supportConfig['total_flashes_leading_to_kills']['higher_better']
+            ),
+            'weight' => $supportConfig['total_flashes_leading_to_kills']['weight'],
+        ];
+
+        return $this->calculateWeightedMean($scores);
     }
 
     private function playerFraggerScore(PlayerMatchEvent $playerMatchEvent): int
     {
+        $fraggerConfig = $this->config['fragger'];
+        $scores = [];
+
+        // Kill death ratio
         $killDeathRatio = $playerMatchEvent->kills / max($playerMatchEvent->deaths, 1);
-        $killDeathRatioScore = $this->normaliseScore(
-            $killDeathRatio,
-            self::MAX_KILL_DEATH_RATION,
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $killDeathRatio,
+                $fraggerConfig['kill_death_ratio']['score'],
+                $fraggerConfig['kill_death_ratio']['higher_better']
+            ),
+            'weight' => $fraggerConfig['kill_death_ratio']['weight'],
+        ];
 
+        // Total kills per round
         $totalKillsPerRound = $playerMatchEvent->total_rounds_played > 0 ? $playerMatchEvent->kills / $playerMatchEvent->total_rounds_played : 0;
-        $totalKillsPerRoundScore = $this->normaliseScore(
-            $totalKillsPerRound,
-            self::MAX_TOTAL_KILLS_PER_ROUND,
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $totalKillsPerRound,
+                $fraggerConfig['total_kills_per_round']['score'],
+                $fraggerConfig['total_kills_per_round']['higher_better']
+            ),
+            'weight' => $fraggerConfig['total_kills_per_round']['weight'],
+        ];
 
-        $averageDamagePerRoundScore = $this->normaliseScore(
-            $playerMatchEvent->adr,
-            self::MAX_AVERAGE_DAMAGE_PER_ROUND,
-        );
+        // Average damage per round
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $playerMatchEvent->adr,
+                $fraggerConfig['average_damage_per_round']['score'],
+                $fraggerConfig['average_damage_per_round']['higher_better']
+            ),
+            'weight' => $fraggerConfig['average_damage_per_round']['weight'],
+        ];
 
+        // Trade kill percentage
         $tradeKillPercentage = calculatePercentage($playerMatchEvent->total_successful_trades, $playerMatchEvent->total_possible_trades);
-        $tradeKillPercentageScore = $this->normaliseScore(
-            $tradeKillPercentage,
-            self::MAX_TRADE_KILL_PERCENTAGE,
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $tradeKillPercentage,
+                $fraggerConfig['trade_kill_percentage']['score'],
+                $fraggerConfig['trade_kill_percentage']['higher_better']
+            ),
+            'weight' => $fraggerConfig['trade_kill_percentage']['weight'],
+        ];
 
+        // Trade opportunities per round
         $tradeOpportunitiesPerRound = $playerMatchEvent->total_rounds_played > 0 ? $playerMatchEvent->total_possible_trades / $playerMatchEvent->total_rounds_played : 0;
-        $tradeOpportunitiesPerRoundScore = $this->normaliseScore(
-            $tradeOpportunitiesPerRound,
-            self::MAX_TRADE_OPPORTUNITY_PER_ROUND,
-        );
+        $scores[] = [
+            'score' => $this->normaliseScore(
+                $tradeOpportunitiesPerRound,
+                $fraggerConfig['trade_opportunities_per_round']['score'],
+                $fraggerConfig['trade_opportunities_per_round']['higher_better']
+            ),
+            'weight' => $fraggerConfig['trade_opportunities_per_round']['weight'],
+        ];
 
-        return (int) calculateMean([
-            $killDeathRatioScore,
-            $totalKillsPerRoundScore,
-            $averageDamagePerRoundScore,
-            $tradeKillPercentageScore,
-            $tradeOpportunitiesPerRoundScore,
-        ]);
+        return $this->calculateWeightedMean($scores);
     }
 
-    private function normaliseScore(int|float $metric, int|float $maxScore, $higherBetter = true): int
+    private function normaliseScore(int|float $metric, int|float $maxScore, bool $higherBetter = true): int
     {
         if ($higherBetter) {
             $score = $metric / $maxScore;
@@ -241,5 +287,26 @@ class PlayerComplexionService
         $score = max(0, min($score, 1));
 
         return round($score * 100, 2);
+    }
+
+    private function calculateWeightedMean(array $scores): int
+    {
+        if (empty($scores)) {
+            return 0;
+        }
+
+        $totalWeightedScore = 0;
+        $totalWeight = 0;
+
+        foreach ($scores as $scoreData) {
+            $totalWeightedScore += $scoreData['score'] * $scoreData['weight'];
+            $totalWeight += $scoreData['weight'];
+        }
+
+        if ($totalWeight <= 0) {
+            return 0;
+        }
+
+        return (int) round($totalWeightedScore / $totalWeight);
     }
 }
