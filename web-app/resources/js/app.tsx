@@ -56,8 +56,14 @@ const App: React.FC = () => {
               <Route index element={<YourMatches />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="grenade-library" element={<GrenadeLibrary />} />
-              <Route path="matches/:id/:tab" element={<MatchDetail />} />
-              <Route path="matches/:id" element={<Navigate to="match-details" replace />} />
+              <Route
+                path="matches/:id/:tab/:playerId?"
+                element={<MatchDetail />}
+              />
+              <Route
+                path="matches/:id"
+                element={<Navigate to="match-details" replace />}
+              />
               <Route path="settings" element={<AccountSettingsPage />} />
             </Route>
 

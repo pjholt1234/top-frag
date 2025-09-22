@@ -6,6 +6,7 @@ import { SupportIcon } from '@/components/icons/support-icon';
 import { FraggerIcon } from '@/components/icons/fragger-icon';
 import { COMPLEXION_COLORS } from '@/constants/colors';
 import { api } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
 
 interface TopRolePlayer {
   name: string | null;
@@ -32,6 +33,7 @@ const roleData = [
     color: COMPLEXION_COLORS.opener.text,
     hexColor: COMPLEXION_COLORS.opener.hex,
     IconComponent: OpenerIcon,
+    tab: 'player-stats',
   },
   {
     key: 'closer' as const,
@@ -39,6 +41,7 @@ const roleData = [
     color: COMPLEXION_COLORS.closer.text,
     hexColor: COMPLEXION_COLORS.closer.hex,
     IconComponent: CloserIcon,
+    tab: 'player-stats',
   },
   {
     key: 'support' as const,
@@ -46,6 +49,7 @@ const roleData = [
     color: COMPLEXION_COLORS.support.text,
     hexColor: COMPLEXION_COLORS.support.hex,
     IconComponent: SupportIcon,
+    tab: 'utility-analysis',
   },
   {
     key: 'fragger' as const,
@@ -53,6 +57,7 @@ const roleData = [
     color: COMPLEXION_COLORS.fragger.text,
     hexColor: COMPLEXION_COLORS.fragger.hex,
     IconComponent: FraggerIcon,
+    tab: 'player-stats',
   },
 ];
 
@@ -60,6 +65,7 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
   const [topPlayers, setTopPlayers] = useState<TopRolePlayers | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTopPlayers = async () => {
@@ -128,7 +134,7 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {roleData.map(({ key, label, color, hexColor, IconComponent }) => {
+      {roleData.map(({ key, label, color, hexColor, IconComponent, tab }) => {
         const player = topPlayers[key];
         return (
           <Card
@@ -144,7 +150,12 @@ export function TopPlayers({ matchId }: TopPlayersProps) {
               e.currentTarget.style.background = `linear-gradient(315deg, ${hexColor}30 0%, rgba(31, 41, 55, 0.7) 50%, rgba(31, 41, 55, 0.9) 100%)`;
             }}
           >
-            <CardContent className="p-4 h-full relative">
+            <CardContent
+              className="p-4 h-full relative"
+              onClick={() =>
+                navigate(`/matches/${matchId}/${tab}/${player.steam_id}`)
+              }
+            >
               {/* Icon in top left - slides in on hover */}
               <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <IconComponent

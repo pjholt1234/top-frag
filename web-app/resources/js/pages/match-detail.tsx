@@ -50,7 +50,11 @@ interface Match {
 }
 
 const MatchDetail = () => {
-  const { id, tab } = useParams<{ id: string; tab: string }>();
+  const { id, tab, playerId } = useParams<{
+    id: string;
+    tab: string;
+    playerId?: string;
+  }>();
   const navigate = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +79,9 @@ const MatchDetail = () => {
 
   // Handle tab change and update URL
   const handleTabChange = (value: string) => {
-    const urlTab = Object.keys(tabMapping).find(key => tabMapping[key as keyof typeof tabMapping] === value);
+    const urlTab = Object.keys(tabMapping).find(
+      key => tabMapping[key as keyof typeof tabMapping] === value
+    );
     if (urlTab) {
       navigate(`/matches/${id}/${urlTab}`);
     }
@@ -194,7 +200,11 @@ const MatchDetail = () => {
       <div className="container mx-auto px-4 py-4">
         {/* Match Details Card */}
         {match.match_details && (
-          <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            value={getCurrentTab()}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
             <Card className="mb-4 pb-0 pt-4 relative overflow-hidden">
               {(() => {
                 const mapMetadata = getMapMetadata(match.match_details.map);
@@ -322,13 +332,19 @@ const MatchDetail = () => {
 
             <TabsContent value="player-stats" className="mt-0">
               <CardContent className="p-0">
-                <MatchPlayerStats matchId={match.id} />
+                <MatchPlayerStats
+                  matchId={match.id}
+                  selectedPlayerId={playerId}
+                />
               </CardContent>
             </TabsContent>
 
             <TabsContent value="utility" className="mt-0">
               <CardContent className="p-0">
-                <MatchUtilityAnalysis matchId={match.id} />
+                <MatchUtilityAnalysis
+                  matchId={match.id}
+                  selectedPlayerId={playerId}
+                />
               </CardContent>
             </TabsContent>
 

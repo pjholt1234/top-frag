@@ -182,7 +182,6 @@ export function Scoreboard({
     const hasMatchDetails = match?.match_details != null;
 
     const hasMatchRank = match?.match_details?.match_type === 'valve';
-    console.log('hasMatchRank', hasMatchRank);
 
     const getMatchIcon = (
       gameMode: string | null | undefined,

@@ -74,15 +74,19 @@ interface UtilityAnalysisData {
 
 interface MatchUtilityAnalysisProps {
   matchId: number;
+  selectedPlayerId: string | undefined;
 }
 
-export function MatchUtilityAnalysis({ matchId }: MatchUtilityAnalysisProps) {
+export function MatchUtilityAnalysis({
+  matchId,
+  selectedPlayerId,
+}: MatchUtilityAnalysisProps) {
   const [data, setData] = useState<UtilityAnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [filters, setFilters] = useState({
-    playerSteamId: '',
+    playerSteamId: selectedPlayerId ?? '',
     roundNumber: 'all',
   });
 

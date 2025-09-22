@@ -80,15 +80,19 @@ interface Player {
 
 interface MatchPlayerStatsProps {
   matchId: number;
+  selectedPlayerId: string | undefined;
 }
 
-export function MatchPlayerStats({ matchId }: MatchPlayerStatsProps) {
+export function MatchPlayerStats({
+  matchId,
+  selectedPlayerId,
+}: MatchPlayerStatsProps) {
   const [data, setData] = useState<PlayerStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [filters, setFilters] = useState({
-    playerSteamId: '',
+    playerSteamId: selectedPlayerId ?? '',
   });
 
   const fetchData = useCallback(
