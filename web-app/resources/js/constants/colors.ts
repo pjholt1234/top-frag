@@ -163,7 +163,12 @@ export const PREMIER_RANK_TIERS: PremierRankTier[] = [
   { min: 15000, max: 19999, barColor: '#aa53f1', backgroundColor: '#2f0f3f' },
   { min: 20000, max: 24999, barColor: '#aa53f1', backgroundColor: '#2f0f3f' },
   { min: 25000, max: 29999, barColor: '#f12431', backgroundColor: '#4a0308' },
-  { min: 30000, max: Infinity, barColor: '#ebc507', backgroundColor: '#4a3a00' },
+  {
+    min: 30000,
+    max: Infinity,
+    barColor: '#ebc507',
+    backgroundColor: '#4a3a00',
+  },
 ];
 
 /**
@@ -172,6 +177,8 @@ export const PREMIER_RANK_TIERS: PremierRankTier[] = [
  * @returns The colors for the rank tier
  */
 export function getPremierRankColors(rank: number): PremierRankColors {
-  const tier = PREMIER_RANK_TIERS.find(tier => rank >= tier.min && rank <= tier.max);
+  const tier = PREMIER_RANK_TIERS.find(
+    tier => rank >= tier.min && rank <= tier.max
+  );
   return tier || PREMIER_RANK_TIERS[0]; // Fallback to first tier if no match
 }

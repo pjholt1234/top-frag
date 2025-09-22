@@ -14,10 +14,9 @@ interface PremierRankProps {
   height?: number;
 }
 
-
 const formatRank = (rank: number): string => {
   if (rank === 0) {
-    return "---"
+    return '---';
   }
   return rank.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
