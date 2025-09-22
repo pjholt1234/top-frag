@@ -31,6 +31,14 @@ class User extends Authenticatable
         'steam_sharecode_added_at',
         'steam_match_processing_enabled',
         'steam_last_processed_at',
+        'steam_persona_name',
+        'steam_profile_url',
+        'steam_avatar',
+        'steam_avatar_medium',
+        'steam_avatar_full',
+        'steam_persona_state',
+        'steam_community_visibility_state',
+        'steam_profile_updated_at',
     ];
 
     /**
@@ -56,6 +64,7 @@ class User extends Authenticatable
             'steam_sharecode_added_at' => 'datetime',
             'steam_match_processing_enabled' => 'boolean',
             'steam_last_processed_at' => 'datetime',
+            'steam_profile_updated_at' => 'datetime',
         ];
     }
 

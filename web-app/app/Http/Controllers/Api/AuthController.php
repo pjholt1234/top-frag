@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\SteamAPIConnector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,51 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly SteamAPIConnector $steamApiConnector
+    ) {}
+
+    /**
+     * Fetch and store Steam profile data for a user
+     */
+    private function fetchAndStoreSteamProfile(User $user): void
+    {
+        if (! $user->steam_id) {
+            return;
+        }
+
+        try {
+            $steamProfiles = $this->steamApiConnector->getPlayerSummaries([$user->steam_id]);
+
+            if ($steamProfiles && isset($steamProfiles[$user->steam_id])) {
+                $profile = $steamProfiles[$user->steam_id];
+
+                $user->update([
+                    'steam_persona_name' => $profile['persona_name'],
+                    'steam_profile_url' => $profile['profile_url'],
+                    'steam_avatar' => $profile['avatar'],
+                    'steam_avatar_medium' => $profile['avatar_medium'],
+                    'steam_avatar_full' => $profile['avatar_full'],
+                    'steam_persona_state' => $profile['persona_state'],
+                    'steam_community_visibility_state' => $profile['community_visibility_state'],
+                    'steam_profile_updated_at' => now(),
+                ]);
+
+                Log::info('Updated Steam profile for user', [
+                    'user_id' => $user->id,
+                    'steam_id' => $user->steam_id,
+                    'persona_name' => $profile['persona_name'],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch Steam profile for user', [
+                'user_id' => $user->id,
+                'steam_id' => $user->steam_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Register a new user
      */
@@ -104,7 +150,9 @@ class AuthController extends Controller
             $user = User::where('steam_id', $steamUser->getId())->first();
 
             if ($user) {
-                // User exists, log them in
+                // User exists, update their Steam profile and log them in
+                $this->fetchAndStoreSteamProfile($user);
+
                 $token = $user->createToken('auth_token')->plainTextToken;
 
                 // Redirect to frontend with token
@@ -129,8 +177,11 @@ class AuthController extends Controller
                 }
 
                 // Link Steam account to current user
-                User::where('id', $currentUser->id)->update(['steam_id' => $steamUser->getId()]);
+                $currentUser->update(['steam_id' => $steamUser->getId()]);
                 \Log::info('Successfully linked Steam ID '.$steamUser->getId().' to user ID '.$currentUser->id);
+
+                // Fetch and store Steam profile data
+                $this->fetchAndStoreSteamProfile($currentUser);
 
                 // Redirect to frontend with success
                 return redirect('http://localhost:8000/steam-callback?success=true&message='.urlencode('Steam account linked successfully'));
@@ -144,6 +195,9 @@ class AuthController extends Controller
                 'steam_id' => $steamUser->getId(),
                 'password' => Hash::make(uniqid()), // Random password since they won't use it
             ]);
+
+            // Fetch and store Steam profile data for new user
+            $this->fetchAndStoreSteamProfile($user);
 
             $token = $user->createToken('auth_token')->plainTextToken;
             \Log::info('Created new user with ID: '.$user->id.', token generated');

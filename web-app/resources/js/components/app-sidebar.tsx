@@ -47,9 +47,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Create user data for NavUser component
   const userData = {
-    name: user?.name || 'User',
+    name: user?.steam_persona_name || user?.name || 'User',
     email: user?.email || 'user@example.com',
-    avatar: '/avatars/default.jpg',
+    avatar:
+      user?.steam_avatar_medium || user?.steam_avatar || '/avatars/default.jpg',
+    steam_id: user?.steam_id,
   };
 
   return (

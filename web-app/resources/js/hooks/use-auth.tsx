@@ -13,6 +13,10 @@ interface User {
   name: string;
   email: string | null;
   steam_id?: string;
+  steam_avatar?: string;
+  steam_avatar_medium?: string;
+  steam_avatar_full?: string;
+  steam_persona_name?: string;
 }
 
 interface AuthContextType {
