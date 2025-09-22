@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -61,11 +61,11 @@ return new class extends Migration
         });
 
         // Copy all data from current table to new table
-        DB::statement("
+        DB::statement('
             INSERT INTO player_ranks_new (id, player_id, rank_type, rank, rank_value, created_at, updated_at)
             SELECT id, player_id, rank_type, rank, rank_value, created_at, updated_at
             FROM player_ranks
-        ");
+        ');
 
         // Drop the current table and rename the new one
         Schema::dropIfExists('player_ranks');

@@ -704,7 +704,7 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(2, $playerRoundEvent->enemy_players_affected);
         $this->assertEquals(1, $playerRoundEvent->flashes_leading_to_kill);
         $this->assertEquals(0, $playerRoundEvent->flashes_leading_to_death);
-        $this->assertEquals(1, $playerRoundEvent->grenade_effectiveness);
+        $this->assertEquals(0.75, $playerRoundEvent->grenade_effectiveness);
         $this->assertEquals(1, $playerRoundEvent->successful_trades);
         $this->assertEquals(2, $playerRoundEvent->total_possible_trades);
         $this->assertEquals(0, $playerRoundEvent->successful_traded_deaths);
