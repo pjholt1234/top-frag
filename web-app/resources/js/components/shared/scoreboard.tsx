@@ -15,8 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
 import { QUALITY_COLORS } from '@/constants/colors';
-import CompetitiveRank from './competitive-rank';
-import PremierRank from './premier-rank';
+import { getRankDisplay } from '@/lib/rank-utils';
 
 interface Scoreboard {
   rank_value: number;
@@ -182,24 +181,20 @@ export function Scoreboard({
     const hasMatchDetails = match?.match_details != null;
 
     const hasMatchRank = match?.match_details?.match_type === 'valve';
-
     const getMatchIcon = (
       gameMode: string | null | undefined,
       rank_value: number
     ) => {
-      if (!hasMatchRank || !gameMode) {
+      if (!hasMatchRank) {
         return null;
       }
 
-      if (gameMode === 'competitive') {
-        return <CompetitiveRank rank={rank_value} size="sm" />;
-      }
-
-      if (gameMode === 'premier') {
-        return <PremierRank rank={rank_value} size="sm" />;
-      }
-
-      return null;
+      return getRankDisplay({
+        gameMode,
+        matchType: match?.match_details?.match_type,
+        rankValue: rank_value,
+        variant: 'sm',
+      });
     };
 
     return (

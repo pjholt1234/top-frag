@@ -15,9 +15,11 @@ import MatchGrenadesView from '@/components/match-detail/grenades-view';
 import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis';
 import { MatchPlayerStats } from '@/components/match-detail/player-stats';
 import { TopPlayers } from '@/components/match-detail/top-players';
+import { HeadToHead } from '@/components/match-detail/head-to-head';
 import { getMapMetadata } from '@/config/maps';
 
 interface Scoreboard {
+  rank_value: number;
   player_name: string;
   player_kills: number;
   player_deaths: number;
@@ -35,6 +37,7 @@ interface MatchDetails {
   winning_team: string;
   match_type: string;
   created_at: string;
+  game_mode: string | null;
 }
 
 interface Match {
@@ -47,6 +50,7 @@ interface Match {
   progress_percentage: number | null;
   current_step: string | null;
   error_message: string | null;
+  match_type: string;
 }
 
 const MatchDetail = () => {
@@ -365,9 +369,7 @@ const MatchDetail = () => {
 
             <TabsContent value="head-to-head" className="mt-0">
               <CardContent className="p-0">
-                <p className="text-center text-gray-400">
-                  Head to Head will be displayed here.
-                </p>
+                <HeadToHead matchId={match.id} />
               </CardContent>
             </TabsContent>
           </Tabs>

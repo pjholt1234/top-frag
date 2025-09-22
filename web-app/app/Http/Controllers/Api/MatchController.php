@@ -230,11 +230,8 @@ class MatchController extends Controller
             return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
         }
 
-        $player1SteamId = $request->get('player1_steam_id');
-        $player2SteamId = $request->get('player2_steam_id');
-
         try {
-            $headToHead = $this->headToHeadService->getHeadToHead($user, $matchId, $player1SteamId, $player2SteamId);
+            $headToHead = $this->headToHeadService->getHeadToHead($user, $matchId);
         } catch (\Exception $e) {
             Log::error($e->getMessage());
 
@@ -246,6 +243,33 @@ class MatchController extends Controller
         }
 
         return response()->json($headToHead);
+    }
+
+    public function headToHeadPlayer(HeadToHeadRequest $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
+        }
+
+        $playerSteamId = $request->get('player_steam_id');
+        if (! $playerSteamId) {
+            return response()->json(['message' => 'Player Steam ID is required'], 400);
+        }
+
+        try {
+            $playerStats = $this->headToHeadService->getPlayerStats($user, $matchId, $playerSteamId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
+
+        if (empty($playerStats)) {
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
+        }
+
+        return response()->json($playerStats);
     }
 
     public function topRolePlayers(Request $request, int $matchId): JsonResponse
