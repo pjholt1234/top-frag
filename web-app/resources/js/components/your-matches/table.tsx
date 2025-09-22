@@ -301,7 +301,7 @@ export function MatchesTable({
                   <TableCell className="font-medium">
                     <button
                       onClick={() =>
-                        (window.location.href = `/matches/${matchId}`)
+                        (window.location.href = `/matches/${matchId}/match-details`)
                       }
                       className="text-left hover:text-blue-400 hover:underline cursor-pointer transition-colors"
                     >
@@ -326,7 +326,7 @@ export function MatchesTable({
                   <TableCell>
                     {match.match_details && match.match_details.match_type
                       ? capitalizeFirst(match.match_details.match_type) ||
-                        'Unknown'
+                      'Unknown'
                       : 'Processing...'}
                   </TableCell>
                   <TableCell>

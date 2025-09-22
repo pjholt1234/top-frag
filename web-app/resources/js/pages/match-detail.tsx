@@ -50,11 +50,36 @@ interface Match {
 }
 
 const MatchDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, tab } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Tab mapping between URL parameters and tab values
+  const tabMapping = {
+    'match-details': 'match-details',
+    'player-stats': 'player-stats',
+    'utility-analysis': 'utility',
+    'grenade-explorer': 'grenades',
+    'head-to-head': 'head-to-head',
+  };
+
+  // Get current tab from route parameter
+  const getCurrentTab = () => {
+    if (tab && tab in tabMapping) {
+      return tabMapping[tab as keyof typeof tabMapping];
+    }
+    return 'match-details';
+  };
+
+  // Handle tab change and update URL
+  const handleTabChange = (value: string) => {
+    const urlTab = Object.keys(tabMapping).find(key => tabMapping[key as keyof typeof tabMapping] === value);
+    if (urlTab) {
+      navigate(`/matches/${id}/${urlTab}`);
+    }
+  };
 
   useEffect(() => {
     const fetchMatch = async () => {
@@ -169,7 +194,7 @@ const MatchDetail = () => {
       <div className="container mx-auto px-4 py-4">
         {/* Match Details Card */}
         {match.match_details && (
-          <Tabs defaultValue="match-details" className="w-full">
+          <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="w-full">
             <Card className="mb-4 pb-0 pt-4 relative overflow-hidden">
               {(() => {
                 const mapMetadata = getMapMetadata(match.match_details.map);
