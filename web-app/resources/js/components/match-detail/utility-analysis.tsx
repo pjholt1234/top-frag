@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { UtilityFilters } from '@/components/your-matches/utility-filters';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { UtilityStats } from './utility-analysis/utility-stats';
+import { Info } from 'lucide-react';
 
 // Lazy load chart components for better performance
 const UtilityUsageChart = lazy(() =>
@@ -232,7 +233,60 @@ export function MatchUtilityAnalysis({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="h-full">
-              <CardContent className="flex items-center justify-center">
+              <CardContent className="flex items-center justify-center relative">
+                <div className="absolute top-2 right-6 z-10">
+                  <div className="group relative">
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                    <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                      <div className="text-sm">
+                        <div className="font-semibold text-white mb-2">
+                          Grenade Effectiveness Rating
+                        </div>
+                        <div className="text-gray-300 mb-3">
+                          Measures how well you use grenades to help your team.
+                          Based on flash duration, damage dealt, and tactical
+                          impact.
+                        </div>
+                        <div className="text-xs text-gray-400 mb-3">
+                          <div className="font-medium mb-1">
+                            Rating Breakdown:
+                          </div>
+                          <div className="space-y-1">
+                            <div>
+                              <span className="text-green-400">
+                                Excellent (80-100):
+                              </span>{' '}
+                              Masterful grenade usage
+                            </div>
+                            <div>
+                              <span className="text-blue-400">
+                                Good (60-79):
+                              </span>{' '}
+                              Solid utility play
+                            </div>
+                            <div>
+                              <span className="text-yellow-400">
+                                Fair (40-59):
+                              </span>{' '}
+                              Average effectiveness
+                            </div>
+                            <div>
+                              <span className="text-red-400">Poor (0-39):</span>{' '}
+                              Needs improvement
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          <div className="font-medium mb-1">Factors:</div>
+                          <div>
+                            Flash duration, damage dealt, enemy blinds, tactical
+                            timing
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <Suspense fallback={<ChartFallback />}>
                   <GrenadeRatingGauge
                     rating={data.overall_stats.overall_grenade_rating}
@@ -241,7 +295,53 @@ export function MatchUtilityAnalysis({
               </CardContent>
             </Card>
             <Card>
-              <CardContent>
+              <CardContent className="relative">
+                <div className="absolute top-2 right-6 z-10">
+                  <div className="group relative">
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                    <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                      <div className="text-sm">
+                        <div className="font-semibold text-white mb-2">
+                          Utility Usage Distribution
+                        </div>
+                        <div className="text-gray-300 mb-3">
+                          Shows the breakdown of your grenade usage by type.
+                          Helps identify your utility preferences.
+                        </div>
+                        <div className="text-xs text-gray-400 mb-3">
+                          <div className="font-medium mb-1">Grenade Types:</div>
+                          <div className="space-y-1">
+                            <div>
+                              <span className="text-yellow-400">Flash:</span>{' '}
+                              Blinding enemies for team advantage
+                            </div>
+                            <div>
+                              <span className="text-red-400">HE:</span> Direct
+                              damage to enemies
+                            </div>
+                            <div>
+                              <span className="text-green-400">Smoke:</span>{' '}
+                              Area denial and cover
+                            </div>
+                            <div>
+                              <span className="text-blue-400">Molotov:</span>{' '}
+                              Area control and damage over time
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          <div className="font-medium mb-1">
+                            Interpretation:
+                          </div>
+                          <div>
+                            Higher percentages = more frequent use of that
+                            grenade type
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <Suspense fallback={<ChartFallback />}>
                   <UtilityUsageChart data={data.utility_usage} />
                 </Suspense>
@@ -253,10 +353,42 @@ export function MatchUtilityAnalysis({
         {/* Second row: Grenade Effectiveness and Timing Analysis side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
-            <CardContent className="pt-2">
-              <CardTitle className="mb-2">
-                Grenade Effectiveness by Round
-              </CardTitle>
+            <CardContent className="pt-2 relative">
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle className="mb-0">
+                  Grenade Effectiveness by Round
+                </CardTitle>
+                <div className="group relative">
+                  <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                  <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                    <div className="text-sm">
+                      <div className="font-semibold text-white mb-2">
+                        Grenade Effectiveness by Round
+                      </div>
+                      <div className="text-gray-300 mb-3">
+                        Shows your grenade performance across each round. Higher
+                        values indicate more effective utility usage in that
+                        round.
+                      </div>
+                      <div className="text-xs text-gray-400 mb-3">
+                        <div className="font-medium mb-1">
+                          Effectiveness Factors:
+                        </div>
+                        <div className="space-y-1">
+                          <div>• Flash duration and enemy blinds</div>
+                          <div>• Damage dealt to enemies</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        <div className="font-medium mb-1">Interpretation:</div>
+                        <div>
+                          Consistent high values = reliable utility player.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <Suspense fallback={<ChartFallback />}>
                 <GrenadeEffectivenessChart data={data.grenade_effectiveness} />
               </Suspense>
@@ -264,8 +396,53 @@ export function MatchUtilityAnalysis({
           </Card>
 
           <Card>
-            <CardContent className="pt-2">
-              <CardTitle className="mb-2">Grenade Timing Analysis</CardTitle>
+            <CardContent className="pt-2 relative">
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle className="mb-0">Grenade Timing Analysis</CardTitle>
+                <div className="group relative">
+                  <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                  <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                    <div className="text-sm">
+                      <div className="font-semibold text-white mb-2">
+                        Grenade Timing Analysis
+                      </div>
+                      <div className="text-gray-300 mb-3">
+                        Analyses when you use grenades during rounds. Shows
+                        timing patterns and effectiveness at different round
+                        phases.
+                      </div>
+                      <div className="text-xs text-gray-400 mb-3">
+                        <div className="font-medium mb-1">Timing Phases:</div>
+                        <div className="space-y-1">
+                          <div>
+                            <span className="text-green-400">
+                              Early (0-30s):
+                            </span>{' '}
+                            Opening utility and map control
+                          </div>
+                          <div>
+                            <span className="text-yellow-400">
+                              Mid (30-60s):
+                            </span>{' '}
+                            Tactical positioning and executes
+                          </div>
+                          <div>
+                            <span className="text-red-400">Late (60s+):</span>{' '}
+                            Clutch situations and retakes
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        <div className="font-medium mb-1">Interpretation:</div>
+                        <div>
+                          Higher effectiveness in specific phases shows your
+                          tactical strengths and timing preferences.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <Suspense fallback={<ChartFallback />}>
                 <GrenadeTimingChart data={data.grenade_timing} />
               </Suspense>
