@@ -92,6 +92,12 @@ class GunfightEventTest extends TestCase
             'flash_assister_steam_id',
             'damage_assist_steam_id',
             'round_scenario',
+            'player_1_team_strength',
+            'player_2_team_strength',
+            'player_1_impact',
+            'player_2_impact',
+            'assister_impact',
+            'flash_assister_impact',
         ];
         $this->assertEquals($expectedFillable, $gunfightEvent->getFillable());
     }

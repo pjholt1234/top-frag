@@ -142,6 +142,10 @@ class PlayerRoundEventTest extends TestCase
             'kills_vs_force_buy',
             'kills_vs_full_buy',
             'grenade_value_lost_on_death',
+            'total_impact',
+            'average_impact',
+            'round_swing_percent',
+            'impact_percentage',
         ];
 
         $this->assertEquals($expectedFillable, $playerRoundEvent->getFillable());
