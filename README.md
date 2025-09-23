@@ -199,6 +199,7 @@ go build -o parser-test . # Build CLI tool
 ### Essential Reading
 - **[Task Execution Guide](docs/TASK_EXECUTION_GUIDE.md)** - Development workflow and process
 - **[Coding Standards](docs/CODING_STANDARDS.md)** - Code style and conventions
+- **[Statistics Guide](docs/STATS_GUIDE.md)** - Comprehensive guide to all statistics and metrics
 - **[Parser Service README](parser-service/README.md)** - Parser service architecture and API
 - **[Web App README](web-app/README.md)** - Web application setup and features
 - **[Valve Demo URL Service README](valve-demo-url-service/README.md)** - Demo URL service setup and API

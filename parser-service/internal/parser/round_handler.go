@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"parser-service/internal/types"
+	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -64,6 +66,9 @@ func (rh *RoundHandler) ProcessRoundEnd() error {
 		rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
 	}
 
+	// Calculate impact values for gunfight events in this round
+	rh.calculateRoundImpact(roundNumber)
+
 	rh.logger.WithFields(logrus.Fields{
 		"round":         roundNumber,
 		"players_count": len(playersInRound),
@@ -108,6 +113,9 @@ func (rh *RoundHandler) createPlayerRoundEvent(playerSteamID string, roundNumber
 
 	// Economy metrics
 	rh.aggregateEconomyMetrics(&playerRoundEvent, playerSteamID, roundNumber)
+
+	// Calculate impact values by aggregating from gunfight events
+	rh.aggregateImpactMetrics(&playerRoundEvent, playerSteamID, roundNumber)
 
 	return playerRoundEvent
 }
@@ -872,4 +880,160 @@ func (rh *RoundHandler) getPlayerEquipmentValueInRound(playerSteamID string, rou
 func (rh *RoundHandler) estimateGrenadeValueLostOnDeath() int {
 	//todo
 	return 0
+}
+
+// calculateRoundImpact calculates impact values for gunfight events in a specific round
+func (rh *RoundHandler) calculateRoundImpact(roundNumber int) {
+	// Create impact calculator
+	calculator := NewImpactRatingCalculator()
+
+	// Calculate impact for each gunfight event in this round
+	for i := range rh.processor.matchState.GunfightEvents {
+		gunfight := &rh.processor.matchState.GunfightEvents[i]
+		if gunfight.RoundNumber != roundNumber {
+			continue
+		}
+
+		// Calculate team strengths
+		team1Strength := calculator.CalculateTeamStrength(
+			rh.parseManCountFromScenario(gunfight.RoundScenario, true), // team 1 count
+			gunfight.Player1EquipValue,
+		)
+		team2Strength := calculator.CalculateTeamStrength(
+			rh.parseManCountFromScenario(gunfight.RoundScenario, false), // team 2 count
+			gunfight.Player2EquipValue,
+		)
+
+		// Calculate impact for this gunfight
+		calculator.CalculateGunfightImpact(gunfight, team1Strength, team2Strength)
+	}
+
+	// Update PlayerRoundEvents with calculated impact values
+	for i := range rh.processor.matchState.PlayerRoundEvents {
+		playerRound := &rh.processor.matchState.PlayerRoundEvents[i]
+		if playerRound.RoundNumber != roundNumber {
+			continue
+		}
+
+		// Recalculate impact for this player in this round
+		rh.aggregateImpactMetrics(playerRound, playerRound.PlayerSteamID, roundNumber)
+	}
+
+	// Update RoundEvents with calculated impact values
+	for i := range rh.processor.matchState.RoundEvents {
+		roundEvent := &rh.processor.matchState.RoundEvents[i]
+		if roundEvent.RoundNumber != roundNumber || roundEvent.EventType != "end" {
+			continue
+		}
+
+		// Calculate round-level impact
+		rh.calculateRoundEventImpact(roundEvent, roundNumber)
+	}
+}
+
+// parseManCountFromScenario extracts man count from round scenario string
+func (rh *RoundHandler) parseManCountFromScenario(scenario string, isTeam1 bool) int {
+	// Parse scenario like "5v4" to get team counts
+	parts := strings.Split(scenario, "v")
+	if len(parts) != 2 {
+		return 5 // Default to 5v5 if parsing fails
+	}
+
+	if isTeam1 {
+		if count, err := strconv.Atoi(parts[0]); err == nil {
+			return count
+		}
+	} else {
+		if count, err := strconv.Atoi(parts[1]); err == nil {
+			return count
+		}
+	}
+
+	return 5 // Default fallback
+}
+
+// aggregateImpactMetrics calculates impact values by aggregating from gunfight events
+func (rh *RoundHandler) aggregateImpactMetrics(event *types.PlayerRoundEvent, playerSteamID string, roundNumber int) {
+	// Initialize impact values
+	event.TotalImpact = 0
+	event.AverageImpact = 0
+	event.RoundSwingPercent = 0
+
+	gunfightCount := 0
+
+	// Aggregate impact from gunfight events for this round
+	for _, gunfight := range rh.processor.matchState.GunfightEvents {
+		if gunfight.RoundNumber != roundNumber {
+			continue
+		}
+
+		playerInvolved := false
+
+		// Player 1 (attacker) impact
+		if gunfight.Player1SteamID == playerSteamID {
+			event.TotalImpact += gunfight.Player1Impact
+			playerInvolved = true
+		}
+
+		// Player 2 (victim) impact
+		if gunfight.Player2SteamID == playerSteamID {
+			event.TotalImpact += gunfight.Player2Impact
+			playerInvolved = true
+		}
+
+		// Assister impact
+		if gunfight.DamageAssistSteamID != nil && *gunfight.DamageAssistSteamID == playerSteamID {
+			event.TotalImpact += gunfight.AssisterImpact
+			playerInvolved = true
+		}
+
+		// Flash assister impact
+		if gunfight.FlashAssisterSteamID != nil && *gunfight.FlashAssisterSteamID == playerSteamID {
+			event.TotalImpact += gunfight.FlashAssisterImpact
+			playerInvolved = true
+		}
+
+		// Count gunfight events the player was involved in (don't double count)
+		if playerInvolved {
+			gunfightCount++
+		}
+	}
+
+	// Calculate average impact per gunfight event
+	if gunfightCount > 0 {
+		event.AverageImpact = event.TotalImpact / float64(gunfightCount)
+	}
+
+	// Calculate round swing percentage
+	event.RoundSwingPercent = (event.TotalImpact / types.MaxPossibleImpactPerRound) * 100.0
+
+	// Calculate impact percentage using practical maximum
+	event.ImpactPercentage = (event.TotalImpact / types.MaxPracticalImpact) * 100.0
+}
+
+// calculateRoundEventImpact calculates impact values for a round event
+func (rh *RoundHandler) calculateRoundEventImpact(roundEvent *types.RoundEvent, roundNumber int) {
+	// Calculate total impact for this round
+	totalImpact := 0.0
+	totalGunfights := 0
+
+	for _, gunfight := range rh.processor.matchState.GunfightEvents {
+		if gunfight.RoundNumber != roundNumber {
+			continue
+		}
+
+		totalImpact += gunfight.Player1Impact + gunfight.Player2Impact + gunfight.AssisterImpact + gunfight.FlashAssisterImpact
+		totalGunfights++
+	}
+
+	// Set round event impact values
+	roundEvent.TotalImpact = totalImpact
+	roundEvent.TotalGunfights = totalGunfights
+	roundEvent.AverageImpact = totalImpact / float64(totalGunfights)
+
+	// Calculate round swing percentage
+	roundEvent.RoundSwingPercent = (totalImpact / types.MaxPossibleImpactPerRound) * 100.0
+
+	// Calculate impact percentage using practical maximum
+	roundEvent.ImpactPercentage = (totalImpact / types.MaxPracticalImpact) * 100.0
 }

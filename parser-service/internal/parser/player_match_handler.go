@@ -169,6 +169,57 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 	playerMatchEvent.AverageGrenadeValueLost = float64(totalGrenadeValueLostOnDeath) / float64(numberOfRoundsParticipated)
 	playerMatchEvent.ADR = float64(playerMatchEvent.Damage) / float64(numberOfRoundsParticipated)
 
+	// Calculate impact values by aggregating from gunfight events
+	playerMatchEvent.TotalImpact = 0
+	playerMatchEvent.AverageImpact = 0
+	playerMatchEvent.MatchSwingPercent = 0
+
+	// Aggregate impact from gunfight events
+	for _, gunfight := range mh.processor.matchState.GunfightEvents {
+		// Player 1 (attacker) impact
+		if gunfight.Player1SteamID == playerSteamID {
+			playerMatchEvent.TotalImpact += gunfight.Player1Impact
+		}
+
+		// Player 2 (victim) impact
+		if gunfight.Player2SteamID == playerSteamID {
+			playerMatchEvent.TotalImpact += gunfight.Player2Impact
+		}
+
+		// Assister impact
+		if gunfight.DamageAssistSteamID != nil && *gunfight.DamageAssistSteamID == playerSteamID {
+			playerMatchEvent.TotalImpact += gunfight.AssisterImpact
+		}
+
+		// Flash assister impact
+		if gunfight.FlashAssisterSteamID != nil && *gunfight.FlashAssisterSteamID == playerSteamID {
+			playerMatchEvent.TotalImpact += gunfight.FlashAssisterImpact
+		}
+	}
+
+	// Calculate average impact per round
+	if numberOfRoundsParticipated > 0 {
+		playerMatchEvent.AverageImpact = playerMatchEvent.TotalImpact / float64(numberOfRoundsParticipated)
+	}
+
+	// Calculate match swing percentage
+	maxPossibleImpact := float64(numberOfRoundsParticipated) * types.MaxPossibleImpactPerRound
+	playerMatchEvent.MatchSwingPercent = (playerMatchEvent.TotalImpact / maxPossibleImpact) * 100.0
+
+	// Calculate match impact percentage by averaging round impact percentages
+	totalRoundImpactPercentage := 0.0
+	roundsWithImpact := 0
+	for _, playerRound := range mh.processor.matchState.PlayerRoundEvents {
+		if playerRound.PlayerSteamID == playerSteamID {
+			totalRoundImpactPercentage += playerRound.ImpactPercentage
+			roundsWithImpact++
+		}
+	}
+
+	if roundsWithImpact > 0 {
+		playerMatchEvent.ImpactPercentage = totalRoundImpactPercentage / float64(roundsWithImpact)
+	}
+
 	// Set the matchmaking rank from the player data
 	if player, exists := mh.processor.matchState.Players[playerSteamID]; exists {
 		// Set legacy rank field

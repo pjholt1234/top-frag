@@ -128,6 +128,14 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 				"flash_assister_steam_id":  event.FlashAssisterSteamID,
 				"damage_assist_steam_id":   event.DamageAssistSteamID,
 				"round_scenario":           event.RoundScenario,
+
+				// Impact Rating Fields
+				"player_1_team_strength": event.Player1TeamStrength,
+				"player_2_team_strength": event.Player2TeamStrength,
+				"player_1_impact":        event.Player1Impact,
+				"player_2_impact":        event.Player2Impact,
+				"assister_impact":        event.AssisterImpact,
+				"flash_assister_impact":  event.FlashAssisterImpact,
 			}
 		}
 
@@ -146,6 +154,14 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 			parseError = parseError.WithContext("url", url)
 			bs.progressManager.ReportParseError(parseError)
 			return parseError
+		}
+
+		// Log impact values for first batch
+		if i == 0 && len(batch) > 0 {
+			bs.logger.WithFields(logrus.Fields{
+				"sample_gunfight": batch[0],
+				"total_events":    len(batch),
+			}).Info("Sending gunfight events with impact values")
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -375,6 +391,13 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 			"round_number":   event.RoundNumber,
 			"tick_timestamp": event.TickTimestamp,
 			"event_type":     event.EventType,
+
+			// Impact Rating Fields
+			"total_impact":        event.TotalImpact,
+			"total_gunfights":     event.TotalGunfights,
+			"average_impact":      event.AverageImpact,
+			"round_swing_percent": event.RoundSwingPercent,
+			"impact_percentage":   event.ImpactPercentage,
 		}
 
 		if event.Winner != nil {
@@ -499,6 +522,12 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 				"kills_vs_force_buy":          event.KillsVsForceBuy,
 				"kills_vs_full_buy":           event.KillsVsFullBuy,
 				"grenade_value_lost_on_death": event.GrenadeValueLostOnDeath,
+
+				// Impact Rating Fields
+				"total_impact":        event.TotalImpact,
+				"average_impact":      event.AverageImpact,
+				"round_swing_percent": event.RoundSwingPercent,
+				"impact_percentage":   event.ImpactPercentage,
 			}
 
 			// Handle optional fields
@@ -524,6 +553,14 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 			parseError = parseError.WithContext("url", url)
 			bs.progressManager.ReportParseError(parseError)
 			return parseError
+		}
+
+		// Log impact values for first batch
+		if i == 0 && len(batch) > 0 {
+			bs.logger.WithFields(logrus.Fields{
+				"sample_player_round": batch[0],
+				"total_events":        len(batch),
+			}).Info("Sending player round events with impact values")
 		}
 
 		bs.logger.WithFields(logrus.Fields{
@@ -622,6 +659,12 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 				"matchmaking_rank":              event.MatchmakingRank,
 				"rank_type":                     event.RankType,
 				"rank_value":                    event.RankValue,
+
+				// Impact Rating Fields
+				"total_impact":        event.TotalImpact,
+				"average_impact":      event.AverageImpact,
+				"match_swing_percent": event.MatchSwingPercent,
+				"impact_percentage":   event.ImpactPercentage,
 			}
 
 			flatEvents[j] = flatEvent

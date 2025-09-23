@@ -69,6 +69,14 @@ type GunfightEvent struct {
 	FlashAssisterSteamID *string `json:"flash_assister_steam_id,omitempty"`
 	DamageAssistSteamID  *string `json:"damage_assist_steam_id,omitempty"`
 	RoundScenario        string  `json:"round_scenario"` // e.g., "5v4" (killer's team vs victim's team)
+
+	// Impact Rating Fields
+	Player1TeamStrength float64 `json:"player_1_team_strength"`
+	Player2TeamStrength float64 `json:"player_2_team_strength"`
+	Player1Impact       float64 `json:"player_1_impact"`
+	Player2Impact       float64 `json:"player_2_impact"`
+	AssisterImpact      float64 `json:"assister_impact"`
+	FlashAssisterImpact float64 `json:"flash_assister_impact"`
 }
 
 type AffectedPlayer struct {
@@ -119,6 +127,13 @@ type RoundEvent struct {
 	EventType     string  `json:"event_type"`
 	Winner        *string `json:"winner,omitempty"`
 	Duration      *int    `json:"duration,omitempty"`
+
+	// Impact Rating Fields
+	TotalImpact       float64 `json:"total_impact"`
+	TotalGunfights    int     `json:"total_gunfights"`
+	AverageImpact     float64 `json:"average_impact"`
+	RoundSwingPercent float64 `json:"round_swing_percent"`
+	ImpactPercentage  float64 `json:"impact_percentage"`
 }
 
 type DamageEvent struct {
@@ -196,6 +211,12 @@ type PlayerRoundEvent struct {
 	KillsVsForceBuy         int  `json:"kills_vs_force_buy"`
 	KillsVsFullBuy          int  `json:"kills_vs_full_buy"`
 	GrenadeValueLostOnDeath int  `json:"grenade_value_lost_on_death"`
+
+	// Impact Rating Fields
+	TotalImpact       float64 `json:"total_impact"`
+	AverageImpact     float64 `json:"average_impact"`
+	RoundSwingPercent float64 `json:"round_swing_percent"`
+	ImpactPercentage  float64 `json:"impact_percentage"`
 }
 
 // Player Match Event
@@ -257,6 +278,12 @@ type PlayerMatchEvent struct {
 	MatchmakingRank *string `json:"matchmaking_rank"`
 	RankType        *string `json:"rank_type"`
 	RankValue       *int    `json:"rank_value"`
+
+	// Impact Rating Fields
+	TotalImpact       float64 `json:"total_impact"`
+	AverageImpact     float64 `json:"average_impact"`
+	MatchSwingPercent float64 `json:"match_swing_percent"`
+	ImpactPercentage  float64 `json:"impact_percentage"`
 }
 
 // GrenadeThrowInfo stores information about a grenade throw
@@ -497,6 +524,37 @@ const (
 	EcoThreshold      = 2000 // Below or equal to this value = eco round
 	ForceBuyThreshold = 4000 // Between eco and this value = force buy round
 	// Above ForceBuyThreshold = full buy round
+)
+
+// Impact Rating constants
+const (
+	// Team strength calculation weights
+	ManCountWeight  = 0.6  // Weight for man count in team strength
+	EquipmentWeight = 0.4  // Weight for equipment value in team strength
+	BasePlayerValue = 2000 // Base value per alive player
+
+	// Strength differential multiplier
+	StrengthDiffMultiplier = 0.5 // Multiplier for strength differential impact
+
+	// Context multipliers
+	OpeningDuelMultiplier  = 1.5 // First gunfight bonus
+	WonClutchMultiplier    = 2.0 // Won clutch bonus
+	FailedClutchMultiplier = 0.5 // Failed clutch penalty
+	StandardMultiplier     = 1.0 // Standard action
+
+	// Assist impact weights
+	AssistWeight      = 0.4 // Assister gets 40% of attacker's impact
+	FlashAssistWeight = 0.2 // Flash assister gets 20% of attacker's impact
+
+	// Base action impact values
+	BaseKillImpact        = 100.0  // Base impact for a kill
+	BaseDeathImpact       = -100.0 // Base impact for a death
+	BaseAssistImpact      = 50.0   // Base impact for an assist
+	BaseFlashAssistImpact = 25.0   // Base impact for a flash assist
+
+	// Impact percentage calculation
+	MaxPracticalImpact        = 100.0  // Practical maximum impact for percentage calculation
+	MaxPossibleImpactPerRound = 1000.0 // Maximum possible impact per round for swing percentage
 )
 
 // Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants
