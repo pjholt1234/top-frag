@@ -555,6 +555,11 @@ const (
 	// Impact percentage calculation
 	MaxPracticalImpact        = 100.0  // Practical maximum impact for percentage calculation
 	MaxPossibleImpactPerRound = 1000.0 // Maximum possible impact per round for swing percentage
+
+	// Round swing percentage calculation
+	TeamMaxImpactPerRound   = 500.0 // Theoretical maximum team impact per round
+	RoundWinOutcomeBonus    = 0.3   // Bonus multiplier for round wins
+	RoundLossOutcomePenalty = -0.1  // Penalty multiplier for round losses
 )
 
 // Equipment value mapping for CS:GO/CS2 weapons using EquipmentType constants

@@ -39,9 +39,17 @@ The Impact Rating System quantifies a player's influence on round outcomes throu
 - **Purpose**: Provides intuitive percentage scale for player comparison
 
 #### Round Swing Percentage
-- **Definition**: Player's impact as percentage of maximum possible round impact
-- **Calculation**: `(Total Impact / 1000.0) * 100.0`
-- **Range**: 0-100% (using theoretical maximum of 1000 points per round)
+- **Definition**: Player's influence on round outcomes with outcome-based weighting
+- **Calculation**: `(Player Impact / 500.0) × (1 + Outcome Bonus) × 100.0`
+- **Range**: Variable (can be negative for negative impact)
+- **Outcome Bonus**: +0.3 for round wins, -0.1 for round losses
+- **Purpose**: Measures actual influence on round outcomes, rewarding impactful plays in winning rounds
+
+**Examples:**
+- **Round Win**: 200 impact → `(200/500) × (1 + 0.3) × 100 = 52%`
+- **Round Loss**: 200 impact → `(200/500) × (1 - 0.1) × 100 = 36%`
+- **Round Win (Negative)**: -100 impact → `(-100/500) × (1 + 0.3) × 100 = -26%`
+- **Round Loss (Negative)**: -100 impact → `(-100/500) × (1 - 0.1) × 100 = -18%`
 
 ### Impact Calculation Algorithm
 
@@ -108,9 +116,14 @@ BaseDeathImpact       = -100.0 // Base impact for a death
 BaseAssistImpact      = 50.0   // Base impact for an assist
 BaseFlashAssistImpact = 25.0   // Base impact for a flash assist
 
-// Impact percentage calculation
-MaxPracticalImpact        = 100.0  // Practical maximum impact for percentage calculation
-MaxPossibleImpactPerRound = 1000.0 // Maximum possible impact per round for swing percentage
+	// Impact percentage calculation
+	MaxPracticalImpact        = 100.0  // Practical maximum impact for percentage calculation
+	MaxPossibleImpactPerRound = 1000.0 // Maximum possible impact per round for swing percentage
+	
+	// Round swing percentage calculation
+	TeamMaxImpactPerRound     = 500.0  // Theoretical maximum team impact per round
+	RoundWinOutcomeBonus      = 0.3   // Bonus multiplier for round wins
+	RoundLossOutcomePenalty   = -0.1  // Penalty multiplier for round losses
 ```
 
 ---

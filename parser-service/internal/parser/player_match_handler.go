@@ -202,9 +202,22 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		playerMatchEvent.AverageImpact = playerMatchEvent.TotalImpact / float64(numberOfRoundsParticipated)
 	}
 
-	// Calculate match swing percentage
-	maxPossibleImpact := float64(numberOfRoundsParticipated) * types.MaxPossibleImpactPerRound
-	playerMatchEvent.MatchSwingPercent = (playerMatchEvent.TotalImpact / maxPossibleImpact) * 100.0
+	// Calculate match swing percentage using new formula
+	// Average the round swing percentages instead of using total impact
+	totalRoundSwingPercentage := 0.0
+	roundsWithSwing := 0
+	for _, playerRound := range mh.processor.matchState.PlayerRoundEvents {
+		if playerRound.PlayerSteamID == playerSteamID {
+			totalRoundSwingPercentage += playerRound.RoundSwingPercent
+			roundsWithSwing++
+		}
+	}
+
+	if roundsWithSwing > 0 {
+		playerMatchEvent.MatchSwingPercent = totalRoundSwingPercentage / float64(roundsWithSwing)
+	} else {
+		playerMatchEvent.MatchSwingPercent = 0.0
+	}
 
 	// Calculate match impact percentage by averaging round impact percentages
 	totalRoundImpactPercentage := 0.0

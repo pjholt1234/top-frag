@@ -1004,8 +1004,8 @@ func (rh *RoundHandler) aggregateImpactMetrics(event *types.PlayerRoundEvent, pl
 		event.AverageImpact = event.TotalImpact / float64(gunfightCount)
 	}
 
-	// Calculate round swing percentage
-	event.RoundSwingPercent = (event.TotalImpact / types.MaxPossibleImpactPerRound) * 100.0
+	// Calculate round swing percentage with outcome bonus
+	event.RoundSwingPercent = rh.calculateRoundSwingPercent(event.TotalImpact, roundNumber, playerSteamID)
 
 	// Calculate impact percentage using practical maximum
 	event.ImpactPercentage = (event.TotalImpact / types.MaxPracticalImpact) * 100.0
@@ -1031,9 +1031,36 @@ func (rh *RoundHandler) calculateRoundEventImpact(roundEvent *types.RoundEvent, 
 	roundEvent.TotalGunfights = totalGunfights
 	roundEvent.AverageImpact = totalImpact / float64(totalGunfights)
 
-	// Calculate round swing percentage
-	roundEvent.RoundSwingPercent = (totalImpact / types.MaxPossibleImpactPerRound) * 100.0
+	// Calculate round swing percentage with outcome bonus (use 0 for team-level calculation)
+	roundEvent.RoundSwingPercent = rh.calculateRoundSwingPercent(totalImpact, roundNumber, "")
 
 	// Calculate impact percentage using practical maximum
 	roundEvent.ImpactPercentage = (totalImpact / types.MaxPracticalImpact) * 100.0
+}
+
+// calculateRoundSwingPercent calculates round swing percentage with outcome bonus
+func (rh *RoundHandler) calculateRoundSwingPercent(playerImpact float64, roundNumber int, playerSteamID string) float64 {
+	// Find the round outcome
+	var roundWinner *string
+	for _, roundEvent := range rh.processor.matchState.RoundEvents {
+		if roundEvent.RoundNumber == roundNumber && roundEvent.EventType == "end" {
+			roundWinner = roundEvent.Winner
+			break
+		}
+	}
+
+	// Determine outcome bonus
+	outcomeBonus := 0.0
+	if roundWinner != nil && playerSteamID != "" {
+		// Get player's team to determine if they won
+		playerTeam := rh.processor.getAssignedTeam(playerSteamID)
+		if playerTeam == *roundWinner {
+			outcomeBonus = types.RoundWinOutcomeBonus
+		} else {
+			outcomeBonus = types.RoundLossOutcomePenalty
+		}
+	}
+
+	// Calculate round swing percentage: (Player Impact / Team Max) × (1 + Outcome Bonus) × 100
+	return (playerImpact / types.TeamMaxImpactPerRound) * (1 + outcomeBonus) * 100.0
 }

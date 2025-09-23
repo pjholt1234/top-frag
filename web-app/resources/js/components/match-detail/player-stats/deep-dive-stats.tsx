@@ -67,13 +67,13 @@ const getImpactPercentageColor = (impactPercentage: number) => {
     return QUALITY_COLORS.poor.text;
   }
 
-  if (impactPercentage >= 75) {
+  if (impactPercentage >= 60) {
     return QUALITY_COLORS.excellent.text;
   }
-  if (impactPercentage >= 50) {
+  if (impactPercentage >= 40) {
     return QUALITY_COLORS.good.text;
   }
-  if (impactPercentage >= 25) {
+  if (impactPercentage >= 15) {
     return QUALITY_COLORS.fair.text;
   }
 
