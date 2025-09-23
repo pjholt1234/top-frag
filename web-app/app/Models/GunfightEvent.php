@@ -47,6 +47,14 @@ class GunfightEvent extends Model
         'flash_assister_steam_id',
         'damage_assist_steam_id',
         'round_scenario',
+
+        // Impact Rating Fields
+        'player_1_team_strength',
+        'player_2_team_strength',
+        'player_1_impact',
+        'player_2_impact',
+        'assister_impact',
+        'flash_assister_impact',
     ];
 
     protected $casts = [
@@ -76,6 +84,14 @@ class GunfightEvent extends Model
         'damage_dealt' => 'integer',
         'is_first_kill' => 'boolean',
         'round_scenario' => 'string',
+
+        // Impact Rating Fields
+        'player_1_team_strength' => 'decimal:2',
+        'player_2_team_strength' => 'decimal:2',
+        'player_1_impact' => 'decimal:2',
+        'player_2_impact' => 'decimal:2',
+        'assister_impact' => 'decimal:2',
+        'flash_assister_impact' => 'decimal:2',
     ];
 
     // Relationships

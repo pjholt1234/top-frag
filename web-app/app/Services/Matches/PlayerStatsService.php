@@ -78,8 +78,10 @@ class PlayerStatsService
     private function getDeepDiveStats(PlayerMatchEvent $playerMatchEvent): array
     {
         return [
-            'round_swing' => 0,
-            'impact' => 0,
+            'round_swing' => $playerMatchEvent->total_impact,
+            'impact' => $playerMatchEvent->average_impact,
+            'impact_percentage' => $playerMatchEvent->impact_percentage,
+            'round_swing_percent' => $playerMatchEvent->match_swing_percent,
             'opening_duels' => [
                 'first_kills' => $playerMatchEvent->first_kills,
                 'first_deaths' => $playerMatchEvent->first_deaths,

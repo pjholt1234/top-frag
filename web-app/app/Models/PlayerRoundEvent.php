@@ -69,6 +69,12 @@ class PlayerRoundEvent extends Model
         'kills_vs_force_buy',
         'kills_vs_full_buy',
         'grenade_value_lost_on_death',
+
+        // Impact Rating Fields
+        'total_impact',
+        'average_impact',
+        'round_swing_percent',
+        'impact_percentage',
     ];
 
     protected $casts = [
@@ -82,6 +88,12 @@ class PlayerRoundEvent extends Model
         'is_eco' => 'boolean',
         'is_force_buy' => 'boolean',
         'is_full_buy' => 'boolean',
+
+        // Impact Rating Fields
+        'total_impact' => 'decimal:2',
+        'average_impact' => 'decimal:2',
+        'round_swing_percent' => 'decimal:2',
+        'impact_percentage' => 'decimal:2',
     ];
 
     public function match(): BelongsTo

@@ -58,10 +58,22 @@ class PlayerMatchEvent extends Model
         'matchmaking_rank',
         'rank_type',
         'rank_value',
+
+        // Impact Rating Fields
+        'total_impact',
+        'average_impact',
+        'match_swing_percent',
+        'impact_percentage',
     ];
 
     protected $casts = [
         'rank_value' => 'integer',
+
+        // Impact Rating Fields
+        'total_impact' => 'decimal:2',
+        'average_impact' => 'decimal:2',
+        'match_swing_percent' => 'decimal:2',
+        'impact_percentage' => 'decimal:2',
     ];
 
     public function match(): BelongsTo

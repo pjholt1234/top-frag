@@ -4,6 +4,7 @@ import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { PlayerStatsFilters } from './player-stats/player-stats-filters';
 import { ComplexionStats } from './player-stats/complexion-stats';
 import { DeepDiveStats } from './player-stats/deep-dive-stats';
+import { Info } from 'lucide-react';
 
 // Import chart components
 import { TradeStatsChart } from './player-stats/trade-stats-chart';
@@ -61,6 +62,8 @@ interface OpeningDuelsData {
 interface DeepDiveData {
   round_swing: number;
   impact: number;
+  impact_percentage: number;
+  round_swing_percent: number;
   opening_duels: OpeningDuelsData;
 }
 
@@ -222,11 +225,50 @@ export function MatchPlayerStats({
           />
         </div>
 
-        <ComplexionStats complexion={data.player_complexion} />
+        {data.player_complexion && (
+          <ComplexionStats complexion={data.player_complexion} />
+        )}
 
         <Card>
-          <CardContent className="pt-6">
-            <CardTitle className="mb-4">Duels Analysis</CardTitle>
+          <CardContent className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle className="mb-0">Duels Analysis</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="text-sm">
+                    <div className="font-semibold text-white mb-2">
+                      Duels Analysis
+                    </div>
+                    <div className="text-gray-300 mb-3">
+                      Analyses your trading performance and duel outcomes. Shows
+                      how well you capitalise on teammate deaths and trade
+                      potential.
+                    </div>
+                    <div className="text-xs text-gray-400 mb-3">
+                      <div className="font-medium mb-1">Key Metrics:</div>
+                      <div className="space-y-1">
+                        <div>
+                          <span className="text-green-400">Trades:</span>{' '}
+                          Trading a teammates death
+                        </div>
+                        <div>
+                          <span className="text-red-400">Traded Deaths:</span>{' '}
+                          Deaths that were avenged
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <div className="font-medium mb-1">Interpretation:</div>
+                      <div>
+                        Higher trade ratios = better at capitalising on teammate
+                        deaths and setting up your team for a trade.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {data.trades ? (
               <TradeStatsChart tradeData={data.trades} />
             ) : (
@@ -238,8 +280,29 @@ export function MatchPlayerStats({
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <CardTitle className="mb-4">Clutch Performance</CardTitle>
+          <CardContent className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle className="mb-0">Clutch Performance</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                  <div className="text-sm">
+                    <div className="font-semibold text-white mb-2">
+                      Clutch Performance
+                    </div>
+                    <div className="text-gray-300 mb-3">
+                      Shows your performance in clutch situations (1vX
+                      Scenarios). Higher percentages indicate better clutch
+                      ability.
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <div className="font-medium mb-1">Interpretation:</div>
+                      <div>Higher win percentages = better clutch player.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {data.clutch_stats ? (
               <ClutchChart clutchData={data.clutch_stats} />
             ) : (

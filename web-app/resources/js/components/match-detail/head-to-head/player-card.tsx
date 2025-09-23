@@ -14,6 +14,10 @@ import { RoleStats } from './role-stats';
 interface Player {
   steam_id: string;
   name: string;
+  steam_profile?: {
+    avatar_full: string;
+    avatar_medium: string;
+  };
 }
 
 interface PlayerComplexion {
@@ -31,6 +35,9 @@ interface BasicStatsData {
   headshots: number;
   first_kills: number;
   first_deaths: number;
+  total_impact: number;
+  impact_percentage: number;
+  match_swing_percent: number;
 }
 
 interface RoleStatValue {

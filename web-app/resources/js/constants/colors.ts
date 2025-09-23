@@ -72,18 +72,18 @@ export const QUALITY_COLORS: ColorScheme = {
   },
   fair: {
     hex: '#fb923c', // orange-400
-    text: 'text-orange-600',
-    bg: 'bg-orange-600',
+    text: 'text-orange-500',
+    bg: 'bg-orange-500',
   },
   good: {
-    hex: '#86efac', // green-300
-    text: 'text-green-300',
-    bg: 'bg-green-400',
+    hex: '#22c55e', // green-500
+    text: 'text-green-500',
+    bg: 'bg-green-500',
   },
   excellent: {
-    hex: '#4ade80', // green-400
-    text: 'text-green-400',
-    bg: 'bg-green-400',
+    hex: '#16a34a', // green-600
+    text: 'text-green-600',
+    bg: 'bg-green-600',
   },
 };
 

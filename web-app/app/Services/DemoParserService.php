@@ -18,6 +18,7 @@ use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRank;
 use App\Models\PlayerRoundEvent;
+use App\Models\RoundEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -149,6 +150,7 @@ class DemoParserService
                 MatchEventType::GRENADE->value => $this->createGrenadeEvent($match, $eventData),
                 MatchEventType::PLAYER_ROUND->value => $this->createPlayerRoundEvent($match, $eventData),
                 MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
+                MatchEventType::ROUND->value => $this->createRoundEvent($match, $eventData),
                 MatchEventType::MATCH->value => $this->updateMatchData($match, $eventData),
                 default => Log::warning('Match event not found', [
                     'event_name' => $eventName,
@@ -302,6 +304,17 @@ class DemoParserService
             return;
         }
 
+        // Log impact values for first few gunfight events
+        static $gunfightCount = 0;
+        if ($gunfightCount < 5 && count($gunFightEvents) > 0) {
+            \Log::info('Received gunfight events with impact values', [
+                'gunfight_count' => $gunfightCount,
+                'total_events' => count($gunFightEvents),
+                'sample_event' => $gunFightEvents[0],
+            ]);
+            $gunfightCount++;
+        }
+
         // Process in chunks to avoid memory issues with large datasets
         $chunks = array_chunk($gunFightEvents, 1000);
 
@@ -345,6 +358,15 @@ class DemoParserService
                     'flash_assister_steam_id' => $gunFightEvent['flash_assister_steam_id'] ?? null,
                     'damage_assist_steam_id' => $gunFightEvent['damage_assist_steam_id'] ?? null,
                     'round_scenario' => $gunFightEvent['round_scenario'] ?? null,
+
+                    // Impact Rating Fields
+                    'player_1_team_strength' => $gunFightEvent['player_1_team_strength'] ?? 0,
+                    'player_2_team_strength' => $gunFightEvent['player_2_team_strength'] ?? 0,
+                    'player_1_impact' => $gunFightEvent['player_1_impact'] ?? 0,
+                    'player_2_impact' => $gunFightEvent['player_2_impact'] ?? 0,
+                    'assister_impact' => $gunFightEvent['assister_impact'] ?? 0,
+                    'flash_assister_impact' => $gunFightEvent['flash_assister_impact'] ?? 0,
+
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -410,6 +432,17 @@ class DemoParserService
     {
         if (empty($playerRoundEvents)) {
             return;
+        }
+
+        // Log impact values for first few player round events
+        static $playerRoundCount = 0;
+        if ($playerRoundCount < 5 && count($playerRoundEvents) > 0) {
+            \Log::info('Received player round events with impact values', [
+                'player_round_count' => $playerRoundCount,
+                'total_events' => count($playerRoundEvents),
+                'sample_event' => $playerRoundEvents[0],
+            ]);
+            $playerRoundCount++;
         }
 
         // Process in chunks to avoid memory issues with large datasets
@@ -480,6 +513,12 @@ class DemoParserService
                     'kills_vs_full_buy' => $playerRoundEvent['kills_vs_full_buy'] ?? 0,
                     'grenade_value_lost_on_death' => $playerRoundEvent['grenade_value_lost_on_death'] ?? 0,
 
+                    // Impact Rating Fields
+                    'total_impact' => $playerRoundEvent['total_impact'] ?? 0,
+                    'average_impact' => $playerRoundEvent['average_impact'] ?? 0,
+                    'round_swing_percent' => $playerRoundEvent['round_swing_percent'] ?? 0,
+                    'impact_percentage' => $playerRoundEvent['impact_percentage'] ?? 0,
+
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -494,6 +533,17 @@ class DemoParserService
     {
         if (empty($playerMatchEvents)) {
             return;
+        }
+
+        // Log impact values for first few player match events
+        static $playerMatchCount = 0;
+        if ($playerMatchCount < 5 && count($playerMatchEvents) > 0) {
+            \Log::info('Received player match events with impact values', [
+                'player_match_count' => $playerMatchCount,
+                'total_events' => count($playerMatchEvents),
+                'sample_event' => $playerMatchEvents[0],
+            ]);
+            $playerMatchCount++;
         }
 
         $records = [];
@@ -548,6 +598,13 @@ class DemoParserService
                 'matchmaking_rank' => $playerMatchEvent['matchmaking_rank'] ?? null,
                 'rank_type' => $playerMatchEvent['rank_type'] ?? null,
                 'rank_value' => $playerMatchEvent['rank_value'] ?? null,
+
+                // Impact Rating Fields
+                'total_impact' => $playerMatchEvent['total_impact'] ?? 0,
+                'average_impact' => $playerMatchEvent['average_impact'] ?? 0,
+                'match_swing_percent' => $playerMatchEvent['match_swing_percent'] ?? 0,
+                'impact_percentage' => $playerMatchEvent['impact_percentage'] ?? 0,
+
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -619,6 +676,45 @@ class DemoParserService
                 'rank_value' => $playerMatchEvent['rank_value'] ?? 0,
                 'map' => $match->map,
             ]);
+        }
+    }
+
+    private function createRoundEvent(GameMatch $match, array $roundEvents): void
+    {
+        if (empty($roundEvents)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues with large datasets
+        $chunks = array_chunk($roundEvents, 1000);
+
+        foreach ($chunks as $chunk) {
+            $records = [];
+            $now = now();
+
+            foreach ($chunk as $roundEvent) {
+                $records[] = [
+                    'match_id' => $match->id,
+                    'round_number' => $roundEvent['round_number'],
+                    'tick_timestamp' => $roundEvent['tick_timestamp'],
+                    'event_type' => $roundEvent['event_type'],
+                    'winner' => $roundEvent['winner'] ?? null,
+                    'duration' => $roundEvent['duration'] ?? null,
+
+                    // Impact Rating Fields
+                    'total_impact' => $roundEvent['total_impact'] ?? 0,
+                    'total_gunfights' => $roundEvent['total_gunfights'] ?? 0,
+                    'average_impact' => $roundEvent['average_impact'] ?? 0,
+                    'round_swing_percent' => $roundEvent['round_swing_percent'] ?? 0,
+                    'impact_percentage' => $roundEvent['impact_percentage'] ?? 0,
+
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            // Use bulk insert for better performance
+            RoundEvent::insert($records);
         }
     }
 

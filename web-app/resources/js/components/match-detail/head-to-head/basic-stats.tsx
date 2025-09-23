@@ -4,6 +4,9 @@ interface BasicStatsData {
   adr: number;
   assists: number;
   headshots: number;
+  total_impact: number;
+  impact_percentage: number;
+  match_swing_percent: number;
 }
 
 interface BasicStatsProps {
@@ -80,6 +83,30 @@ export function BasicStats({ stats, comparisonStats }: BasicStatsProps) {
       comparisonValue: comparisonStats?.headshots,
       higherIsBetter: true,
     },
+    {
+      label: 'Total Impact',
+      value: Number(stats.total_impact || 0).toFixed(1),
+      comparisonValue: comparisonStats
+        ? Number(comparisonStats.total_impact || 0).toFixed(1)
+        : undefined,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Impact %',
+      value: Number(stats.impact_percentage || 0).toFixed(1) + '%',
+      comparisonValue: comparisonStats
+        ? Number(comparisonStats.impact_percentage || 0).toFixed(1) + '%'
+        : undefined,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Round Swing %',
+      value: Number(stats.match_swing_percent || 0).toFixed(1) + '%',
+      comparisonValue: comparisonStats
+        ? Number(comparisonStats.match_swing_percent || 0).toFixed(1) + '%'
+        : undefined,
+      higherIsBetter: true,
+    },
   ];
 
   return (
@@ -90,7 +117,15 @@ export function BasicStats({ stats, comparisonStats }: BasicStatsProps) {
           <div key={stat.label} className="flex justify-between items-center">
             <span className="text-sm text-gray-400">{stat.label}</span>
             <span
-              className={`font-medium ${getComparisonColor(stat.value, stat.comparisonValue, stat.higherIsBetter)}`}
+              className={`font-medium ${getComparisonColor(
+                typeof stat.value === 'string'
+                  ? parseFloat(stat.value)
+                  : stat.value,
+                typeof stat.comparisonValue === 'string'
+                  ? parseFloat(stat.comparisonValue)
+                  : stat.comparisonValue,
+                stat.higherIsBetter
+              )}`}
             >
               {stat.value}
             </span>

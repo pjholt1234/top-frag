@@ -31,13 +31,23 @@ interface BasicStats {
   adr: number;
   assists: number;
   headshots: number;
+  first_kills: number;
+  first_deaths: number;
+  total_impact: number;
+  impact_percentage: number;
+  match_swing_percent: number;
+}
+
+interface RoleStatValue {
+  value: number;
+  higherIsBetter: boolean;
 }
 
 interface RoleStats {
-  opener: Record<string, string | number>;
-  closer: Record<string, string | number>;
-  support: Record<string, string | number>;
-  fragger: Record<string, string | number>;
+  opener: Record<string, RoleStatValue>;
+  closer: Record<string, RoleStatValue>;
+  support: Record<string, RoleStatValue>;
+  fragger: Record<string, RoleStatValue>;
 }
 
 interface RankData {
@@ -112,20 +122,22 @@ export function HeadToHead({ matchId }: HeadToHeadProps) {
         });
         const result = response.data;
 
-        setData(result);
+        const headToHeadData = result as HeadToHeadData;
+        setData(headToHeadData);
 
         // Set default player selections and fetch their stats
-        if (result.players && result.players.length > 0) {
+        if (headToHeadData.players && headToHeadData.players.length > 0) {
           // If current user participated, select them as player 1
-          const currentUserPlayer = result.players.find(
-            (player: Player) => player.steam_id === result.current_user_steam_id
+          const currentUserPlayer = headToHeadData.players.find(
+            (player: Player) =>
+              player.steam_id === headToHeadData.current_user_steam_id
           );
 
           let player1Id: string;
           if (currentUserPlayer) {
             player1Id = currentUserPlayer.steam_id;
           } else {
-            player1Id = result.players[0].steam_id;
+            player1Id = headToHeadData.players[0].steam_id;
           }
 
           setSelectedPlayer1(player1Id);
@@ -134,8 +146,8 @@ export function HeadToHead({ matchId }: HeadToHeadProps) {
           await fetchPlayerStats(player1Id, 'player1');
 
           // Select second player if available
-          if (result.players.length > 1) {
-            const player2Id = result.players[1].steam_id;
+          if (headToHeadData.players.length > 1) {
+            const player2Id = headToHeadData.players[1].steam_id;
             setSelectedPlayer2(player2Id);
             // Fetch stats for player 2
             await fetchPlayerStats(player2Id, 'player2');

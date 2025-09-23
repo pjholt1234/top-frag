@@ -91,6 +91,9 @@ class HeadToHeadService
             'adr' => (float) $playerMatchEvent->adr,
             'assists' => (int) $playerMatchEvent->assists,
             'headshots' => (int) $playerMatchEvent->headshots,
+            'total_impact' => (float) $playerMatchEvent->total_impact,
+            'impact_percentage' => (float) $playerMatchEvent->impact_percentage,
+            'match_swing_percent' => (float) $playerMatchEvent->match_swing_percent,
         ];
     }
 
