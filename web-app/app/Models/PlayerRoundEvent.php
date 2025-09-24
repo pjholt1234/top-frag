@@ -100,4 +100,16 @@ class PlayerRoundEvent extends Model
     {
         return $this->belongsTo(GameMatch::class, 'match_id');
     }
+
+    /**
+     * Get the total number of grenades thrown in this round
+     */
+    public function getGrenadesThrownAttribute(): int
+    {
+        return $this->flashes_thrown +
+            $this->fire_grenades_thrown +
+            $this->smokes_thrown +
+            $this->hes_thrown +
+            $this->decoys_thrown;
+    }
 }

@@ -99,6 +99,9 @@ func (rh *RoundHandler) createPlayerRoundEvent(playerSteamID string, roundNumber
 	// Basic gun fight metrics
 	rh.aggregateGunfightMetrics(&playerRoundEvent, playerSteamID, roundNumber)
 
+	// Economy metrics (needed before grenade metrics for utility loss penalty)
+	rh.aggregateEconomyMetrics(&playerRoundEvent, playerSteamID, roundNumber)
+
 	// Grenade metrics
 	rh.aggregateGrenadeMetrics(&playerRoundEvent, playerSteamID, roundNumber)
 
@@ -110,9 +113,6 @@ func (rh *RoundHandler) createPlayerRoundEvent(playerSteamID string, roundNumber
 
 	// Time to Contact
 	rh.aggregateTimeToContact(&playerRoundEvent, playerSteamID, roundNumber)
-
-	// Economy metrics
-	rh.aggregateEconomyMetrics(&playerRoundEvent, playerSteamID, roundNumber)
 
 	// Calculate impact values by aggregating from gunfight events
 	rh.aggregateImpactMetrics(&playerRoundEvent, playerSteamID, roundNumber)
@@ -272,6 +272,52 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 
 	}
 
+	// New grenade effectiveness calculation
+	// Formula: (10 * grenades_thrown) + utility_management_score + (sum of grenade_effectiveness / total_grenades_with_effectiveness)
+
+	// Calculate grenade used bonus (10 points per grenade thrown)
+	grenadeUsedBonus := float64(flashesThrown+fireGrenadesThrown+hesThrown+smokesThrown+decoysThrown) * 10.0
+
+	// Calculate utility management score (0-20 points based on utility lost)
+	utilityManagementScore := 20.0
+	if event.GrenadeValueLostOnDeath > 0 {
+		// If they lose 1300 utility, they get 0 points
+		// If they lose 0 utility, they get 20 points
+		utilityLossPercentage := float64(event.GrenadeValueLostOnDeath) / 1300.0
+		if utilityLossPercentage > 1.0 {
+			utilityLossPercentage = 1.0 // Cap at 100%
+		}
+		utilityManagementScore = 20.0 * (1.0 - utilityLossPercentage)
+	}
+
+	// Calculate individual grenade effectiveness average
+	grenadeEffectivenessAverage := 0.0
+	if totalNumberOfMeasuredGrenades > 0 {
+		grenadeEffectivenessAverage = float64(totalEffectivenessRating) / float64(totalNumberOfMeasuredGrenades)
+	}
+
+	// Calculate final grenade effectiveness
+	finalGrenadeEffectiveness := int(math.Round(grenadeUsedBonus + utilityManagementScore + grenadeEffectivenessAverage))
+
+	// Cap the final score at 100
+	if finalGrenadeEffectiveness > 100 {
+		finalGrenadeEffectiveness = 100
+	}
+
+	// Debug logging for final grenade effectiveness calculation
+	rh.logger.WithFields(logrus.Fields{
+		"player_steam_id":                   playerSteamID,
+		"round_number":                      roundNumber,
+		"grenades_thrown":                   flashesThrown + fireGrenadesThrown + hesThrown + smokesThrown + decoysThrown,
+		"grenade_used_bonus":                grenadeUsedBonus,
+		"utility_management_score":          utilityManagementScore,
+		"total_effectiveness_rating":        totalEffectivenessRating,
+		"total_number_of_measured_grenades": totalNumberOfMeasuredGrenades,
+		"grenade_effectiveness_average":     grenadeEffectivenessAverage,
+		"final_grenade_effectiveness":       finalGrenadeEffectiveness,
+		"grenade_value_lost_on_death":       event.GrenadeValueLostOnDeath,
+	}).Info("Final grenade effectiveness calculated")
+
 	// Set the aggregated values
 	event.DamageDealt = damageDealt
 	event.FlashesThrown = flashesThrown
@@ -285,7 +331,7 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	event.EnemyPlayersAffected = enemyPlayersAffected
 	event.FlashesLeadingToKill = flashesLeadingToKill
 	event.FlashesLeadingToDeath = flashesLeadingToDeath
-	event.GrenadeEffectiveness = int(math.Round((float64(totalEffectivenessRating) / float64(totalNumberOfMeasuredGrenades))))
+	event.GrenadeEffectiveness = finalGrenadeEffectiveness
 }
 
 // aggregateTradeMetrics aggregates trade-related statistics from gunfight events
@@ -810,6 +856,7 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 	killsVsEco := 0
 	killsVsForceBuy := 0
 	killsVsFullBuy := 0
+	grenadeValueLostOnDeath := 0
 
 	// Analyze kills this player made and categorize victims by their equipment value
 	for _, gunfightEvent := range rh.processor.matchState.GunfightEvents {
@@ -838,14 +885,31 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 			} else {
 				killsVsFullBuy++
 			}
+		} else {
+			if gunfightEvent.Player1SteamID == playerSteamID {
+				// Player was killed by Player2, so Player2 gets the grenades
+				grenadeValueLostOnDeath = gunfightEvent.Player2GrenadeValue
+				rh.logger.WithFields(logrus.Fields{
+					"player_steam_id":             playerSteamID,
+					"round_number":                roundNumber,
+					"killer_steam_id":             gunfightEvent.Player2SteamID,
+					"killer_grenade_value":        gunfightEvent.Player2GrenadeValue,
+					"grenade_value_lost_on_death": grenadeValueLostOnDeath,
+				}).Info("Player died - grenade value lost calculated")
+			} else if gunfightEvent.Player2SteamID == playerSteamID {
+				// Player was killed by Player1, so Player1 gets the grenades
+				grenadeValueLostOnDeath = gunfightEvent.Player1GrenadeValue
+				rh.logger.WithFields(logrus.Fields{
+					"player_steam_id":             playerSteamID,
+					"round_number":                roundNumber,
+					"killer_steam_id":             gunfightEvent.Player1SteamID,
+					"killer_grenade_value":        gunfightEvent.Player1GrenadeValue,
+					"grenade_value_lost_on_death": grenadeValueLostOnDeath,
+				}).Info("Player died - grenade value lost calculated")
+			} else {
+				continue
+			}
 		}
-	}
-
-	// Calculate grenade value lost on death
-	grenadeValueLostOnDeath := 0
-	if event.Died {
-		// TODO: Need to track grenades in inventory at time of death
-		grenadeValueLostOnDeath = rh.estimateGrenadeValueLostOnDeath()
 	}
 
 	// Set economy values
@@ -856,6 +920,13 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 	event.KillsVsForceBuy = killsVsForceBuy
 	event.KillsVsFullBuy = killsVsFullBuy
 	event.GrenadeValueLostOnDeath = grenadeValueLostOnDeath
+
+	// Debug logging for final grenade value lost on death
+	rh.logger.WithFields(logrus.Fields{
+		"player_steam_id":                   playerSteamID,
+		"round_number":                      roundNumber,
+		"final_grenade_value_lost_on_death": grenadeValueLostOnDeath,
+	}).Info("Final grenade value lost on death set")
 }
 
 // getPlayerEquipmentValueInRound gets the player's equipment value for this round
@@ -874,12 +945,6 @@ func (rh *RoundHandler) getPlayerEquipmentValueInRound(playerSteamID string, rou
 	}
 
 	return 0 // Default if no gunfight events found
-}
-
-// estimateGrenadeValueLostOnDeath calculates the value of grenades lost when player died
-func (rh *RoundHandler) estimateGrenadeValueLostOnDeath() int {
-	//todo
-	return 0
 }
 
 // calculateRoundImpact calculates impact values for gunfight events in a specific round

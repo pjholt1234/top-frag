@@ -104,32 +104,34 @@ func (gh *GunfightHandler) createGunfightEvent(e events.Kill, isFirstKill bool) 
 	player2SteamID := types.SteamIDToString(e.Victim.SteamID64)
 
 	gunfightEvent := types.GunfightEvent{
-		RoundNumber:       gh.processor.matchState.CurrentRound,
-		RoundTime:         roundTime,
-		TickTimestamp:     gh.processor.currentTick,
-		Player1SteamID:    player1SteamID,
-		Player2SteamID:    player2SteamID,
-		Player1Side:       gh.processor.getPlayerCurrentSide(player1SteamID),
-		Player2Side:       gh.processor.getPlayerCurrentSide(player2SteamID),
-		Player1HPStart:    gh.getPlayerHP(e.Killer),
-		Player2HPStart:    gh.getPlayerHP(e.Victim),
-		Player1Armor:      gh.getPlayerArmor(e.Killer),
-		Player2Armor:      gh.getPlayerArmor(e.Victim),
-		Player1Flashed:    gh.getPlayerFlashed(e.Killer),
-		Player2Flashed:    gh.getPlayerFlashed(e.Victim),
-		Player1Weapon:     gh.getPlayerWeapon(e.Killer),
-		Player2Weapon:     gh.getPlayerWeapon(e.Victim),
-		Player1EquipValue: gh.getPlayerEquipmentValue(e.Killer),
-		Player2EquipValue: gh.getPlayerEquipmentValue(e.Victim),
-		Player1Position:   player1Pos,
-		Player2Position:   player2Pos,
-		Distance:          distance,
-		Headshot:          e.IsHeadshot,
-		Wallbang:          e.PenetratedObjects > 0,
-		PenetratedObjects: e.PenetratedObjects,
-		VictorSteamID:     nil,
-		DamageDealt:       0,
-		IsFirstKill:       isFirstKill,
+		RoundNumber:         gh.processor.matchState.CurrentRound,
+		RoundTime:           roundTime,
+		TickTimestamp:       gh.processor.currentTick,
+		Player1SteamID:      player1SteamID,
+		Player2SteamID:      player2SteamID,
+		Player1Side:         gh.processor.getPlayerCurrentSide(player1SteamID),
+		Player2Side:         gh.processor.getPlayerCurrentSide(player2SteamID),
+		Player1HPStart:      gh.getPlayerHP(e.Killer),
+		Player2HPStart:      gh.getPlayerHP(e.Victim),
+		Player1Armor:        gh.getPlayerArmor(e.Killer),
+		Player2Armor:        gh.getPlayerArmor(e.Victim),
+		Player1Flashed:      gh.getPlayerFlashed(e.Killer),
+		Player2Flashed:      gh.getPlayerFlashed(e.Victim),
+		Player1Weapon:       gh.getPlayerWeapon(e.Killer),
+		Player2Weapon:       gh.getPlayerWeapon(e.Victim),
+		Player1EquipValue:   gh.getPlayerEquipmentValue(e.Killer),
+		Player2EquipValue:   gh.getPlayerEquipmentValue(e.Victim),
+		Player1GrenadeValue: gh.getPlayerGrenadeValue(e.Killer),
+		Player2GrenadeValue: gh.getPlayerGrenadeValue(e.Victim),
+		Player1Position:     player1Pos,
+		Player2Position:     player2Pos,
+		Distance:            distance,
+		Headshot:            e.IsHeadshot,
+		Wallbang:            e.PenetratedObjects > 0,
+		PenetratedObjects:   e.PenetratedObjects,
+		VictorSteamID:       nil,
+		DamageDealt:         0,
+		IsFirstKill:         isFirstKill,
 	}
 
 	gunfightEvent.VictorSteamID = &player1SteamID
@@ -196,6 +198,32 @@ func (gh *GunfightHandler) getPlayerEquipmentValue(player *common.Player) int {
 		}
 	}
 
+	return equipmentValue
+}
+
+func (gh *GunfightHandler) getPlayerGrenadeValue(player *common.Player) int {
+	if player == nil {
+		return 0
+	}
+
+	equipmentValue := 0
+
+	// 501: 50,  // EqDecoy
+	// 502: 400, // EqMolotov
+	// 503: 500, // EqIncendiary
+	// 504: 200, // EqFlash
+	// 505: 300, // EqSmoke
+	// 506: 300, // EqHE
+
+	for _, weapon := range player.Inventory {
+		if weapon != nil {
+			weaponType := int(weapon.Type)
+			// Check if weapon is NOT a grenade
+			if types.GrenadesEquipmentIDs[weaponType] {
+				equipmentValue += types.GetEquipmentValue(weaponType)
+			}
+		}
+	}
 	return equipmentValue
 }
 

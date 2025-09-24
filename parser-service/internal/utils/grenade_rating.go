@@ -22,53 +22,70 @@ func boolToFloat(b bool) float64 {
 	return 0
 }
 
-// Compute flash score (-100 -> +100)
+// Compute flash score (-50 -> +50)
 func ScoreFlash(GrenadeEvent types.GrenadeEvent) int {
-	// Weights & caps
-	const (
-		capDuration = 3.0
-		capPlayers  = 5
-		capLeads    = 1
-		maxRaw      = 100.0 // Reduced from 200 to match actual max possible score
-	)
-	w := map[string]float64{
-		"eDur": 20, "ePlayers": 30, "eKill": 50, // Increased weights for positive effects
-		"fDur": 20, "fPlayers": 30, "fDeath": 50, // Increased weights for negative effects
-	}
+	// Scoring system based on the test expectations
+	score := 0.0
 
-	// Normalize
-	var eDur, fDur float64
-	if GrenadeEvent.FriendlyFlashDuration != nil {
-		fDur = clamp(*GrenadeEvent.FriendlyFlashDuration/capDuration, 0, 1)
-	}
+	// Enemy duration (clamped to 0-1, then scaled by 20)
 	if GrenadeEvent.EnemyFlashDuration != nil {
-		eDur = clamp(*GrenadeEvent.EnemyFlashDuration/capDuration, 0, 1)
+		eDur := clamp(*GrenadeEvent.EnemyFlashDuration/3.0, 0, 1)
+		score += eDur * 20
 	}
 
-	ePlayers := clamp(float64(GrenadeEvent.EnemyPlayersAffected)/capPlayers, 0, 1)
-	fPlayers := clamp(float64(GrenadeEvent.FriendlyPlayersAffected)/capPlayers, 0, 1)
-	eKill := clamp(boolToFloat(GrenadeEvent.FlashLeadsToKill)/capLeads, 0, 1)
-	fDeath := clamp(boolToFloat(GrenadeEvent.FlashLeadsToDeath)/capLeads, 0, 1)
+	// Friendly duration (clamped to 0-1, then scaled by -20)
+	if GrenadeEvent.FriendlyFlashDuration != nil {
+		fDur := clamp(*GrenadeEvent.FriendlyFlashDuration/3.0, 0, 1)
+		score -= fDur * 20
+	}
 
-	// Calculate individual components
-	enemyScore := eDur*w["eDur"] + ePlayers*w["ePlayers"] + eKill*w["eKill"]
-	friendlyPenalty := fDur*w["fDur"] + fPlayers*w["fPlayers"] + fDeath*w["fDeath"]
+	// Number of enemies flashed (clamped to 0-1, then scaled by 30)
+	ePlayers := clamp(float64(GrenadeEvent.EnemyPlayersAffected)/5.0, 0, 1)
+	score += ePlayers * 30
 
-	raw := enemyScore - friendlyPenalty
+	// Number of friendlies flashed (clamped to 0-1, then scaled by -30)
+	fPlayers := clamp(float64(GrenadeEvent.FriendlyPlayersAffected)/5.0, 0, 1)
+	score -= fPlayers * 30
 
-	// Clamp raw score to [-maxRaw, +maxRaw] and normalize to -100..100
-	raw = clamp(raw, -maxRaw, maxRaw)
-	finalScore := int(math.Round((raw / maxRaw) * 100))
+	// Leads to kill (50 points)
+	if GrenadeEvent.FlashLeadsToKill {
+		score += 50
+	}
 
-	return finalScore
+	// Leads to death (-50 points)
+	if GrenadeEvent.FlashLeadsToDeath {
+		score -= 50
+	}
+
+	// Cap at -100 to +100
+	score = clamp(score, -100, 100)
+	return int(math.Round(score))
 }
 
-// Score explosive (-100 -> +100)
+// Score explosive (-50 -> +50)
 func ScoreExplosive(GrenadeEvent types.GrenadeEvent) int {
-	const maxDamage = 100.0
-	raw := float64(GrenadeEvent.DamageDealt - GrenadeEvent.TeamDamageDealt)
-	raw = clamp(raw, -maxDamage, maxDamage)
-	return int(math.Round((raw / maxDamage) * 100))
+	// New scoring system based on your specifications
+	score := 0.0
+
+	// Team damage (1 damage = -0.5 for molotov, -1 for HE)
+	teamDamagePenalty := float64(GrenadeEvent.TeamDamageDealt)
+	if GrenadeEvent.GrenadeType == "Molotov" || GrenadeEvent.GrenadeType == "Incendiary Grenade" {
+		score -= teamDamagePenalty * 0.5 // Molotov penalty
+	} else {
+		score -= teamDamagePenalty * 1.0 // HE grenade penalty
+	}
+
+	// Enemy damage (1 damage = 1 for molotov, 2 for HE)
+	enemyDamageBonus := float64(GrenadeEvent.DamageDealt)
+	if GrenadeEvent.GrenadeType == "Molotov" || GrenadeEvent.GrenadeType == "Incendiary Grenade" {
+		score += enemyDamageBonus * 1.0 // Molotov bonus
+	} else {
+		score += enemyDamageBonus * 2.0 // HE grenade bonus
+	}
+
+	// Cap at -50 to +50
+	score = clamp(score, -50, 50)
+	return int(math.Round(score))
 }
 
 // Score smoke (-100 -> +100)

@@ -130,61 +130,149 @@ BaseFlashAssistImpact = 25.0   // Base impact for a flash assist
 
 ## Grenade Effectiveness
 
-Grenade effectiveness measures the impact of utility usage on round outcomes.
+Grenade effectiveness measures the impact of utility usage on round outcomes using a comprehensive scoring system that rewards both utility investment and effective usage.
 
 ### Grenade Types Tracked
 
-1. **Flashbangs** - Blinding utility
-2. **HE Grenades** - Explosive damage
-3. **Molotovs/Incendiaries** - Area denial and damage
-4. **Smoke Grenades** - Vision blocking
-5. **Decoy Grenades** - Audio distraction
+1. **Flashbangs** - Blinding utility (effectiveness measured)
+2. **HE Grenades** - Explosive damage (effectiveness measured)
+3. **Molotovs/Incendiaries** - Area denial and damage (effectiveness measured)
+4. **Smoke Grenades** - Vision blocking (no effectiveness measurement)
+5. **Decoy Grenades** - Audio distraction (no effectiveness measurement)
 
-### Effectiveness Calculation
+### New Grenade Effectiveness Formula
 
-#### Flashbang Effectiveness (-100 to +100)
+The grenade effectiveness system uses a three-component scoring approach:
+
 ```
-Score = (Enemy Score - Friendly Penalty) / 100 * 100
+Final Score = Grenade Used Bonus + Utility Management Score + Grenade Effectiveness Average
+```
 
-Enemy Score = (Enemy Duration × 20) + (Enemy Players × 30) + (Kills × 50)
-Friendly Penalty = (Friendly Duration × 20) + (Friendly Players × 30) + (Deaths × 50)
+#### Component 1: Grenade Used Bonus
+- **Formula**: `10 points × Total Grenades Thrown`
+- **Purpose**: Rewards utility investment and participation
+- **Range**: 0+ points (scales with grenades thrown)
+
+#### Component 2: Utility Management Score
+- **Formula**: `20 × (1 - (Grenade Value Lost / 1300))`
+- **Purpose**: Rewards surviving with utility intact
+- **Range**: 0-20 points
+- **Parameters**:
+  - **No utility lost**: 20 points (full score)
+  - **650 utility lost**: 10 points (50% score)
+  - **1300 utility lost**: 0 points (no score)
+
+#### Component 3: Grenade Effectiveness Average
+- **Formula**: `Sum of Individual Grenade Scores / Number of Measured Grenades`
+- **Purpose**: Measures quality of utility usage
+- **Range**: -50 to +50 per grenade (averaged)
+
+### Individual Grenade Scoring
+
+#### Flashbang Effectiveness (-50 to +50)
+```
+Score = (Enemy Duration × 10) + (Enemy Count × 10) + (Leads to Kill × 25)
+       - (Friendly Duration × 7) - (Friendly Count × 7) - (Leads to Death × 25)
 ```
 
 **Weightings:**
-- **Enemy Duration**: 20 points (capped at 3.0 seconds)
-- **Enemy Players**: 30 points (capped at 5 players)
-- **Kills**: 50 points (capped at 1 kill)
-- **Friendly Duration**: -20 points (capped at 3.0 seconds)
-- **Friendly Players**: -30 points (capped at 5 players)
-- **Deaths**: -50 points (capped at 1 death)
+- **Enemy Duration**: +10 points per second
+- **Enemy Count**: +10 points per enemy flashed
+- **Leads to Kill**: +25 points
+- **Friendly Duration**: -7 points per second
+- **Friendly Count**: -7 points per friendly flashed
+- **Leads to Death**: -25 points
 
-#### Explosive Effectiveness (-100 to +100)
+#### HE Grenade Effectiveness (-50 to +50)
 ```
-Score = (Net Damage / 100) * 100
-Net Damage = Enemy Damage - Team Damage
-```
-
-#### Smoke Effectiveness (-100 to +100)
-```
-Score = (Time Blocked × 0.35) + (Kills Through Smoke × 0.35) - (Friendly Hurt × 0.3)
+Score = (Enemy Damage × 2) - (Team Damage × 1)
 ```
 
 **Weightings:**
-- **Time Blocked**: 35% (capped at 18.0 seconds)
-- **Kills Through Smoke**: 35% (capped at 3 kills)
-- **Friendly Hurt**: -30% (capped at 3 instances)
+- **Enemy Damage**: +2 points per damage
+- **Team Damage**: -1 point per damage
 
-### Round Aggregation
+#### Molotov/Incendiary Effectiveness (-50 to +50)
 ```
-Round Effectiveness = Average of all grenade effectiveness scores in the round
-```
-
-### Match Aggregation
-```
-Match Effectiveness = Average Round Effectiveness - (Value Lost Penalty × 50)
+Score = (Enemy Damage × 1) - (Team Damage × 0.5)
 ```
 
-**Value Lost Penalty**: Penalty for wasted utility value on death
+**Weightings:**
+- **Enemy Damage**: +1 point per damage
+- **Team Damage**: -0.5 points per damage
+
+### Round-Level Calculation
+
+#### Inclusion Criteria
+- **Must have grenades thrown OR grenades lost on death**
+- **No grenades thrown AND no grenades lost**: Excluded from calculation
+
+#### Final Score Calculation
+```go
+// Calculate components
+grenadeUsedBonus := float64(totalGrenadesThrown) * 10.0
+utilityManagementScore := 20.0 * (1.0 - (grenadeValueLost / 1300.0))
+grenadeEffectivenessAverage := totalEffectivenessRating / totalMeasuredGrenades
+
+// Final score
+finalScore := grenadeUsedBonus + utilityManagementScore + grenadeEffectivenessAverage
+```
+
+### Score Ranges and Interpretation
+
+#### Typical Score Ranges
+- **Excellent (80-100)**: Many grenades + great effectiveness + no utility lost
+- **Good (60-79)**: Good grenade usage + decent effectiveness + minimal utility lost
+- **Average (40-59)**: Baseline performance with some utility usage
+- **Below Average (20-39)**: Some bad utility usage or significant utility lost
+- **Poor (0-19)**: Consistently bad utility usage or high utility loss
+- **No Score**: No grenades thrown and no utility lost
+
+**Note**: Final scores are capped at 100 points maximum.
+
+#### Example Calculations
+
+**Scenario 1: Decent Player (3 grenades, 0 utility lost)**
+```
+Grenade Used Bonus: 3 × 10 = 30 points
+Utility Management: 20 points (no utility lost)
+Grenade Effectiveness: (20 + 10 - 5) / 3 = 8.33 points
+Final Score: 30 + 20 + 8.33 = 58 points
+```
+
+**Scenario 2: Great Player (4 grenades, 0 utility lost)**
+```
+Grenade Used Bonus: 4 × 10 = 40 points
+Utility Management: 20 points (no utility lost)
+Grenade Effectiveness: (40 + 30 + 25 + 35) / 4 = 32.5 points
+Final Score: 40 + 20 + 32.5 = 92 points
+```
+
+**Scenario 3: Exceptional Player (6 grenades, 0 utility lost)**
+```
+Grenade Used Bonus: 6 × 10 = 60 points
+Utility Management: 20 points (no utility lost)
+Grenade Effectiveness: (50 + 45 + 40 + 35 + 30 + 25) / 6 = 37.5 points
+Raw Score: 60 + 20 + 37.5 = 117.5 points
+Final Score: 100 points (capped at 100)
+```
+
+**Scenario 4: Bad Player (3 grenades, 0 utility lost)**
+```
+Grenade Used Bonus: 3 × 10 = 30 points
+Utility Management: 20 points (no utility lost)
+Grenade Effectiveness: (-30 - 20 - 15) / 3 = -21.67 points
+Final Score: 30 + 20 - 21.67 = 28 points
+```
+
+### Benefits of New System
+
+1. **Encourages Utility Investment**: 10 points per grenade thrown
+2. **Rewards Quality Usage**: Individual grenade effectiveness matters
+3. **Penalizes Bad Usage**: Team damage and friendly flashes hurt scores
+4. **Values Utility Management**: Surviving with utility intact is rewarded
+5. **Fair Participation**: Only players who use utility get scored
+6. **Quality Over Quantity**: Average effectiveness prevents spam
 
 ---
 

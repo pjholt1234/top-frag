@@ -106,25 +106,28 @@ class UtilityAnalysisServiceTest extends TestCase
 
     public function test_grenade_effectiveness_by_round()
     {
-        GrenadeEvent::factory()->create([
+        \App\Models\PlayerRoundEvent::factory()->create([
             'match_id' => $this->match->id,
             'player_steam_id' => $this->player->steam_id,
             'round_number' => 1,
-            'effectiveness_rating' => 8,
+            'grenade_effectiveness' => 7.0,
+            'flashes_thrown' => 1,
+            'fire_grenades_thrown' => 1,
+            'smokes_thrown' => 0,
+            'hes_thrown' => 0,
+            'decoys_thrown' => 0,
         ]);
 
-        GrenadeEvent::factory()->create([
-            'match_id' => $this->match->id,
-            'player_steam_id' => $this->player->steam_id,
-            'round_number' => 1,
-            'effectiveness_rating' => 6,
-        ]);
-
-        GrenadeEvent::factory()->create([
+        \App\Models\PlayerRoundEvent::factory()->create([
             'match_id' => $this->match->id,
             'player_steam_id' => $this->player->steam_id,
             'round_number' => 2,
-            'effectiveness_rating' => 9,
+            'grenade_effectiveness' => 9.0,
+            'flashes_thrown' => 1,
+            'fire_grenades_thrown' => 0,
+            'smokes_thrown' => 0,
+            'hes_thrown' => 0,
+            'decoys_thrown' => 0,
         ]);
 
         $result = $this->service->getAnalysis($this->user, $this->match->id);
@@ -142,22 +145,25 @@ class UtilityAnalysisServiceTest extends TestCase
 
     public function test_overall_grenade_rating_calculation()
     {
-        GrenadeEvent::factory()->create([
+        \App\Models\PlayerRoundEvent::factory()->create([
             'match_id' => $this->match->id,
             'player_steam_id' => $this->player->steam_id,
-            'effectiveness_rating' => 8,
+            'round_number' => 1,
+            'grenade_effectiveness' => 8.0,
         ]);
 
-        GrenadeEvent::factory()->create([
+        \App\Models\PlayerRoundEvent::factory()->create([
             'match_id' => $this->match->id,
             'player_steam_id' => $this->player->steam_id,
-            'effectiveness_rating' => 6,
+            'round_number' => 2,
+            'grenade_effectiveness' => 6.0,
         ]);
 
-        GrenadeEvent::factory()->create([
+        \App\Models\PlayerRoundEvent::factory()->create([
             'match_id' => $this->match->id,
             'player_steam_id' => $this->player->steam_id,
-            'effectiveness_rating' => null,
+            'round_number' => 3,
+            'grenade_effectiveness' => 0.0, // This should be ignored in calculation
         ]);
 
         $result = $this->service->getAnalysis($this->user, $this->match->id);

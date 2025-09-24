@@ -59,11 +59,18 @@ class UtilityAnalysisService
 
         $grenadeEvents = $query->get();
 
+        $playerRoundsEvents = $match->playerRoundEvents()
+            ->where('player_steam_id', $playerSteamId)
+            ->when($roundNumber, function ($query) use ($roundNumber) {
+                return $query->where('round_number', $roundNumber);
+            })
+            ->get();
+
         return [
             'utility_usage' => $this->getUtilityUsageStats($grenadeEvents),
-            'grenade_effectiveness' => $this->getGrenadeEffectivenessByRound($grenadeEvents),
+            'grenade_effectiveness' => $this->getGrenadeEffectivenessByRound($playerRoundsEvents),
             'grenade_timing' => $this->getGrenadeTimingData($grenadeEvents),
-            'overall_stats' => $this->getOverallStats($grenadeEvents),
+            'overall_stats' => $this->getOverallStats($grenadeEvents, $playerRoundsEvents),
             'players' => $this->getAvailablePlayers($match),
             'rounds' => $this->getAvailableRounds($match),
             'current_user_steam_id' => $user->steam_id,
@@ -101,19 +108,15 @@ class UtilityAnalysisService
         return $usage;
     }
 
-    private function getGrenadeEffectivenessByRound(Collection $grenadeEvents): array
+    private function getGrenadeEffectivenessByRound(Collection $playerRoundEvents): array
     {
-        return $grenadeEvents->groupBy('round_number')
-            ->map(function (Collection $events, int $round) {
-                $totalEffectiveness = $events->where('effectiveness_rating', '>', 0)
-                    ->avg('effectiveness_rating') ?? 0;
-
-                return [
-                    'round' => $round,
-                    'effectiveness' => round($totalEffectiveness, 1),
-                    'total_grenades' => $events->count(),
-                ];
-            })
+        return $playerRoundEvents->map(function ($roundEvent) {
+            return [
+                'round' => $roundEvent->round_number,
+                'effectiveness' => round($roundEvent->grenade_effectiveness, 1) ?? 0,
+                'total_grenades' => $roundEvent->grenades_thrown,
+            ];
+        })
             ->sortBy('round')
             ->values()
             ->toArray();
@@ -147,27 +150,33 @@ class UtilityAnalysisService
             ->toArray();
     }
 
-    private function getOverallStats(Collection $grenadeEvents): array
+    private function getOverallStats(Collection $grenadeEvents, Collection $playerRoundsEvents): array
     {
         $flashEvents = $grenadeEvents->where('grenade_type', GrenadeType::FLASHBANG);
         $heEvents = $grenadeEvents->where('grenade_type', GrenadeType::HE_GRENADE);
 
+        $count = 0;
+        $effectivenessTotal = 0;
+
+        foreach ($playerRoundsEvents as $playerRoundsEvent) {
+            if ($playerRoundsEvent->grenade_effectiveness === null || $playerRoundsEvent->grenade_effectiveness == 0) {
+                continue;
+            }
+
+            $count++;
+            $effectivenessTotal += $playerRoundsEvent->grenade_effectiveness;
+        }
+
+        $averageGrenadeEffectiveness = 0;
+        if ($count > 0) {
+            $averageGrenadeEffectiveness = $effectivenessTotal / $count;
+        }
+
         return [
-            'overall_grenade_rating' => $this->calculateOverallRating($grenadeEvents),
+            'overall_grenade_rating' => round($averageGrenadeEffectiveness, 1),
             'flash_stats' => $this->getFlashStats($flashEvents),
             'he_stats' => $this->getHeStats($heEvents),
         ];
-    }
-
-    private function calculateOverallRating(Collection $grenadeEvents): float
-    {
-        $ratedEvents = $grenadeEvents->where('effectiveness_rating', '>', 0);
-
-        if ($ratedEvents->isEmpty()) {
-            return 0.0;
-        }
-
-        return round($ratedEvents->avg('effectiveness_rating'), 1);
     }
 
     private function getFlashStats(Collection $flashEvents): array
@@ -238,5 +247,10 @@ class UtilityAnalysisService
             ->toArray();
 
         return array_merge(['all'], $rounds);
+    }
+
+    private function getGrenadeCountForRound(int $roundNumber, Collection $grenadeEvents): int
+    {
+        return $grenadeEvents->where('round_number', $roundNumber)->count();
     }
 }

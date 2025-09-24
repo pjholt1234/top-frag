@@ -42,16 +42,18 @@ type GunfightEvent struct {
 	Player1SteamID string `json:"player_1_steam_id"`
 	Player2SteamID string `json:"player_2_steam_id"`
 
-	Player1HPStart    int    `json:"player_1_hp_start"`
-	Player2HPStart    int    `json:"player_2_hp_start"`
-	Player1Armor      int    `json:"player_1_armor"`
-	Player2Armor      int    `json:"player_2_armor"`
-	Player1Flashed    bool   `json:"player_1_flashed"`
-	Player2Flashed    bool   `json:"player_2_flashed"`
-	Player1Weapon     string `json:"player_1_weapon"`
-	Player2Weapon     string `json:"player_2_weapon"`
-	Player1EquipValue int    `json:"player_1_equipment_value"`
-	Player2EquipValue int    `json:"player_2_equipment_value"`
+	Player1HPStart      int    `json:"player_1_hp_start"`
+	Player2HPStart      int    `json:"player_2_hp_start"`
+	Player1Armor        int    `json:"player_1_armor"`
+	Player2Armor        int    `json:"player_2_armor"`
+	Player1Flashed      bool   `json:"player_1_flashed"`
+	Player2Flashed      bool   `json:"player_2_flashed"`
+	Player1Weapon       string `json:"player_1_weapon"`
+	Player2Weapon       string `json:"player_2_weapon"`
+	Player1EquipValue   int    `json:"player_1_equipment_value"`
+	Player2EquipValue   int    `json:"player_2_equipment_value"`
+	Player1GrenadeValue int    `json:"player_1_grenade_value"`
+	Player2GrenadeValue int    `json:"player_2_grenade_value"`
 
 	Player1Position Position `json:"player_1_position"`
 	Player2Position Position `json:"player_2_position"`
@@ -621,6 +623,15 @@ var EquipmentValues = map[int]int{
 	504: 200, // EqFlash
 	505: 300, // EqSmoke
 	506: 300, // EqHE
+}
+
+var GrenadesEquipmentIDs = map[int]bool{
+	501: true,
+	502: true,
+	503: true,
+	504: true,
+	505: true,
+	506: true,
 }
 
 const (

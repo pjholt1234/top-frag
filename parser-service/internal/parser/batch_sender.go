@@ -112,6 +112,8 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 				"player_2_weapon":          event.Player2Weapon,
 				"player_1_equipment_value": event.Player1EquipValue,
 				"player_2_equipment_value": event.Player2EquipValue,
+				"player_1_grenade_value":   event.Player1GrenadeValue,
+				"player_2_grenade_value":   event.Player2GrenadeValue,
 				"player_1_x":               event.Player1Position.X,
 				"player_1_y":               event.Player1Position.Y,
 				"player_1_z":               event.Player1Position.Z,

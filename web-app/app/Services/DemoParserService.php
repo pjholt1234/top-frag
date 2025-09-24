@@ -338,6 +338,8 @@ class DemoParserService
                     'player_2_armor' => $gunFightEvent['player_2_armor'],
                     'player_1_equipment_value' => $gunFightEvent['player_1_equipment_value'],
                     'player_2_equipment_value' => $gunFightEvent['player_2_equipment_value'],
+                    'player_1_grenade_value' => $gunFightEvent['player_1_grenade_value'] ?? 0,
+                    'player_2_grenade_value' => $gunFightEvent['player_2_grenade_value'] ?? 0,
                     'player_1_flashed' => $gunFightEvent['player_1_flashed'],
                     'player_2_flashed' => $gunFightEvent['player_2_flashed'],
                     'player_1_weapon' => $gunFightEvent['player_1_weapon'],
