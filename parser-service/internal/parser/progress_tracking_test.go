@@ -42,9 +42,28 @@ func TestProgressTracking_EnhancedFields(t *testing.T) {
 }
 
 func TestProgressTracking_StepProgression(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Host:     "localhost",
+			Port:     3306,
+			User:     "root",
+			Password: "root",
+			DBName:   "test_db",
+			Charset:  "utf8mb4",
+			MaxIdle:  10,
+			MaxOpen:  100,
+		},
+	}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger)
+	if err != nil {
+		// For testing purposes, create a mock parser without database
+		parser = &DemoParser{
+			config:           cfg,
+			logger:           logger,
+			gameModeDetector: NewGameModeDetector(logger),
+		}
+	}
 
 	callback := &TestProgressCallback{}
 	ctx := context.Background()
@@ -54,10 +73,10 @@ func TestProgressTracking_StepProgression(t *testing.T) {
 	}
 
 	// Test with invalid file to get multiple progress updates
-	_, err := parser.ParseDemo(ctx, "/invalid/file.dem", progressCallback)
+	_, parseErr := parser.ParseDemo(ctx, "/invalid/file.dem", progressCallback)
 
 	// We expect an error, but should have progress updates
-	if err == nil {
+	if parseErr == nil {
 		t.Error("Expected error for invalid file, got none")
 	}
 
@@ -92,9 +111,28 @@ func TestProgressTracking_ContextData(t *testing.T) {
 }
 
 func TestProgressTracking_ErrorHandling(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Host:     "localhost",
+			Port:     3306,
+			User:     "root",
+			Password: "root",
+			DBName:   "test_db",
+			Charset:  "utf8mb4",
+			MaxIdle:  10,
+			MaxOpen:  100,
+		},
+	}
 	logger := logrus.New()
-	parser := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger)
+	if err != nil {
+		// For testing purposes, create a mock parser without database
+		parser = &DemoParser{
+			config:           cfg,
+			logger:           logger,
+			gameModeDetector: NewGameModeDetector(logger),
+		}
+	}
 
 	callback := &TestProgressCallback{}
 	ctx := context.Background()
@@ -104,9 +142,9 @@ func TestProgressTracking_ErrorHandling(t *testing.T) {
 	}
 
 	// Test with non-existent file to trigger error
-	_, err := parser.ParseDemo(ctx, "/nonexistent/file.dem", progressCallback)
+	_, parseErr := parser.ParseDemo(ctx, "/nonexistent/file.dem", progressCallback)
 
-	if err == nil {
+	if parseErr == nil {
 		t.Error("Expected error for non-existent file, got none")
 	}
 

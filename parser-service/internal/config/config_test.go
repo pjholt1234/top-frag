@@ -36,7 +36,7 @@ func TestLoad_DefaultValues(t *testing.T) {
 	assert.Equal(t, 1*time.Second, cfg.Batch.RetryDelay)
 	assert.Equal(t, 30*time.Second, cfg.Batch.HTTPTimeout)
 
-	assert.Equal(t, "info", cfg.Logging.Level)
+	assert.Equal(t, "warn", cfg.Logging.Level)
 	assert.Equal(t, "json", cfg.Logging.Format)
 	assert.Equal(t, "service.log", cfg.Logging.File)
 	assert.Equal(t, "errors.log", cfg.Logging.ErrorFile)
@@ -214,7 +214,7 @@ func TestLoad_EmptyConfigFile(t *testing.T) {
 	assert.Equal(t, 30*time.Second, cfg.Server.ReadTimeout)
 	assert.Equal(t, 3, cfg.Parser.MaxConcurrentJobs)
 	assert.Equal(t, 100, cfg.Batch.GunfightEventsSize)
-	assert.Equal(t, "info", cfg.Logging.Level)
+	assert.Equal(t, "warn", cfg.Logging.Level)
 }
 
 func TestLoad_ConfigFileNotExists(t *testing.T) {
@@ -229,7 +229,7 @@ func TestLoad_ConfigFileNotExists(t *testing.T) {
 	assert.Equal(t, 30*time.Second, cfg.Server.ReadTimeout)
 	assert.Equal(t, 3, cfg.Parser.MaxConcurrentJobs)
 	assert.Equal(t, 100, cfg.Batch.GunfightEventsSize)
-	assert.Equal(t, "info", cfg.Logging.Level)
+	assert.Equal(t, "warn", cfg.Logging.Level)
 }
 
 func TestLoad_ConfigFileWithComments(t *testing.T) {

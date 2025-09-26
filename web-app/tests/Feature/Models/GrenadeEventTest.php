@@ -85,6 +85,7 @@ class GrenadeEventTest extends TestCase
             'effectiveness_rating',
             'flash_leads_to_kill',
             'flash_leads_to_death',
+            'smoke_blocking_duration',
         ];
         $this->assertEquals($expectedFillable, $grenadeEvent->getFillable());
     }

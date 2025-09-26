@@ -40,7 +40,7 @@ class GrenadeEvent extends Model
         'effectiveness_rating',
         'flash_leads_to_kill',
         'flash_leads_to_death',
-        'smoke_blocking_duration'
+        'smoke_blocking_duration',
     ];
 
     protected $casts = [
