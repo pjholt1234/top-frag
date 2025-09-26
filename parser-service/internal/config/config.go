@@ -14,10 +14,11 @@ import (
 // This is using a library called viper to parse the config file
 
 type Config struct {
-	Server  ServerConfig  `mapstructure:"server"`
-	Parser  ParserConfig  `mapstructure:"parser"`
-	Batch   BatchConfig   `mapstructure:"batch"`
-	Logging LoggingConfig `mapstructure:"logging"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Parser   ParserConfig   `mapstructure:"parser"`
+	Batch    BatchConfig    `mapstructure:"batch"`
+	Logging  LoggingConfig  `mapstructure:"logging"`
+	Database DatabaseConfig `mapstructure:"database"`
 }
 
 type ServerConfig struct {
@@ -50,6 +51,18 @@ type LoggingConfig struct {
 	Format    string `mapstructure:"format"`
 	File      string `mapstructure:"file"`
 	ErrorFile string `mapstructure:"error_file"`
+}
+
+type DatabaseConfig struct {
+	Host            string `mapstructure:"host"`
+	Port            int    `mapstructure:"port"`
+	User            string `mapstructure:"user"`
+	Password        string `mapstructure:"password"`
+	DBName          string `mapstructure:"dbname"`
+	Charset         string `mapstructure:"charset"`
+	MaxIdle         int    `mapstructure:"max_idle"`
+	MaxOpen         int    `mapstructure:"max_open"`
+	CleanupOnFinish bool   `mapstructure:"cleanup_on_finish"`
 }
 
 func Load() (*Config, error) {
@@ -104,4 +117,14 @@ func setDefaults() {
 	viper.SetDefault("logging.format", "json")
 	viper.SetDefault("logging.file", "service.log")
 	viper.SetDefault("logging.error_file", "errors.log")
+
+	viper.SetDefault("database.host", "localhost")
+	viper.SetDefault("database.port", 3306)
+	viper.SetDefault("database.user", "root")
+	viper.SetDefault("database.password", "root")
+	viper.SetDefault("database.dbname", "top-frag-parser")
+	viper.SetDefault("database.charset", "utf8mb4")
+	viper.SetDefault("database.max_idle", 10)
+	viper.SetDefault("database.max_open", 100)
+	viper.SetDefault("database.cleanup_on_finish", false)
 }

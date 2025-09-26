@@ -30,7 +30,10 @@ func main() {
 	logger := setupLogger(cfg)
 	logger.Info("Starting CS:GO Demo Parser Service")
 
-	demoParser := parser.NewDemoParser(cfg, logger)
+	demoParser, err := parser.NewDemoParser(cfg, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to initialize demo parser")
+	}
 
 	// Create a no-op progress callback for the ProgressManager
 	progressCallback := func(update types.ProgressUpdate) {

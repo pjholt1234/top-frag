@@ -761,3 +761,23 @@ func (sm *StepManager) GetOverallProgress() int {
 	}
 	return overallProgress
 }
+
+// PlayerTickData represents player position and aim data for each tick
+type PlayerTickData struct {
+	ID        uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	MatchID   string    `gorm:"type:varchar(36);not null;index:idx_match_tick_player" json:"match_id"`
+	Tick      int64     `gorm:"not null;index:idx_match_tick_player" json:"tick"`
+	PlayerID  string    `gorm:"type:varchar(20);not null;index:idx_match_tick_player" json:"player_id"`
+	PositionX float64   `gorm:"type:double;not null" json:"position_x"`
+	PositionY float64   `gorm:"type:double;not null" json:"position_y"`
+	PositionZ float64   `gorm:"type:double;not null" json:"position_z"`
+	AimX      float64   `gorm:"type:double;not null" json:"aim_x"`
+	AimY      float64   `gorm:"type:double;not null" json:"aim_y"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+// TableName specifies the table name for GORM
+func (PlayerTickData) TableName() string {
+	return "player_tick_data"
+}

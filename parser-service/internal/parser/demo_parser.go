@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"parser-service/internal/config"
+	"parser-service/internal/database"
 	"parser-service/internal/types"
 
+	"github.com/google/uuid"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/msg"
@@ -17,18 +19,37 @@ import (
 )
 
 type DemoParser struct {
-	config           *config.Config
-	logger           *logrus.Logger
-	progressManager  *ProgressManager
-	gameModeDetector *GameModeDetector
+	config            *config.Config
+	logger            *logrus.Logger
+	progressManager   *ProgressManager
+	gameModeDetector  *GameModeDetector
+	db                *database.Database
+	playerTickService *database.PlayerTickService
+	matchID           string
 }
 
-func NewDemoParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
-	return &DemoParser{
-		config:           cfg,
-		logger:           logger,
-		gameModeDetector: NewGameModeDetector(logger),
+func NewDemoParser(cfg *config.Config, logger *logrus.Logger) (*DemoParser, error) {
+	// Initialize database connection
+	db, err := database.NewDatabase(&cfg.Database, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
+
+	// Run migrations
+	if err := db.AutoMigrate(); err != nil {
+		return nil, fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
+	// Initialize player tick service
+	playerTickService := database.NewPlayerTickService(db.DB, logger)
+
+	return &DemoParser{
+		config:            cfg,
+		logger:            logger,
+		gameModeDetector:  NewGameModeDetector(logger),
+		db:                db,
+		playerTickService: playerTickService,
+	}, nil
 }
 
 func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
@@ -39,15 +60,22 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCa
 func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	dp.logger.WithField("demo_path", demoPath).Info("Starting demo parsing")
 
+	// Generate unique match ID for this parsing session
+	dp.matchID = uuid.New().String()
+	dp.logger.WithField("match_id", dp.matchID).Info("Generated match ID for demo parsing")
+
 	// Initialize progress manager
 	dp.progressManager = NewProgressManager(dp.logger, progressCallback, 100*time.Millisecond)
 
-	// Enhanced panic recovery
+	// Enhanced panic recovery with cleanup
 	defer func() {
 		if r := recover(); r != nil {
 			errorMsg := fmt.Sprintf("panic during demo parsing: %v", r)
 			dp.progressManager.ReportError(errorMsg, "PARSING_PANIC")
 			dp.logger.WithField("panic", r).Error("Panic occurred during demo parsing")
+
+			// Cleanup match data on panic if configured
+			dp.cleanupMatchData(ctx)
 		}
 	}()
 
@@ -55,6 +83,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		parseError := types.NewParseError(types.ErrorTypeValidation, "demo file validation failed", err).
 			WithContext("demo_path", demoPath)
 		dp.progressManager.ReportParseError(parseError)
+
+		// Cleanup match data on validation error if configured
+		dp.cleanupMatchData(ctx)
 		return nil, parseError
 	}
 
@@ -102,6 +133,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		parser.RegisterEventHandler(func(e events.FrameDone) {
 			eventProcessor.UpdateCurrentTickAndPlayers(int64(parser.GameState().IngameTick()), parser.GameState())
+
+			// Track player positions and aim for each tick
+			dp.trackPlayerTickData(ctx, parser, eventProcessor)
 		})
 
 		gameState := parser.GameState()
@@ -123,6 +157,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		parseError := types.NewParseError(types.ErrorTypeParsing, "failed to parse demo", err).
 			WithContext("demo_path", demoPath)
 		dp.progressManager.ReportParseError(parseError)
+
+		// Cleanup match data on parsing error if configured
+		dp.cleanupMatchData(ctx)
 		return nil, parseError
 	}
 
@@ -132,6 +169,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		parseError := types.NewParseError(types.ErrorTypeEventProcessing, errorMsg, nil).
 			WithContext("demo_path", demoPath).
 			WithContext("error_code", errorCode)
+
+		// Cleanup match data on critical error if configured
+		dp.cleanupMatchData(ctx)
 		return nil, parseError
 	}
 
@@ -173,6 +213,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		Context:        map[string]interface{}{"step": "completion"},
 		IsFinal:        true,
 	})
+
+	// Cleanup match data on successful completion if configured
+	dp.cleanupMatchData(ctx)
 
 	return parsedData, nil
 }
@@ -698,4 +741,79 @@ func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
 	// No valid ranks found, default to other
 	dp.logger.Info("No valid ranks detected, match type: other")
 	return types.MatchTypeOther
+}
+
+// trackPlayerTickData tracks player positions and aim for each tick
+func (dp *DemoParser) trackPlayerTickData(ctx context.Context, parser demoinfocs.Parser, eventProcessor *EventProcessor) {
+	gameState := parser.GameState()
+	if gameState == nil {
+		return
+	}
+
+	currentTick := int64(gameState.IngameTick())
+	participants := gameState.Participants().All()
+
+	var tickData []*types.PlayerTickData
+
+	for _, participant := range participants {
+		if participant == nil || !participant.IsAlive() {
+			continue
+		}
+
+		// Get player position
+		position := participant.Position()
+
+		// Get player view angles (aim direction)
+		viewAngles := participant.ViewDirectionX()
+		viewAnglesY := participant.ViewDirectionY()
+
+		// Create player tick data
+		playerTickData := &types.PlayerTickData{
+			MatchID:   dp.matchID,
+			Tick:      currentTick,
+			PlayerID:  types.SteamIDToString(participant.SteamID64),
+			PositionX: position.X,
+			PositionY: position.Y,
+			PositionZ: position.Z,
+			AimX:      float64(viewAngles),
+			AimY:      float64(viewAnglesY),
+		}
+
+		tickData = append(tickData, playerTickData)
+	}
+
+	// Save tick data in batch for performance
+	if len(tickData) > 0 {
+		if err := dp.playerTickService.SavePlayerTickDataBatch(ctx, tickData); err != nil {
+			dp.logger.WithFields(logrus.Fields{
+				"match_id":     dp.matchID,
+				"tick":         currentTick,
+				"player_count": len(tickData),
+				"error":        err,
+			}).Error("Failed to save player tick data")
+		}
+	}
+}
+
+// cleanupMatchData deletes match data if cleanup is enabled in configuration
+func (dp *DemoParser) cleanupMatchData(ctx context.Context) {
+	if !dp.config.Database.CleanupOnFinish {
+		return
+	}
+
+	if dp.matchID == "" {
+		dp.logger.Warn("No match ID available for cleanup")
+		return
+	}
+
+	dp.logger.WithField("match_id", dp.matchID).Info("Cleaning up match data")
+
+	if err := dp.playerTickService.DeletePlayerTickDataByMatch(ctx, dp.matchID); err != nil {
+		dp.logger.WithFields(logrus.Fields{
+			"match_id": dp.matchID,
+			"error":    err,
+		}).Error("Failed to cleanup match data")
+	} else {
+		dp.logger.WithField("match_id", dp.matchID).Info("Successfully cleaned up match data")
+	}
 }
