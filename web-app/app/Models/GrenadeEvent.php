@@ -40,6 +40,7 @@ class GrenadeEvent extends Model
         'effectiveness_rating',
         'flash_leads_to_kill',
         'flash_leads_to_death',
+        'smoke_blocking_duration'
     ];
 
     protected $casts = [
@@ -67,6 +68,7 @@ class GrenadeEvent extends Model
         'effectiveness_rating' => 'integer',
         'flash_leads_to_kill' => 'boolean',
         'flash_leads_to_death' => 'boolean',
+        'smoke_blocking_duration' => 'integer',
     ];
 
     // Relationships

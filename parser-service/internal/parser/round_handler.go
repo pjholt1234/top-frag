@@ -228,6 +228,9 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 
 		if grenadeEvent.GrenadeType == types.GrenadeTypeSmoke || grenadeEvent.GrenadeType == "Smoke Grenade" {
 			smokesThrown++
+			// Include smoke effectiveness in total rating
+			totalEffectivenessRating += grenadeEvent.EffectivenessRating
+			totalNumberOfMeasuredGrenades++
 		}
 
 		if grenadeEvent.GrenadeType == types.GrenadeTypeDecoy || grenadeEvent.GrenadeType == "Decoy Grenade" {

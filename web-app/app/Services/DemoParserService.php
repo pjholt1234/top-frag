@@ -393,6 +393,17 @@ class DemoParserService
             $now = now();
 
             foreach ($chunk as $grenadeEvent) {
+                // Log smoke grenade events with blocking duration
+                if ($grenadeEvent['grenade_type'] === 'Smoke Grenade') {
+                    \Log::info('Processing smoke grenade event', [
+                        'player_steam_id' => $grenadeEvent['player_steam_id'] ?? 'unknown',
+                        'grenade_type' => $grenadeEvent['grenade_type'] ?? 'unknown',
+                        'smoke_blocking_duration' => $grenadeEvent['smoke_blocking_duration'] ?? 0,
+                        'effectiveness_rating' => $grenadeEvent['effectiveness_rating'] ?? 0,
+                        'round_number' => $grenadeEvent['round_number'] ?? 0,
+                    ]);
+                }
+
                 $records[] = [
                     'match_id' => $match->id,
                     'round_number' => $grenadeEvent['round_number'],
@@ -420,6 +431,7 @@ class DemoParserService
                     'effectiveness_rating' => $grenadeEvent['effectiveness_rating'] ?? null,
                     'flash_leads_to_kill' => $grenadeEvent['flash_leads_to_kill'] ?? false,
                     'flash_leads_to_death' => $grenadeEvent['flash_leads_to_death'] ?? false,
+                    'smoke_blocking_duration' => $grenadeEvent['smoke_blocking_duration'] ?? 0,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

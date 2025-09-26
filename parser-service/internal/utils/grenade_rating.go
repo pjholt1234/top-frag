@@ -106,6 +106,22 @@ func ScoreSmoke(TimeBlocked float64, KillsThroughSmoke float64, FriendlyHurt flo
 	return int(math.Round(raw * 100))
 }
 
+// ScoreSmokeWithBlockingDuration calculates smoke effectiveness based on blocking duration
+// 1 point for every 64 ticks blocked (as per requirements)
+func ScoreSmokeWithBlockingDuration(blockingDuration int) int {
+	// Convert ticks to effectiveness points (1 point per 64 ticks)
+	effectiveness := float64(blockingDuration) / 64.0
+
+	// Cap at reasonable maximum (18 seconds = 1152 ticks = 18 points)
+	maxEffectiveness := 18.0
+	effectiveness = clamp(effectiveness, 0, maxEffectiveness)
+
+	// Scale to -100 to +100 range
+	normalized := (effectiveness / maxEffectiveness) * 100
+
+	return int(math.Round(normalized))
+}
+
 // ----------------------
 // Round Aggregation
 // ----------------------

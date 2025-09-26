@@ -233,6 +233,19 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 			flatEvent["enemy_players_affected"] = event.EnemyPlayersAffected
 			flatEvent["flash_leads_to_kill"] = event.FlashLeadsToKill
 			flatEvent["flash_leads_to_death"] = event.FlashLeadsToDeath
+			flatEvent["smoke_blocking_duration"] = event.SmokeBlockingDuration
+
+			// Log smoke grenade events with blocking duration
+			if event.GrenadeType == "Smoke Grenade" {
+				bs.logger.WithFields(logrus.Fields{
+					"player_steam_id":         event.PlayerSteamID,
+					"grenade_type":            event.GrenadeType,
+					"smoke_blocking_duration": event.SmokeBlockingDuration,
+					"effectiveness_rating":    event.EffectivenessRating,
+					"round_number":            event.RoundNumber,
+				}).Info("Sending smoke grenade event with blocking duration")
+			}
+
 			if len(event.AffectedPlayers) > 0 {
 				flatEvent["affected_players"] = event.AffectedPlayers
 			}

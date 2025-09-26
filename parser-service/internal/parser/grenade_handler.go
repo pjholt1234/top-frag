@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"fmt"
 	"parser-service/internal/types"
 
@@ -20,14 +21,33 @@ type GrenadeMovementInfo struct {
 	ProjectileUniqueID int64
 }
 
+type SmokeEffect struct {
+	EntityID       int64
+	StartTick      int64
+	EndTick        int64
+	Position       types.Position
+	ThrowerSteamID string
+	RoundNumber    int
+	BlockingTicks  int
+}
+
 type GrenadeHandler struct {
 	processor       *EventProcessor
 	logger          *logrus.Logger
 	movementService *MovementStateService
 	grenadeThrows   map[string]*GrenadeMovementInfo
+	activeSmokes    map[int64]*SmokeEffect
 }
 
 const MAX_FLASH_DURATION = 288 // 4.5 seconds
+
+// Smoke constants
+const (
+	SMOKE_DURATION_TICKS      = 1152 // 18 seconds in ticks
+	SMOKE_WIDTH_UNITS         = 300  // Smoke average width in units
+	SMOKE_EFFECTIVE_RANGE     = 450  // Effective range to check for enemies
+	SMOKE_EFFECTIVENESS_TICKS = 64   // 1 point for every 64 ticks blocked
+)
 
 func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *GrenadeHandler {
 	return &GrenadeHandler{
@@ -35,6 +55,7 @@ func NewGrenadeHandler(processor *EventProcessor, logger *logrus.Logger) *Grenad
 		logger:          logger,
 		movementService: NewMovementStateService(logger),
 		grenadeThrows:   make(map[string]*GrenadeMovementInfo),
+		activeSmokes:    make(map[int64]*SmokeEffect),
 	}
 }
 
@@ -311,7 +332,87 @@ func (gh *GrenadeHandler) HandleGrenadeProjectileThrow(e events.GrenadeProjectil
 }
 
 func (gh *GrenadeHandler) HandleSmokeStart(e events.SmokeStart) error {
-	gh.logger.Debug("Smoke grenade started")
+	if e.GrenadeEvent.Thrower == nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "smoke thrower is nil", nil).
+			WithContext("event_type", "SmokeStart").
+			WithContext("tick", gh.processor.currentTick)
+	}
+
+	entityID := int64(e.GrenadeEvent.GrenadeEntityID)
+	throwerSteamID := types.SteamIDToString(e.GrenadeEvent.Thrower.SteamID64)
+
+	// Create smoke effect
+	smokeEffect := &SmokeEffect{
+		EntityID:       entityID,
+		StartTick:      gh.processor.currentTick,
+		EndTick:        gh.processor.currentTick + SMOKE_DURATION_TICKS,
+		Position:       types.Position{X: e.Position.X, Y: e.Position.Y, Z: e.Position.Z},
+		ThrowerSteamID: throwerSteamID,
+		RoundNumber:    gh.processor.matchState.CurrentRound,
+		BlockingTicks:  0,
+	}
+
+	gh.activeSmokes[entityID] = smokeEffect
+
+	// Create GrenadeEvent record for smoke grenade (similar to other grenade types)
+	projectileID := fmt.Sprintf("entity_%d", entityID)
+	movementInfo, hasMovementInfo := gh.grenadeThrows[projectileID]
+
+	var playerPos types.Position
+	var playerAim types.Vector
+	var roundTime int
+	var movementThrowType string
+	var tickTimestamp int64
+
+	if hasMovementInfo {
+		playerPos = movementInfo.PlayerPos
+		playerAim = movementInfo.PlayerAim
+		roundTime = movementInfo.RoundTime
+		movementThrowType = movementInfo.ThrowType
+		tickTimestamp = movementInfo.Tick
+	} else {
+		// Fallback values if movement info is not available
+		playerPos = types.Position{X: 0, Y: 0, Z: 0}
+		playerAim = types.Vector{X: 0, Y: 0, Z: 0}
+		roundTime = gh.processor.getCurrentRoundTime()
+		movementThrowType = "utility"
+		tickTimestamp = gh.processor.currentTick
+	}
+
+	grenadeEvent := types.GrenadeEvent{
+		RoundNumber:       gh.processor.matchState.CurrentRound,
+		RoundTime:         roundTime,
+		TickTimestamp:     tickTimestamp,
+		ExplosionTick:     gh.processor.currentTick, // Use start tick as explosion tick for smoke
+		PlayerSteamID:     throwerSteamID,
+		PlayerSide:        gh.processor.getPlayerCurrentSide(throwerSteamID),
+		GrenadeType:       "Smoke Grenade",
+		PlayerPosition:    playerPos,
+		PlayerAim:         playerAim,
+		ThrowType:         movementThrowType,
+		FlashLeadsToKill:  false,
+		FlashLeadsToDeath: false,
+	}
+
+	grenadeEvent.GrenadeFinalPosition = &types.Position{
+		X: e.Position.X,
+		Y: e.Position.Y,
+		Z: e.Position.Z,
+	}
+
+	gh.processor.matchState.GrenadeEvents = append(gh.processor.matchState.GrenadeEvents, grenadeEvent)
+
+	gh.logger.WithFields(logrus.Fields{
+		"entity_id":             entityID,
+		"thrower":               throwerSteamID,
+		"position":              smokeEffect.Position,
+		"start_tick":            smokeEffect.StartTick,
+		"end_tick":              smokeEffect.EndTick,
+		"round":                 smokeEffect.RoundNumber,
+		"active_smokes_count":   len(gh.activeSmokes),
+		"grenade_event_created": true,
+	}).Info("Smoke grenade started - tracking for blocking duration and created GrenadeEvent")
+
 	return nil
 }
 
@@ -501,4 +602,397 @@ func (gh *GrenadeHandler) aggregateGrenadeDamage(grenadeEvent *types.GrenadeEven
 	grenadeEvent.TeamDamageDealt = teamDamage
 	grenadeEvent.AffectedPlayers = affectedPlayers
 	grenadeEvent.EffectivenessRating = grenade_rating.ScoreExplosive(*grenadeEvent)
+}
+
+// CalculateSmokeBlockingDuration calculates how long a smoke blocks enemy line of sight
+func (gh *GrenadeHandler) CalculateSmokeBlockingDuration(smokeEffect *SmokeEffect) int {
+	blockingTicks := 0
+	totalTicks := smokeEffect.EndTick - smokeEffect.StartTick
+
+	gh.logger.WithFields(logrus.Fields{
+		"entity_id":   smokeEffect.EntityID,
+		"start_tick":  smokeEffect.StartTick,
+		"end_tick":    smokeEffect.EndTick,
+		"total_ticks": totalTicks,
+		"position":    smokeEffect.Position,
+		"thrower":     smokeEffect.ThrowerSteamID,
+	}).Info("Starting smoke blocking duration calculation")
+
+	// Check every tick for the smoke duration
+	for tick := smokeEffect.StartTick; tick < smokeEffect.EndTick; tick++ {
+		// Get all enemy players within effective range
+		enemyPlayers := gh.getEnemyPlayersInRange(smokeEffect.Position, SMOKE_EFFECTIVE_RANGE, smokeEffect.ThrowerSteamID)
+
+		// Check if any enemy has line of sight blocked by smoke
+		hasBlockedEnemy := false
+		for _, enemyPlayer := range enemyPlayers {
+			if gh.isSmokeBlockingLOS(smokeEffect.Position, enemyPlayer.Position) {
+				hasBlockedEnemy = true
+				break
+			}
+		}
+
+		if hasBlockedEnemy {
+			blockingTicks++
+		}
+
+		// Log every 100 ticks to avoid spam
+		if (tick-smokeEffect.StartTick)%100 == 0 {
+			gh.logger.WithFields(logrus.Fields{
+				"entity_id":      smokeEffect.EntityID,
+				"current_tick":   tick,
+				"blocking_ticks": blockingTicks,
+				"enemy_count":    len(enemyPlayers),
+				"has_blocked":    hasBlockedEnemy,
+			}).Debug("Smoke blocking progress")
+		}
+	}
+
+	gh.logger.WithFields(logrus.Fields{
+		"entity_id":        smokeEffect.EntityID,
+		"total_ticks":      totalTicks,
+		"blocking_ticks":   blockingTicks,
+		"blocking_percent": float64(blockingTicks) / float64(totalTicks) * 100,
+	}).Info("Smoke blocking duration calculation completed")
+
+	return blockingTicks
+}
+
+// getEnemyPlayersInRange returns enemy players within the specified range
+func (gh *GrenadeHandler) getEnemyPlayersInRange(smokePos types.Position, range_ float64, throwerSteamID string) []types.PlayerState {
+	var enemyPlayers []types.PlayerState
+	throwerTeam := gh.processor.getAssignedTeam(throwerSteamID)
+	totalPlayers := len(gh.processor.playerStates)
+
+	gh.logger.WithFields(logrus.Fields{
+		"smoke_pos":     smokePos,
+		"range":         range_,
+		"thrower_team":  throwerTeam,
+		"total_players": totalPlayers,
+	}).Debug("Getting enemy players in range")
+
+	for _, playerState := range gh.processor.playerStates {
+		playerTeam := gh.processor.getAssignedTeam(playerState.SteamID)
+
+		// Skip if same team as thrower
+		if playerTeam == throwerTeam {
+			continue
+		}
+
+		// Check if within range
+		distance := types.CalculateDistance(smokePos, playerState.Position)
+		if distance <= range_ {
+			enemyPlayers = append(enemyPlayers, *playerState)
+			gh.logger.WithFields(logrus.Fields{
+				"player_steam_id": playerState.SteamID,
+				"player_team":     playerTeam,
+				"distance":        distance,
+				"position":        playerState.Position,
+			}).Debug("Enemy player found in range")
+		}
+	}
+
+	gh.logger.WithFields(logrus.Fields{
+		"enemy_count": len(enemyPlayers),
+		"range":       range_,
+	}).Debug("Enemy players in range found")
+
+	return enemyPlayers
+}
+
+// isSmokeBlockingLOS checks if smoke is blocking line of sight between two positions
+func (gh *GrenadeHandler) isSmokeBlockingLOS(smokePos, playerPos types.Position) bool {
+	// For now, use a simple distance-based approach
+	// TODO: Implement proper LOS detection with triangle mesh
+	distance := types.CalculateDistance(smokePos, playerPos)
+	return distance <= float64(SMOKE_WIDTH_UNITS/2)
+}
+
+// ProcessSmokeBlockingDuration calculates and updates smoke blocking duration for all active smokes
+// This is the old method - kept for backward compatibility but not used
+func (gh *GrenadeHandler) ProcessSmokeBlockingDuration() {
+	gh.logger.WithFields(logrus.Fields{
+		"active_smokes_count": len(gh.activeSmokes),
+		"current_round":       gh.processor.matchState.CurrentRound,
+	}).Info("Processing smoke blocking duration for all active smokes")
+
+	if len(gh.activeSmokes) == 0 {
+		gh.logger.Warn("No active smokes found to process")
+		return
+	}
+
+	for entityID, smokeEffect := range gh.activeSmokes {
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":  entityID,
+			"thrower":    smokeEffect.ThrowerSteamID,
+			"position":   smokeEffect.Position,
+			"start_tick": smokeEffect.StartTick,
+			"end_tick":   smokeEffect.EndTick,
+			"round":      smokeEffect.RoundNumber,
+		}).Info("Calculating blocking duration for smoke")
+
+		// Calculate blocking duration
+		blockingDuration := gh.CalculateSmokeBlockingDuration(smokeEffect)
+		smokeEffect.BlockingTicks = blockingDuration
+
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":         entityID,
+			"thrower":           smokeEffect.ThrowerSteamID,
+			"blocking_duration": blockingDuration,
+			"round":             smokeEffect.RoundNumber,
+		}).Info("Smoke blocking duration calculated")
+
+		// Update corresponding grenade event
+		gh.updateGrenadeEventWithSmokeBlocking(entityID, blockingDuration)
+	}
+}
+
+// updateGrenadeEventWithSmokeBlocking updates the grenade event with smoke blocking duration
+func (gh *GrenadeHandler) updateGrenadeEventWithSmokeBlocking(entityID int64, blockingDuration int) {
+	gh.logger.WithFields(logrus.Fields{
+		"entity_id":         entityID,
+		"blocking_duration": blockingDuration,
+		"total_events":      len(gh.processor.matchState.GrenadeEvents),
+	}).Info("Updating grenade event with smoke blocking duration")
+
+	// Get smoke effect to find the thrower
+	smokeEffect, exists := gh.activeSmokes[entityID]
+	if !exists {
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id": entityID,
+		}).Warn("No active smoke effect found for entity ID")
+		return
+	}
+
+	// Find the corresponding grenade event by matching:
+	// 1. Grenade type is "Smoke Grenade"
+	// 2. Same thrower (PlayerSteamID)
+	// 3. Same round
+	// 4. ExplosionTick matches the smoke start tick
+	found := false
+	for i := range gh.processor.matchState.GrenadeEvents {
+		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+		gh.logger.WithFields(logrus.Fields{
+			"event_index":      i,
+			"grenade_type":     grenadeEvent.GrenadeType,
+			"explosion_tick":   grenadeEvent.ExplosionTick,
+			"entity_id":        entityID,
+			"player_steam_id":  grenadeEvent.PlayerSteamID,
+			"round":            grenadeEvent.RoundNumber,
+			"smoke_thrower":    smokeEffect.ThrowerSteamID,
+			"smoke_round":      smokeEffect.RoundNumber,
+			"smoke_start_tick": smokeEffect.StartTick,
+		}).Debug("Checking grenade event for smoke match")
+
+		if grenadeEvent.GrenadeType == "Smoke Grenade" &&
+			grenadeEvent.PlayerSteamID == smokeEffect.ThrowerSteamID &&
+			grenadeEvent.RoundNumber == smokeEffect.RoundNumber &&
+			grenadeEvent.ExplosionTick == smokeEffect.StartTick {
+			grenadeEvent.SmokeBlockingDuration = blockingDuration
+			// Update effectiveness rating based on smoke blocking
+			grenadeEvent.EffectivenessRating = grenade_rating.ScoreSmokeWithBlockingDuration(blockingDuration)
+			found = true
+
+			gh.logger.WithFields(logrus.Fields{
+				"entity_id":         entityID,
+				"blocking_duration": blockingDuration,
+				"effectiveness":     grenadeEvent.EffectivenessRating,
+				"player_steam_id":   grenadeEvent.PlayerSteamID,
+				"round":             grenadeEvent.RoundNumber,
+			}).Info("Successfully updated smoke grenade event")
+			break
+		}
+	}
+
+	if !found {
+		gh.logger.WithFields(logrus.Fields{
+			"entity_id":    entityID,
+			"thrower":      smokeEffect.ThrowerSteamID,
+			"round":        smokeEffect.RoundNumber,
+			"start_tick":   smokeEffect.StartTick,
+			"total_events": len(gh.processor.matchState.GrenadeEvents),
+		}).Warn("No matching smoke grenade event found for entity ID")
+	}
+}
+
+// ProcessSmokeBlockingDurationPostProcess calculates smoke blocking duration using post-processing approach
+// This method fetches player tick data and calculates blocking duration based on actual player positions
+func (gh *GrenadeHandler) ProcessSmokeBlockingDurationPostProcess(matchID string) error {
+	gh.logger.WithFields(logrus.Fields{
+		"match_id":           matchID,
+		"smoke_events_count": len(gh.processor.matchState.GrenadeEvents),
+	}).Info("Starting post-processing smoke blocking duration calculation")
+
+	// Find all smoke grenade events
+	var smokeEvents []types.GrenadeEvent
+	for _, grenadeEvent := range gh.processor.matchState.GrenadeEvents {
+		if grenadeEvent.GrenadeType == "Smoke Grenade" {
+			smokeEvents = append(smokeEvents, grenadeEvent)
+		}
+	}
+
+	if len(smokeEvents) == 0 {
+		gh.logger.Info("No smoke grenade events found for post-processing")
+		return nil
+	}
+
+	gh.logger.WithFields(logrus.Fields{
+		"smoke_events_count": len(smokeEvents),
+	}).Info("Found smoke grenade events for post-processing")
+
+	// Process each smoke grenade event
+	for i, smokeEvent := range smokeEvents {
+		gh.logger.WithFields(logrus.Fields{
+			"smoke_index":     i,
+			"player_steam_id": smokeEvent.PlayerSteamID,
+			"round_number":    smokeEvent.RoundNumber,
+			"explosion_tick":  smokeEvent.ExplosionTick,
+			"position":        smokeEvent.GrenadeFinalPosition,
+		}).Info("Processing smoke grenade event")
+
+		// Calculate blocking duration using post-processing approach
+		blockingDuration := gh.calculateSmokeBlockingDurationPostProcess(matchID, smokeEvent)
+
+		// Update the grenade event with the calculated blocking duration
+		gh.updateGrenadeEventWithSmokeBlockingPostProcess(smokeEvent, blockingDuration)
+	}
+
+	gh.logger.Info("Completed post-processing smoke blocking duration calculation")
+	return nil
+}
+
+// calculateSmokeBlockingDurationPostProcess calculates blocking duration for a single smoke event
+func (gh *GrenadeHandler) calculateSmokeBlockingDurationPostProcess(matchID string, smokeEvent types.GrenadeEvent) int {
+	if smokeEvent.GrenadeFinalPosition == nil {
+		gh.logger.WithFields(logrus.Fields{
+			"player_steam_id": smokeEvent.PlayerSteamID,
+			"round_number":    smokeEvent.RoundNumber,
+		}).Warn("Smoke grenade event has no final position")
+		return 0
+	}
+
+	smokePos := *smokeEvent.GrenadeFinalPosition
+	startTick := smokeEvent.ExplosionTick
+	endTick := startTick + SMOKE_DURATION_TICKS
+
+	gh.logger.WithFields(logrus.Fields{
+		"player_steam_id": smokeEvent.PlayerSteamID,
+		"round_number":    smokeEvent.RoundNumber,
+		"start_tick":      startTick,
+		"end_tick":        endTick,
+		"smoke_position":  smokePos,
+	}).Info("Calculating smoke blocking duration with post-processing")
+
+	// Get player tick data for the smoke duration period
+	playerTickData, err := gh.processor.playerTickService.GetPlayerTickDataByTickRange(
+		context.Background(), matchID, startTick, endTick)
+	if err != nil {
+		gh.logger.WithFields(logrus.Fields{
+			"match_id":   matchID,
+			"start_tick": startTick,
+			"end_tick":   endTick,
+			"error":      err,
+		}).Error("Failed to get player tick data for smoke blocking calculation")
+		return 0
+	}
+
+	gh.logger.WithFields(logrus.Fields{
+		"player_tick_data_count": len(playerTickData),
+		"start_tick":             startTick,
+		"end_tick":               endTick,
+	}).Info("Retrieved player tick data for smoke blocking calculation")
+
+	blockingTicks := 0
+	smokeThrowerTeam := gh.processor.getAssignedTeam(smokeEvent.PlayerSteamID)
+
+	// Group tick data by tick for efficient processing
+	tickDataByTick := make(map[int64][]*types.PlayerTickData)
+	for _, tickData := range playerTickData {
+		tickDataByTick[tickData.Tick] = append(tickDataByTick[tickData.Tick], tickData)
+	}
+
+	// Check each tick for blocking
+	for tick := startTick; tick < endTick; tick++ {
+		tickData, exists := tickDataByTick[tick]
+		if !exists {
+			continue // No player data for this tick
+		}
+
+		// Check if any enemy player is within range and has line of sight blocked
+		hasBlockedEnemy := false
+		for _, playerData := range tickData {
+			// Skip if same team as smoke thrower
+			if playerData.Team == smokeThrowerTeam {
+				continue
+			}
+
+			// Check if player is within effective range
+			playerPos := types.Position{
+				X: playerData.PositionX,
+				Y: playerData.PositionY,
+				Z: playerData.PositionZ,
+			}
+
+			distance := types.CalculateDistance(smokePos, playerPos)
+			if distance > SMOKE_EFFECTIVE_RANGE {
+				continue
+			}
+
+			// Check if smoke is blocking line of sight
+			if gh.isSmokeBlockingLOS(smokePos, playerPos) {
+				hasBlockedEnemy = true
+				break
+			}
+		}
+
+		if hasBlockedEnemy {
+			blockingTicks++
+		}
+
+		// Log progress every 100 ticks
+		if (tick-startTick)%100 == 0 {
+			gh.logger.WithFields(logrus.Fields{
+				"current_tick":    tick,
+				"blocking_ticks":  blockingTicks,
+				"players_checked": len(tickData),
+			}).Debug("Smoke blocking progress")
+		}
+	}
+
+	gh.logger.WithFields(logrus.Fields{
+		"player_steam_id":     smokeEvent.PlayerSteamID,
+		"round_number":        smokeEvent.RoundNumber,
+		"blocking_ticks":      blockingTicks,
+		"total_duration":      SMOKE_DURATION_TICKS,
+		"blocking_percentage": float64(blockingTicks) / float64(SMOKE_DURATION_TICKS) * 100,
+	}).Info("Completed smoke blocking duration calculation")
+
+	return blockingTicks
+}
+
+// updateGrenadeEventWithSmokeBlockingPostProcess updates a specific grenade event with smoke blocking duration
+func (gh *GrenadeHandler) updateGrenadeEventWithSmokeBlockingPostProcess(smokeEvent types.GrenadeEvent, blockingDuration int) {
+	// Find the grenade event in the match state and update it
+	for i := range gh.processor.matchState.GrenadeEvents {
+		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+
+		if grenadeEvent.GrenadeType == "Smoke Grenade" &&
+			grenadeEvent.PlayerSteamID == smokeEvent.PlayerSteamID &&
+			grenadeEvent.RoundNumber == smokeEvent.RoundNumber &&
+			grenadeEvent.ExplosionTick == smokeEvent.ExplosionTick {
+
+			grenadeEvent.SmokeBlockingDuration = blockingDuration
+			// Update effectiveness rating based on smoke blocking
+			grenadeEvent.EffectivenessRating = grenade_rating.ScoreSmokeWithBlockingDuration(blockingDuration)
+
+			gh.logger.WithFields(logrus.Fields{
+				"player_steam_id":   grenadeEvent.PlayerSteamID,
+				"round_number":      grenadeEvent.RoundNumber,
+				"blocking_duration": blockingDuration,
+				"effectiveness":     grenadeEvent.EffectivenessRating,
+			}).Info("Updated smoke grenade event with blocking duration")
+
+			break
+		}
+	}
 }

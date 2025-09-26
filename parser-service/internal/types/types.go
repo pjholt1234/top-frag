@@ -118,6 +118,9 @@ type GrenadeEvent struct {
 	FlashLeadsToKill  bool `json:"flash_leads_to_kill"`  // Whether this flash blinded an enemy who was then killed
 	FlashLeadsToDeath bool `json:"flash_leads_to_death"` // Whether this flash blinded a teammate who then died
 
+	// Smoke blocking tracking
+	SmokeBlockingDuration int `json:"smoke_blocking_duration"` // Total ticks the smoke blocked enemy LOS
+
 	ThrowType string `json:"throw_type"`
 
 	EffectivenessRating int `json:"effectiveness_rating"`
@@ -768,6 +771,7 @@ type PlayerTickData struct {
 	MatchID   string    `gorm:"type:varchar(36);not null;index:idx_match_tick_player" json:"match_id"`
 	Tick      int64     `gorm:"not null;index:idx_match_tick_player" json:"tick"`
 	PlayerID  string    `gorm:"type:varchar(20);not null;index:idx_match_tick_player" json:"player_id"`
+	Team      string    `gorm:"type:varchar(10);not null" json:"team"`
 	PositionX float64   `gorm:"type:double;not null" json:"position_x"`
 	PositionY float64   `gorm:"type:double;not null" json:"position_y"`
 	PositionZ float64   `gorm:"type:double;not null" json:"position_z"`

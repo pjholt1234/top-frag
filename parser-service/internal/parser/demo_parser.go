@@ -120,6 +120,8 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		demoParser = parser
 		eventProcessor.SetDemoParser(parser)
+		eventProcessor.SetPlayerTickService(dp.playerTickService)
+		eventProcessor.SetMatchID(dp.matchID)
 
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
@@ -710,11 +712,18 @@ func (dp *DemoParser) trackPlayerTickData(ctx context.Context, parser demoinfocs
 		viewAngles := participant.ViewDirectionX()
 		viewAnglesY := participant.ViewDirectionY()
 
+		// Get player team assignment
+		playerTeam := "A" // Default fallback
+		if eventProcessor != nil {
+			playerTeam = eventProcessor.getAssignedTeam(types.SteamIDToString(participant.SteamID64))
+		}
+
 		// Create player tick data
 		playerTickData := &types.PlayerTickData{
 			MatchID:   dp.matchID,
 			Tick:      currentTick,
 			PlayerID:  types.SteamIDToString(participant.SteamID64),
+			Team:      playerTeam,
 			PositionX: position.X,
 			PositionY: position.Y,
 			PositionZ: position.Z,

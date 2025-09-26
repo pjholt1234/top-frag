@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"parser-service/internal/database"
 	"parser-service/internal/types"
 	"reflect"
 
@@ -40,6 +41,8 @@ type EventProcessor struct {
 	roundHandler       *RoundHandler
 	playerMatchHandler *PlayerMatchHandler
 	rankExtractor      *RankExtractor
+	playerTickService  *database.PlayerTickService
+	matchID            string
 }
 
 type FlashEffect struct {
@@ -99,6 +102,14 @@ func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
 	ep.demoParser = parser
 }
 
+func (ep *EventProcessor) SetPlayerTickService(service *database.PlayerTickService) {
+	ep.playerTickService = service
+}
+
+func (ep *EventProcessor) SetMatchID(matchID string) {
+	ep.matchID = matchID
+}
+
 func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
 	if ep.matchHandler == nil {
 		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match handler is nil", nil).
@@ -121,6 +132,13 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 	if ep.grenadeHandler != nil {
 		ep.grenadeHandler.AggregateAllGrenadeDamage()
 		ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+		// Use the new post-processing method for smoke blocking duration
+		if ep.playerTickService != nil {
+			ep.grenadeHandler.ProcessSmokeBlockingDurationPostProcess(ep.matchID)
+		} else {
+			// Fallback to old method if playerTickService is not available
+			ep.grenadeHandler.ProcessSmokeBlockingDuration()
+		}
 	}
 	if ep.roundHandler == nil {
 		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "round handler is nil", nil).
