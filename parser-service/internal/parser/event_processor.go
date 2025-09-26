@@ -130,14 +130,12 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 			WithContext("round", ep.matchState.CurrentRound)
 	}
 	if ep.grenadeHandler != nil {
+		ep.grenadeHandler.CleanupDuplicateFlashGrenades()
 		ep.grenadeHandler.AggregateAllGrenadeDamage()
 		ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
 		// Use the new post-processing method for smoke blocking duration
 		if ep.playerTickService != nil {
 			ep.grenadeHandler.ProcessSmokeBlockingDurationPostProcess(ep.matchID)
-		} else {
-			// Fallback to old method if playerTickService is not available
-			ep.grenadeHandler.ProcessSmokeBlockingDuration()
 		}
 	}
 	if ep.roundHandler == nil {

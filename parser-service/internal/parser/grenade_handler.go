@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"parser-service/internal/types"
+	"sort"
 
 	grenade_rating "parser-service/internal/utils"
 
@@ -551,6 +552,113 @@ func (gh *GrenadeHandler) PopulateFlashGrenadeEffectiveness() {
 	}
 }
 
+// THIS IS A FIX FOR A BUG IN THE GOLANG-PARSER PACKAGE - FLASH EXPLODE EVENTS GET TRIGGERED MORE THAN ONCE SOMETIMES
+func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
+	var eventsToRemove []int
+	processed := make(map[string]bool) // Key: "tick_timestamp:player_steam_id"
+
+	for i := range gh.processor.matchState.GrenadeEvents {
+		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
+
+		// Only process flashbang events from the current round
+		if grenadeEvent.GrenadeType != "Flashbang" || grenadeEvent.RoundNumber != gh.processor.matchState.CurrentRound {
+			continue
+		}
+
+		// Create unique key for this flash event
+		key := fmt.Sprintf("%d:%s", grenadeEvent.TickTimestamp, grenadeEvent.PlayerSteamID)
+
+		// Skip if we've already processed this combination
+		if processed[key] {
+			continue
+		}
+
+		// Find all duplicate events for this tick_timestamp + player combination
+		var duplicates []int
+		for j := range gh.processor.matchState.GrenadeEvents {
+			otherEvent := &gh.processor.matchState.GrenadeEvents[j]
+			if otherEvent.GrenadeType == "Flashbang" &&
+				otherEvent.RoundNumber == grenadeEvent.RoundNumber &&
+				otherEvent.TickTimestamp == grenadeEvent.TickTimestamp &&
+				otherEvent.PlayerSteamID == grenadeEvent.PlayerSteamID {
+				duplicates = append(duplicates, j)
+			}
+		}
+
+		// If we found duplicates, determine which one to keep
+		if len(duplicates) > 1 {
+			// Find the event with the most complete flash data
+			bestIndex := duplicates[0]
+			bestScore := gh.calculateFlashDataCompleteness(&gh.processor.matchState.GrenadeEvents[bestIndex])
+
+			for _, idx := range duplicates[1:] {
+				score := gh.calculateFlashDataCompleteness(&gh.processor.matchState.GrenadeEvents[idx])
+				if score > bestScore {
+					bestScore = score
+					bestIndex = idx
+				}
+			}
+
+			// Mark all duplicates except the best one for removal
+			for _, idx := range duplicates {
+				if idx != bestIndex {
+					eventsToRemove = append(eventsToRemove, idx)
+				}
+			}
+		}
+
+		processed[key] = true
+	}
+
+	// Sort indices in descending order to remove from end first
+	sort.Sort(sort.Reverse(sort.IntSlice(eventsToRemove)))
+
+	for _, idx := range eventsToRemove {
+		// Remove the event by slicing it out
+		gh.processor.matchState.GrenadeEvents = append(
+			gh.processor.matchState.GrenadeEvents[:idx],
+			gh.processor.matchState.GrenadeEvents[idx+1:]...,
+		)
+	}
+}
+
+// calculateFlashDataCompleteness returns a score based on how complete the flash data is
+// Higher score means more complete data
+func (gh *GrenadeHandler) calculateFlashDataCompleteness(event *types.GrenadeEvent) int {
+	score := 0
+
+	// Check for friendly flash data
+	if event.FriendlyFlashDuration != nil && *event.FriendlyFlashDuration > 0 {
+		score += 10
+	}
+	if event.FriendlyPlayersAffected > 0 {
+		score += 5
+	}
+
+	// Check for enemy flash data
+	if event.EnemyFlashDuration != nil && *event.EnemyFlashDuration > 0 {
+		score += 10
+	}
+	if event.EnemyPlayersAffected > 0 {
+		score += 5
+	}
+
+	// Check for effectiveness data
+	if event.FlashLeadsToKill {
+		score += 3
+	}
+	if event.FlashLeadsToDeath {
+		score += 3
+	}
+
+	// Check for final position data
+	if event.GrenadeFinalPosition != nil {
+		score += 2
+	}
+
+	return score
+}
+
 func (gh *GrenadeHandler) AggregateAllGrenadeDamage() {
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
@@ -706,45 +814,6 @@ func (gh *GrenadeHandler) isSmokeBlockingLOS(smokePos, playerPos types.Position)
 	// TODO: Implement proper LOS detection with triangle mesh
 	distance := types.CalculateDistance(smokePos, playerPos)
 	return distance <= float64(SMOKE_WIDTH_UNITS/2)
-}
-
-// ProcessSmokeBlockingDuration calculates and updates smoke blocking duration for all active smokes
-// This is the old method - kept for backward compatibility but not used
-func (gh *GrenadeHandler) ProcessSmokeBlockingDuration() {
-	gh.logger.WithFields(logrus.Fields{
-		"active_smokes_count": len(gh.activeSmokes),
-		"current_round":       gh.processor.matchState.CurrentRound,
-	}).Info("Processing smoke blocking duration for all active smokes")
-
-	if len(gh.activeSmokes) == 0 {
-		gh.logger.Warn("No active smokes found to process")
-		return
-	}
-
-	for entityID, smokeEffect := range gh.activeSmokes {
-		gh.logger.WithFields(logrus.Fields{
-			"entity_id":  entityID,
-			"thrower":    smokeEffect.ThrowerSteamID,
-			"position":   smokeEffect.Position,
-			"start_tick": smokeEffect.StartTick,
-			"end_tick":   smokeEffect.EndTick,
-			"round":      smokeEffect.RoundNumber,
-		}).Info("Calculating blocking duration for smoke")
-
-		// Calculate blocking duration
-		blockingDuration := gh.CalculateSmokeBlockingDuration(smokeEffect)
-		smokeEffect.BlockingTicks = blockingDuration
-
-		gh.logger.WithFields(logrus.Fields{
-			"entity_id":         entityID,
-			"thrower":           smokeEffect.ThrowerSteamID,
-			"blocking_duration": blockingDuration,
-			"round":             smokeEffect.RoundNumber,
-		}).Info("Smoke blocking duration calculated")
-
-		// Update corresponding grenade event
-		gh.updateGrenadeEventWithSmokeBlocking(entityID, blockingDuration)
-	}
 }
 
 // updateGrenadeEventWithSmokeBlocking updates the grenade event with smoke blocking duration
