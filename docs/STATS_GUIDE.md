@@ -134,11 +134,10 @@ Grenade effectiveness measures the impact of utility usage on round outcomes usi
 
 ### Grenade Types Tracked
 
-1. **Flashbangs** - Blinding utility (effectiveness measured)
-2. **HE Grenades** - Explosive damage (effectiveness measured)
-3. **Molotovs/Incendiaries** - Area denial and damage (effectiveness measured)
-4. **Smoke Grenades** - Vision blocking (no effectiveness measurement)
-5. **Decoy Grenades** - Audio distraction (no effectiveness measurement)
+1. **Flashbangs** - Blinding utility
+2. **HE Grenades** - Explosive damage
+3. **Molotovs/Incendiaries** - Damage
+4. **Smoke Grenades** - Vision blocking
 
 ### New Grenade Effectiveness Formula
 
@@ -200,6 +199,23 @@ Score = (Enemy Damage × 1) - (Team Damage × 0.5)
 **Weightings:**
 - **Enemy Damage**: +1 point per damage
 - **Team Damage**: -0.5 points per damage
+
+#### Smoke Grenade Effectiveness (-100 to +100)
+```
+Score = (Blocking Duration / 64) × 100
+```
+
+**Weightings:**
+- **Blocking Duration**: 1 point per 64 ticks blocked
+- **Maximum Effectiveness**: 18 seconds (1152 ticks) = 18 points
+- **Scaling**: Normalized to -100 to +100 range
+
+**Calculation Process:**
+1. **Tick-by-Tick Analysis**: System checks every tick during smoke duration (18 seconds = 1152 ticks)
+2. **Enemy Detection**: Identifies enemy players within effective range (250 units)
+3. **Line of Sight Check**: Determines if smoke blocks enemy line of sight to teammates
+4. **Blocking Count**: Tracks number of ticks where at least one enemy has blocked LOS
+5. **Effectiveness Scoring**: Converts blocking ticks to effectiveness points (1 point per 64 ticks)
 
 ### Round-Level Calculation
 
@@ -461,28 +477,6 @@ ForceBuyThreshold = 4000 // Between eco and this value = force buy round
 2. **Round End**: Player and round impact aggregation
 3. **Match End**: Match-level impact aggregation
 4. **Post-Processing**: Final impact percentage calculations
-
----
-
-## Technical Implementation
-
-### Go Parser Service
-- **Impact Calculation**: `internal/parser/impact_rating.go`
-- **Round Processing**: `internal/parser/round_handler.go`
-- **Grenade Analysis**: `internal/utils/grenade_rating.go`
-- **Trade Logic**: `internal/parser/round_handler.go`
-
-### Laravel Web Application
-- **Player Complexion**: `app/Services/Matches/PlayerComplexionService.php`
-- **Statistics Display**: `app/Services/Matches/PlayerStatsService.php`
-- **Data Models**: `app/Models/PlayerMatchEvent.php`, `app/Models/PlayerRoundEvent.php`
-
-### Database Schema
-- **Player Match Events**: Match-level aggregated statistics
-- **Player Round Events**: Round-level detailed statistics
-- **Round Events**: Round-level summaries
-- **Gunfight Events**: Individual combat interactions
-- **Grenade Events**: Utility usage tracking
 
 ---
 
