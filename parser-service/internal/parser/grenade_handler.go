@@ -552,7 +552,7 @@ func (gh *GrenadeHandler) PopulateFlashGrenadeEffectiveness() {
 	}
 }
 
-// THIS IS A FIX FOR A BUG IN THE GOLANG-PARSER PACKAGE - FLASH EXPLODE EVENTS GET TRIGGERED MORE THAN ONCE SOMETIMES
+// THIS IS A WORKAROUND FOR A BUG IN THE GOLANG-PARSER PACKAGE
 func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
 	var eventsToRemove []int
 	processed := make(map[string]bool) // Key: "tick_timestamp:player_steam_id"
@@ -560,12 +560,12 @@ func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
 	for i := range gh.processor.matchState.GrenadeEvents {
 		grenadeEvent := &gh.processor.matchState.GrenadeEvents[i]
 
-		// Only process flashbang events from the current round
-		if grenadeEvent.GrenadeType != "Flashbang" || grenadeEvent.RoundNumber != gh.processor.matchState.CurrentRound {
+		// Only process flashbang and smoke grenade events
+		if grenadeEvent.GrenadeType != "Flashbang" && grenadeEvent.GrenadeType != "Smoke Grenade" {
 			continue
 		}
 
-		// Create unique key for this flash event
+		// Create unique key for this grenade event
 		key := fmt.Sprintf("%d:%s", grenadeEvent.TickTimestamp, grenadeEvent.PlayerSteamID)
 
 		// Skip if we've already processed this combination
@@ -577,7 +577,7 @@ func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
 		var duplicates []int
 		for j := range gh.processor.matchState.GrenadeEvents {
 			otherEvent := &gh.processor.matchState.GrenadeEvents[j]
-			if otherEvent.GrenadeType == "Flashbang" &&
+			if otherEvent.GrenadeType == grenadeEvent.GrenadeType &&
 				otherEvent.RoundNumber == grenadeEvent.RoundNumber &&
 				otherEvent.TickTimestamp == grenadeEvent.TickTimestamp &&
 				otherEvent.PlayerSteamID == grenadeEvent.PlayerSteamID {
@@ -587,12 +587,12 @@ func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
 
 		// If we found duplicates, determine which one to keep
 		if len(duplicates) > 1 {
-			// Find the event with the most complete flash data
+			// Find the event with the most complete data
 			bestIndex := duplicates[0]
-			bestScore := gh.calculateFlashDataCompleteness(&gh.processor.matchState.GrenadeEvents[bestIndex])
+			bestScore := gh.calculateGrenadeDataCompleteness(&gh.processor.matchState.GrenadeEvents[bestIndex])
 
 			for _, idx := range duplicates[1:] {
-				score := gh.calculateFlashDataCompleteness(&gh.processor.matchState.GrenadeEvents[idx])
+				score := gh.calculateGrenadeDataCompleteness(&gh.processor.matchState.GrenadeEvents[idx])
 				if score > bestScore {
 					bestScore = score
 					bestIndex = idx
@@ -622,38 +622,53 @@ func (gh *GrenadeHandler) CleanupDuplicateFlashGrenades() {
 	}
 }
 
-// calculateFlashDataCompleteness returns a score based on how complete the flash data is
+// calculateGrenadeDataCompleteness returns a score based on how complete the grenade data is
 // Higher score means more complete data
-func (gh *GrenadeHandler) calculateFlashDataCompleteness(event *types.GrenadeEvent) int {
+func (gh *GrenadeHandler) calculateGrenadeDataCompleteness(event *types.GrenadeEvent) int {
 	score := 0
 
-	// Check for friendly flash data
-	if event.FriendlyFlashDuration != nil && *event.FriendlyFlashDuration > 0 {
-		score += 10
-	}
-	if event.FriendlyPlayersAffected > 0 {
-		score += 5
-	}
-
-	// Check for enemy flash data
-	if event.EnemyFlashDuration != nil && *event.EnemyFlashDuration > 0 {
-		score += 10
-	}
-	if event.EnemyPlayersAffected > 0 {
-		score += 5
+	// For smoke grenades, prioritize smoke blocking duration
+	if event.GrenadeType == "Smoke Grenade" {
+		if event.SmokeBlockingDuration > 0 {
+			score += 50 // High priority for smoke blocking duration
+		}
+		// Check for final position data
+		if event.GrenadeFinalPosition != nil {
+			score += 2
+		}
+		return score
 	}
 
-	// Check for effectiveness data
-	if event.FlashLeadsToKill {
-		score += 3
-	}
-	if event.FlashLeadsToDeath {
-		score += 3
-	}
+	// For flash grenades, use the existing flash data scoring
+	if event.GrenadeType == "Flashbang" {
+		// Check for friendly flash data
+		if event.FriendlyFlashDuration != nil && *event.FriendlyFlashDuration > 0 {
+			score += 10
+		}
+		if event.FriendlyPlayersAffected > 0 {
+			score += 5
+		}
 
-	// Check for final position data
-	if event.GrenadeFinalPosition != nil {
-		score += 2
+		// Check for enemy flash data
+		if event.EnemyFlashDuration != nil && *event.EnemyFlashDuration > 0 {
+			score += 10
+		}
+		if event.EnemyPlayersAffected > 0 {
+			score += 5
+		}
+
+		// Check for effectiveness data
+		if event.FlashLeadsToKill {
+			score += 3
+		}
+		if event.FlashLeadsToDeath {
+			score += 3
+		}
+
+		// Check for final position data
+		if event.GrenadeFinalPosition != nil {
+			score += 2
+		}
 	}
 
 	return score
