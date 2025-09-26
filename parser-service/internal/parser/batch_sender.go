@@ -75,12 +75,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 	batchSize := bs.config.Batch.GunfightEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":        jobID,
-		"total_events":  len(events),
-		"batch_size":    batchSize,
-		"total_batches": totalBatches,
-	}).Info("Sending gunfight events")
+	// Sending gunfight events
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * batchSize
@@ -160,18 +155,10 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 
 		// Log impact values for first batch
 		if i == 0 && len(batch) > 0 {
-			bs.logger.WithFields(logrus.Fields{
-				"sample_gunfight": batch[0],
-				"total_events":    len(batch),
-			}).Info("Sending gunfight events with impact values")
+			// Sending gunfight events with impact values
 		}
 
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":        jobID,
-			"batch":         i + 1,
-			"total_batches": totalBatches,
-			"events":        len(batch),
-		}).Debug("Sent gunfight events batch")
+		// Sent gunfight events batch
 	}
 
 	return nil
@@ -196,12 +183,7 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 	batchSize := bs.config.Batch.GrenadeEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":        jobID,
-		"total_events":  len(events),
-		"batch_size":    batchSize,
-		"total_batches": totalBatches,
-	}).Info("Sending grenade events")
+	// Sending grenade events
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * batchSize
@@ -275,12 +257,7 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 			return parseError
 		}
 
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":        jobID,
-			"batch":         i + 1,
-			"total_batches": totalBatches,
-			"events":        len(batch),
-		}).Debug("Sent grenade events batch")
+		// Sent grenade events batch
 	}
 
 	return nil
@@ -305,12 +282,7 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, compl
 	batchSize := bs.config.Batch.DamageEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":        jobID,
-		"total_events":  len(events),
-		"batch_size":    batchSize,
-		"total_batches": totalBatches,
-	}).Info("Sending damage events")
+	// Sending damage events
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * batchSize
@@ -355,12 +327,7 @@ func (bs *BatchSender) SendDamageEvents(ctx context.Context, jobID string, compl
 			return parseError
 		}
 
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":        jobID,
-			"batch":         i + 1,
-			"total_batches": totalBatches,
-			"events":        len(batch),
-		}).Debug("Sent damage events batch")
+		// Sent damage events batch
 	}
 
 	return nil
@@ -382,10 +349,7 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 	}
 	bs.baseURL = baseURL
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":       jobID,
-		"total_events": len(events),
-	}).Info("Sending round events")
+	// Sending round events
 
 	flatEvents := make([]map[string]interface{}, len(events))
 	for i, event := range events {
@@ -425,7 +389,7 @@ func (bs *BatchSender) SendRoundEvents(ctx context.Context, jobID string, comple
 		return parseError
 	}
 
-	bs.logger.WithField("job_id", jobID).Debug("Sent round events")
+	// Sent round events
 	return nil
 }
 
@@ -448,12 +412,7 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 	batchSize := 12 // Reuse gunfight batch size for player round events
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":        jobID,
-		"total_events":  len(events),
-		"batch_size":    batchSize,
-		"total_batches": totalBatches,
-	}).Info("Sending player round events")
+	// Sending player round events
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * batchSize
@@ -559,18 +518,10 @@ func (bs *BatchSender) SendPlayerRoundEvents(ctx context.Context, jobID string, 
 
 		// Log impact values for first batch
 		if i == 0 && len(batch) > 0 {
-			bs.logger.WithFields(logrus.Fields{
-				"sample_player_round": batch[0],
-				"total_events":        len(batch),
-			}).Info("Sending player round events with impact values")
+			// Sending player round events with impact values
 		}
 
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":        jobID,
-			"batch":         i + 1,
-			"total_batches": totalBatches,
-			"events":        len(batch),
-		}).Debug("Sent player round events batch")
+		// Sent player round events batch
 	}
 
 	return nil
@@ -595,12 +546,7 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 	batchSize := 10
 	totalBatches := (len(events) + batchSize - 1) / batchSize
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":        jobID,
-		"total_events":  len(events),
-		"batch_size":    batchSize,
-		"total_batches": totalBatches,
-	}).Info("Sending player round events")
+	// Sending player round events
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * batchSize
@@ -689,25 +635,14 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 			return parseError
 		}
 
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":        jobID,
-			"batch":         i + 1,
-			"total_batches": totalBatches,
-			"events":        len(batch),
-		}).Debug("Sent player round events batch")
+		// Sent player round events batch
 	}
 
 	return nil
 }
 
 func (bs *BatchSender) SendMatchData(ctx context.Context, jobID string, completionURL string, match types.Match) error {
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":       jobID,
-		"map":          match.Map,
-		"match_type":   match.MatchType,
-		"game_mode":    match.GameMode,
-		"total_rounds": match.TotalRounds,
-	}).Info("Sending match data")
+	// Sending match data
 
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
@@ -734,17 +669,13 @@ func (bs *BatchSender) SendMatchData(ctx context.Context, jobID string, completi
 		return parseError
 	}
 
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":     jobID,
-		"map":        match.Map,
-		"match_type": match.MatchType,
-	}).Info("Successfully sent match data")
+	// Successfully sent match data
 
 	return nil
 }
 
 func (bs *BatchSender) SendCompletion(ctx context.Context, jobID string, completionURL string) error {
-	bs.logger.WithField("job_id", jobID).Info("Sending completion signal")
+	// Sending completion signal
 
 	payload := map[string]interface{}{
 		"job_id": jobID,

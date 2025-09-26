@@ -58,11 +58,8 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCa
 
 // ParseDemoFromFile parses a demo file from a file path
 func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
-	dp.logger.WithField("demo_path", demoPath).Info("Starting demo parsing")
-
 	// Generate unique match ID for this parsing session
 	dp.matchID = uuid.New().String()
-	dp.logger.WithField("match_id", dp.matchID).Info("Generated match ID for demo parsing")
 
 	// Initialize progress manager
 	dp.progressManager = NewProgressManager(dp.logger, progressCallback, 100*time.Millisecond)
@@ -126,7 +123,6 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
-			dp.logger.WithField("map_name", mapName).Info("Map name extracted from demo header")
 		})
 
 		dp.registerEventHandlers(parser, eventProcessor)
@@ -143,12 +139,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 			return nil
 		}
 
-		totalRoundsPlayed := gameState.TotalRoundsPlayed()
-		dp.logger.WithFields(logrus.Fields{
-			"game_state_total_rounds": totalRoundsPlayed,
-			"current_round":           eventProcessor.matchState.CurrentRound,
-			"round_events_count":      len(eventProcessor.matchState.RoundEvents),
-		}).Info("Final game state information")
+		// Game state information available for debugging if needed
 
 		return nil
 	})
@@ -178,7 +169,6 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	playbackTicks := 0
 	if demoParser != nil {
 		playbackTicks = demoParser.CurrentFrame()
-		dp.logger.WithField("playback_ticks", playbackTicks).Info("Extracted playback ticks from demo parser")
 	}
 
 	dp.progressManager.UpdateProgress(types.ProgressUpdate{
@@ -221,9 +211,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 }
 
 func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor) {
-	dp.logger.Info("Starting grenade movement post-processing", logrus.Fields{
-		"total_grenades": len(eventProcessor.matchState.GrenadeEvents),
-	})
+	// Starting grenade movement post-processing
 
 	movementService := eventProcessor.grenadeHandler.movementService
 	processedCount := 0
@@ -246,16 +234,11 @@ func (dp *DemoParser) postProcessGrenadeMovement(eventProcessor *EventProcessor)
 		processedCount++
 	}
 
-	dp.logger.Info("Completed grenade movement post-processing", logrus.Fields{
-		"processed_count": processedCount,
-		"total_grenades":  len(eventProcessor.matchState.GrenadeEvents),
-	})
+	// Completed grenade movement post-processing
 }
 
 func (dp *DemoParser) postProcessDamageAssists(eventProcessor *EventProcessor) {
-	dp.logger.Info("Starting damage assist post-processing", logrus.Fields{
-		"total_gunfights": len(eventProcessor.matchState.GunfightEvents),
-	})
+	// Starting damage assist post-processing
 
 	processedCount := 0
 	updatedCount := 0
@@ -281,21 +264,11 @@ func (dp *DemoParser) postProcessDamageAssists(eventProcessor *EventProcessor) {
 			gunfightEvent.DamageAssistSteamID = newAssist
 			updatedCount++
 
-			dp.logger.WithFields(logrus.Fields{
-				"round_number":    gunfightEvent.RoundNumber,
-				"victim_steam_id": gunfightEvent.Player2SteamID,
-				"killer_steam_id": *gunfightEvent.VictorSteamID,
-				"original_assist": originalAssist,
-				"new_assist":      newAssist,
-			}).Debug("Updated damage assist")
+			// Updated damage assist
 		}
 	}
 
-	dp.logger.Info("Completed damage assist post-processing", logrus.Fields{
-		"processed_count": processedCount,
-		"updated_count":   updatedCount,
-		"total_gunfights": len(eventProcessor.matchState.GunfightEvents),
-	})
+	// Completed damage assist post-processing
 }
 
 func (dp *DemoParser) validateDemoFile(demoPath string) error {
@@ -446,10 +419,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 			return
 		}
 
-		dp.logger.WithFields(logrus.Fields{
-			"player": e.Player.Name,
-			"tick":   eventProcessor.currentTick,
-		}).Info("PlayerFlashed event received")
+		// PlayerFlashed event received
 
 		if err := eventProcessor.HandlePlayerFlashed(e); err != nil {
 			if parseErr, ok := err.(*types.ParseError); ok {
@@ -649,27 +619,7 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	// Aggregate player match events before logging
 	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
-	dp.logger.WithFields(logrus.Fields{
-		"map_name":            mapName,
-		"total_rounds":        match.TotalRounds,
-		"winning_team":        match.WinningTeam,
-		"winning_team_score":  match.WinningTeamScore,
-		"losing_team_score":   match.LosingTeamScore,
-		"team_a_wins":         teamAWins,
-		"team_b_wins":         teamBWins,
-		"team_a_started_as":   eventProcessor.teamAStartedAs,
-		"team_b_started_as":   eventProcessor.teamBStartedAs,
-		"playback_ticks":      match.PlaybackTicks,
-		"match_type":          match.MatchType,
-		"game_mode":           gameMode.Mode,
-		"game_mode_display":   gameMode.DisplayName,
-		"gunfight_events":     len(matchState.GunfightEvents),
-		"grenade_events":      len(matchState.GrenadeEvents),
-		"damage_events":       len(matchState.DamageEvents),
-		"round_events":        len(matchState.RoundEvents),
-		"player_round_events": len(matchState.PlayerRoundEvents),
-		"player_match_events": len(matchState.PlayerMatchEvents),
-	}).Info("Match data built with event counts")
+	// Match data built with event counts
 
 	return &types.ParsedDemoData{
 		Match:             match,
@@ -717,29 +667,22 @@ func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
 				hasValidRank = true
 			}
 
-			dp.logger.WithFields(logrus.Fields{
-				"player_name": player.Name,
-				"steam_id":    types.SteamIDToString(player.SteamID64),
-				"rank":        rank,
-				"rank_type":   rankType,
-			}).Debug("Match type detection - player rank analysis")
+			// Match type detection - player rank analysis
 		}
 	}
 
 	dp.logger.WithFields(logrus.Fields{
 		"rank_type_counts": rankTypeCounts,
 		"has_valid_rank":   hasValidRank,
-		"total_players":    len(players),
-	}).Debug("Match type detection analysis")
+	})
+	// Match type detection analysis
 
 	// If any player has a valid rank, it's a Valve match
 	if hasValidRank {
-		dp.logger.Info("Valid ranks detected, match type: valve")
 		return types.MatchTypeValve
 	}
 
 	// No valid ranks found, default to other
-	dp.logger.Info("No valid ranks detected, match type: other")
 	return types.MatchTypeOther
 }
 
@@ -806,7 +749,7 @@ func (dp *DemoParser) cleanupMatchData(ctx context.Context) {
 		return
 	}
 
-	dp.logger.WithField("match_id", dp.matchID).Info("Cleaning up match data")
+	// Cleaning up match data
 
 	if err := dp.playerTickService.DeletePlayerTickDataByMatch(ctx, dp.matchID); err != nil {
 		dp.logger.WithFields(logrus.Fields{
@@ -814,6 +757,6 @@ func (dp *DemoParser) cleanupMatchData(ctx context.Context) {
 			"error":    err,
 		}).Error("Failed to cleanup match data")
 	} else {
-		dp.logger.WithField("match_id", dp.matchID).Info("Successfully cleaned up match data")
+		// Successfully cleaned up match data
 	}
 }

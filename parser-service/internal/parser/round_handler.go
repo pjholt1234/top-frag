@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"math"
 	"parser-service/internal/types"
 	"strconv"
@@ -43,9 +42,7 @@ func (rh *RoundHandler) ProcessRoundEnd() error {
 			WithContext("event_type", "ProcessRoundEnd")
 	}
 
-	rh.logger.WithFields(logrus.Fields{
-		"round": roundNumber,
-	}).Debug("Processing round-level player statistics")
+	// Processing round-level player statistics
 
 	playersInRound := rh.getPlayersInRound(roundNumber)
 
@@ -69,10 +66,7 @@ func (rh *RoundHandler) ProcessRoundEnd() error {
 	// Calculate impact values for gunfight events in this round
 	rh.calculateRoundImpact(roundNumber)
 
-	rh.logger.WithFields(logrus.Fields{
-		"round":         roundNumber,
-		"players_count": len(playersInRound),
-	}).Debug("Completed round-level player statistics processing")
+	// Completed round-level player statistics processing
 
 	return nil
 }
@@ -640,12 +634,7 @@ func (rh *RoundHandler) aggregateClutchMetrics(event *types.PlayerRoundEvent, pl
 				clutchAttempts[aliveEnemies]++
 				activeClutchScenario = &aliveEnemies
 
-				rh.logger.WithFields(logrus.Fields{
-					"player":      playerSteamID,
-					"round":       roundNumber,
-					"clutch_type": fmt.Sprintf("1v%d", aliveEnemies),
-					"round_time":  death.RoundTime,
-				}).Debug("Clutch scenario detected")
+				// Clutch scenario detected
 			} else if *activeClutchScenario != aliveEnemies {
 				// Clutch scenario changed (enemy died)
 				activeClutchScenario = &aliveEnemies
@@ -656,12 +645,7 @@ func (rh *RoundHandler) aggregateClutchMetrics(event *types.PlayerRoundEvent, pl
 				// Player won the clutch!
 				clutchWins[*activeClutchScenario]++
 
-				rh.logger.WithFields(logrus.Fields{
-					"player":      playerSteamID,
-					"round":       roundNumber,
-					"clutch_type": fmt.Sprintf("1v%d", *activeClutchScenario),
-					"round_time":  death.RoundTime,
-				}).Debug("Clutch won")
+				// Clutch won
 			}
 			activeClutchScenario = nil
 		}
@@ -681,11 +665,7 @@ func (rh *RoundHandler) aggregateClutchMetrics(event *types.PlayerRoundEvent, pl
 			// Player won the final clutch
 			clutchWins[*activeClutchScenario]++
 
-			rh.logger.WithFields(logrus.Fields{
-				"player":      playerSteamID,
-				"round":       roundNumber,
-				"clutch_type": fmt.Sprintf("1v%d", *activeClutchScenario),
-			}).Debug("Final clutch won")
+			// Final clutch won
 		}
 	}
 
@@ -821,14 +801,7 @@ func (rh *RoundHandler) aggregateTimeToContact(event *types.PlayerRoundEvent, pl
 			}
 		}
 
-		rh.logger.WithFields(logrus.Fields{
-			"player":                playerSteamID,
-			"round":                 roundNumber,
-			"time_to_contact":       timeToContact,
-			"earliest_round_time":   earliestRoundTime,
-			"contact_round_time":    contactRoundTime,
-			"earliest_contact_tick": earliestContactTick,
-		}).Debug("Time to contact calculated")
+		// Time to contact calculated
 	}
 
 	event.TimeToContact = timeToContact
@@ -889,23 +862,11 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 			if gunfightEvent.Player1SteamID == playerSteamID {
 				// Player was killed by Player2, so Player2 gets the grenades
 				grenadeValueLostOnDeath = gunfightEvent.Player2GrenadeValue
-				rh.logger.WithFields(logrus.Fields{
-					"player_steam_id":             playerSteamID,
-					"round_number":                roundNumber,
-					"killer_steam_id":             gunfightEvent.Player2SteamID,
-					"killer_grenade_value":        gunfightEvent.Player2GrenadeValue,
-					"grenade_value_lost_on_death": grenadeValueLostOnDeath,
-				}).Info("Player died - grenade value lost calculated")
+				// Player died - grenade value lost calculated
 			} else if gunfightEvent.Player2SteamID == playerSteamID {
 				// Player was killed by Player1, so Player1 gets the grenades
 				grenadeValueLostOnDeath = gunfightEvent.Player1GrenadeValue
-				rh.logger.WithFields(logrus.Fields{
-					"player_steam_id":             playerSteamID,
-					"round_number":                roundNumber,
-					"killer_steam_id":             gunfightEvent.Player1SteamID,
-					"killer_grenade_value":        gunfightEvent.Player1GrenadeValue,
-					"grenade_value_lost_on_death": grenadeValueLostOnDeath,
-				}).Info("Player died - grenade value lost calculated")
+				// Player died - grenade value lost calculated
 			} else {
 				continue
 			}
@@ -921,12 +882,7 @@ func (rh *RoundHandler) aggregateEconomyMetrics(event *types.PlayerRoundEvent, p
 	event.KillsVsFullBuy = killsVsFullBuy
 	event.GrenadeValueLostOnDeath = grenadeValueLostOnDeath
 
-	// Debug logging for final grenade value lost on death
-	rh.logger.WithFields(logrus.Fields{
-		"player_steam_id":                   playerSteamID,
-		"round_number":                      roundNumber,
-		"final_grenade_value_lost_on_death": grenadeValueLostOnDeath,
-	}).Info("Final grenade value lost on death set")
+	// Final grenade value lost on death set
 }
 
 // getPlayerEquipmentValueInRound gets the player's equipment value for this round

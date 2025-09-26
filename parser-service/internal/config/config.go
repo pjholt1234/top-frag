@@ -113,7 +113,7 @@ func setDefaults() {
 	viper.SetDefault("batch.retry_delay", "1s")
 	viper.SetDefault("batch.http_timeout", "30s")
 
-	viper.SetDefault("logging.level", "info")
+	viper.SetDefault("logging.level", "warn")
 	viper.SetDefault("logging.format", "json")
 	viper.SetDefault("logging.file", "service.log")
 	viper.SetDefault("logging.error_file", "errors.log")

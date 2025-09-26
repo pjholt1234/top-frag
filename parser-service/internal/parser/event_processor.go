@@ -326,42 +326,26 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 			WithContext("method", "assignTeamBasedOnRound1To12")
 	}
 
-	ep.logger.WithFields(logrus.Fields{
-		"steam_id":            steamID,
-		"side":                side,
-		"current_round":       ep.currentRound,
-		"assignment_complete": ep.assignmentComplete,
-	}).Debug("Attempting team assignment")
+	// Attempting team assignment
 
 	if ep.currentRound > 12 {
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id":      steamID,
-			"current_round": ep.currentRound,
-		}).Debug("Skipping team assignment - round > 12")
+		// Skipping team assignment - round > 12
 		return nil
 	}
 
 	if ep.assignmentComplete {
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id": steamID,
-		}).Debug("Skipping team assignment - already complete")
+		// Skipping team assignment - already complete
 		return nil
 	}
 
 	if _, assigned := ep.teamAssignments[steamID]; assigned {
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id": steamID,
-		}).Debug("Skipping team assignment - player already assigned")
+		// Skipping team assignment - player already assigned
 		return nil
 	}
 
 	if side == "CT" {
 		ep.teamAssignments[steamID] = "A"
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id":      steamID,
-			"assigned_team": "A",
-			"side":          side,
-		}).Info("Player assigned to team A (CT)")
+		// Player assigned to team A (CT)
 		if ep.teamAStartedAs == "" {
 			ep.teamAStartedAs = "CT"
 			ep.teamBStartedAs = "T"
@@ -370,11 +354,7 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 		}
 	} else if side == "T" {
 		ep.teamAssignments[steamID] = "B"
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id":      steamID,
-			"assigned_team": "B",
-			"side":          side,
-		}).Info("Player assigned to team B (T)")
+		// Player assigned to team B (T)
 		if ep.teamBStartedAs == "" {
 			ep.teamBStartedAs = "T"
 			ep.teamAStartedAs = "CT"
@@ -385,13 +365,7 @@ func (ep *EventProcessor) assignTeamBasedOnRound1To12(steamID string, side strin
 
 	if len(ep.teamAssignments) == 10 {
 		ep.assignmentComplete = true
-		ep.logger.Info("Team assignment complete", logrus.Fields{
-			"team_a_started_as":   ep.teamAStartedAs,
-			"team_b_started_as":   ep.teamBStartedAs,
-			"team_a_current_side": ep.teamACurrentSide,
-			"team_b_current_side": ep.teamBCurrentSide,
-			"assignments":         ep.teamAssignments,
-		})
+		// Team assignment complete
 	}
 
 	return nil
@@ -408,11 +382,7 @@ func (ep *EventProcessor) getPlayerCurrentSide(steamID string) string {
 	assignedTeam, assigned := ep.teamAssignments[steamID]
 
 	if !assigned {
-		ep.logger.WithFields(logrus.Fields{
-			"steam_id":               steamID,
-			"current_round":          ep.currentRound,
-			"team_assignments_count": len(ep.teamAssignments),
-		}).Debug("Player not assigned to team")
+		// Player not assigned to team
 		return "Unknown"
 	}
 
@@ -442,9 +412,7 @@ func (ep *EventProcessor) UpdateCurrentTickAndPlayers(tick int64, gameState inte
 	ep.currentTick = tick
 
 	if tick%1000 == 0 {
-		ep.logger.WithFields(logrus.Fields{
-			"tick": tick,
-		}).Debug("Processing frame for position tracking")
+		// Processing frame for position tracking
 	}
 
 	if gameState == nil {
@@ -475,28 +443,14 @@ func (ep *EventProcessor) getCurrentRoundTime() int {
 	timeSinceRoundStart := int((ep.currentTick - ep.matchState.RoundStartTick) / 64)
 
 	if timeSinceRoundStart < types.CS2FreezeTime {
-		ep.logger.WithFields(logrus.Fields{
-			"current_tick":      ep.currentTick,
-			"round_start_tick":  ep.matchState.RoundStartTick,
-			"time_since_start":  timeSinceRoundStart,
-			"freeze_time":       types.CS2FreezeTime,
-			"actual_round_time": 0,
-			"tick_difference":   ep.currentTick - ep.matchState.RoundStartTick,
-		}).Info("Calculated round time (still in freeze time)")
+		// Calculated round time (still in freeze time)
 
 		return 0
 	}
 
 	actualRoundTime := timeSinceRoundStart - types.CS2FreezeTime
 
-	ep.logger.WithFields(logrus.Fields{
-		"current_tick":      ep.currentTick,
-		"round_start_tick":  ep.matchState.RoundStartTick,
-		"time_since_start":  timeSinceRoundStart,
-		"freeze_time":       types.CS2FreezeTime,
-		"actual_round_time": actualRoundTime,
-		"tick_difference":   ep.currentTick - ep.matchState.RoundStartTick,
-	}).Info("Calculated round time")
+	// Calculated round time
 
 	return actualRoundTime
 }
@@ -536,13 +490,7 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 		}
 	}
 
-	ep.logger.WithFields(logrus.Fields{
-		"killer_side":       killerSide,
-		"victim_side":       victimSide,
-		"killer_team_alive": killerTeamAlive,
-		"victim_team_alive": victimTeamAlive,
-		"round_scenario":    fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive),
-	}).Debug("Calculated round scenario")
+	// Calculated round scenario
 
 	return fmt.Sprintf("%dv%d", killerTeamAlive, victimTeamAlive)
 }
