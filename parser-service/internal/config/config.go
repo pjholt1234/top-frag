@@ -115,8 +115,8 @@ func setDefaults() {
 
 	viper.SetDefault("logging.level", "warn")
 	viper.SetDefault("logging.format", "json")
-	viper.SetDefault("logging.file", "service.log")
-	viper.SetDefault("logging.error_file", "errors.log")
+	viper.SetDefault("logging.file", "logs/service.log")
+	viper.SetDefault("logging.error_file", "logs/errors.log")
 
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 3306)

@@ -17,3 +17,5 @@ demo.dem
 /parser-service/parser-service.code-workspace
 /web-app/.env.testing
 /parser-service/errors.log
+/parser-service/logs/errors.log
+/parser-service/logs/service.log
