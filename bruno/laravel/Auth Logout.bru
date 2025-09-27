@@ -1,0 +1,26 @@
+meta {
+  name: Auth Logout
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{laravel_base_url}}/api/auth/logout
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Logout user
+  description: |
+    Logout the currently authenticated user and invalidate their token.
+    Requires Bearer token authentication.
+    
+    Returns:
+    - message: Success message
+}

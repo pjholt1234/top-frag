@@ -1,0 +1,41 @@
+meta {
+  name: Progress Callback
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{laravel_base_url}}/api/job/callback/progress
+  body: json
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "job_id": "{{job_id}}",
+    "progress": 50,
+    "status": "processing",
+    "message": "Parsing demo file...",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+
+docs {
+  summary: Progress callback
+  description: |
+    Receive progress updates for demo parsing jobs.
+    Requires API key authentication.
+    
+    Body Parameters:
+    - job_id: Unique job identifier
+    - progress: Progress percentage (0-100)
+    - status: Current processing status
+    - message: Progress message
+    - timestamp: Update timestamp
+}

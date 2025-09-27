@@ -1,0 +1,47 @@
+meta {
+  name: Create Grenade Favourite
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{laravel_base_url}}/api/grenade-favourites
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+body:json {
+  {
+    "match_id": "{{match_id}}",
+    "grenade_id": "grenade_123",
+    "player_id": "player_456",
+    "round": 15,
+    "tick": 12345
+  }
+}
+
+docs {
+  summary: Create grenade favourite
+  description: |
+    Create a new grenade favourite.
+    Requires Bearer token authentication.
+    
+    Body Parameters:
+    - match_id: Match identifier
+    - grenade_id: Grenade identifier
+    - player_id: Player identifier
+    - round: Round number
+    - tick: Game tick
+    
+    Returns:
+    - id: Favourite ID
+    - match_id: Match identifier
+    - grenade_id: Grenade identifier
+    - created_at: Creation timestamp
+}

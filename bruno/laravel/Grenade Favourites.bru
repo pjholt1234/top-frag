@@ -1,0 +1,27 @@
+meta {
+  name: Grenade Favourites
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{laravel_base_url}}/api/grenade-favourites
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get grenade favourites
+  description: |
+    Get user's grenade favourites.
+    Requires Bearer token authentication.
+    
+    Returns:
+    - favourites: Array of favourited grenades
+    - total: Total number of favourites
+}

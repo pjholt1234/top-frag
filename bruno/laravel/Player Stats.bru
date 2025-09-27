@@ -1,0 +1,35 @@
+meta {
+  name: Player Stats
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{laravel_base_url}}/api/matches/{{match_id}}/player-stats
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get player statistics
+  description: |
+    Get player statistics for a specific match.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - matchId: The unique match identifier
+    
+    Returns:
+    - players: Array of player statistics including:
+      - name: Player name
+      - kills: Number of kills
+      - deaths: Number of deaths
+      - assists: Number of assists
+      - adr: Average damage per round
+      - rating: Player rating
+}

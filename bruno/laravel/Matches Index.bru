@@ -1,0 +1,32 @@
+meta {
+  name: Matches Index
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{laravel_base_url}}/api/matches
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get user matches
+  description: |
+    Get a list of matches for the authenticated user.
+    Requires Bearer token authentication.
+    
+    Query Parameters (optional):
+    - page: Page number for pagination
+    - limit: Number of matches per page
+    - status: Filter by match status
+    
+    Returns:
+    - data: Array of match objects
+    - pagination: Pagination information
+}

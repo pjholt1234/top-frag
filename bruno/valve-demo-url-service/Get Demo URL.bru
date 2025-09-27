@@ -1,0 +1,44 @@
+meta {
+  name: Get Demo URL
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{valve_service_base_url}}/demo
+  body: json
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "sharecode": "CSGO-abcde-fghij-klmno-pqrst-uvwxy"
+  }
+}
+
+docs {
+  summary: Get demo URL from sharecode
+  description: |
+    Convert a Steam sharecode to a demo download URL.
+    Requires API key authentication.
+    
+    Body Parameters:
+    - sharecode: Steam sharecode (34 characters, CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX format)
+    
+    Returns:
+    - matchId: The sharecode used
+    - demoUrl: Direct download URL for the demo file
+    - service: Service identifier
+    - timestamp: When the URL was generated
+    
+    Error Responses:
+    - 400: Invalid sharecode format
+    - 404: Demo not found or unavailable
+    - 500: Internal server error
+}

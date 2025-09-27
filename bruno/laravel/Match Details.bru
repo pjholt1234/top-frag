@@ -1,0 +1,34 @@
+meta {
+  name: Match Details
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{laravel_base_url}}/api/matches/{{match_id}}/match-details
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get match details
+  description: |
+    Get detailed information about a specific match.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - matchId: The unique match identifier
+    
+    Returns:
+    - match_id: Match identifier
+    - map: Map name
+    - date: Match date
+    - duration: Match duration
+    - score: Final score
+    - players: Array of player information
+}

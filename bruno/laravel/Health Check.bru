@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{parser_base_url}}/health
+  url: {{laravel_base_url}}/api/health
   body: none
   auth: none
 }
@@ -15,15 +15,14 @@ headers {
 }
 
 docs {
-  summary: Check parser service health
+  summary: Check API health status
   description: |
-    Returns the health status of the parser service.
+    Returns the health status of the Laravel API.
     This endpoint does not require authentication.
     
     Response includes:
     - status: Current health status
     - timestamp: When the check was performed
-    - uptime: Service uptime
+    - uptime: Server uptime information
     - memory: Memory usage statistics
-    - goroutines: Number of active goroutines
 }

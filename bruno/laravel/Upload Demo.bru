@@ -1,0 +1,35 @@
+meta {
+  name: Upload Demo
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{laravel_base_url}}/api/upload/demo
+  body: formdata
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:formdata {
+  file: @{{demo_path}}
+}
+
+docs {
+  summary: Upload demo file
+  description: |
+    Upload a demo file for parsing and analysis.
+    Requires API key authentication.
+    
+    Body Parameters:
+    - file: Demo file (.dem format)
+    
+    Returns:
+    - job_id: Unique job identifier
+    - status: Upload status
+    - message: Status message
+}

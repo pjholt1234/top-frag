@@ -1,0 +1,37 @@
+meta {
+  name: Auth Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{laravel_base_url}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "john.doe@example.com",
+    "password": "securepassword123"
+  }
+}
+
+docs {
+  summary: Login user
+  description: |
+    Authenticate a user with email and password.
+    
+    Body Parameters:
+    - email: User's email address
+    - password: User's password
+    
+    Returns:
+    - user: User information
+    - token: Authentication token for subsequent requests
+}

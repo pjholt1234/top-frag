@@ -1,0 +1,37 @@
+meta {
+  name: Grenade Explorer
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{laravel_base_url}}/api/matches/{{match_id}}/grenade-explorer
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get grenade explorer data
+  description: |
+    Get grenade explorer data for a specific match.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - matchId: The unique match identifier
+    
+    Query Parameters (optional):
+    - team: Filter by team (CT/T)
+    - player: Filter by specific player
+    - grenade_type: Filter by grenade type
+    - round: Filter by specific round
+    
+    Returns:
+    - grenades: Array of grenade events
+    - filters: Available filter options
+    - statistics: Grenade usage statistics
+}

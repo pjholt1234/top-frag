@@ -1,0 +1,45 @@
+meta {
+  name: Completion Callback
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{laravel_base_url}}/api/job/callback/completion
+  body: json
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "job_id": "{{job_id}}",
+    "status": "completed",
+    "result": {
+      "match_id": "12345",
+      "players": 10,
+      "rounds": 30,
+      "duration": 1800
+    },
+    "timestamp": "2024-01-15T10:35:00Z"
+  }
+}
+
+docs {
+  summary: Completion callback
+  description: |
+    Receive completion notifications for demo parsing jobs.
+    Requires API key authentication.
+    
+    Body Parameters:
+    - job_id: Unique job identifier
+    - status: Final status (completed, failed)
+    - result: Parsing results (if successful)
+    - error: Error details (if failed)
+    - timestamp: Completion timestamp
+}

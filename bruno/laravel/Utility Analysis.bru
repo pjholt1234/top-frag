@@ -1,0 +1,32 @@
+meta {
+  name: Utility Analysis
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{laravel_base_url}}/api/matches/{{match_id}}/utility-analysis
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get utility analysis
+  description: |
+    Get utility analysis data for a specific match.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - matchId: The unique match identifier
+    
+    Returns:
+    - utility_usage: Array of utility usage statistics
+    - grenade_effectiveness: Effectiveness ratings
+    - flash_impact: Flash bang impact data
+    - smoke_coverage: Smoke coverage analysis
+}

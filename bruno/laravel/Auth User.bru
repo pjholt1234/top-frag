@@ -1,0 +1,31 @@
+meta {
+  name: Auth User
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{laravel_base_url}}/api/auth/user
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get current user
+  description: |
+    Get the currently authenticated user's information.
+    Requires Bearer token authentication.
+    
+    Returns:
+    - id: User ID
+    - name: User's name
+    - email: User's email
+    - steam_id: Steam ID (if linked)
+    - created_at: Account creation timestamp
+    - updated_at: Last update timestamp
+}

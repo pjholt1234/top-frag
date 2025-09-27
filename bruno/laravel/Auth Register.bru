@@ -1,0 +1,42 @@
+meta {
+  name: Auth Register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{laravel_base_url}}/api/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "password": "securepassword123",
+    "password_confirmation": "securepassword123"
+  }
+}
+
+docs {
+  summary: Register a new user
+  description: |
+    Register a new user account with the application.
+    Requires name, email, password, and password confirmation.
+    
+    Body Parameters:
+    - name: User's full name
+    - email: User's email address (must be unique)
+    - password: User's password (minimum 8 characters)
+    - password_confirmation: Password confirmation (must match password)
+    
+    Returns:
+    - user: User information
+    - token: Authentication token for subsequent requests
+}

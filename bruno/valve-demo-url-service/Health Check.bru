@@ -1,0 +1,31 @@
+meta {
+  name: Health Check
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{valve_service_base_url}}/health
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  summary: Check valve demo URL service health
+  description: |
+    Returns the health status of the valve demo URL service.
+    This endpoint does not require authentication.
+    
+    Response includes:
+    - status: Current health status
+    - timestamp: When the check was performed
+    - uptime: Service uptime
+    - version: Service version
+    - environment: Current environment
+    - dependencies: Status of Steam and Game Coordinator connections
+    - system: System information including memory usage
+}

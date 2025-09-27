@@ -1,0 +1,31 @@
+meta {
+  name: Metrics
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{valve_service_base_url}}/metrics
+  body: none
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  X-API-Key: {{api_key}}
+}
+
+docs {
+  summary: Get service metrics
+  description: |
+    Get detailed metrics about the valve demo URL service.
+    Requires API key authentication.
+    
+    Response includes:
+    - requests: Total number of requests processed
+    - errors: Total number of errors
+    - demosProcessed: Total number of demos processed
+    - uptime: Service uptime in seconds
+    - memory: Memory usage statistics
+    - timestamp: When metrics were collected
+}

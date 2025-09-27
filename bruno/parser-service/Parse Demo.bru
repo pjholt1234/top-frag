@@ -1,0 +1,44 @@
+meta {
+  name: Parse Demo
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{parser_base_url}}/api/parse-demo
+  body: json
+  auth: api-key
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-API-Key: {{api_key}}
+}
+
+body:json {
+  {
+    "demo_url": "https://example.com/demo.dem",
+    "job_id": "{{job_id}}",
+    "callback_url": "{{completion_callback_url}}",
+    "progress_callback_url": "{{progress_callback_url}}"
+  }
+}
+
+docs {
+  summary: Parse demo file
+  description: |
+    Submit a demo file for parsing and analysis.
+    Requires API key authentication.
+    
+    Body Parameters:
+    - demo_url: URL to the demo file
+    - job_id: Unique job identifier
+    - callback_url: URL to call when parsing is complete
+    - progress_callback_url: URL to call for progress updates
+    
+    Returns:
+    - job_id: Unique job identifier
+    - status: Initial parsing status
+    - message: Status message
+}

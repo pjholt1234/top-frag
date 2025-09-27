@@ -1,0 +1,40 @@
+meta {
+  name: Steam Sharecode Store
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{laravel_base_url}}/api/steam-sharecode
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+body:json {
+  {
+    "sharecode": "CSGO-abcde-fghij-klmno-pqrst-uvwxy"
+  }
+}
+
+docs {
+  summary: Store Steam sharecode
+  description: |
+    Store a Steam sharecode for processing.
+    Requires Bearer token authentication.
+    
+    Body Parameters:
+    - sharecode: Steam sharecode (34 characters, CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX format)
+    
+    Returns:
+    - id: Sharecode ID
+    - sharecode: The stored sharecode
+    - user_id: User ID who stored it
+    - is_processing: Whether the sharecode is being processed
+    - created_at: Creation timestamp
+}

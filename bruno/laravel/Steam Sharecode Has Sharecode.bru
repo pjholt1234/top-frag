@@ -1,0 +1,27 @@
+meta {
+  name: Steam Sharecode Has Sharecode
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{laravel_base_url}}/api/steam-sharecode/has-sharecode
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Check if user has sharecode
+  description: |
+    Check if the current user has any stored sharecodes.
+    Requires Bearer token authentication.
+    
+    Returns:
+    - has_sharecode: Boolean indicating if user has sharecodes
+    - count: Number of sharecodes (if any)
+}
