@@ -38,8 +38,8 @@ func TestLoad_DefaultValues(t *testing.T) {
 
 	assert.Equal(t, "warn", cfg.Logging.Level)
 	assert.Equal(t, "json", cfg.Logging.Format)
-	assert.Equal(t, "service.log", cfg.Logging.File)
-	assert.Equal(t, "errors.log", cfg.Logging.ErrorFile)
+	assert.Equal(t, "logs/service.log", cfg.Logging.File)
+	assert.Equal(t, "logs/errors.log", cfg.Logging.ErrorFile)
 }
 
 func TestLoad_ValidConfigFile(t *testing.T) {
