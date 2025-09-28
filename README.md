@@ -1,6 +1,6 @@
 # Top Frag - CS2 Demo Analysis Platform
 
-> **🎯 A comprehensive platform for analyzing Counter-Strike 2 demo files, extracting detailed game events, and providing insights through a modern web interface.**
+>A comprehensive platform for analyzing Counter-Strike 2 demo files, extracting detailed game events, and providing insights through a modern web interface.
 
 ## 🎯 Project Overview
 
@@ -62,11 +62,6 @@ top-frag/
 ├── bruno/                   # API testing collections
 └── README.md               # This file
 ```
-
-### Key Components
-- **Parser Service**: High-performance Go service that parses CS2 demo files and extracts game events
-- **Web Application**: Laravel backend with React frontend for user interface and data management
-- **Valve Demo URL Service**: Node.js microservice that decodes CS2 sharecodes and retrieves demo download URLs via Steam Game Coordinator
 
 ---
 
