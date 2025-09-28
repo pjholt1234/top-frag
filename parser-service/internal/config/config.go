@@ -98,7 +98,7 @@ func setDefaults() {
 	viper.SetDefault("server.read_timeout", "30s")
 	viper.SetDefault("server.write_timeout", "30s")
 	viper.SetDefault("server.idle_timeout", "60s")
-	viper.SetDefault("server.api_key", "top-frag-parser-api-key-2024")
+	viper.SetDefault("server.api_key", "")
 
 	viper.SetDefault("parser.max_concurrent_jobs", 3)
 	viper.SetDefault("parser.progress_interval", "5s")
@@ -121,7 +121,7 @@ func setDefaults() {
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 3306)
 	viper.SetDefault("database.user", "root")
-	viper.SetDefault("database.password", "root")
+	viper.SetDefault("database.password", "")
 	viper.SetDefault("database.dbname", "top-frag-parser")
 	viper.SetDefault("database.charset", "utf8mb4")
 	viper.SetDefault("database.max_idle", 10)
