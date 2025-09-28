@@ -1,0 +1,43 @@
+# Logs
+logs/
+*.log
+
+# Build artifacts
+parser-service
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Coverage
+coverage/
+coverage.html
+coverage.out
+coverage.txt
+
+# Test files
+*_test.go
+*_test_test.go
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Git
+.git/
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Air files
+.air.toml
+tmp/

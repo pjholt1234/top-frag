@@ -1,21 +1,34 @@
-FROM golang:1.21-alpine
+FROM golang:1.25-alpine
+
+# Install air for hot reloading and other dependencies
+RUN go install github.com/air-verse/air@latest
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    make \
+    gcc \
+    musl-dev
 
 WORKDIR /app
 
 # Copy go mod files first for better caching
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN go build -o main .
+# Create logs directory
+RUN mkdir -p logs
 
-# Make sure the binary is executable
-RUN chmod +x main
+# Create tmp directory for air
+RUN mkdir -p tmp
+
+# Set permissions
+RUN chmod +x tmp
 
 EXPOSE 8080
 
 # Default command for production build
-CMD ["./main"] 
+CMD ["go", "run", "main.go"] 
