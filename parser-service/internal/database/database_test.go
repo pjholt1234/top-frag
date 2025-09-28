@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -174,8 +175,9 @@ func TestDatabase_Integration(t *testing.T) {
 }
 
 func TestDatabase_ConcurrentAccess(t *testing.T) {
-	// Use SQLite for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use file-based SQLite for concurrent testing (in-memory doesn't handle concurrency well)
+	tempFile := filepath.Join(t.TempDir(), "test.db")
+	db, err := gorm.Open(sqlite.Open(tempFile), &gorm.Config{})
 	assert.NoError(t, err)
 
 	// Auto-migrate the table
@@ -187,6 +189,10 @@ func TestDatabase_ConcurrentAccess(t *testing.T) {
 		DB:     db,
 		Logger: logger,
 	}
+
+	// Ensure table exists before concurrent access
+	err = db.AutoMigrate(&types.PlayerTickData{})
+	assert.NoError(t, err)
 
 	// Test concurrent access
 	done := make(chan bool, 10)

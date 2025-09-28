@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -378,8 +379,9 @@ func TestPlayerTickService_GetPlayerTickDataStats(t *testing.T) {
 }
 
 func TestPlayerTickService_ConcurrentAccess(t *testing.T) {
-	// Use SQLite for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use file-based SQLite for concurrent testing (in-memory doesn't handle concurrency well)
+	tempFile := filepath.Join(t.TempDir(), "test.db")
+	db, err := gorm.Open(sqlite.Open(tempFile), &gorm.Config{})
 	assert.NoError(t, err)
 
 	// Auto-migrate the table

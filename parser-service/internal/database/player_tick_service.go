@@ -149,31 +149,41 @@ func (s *PlayerTickService) GetPlayerTickDataStats(ctx context.Context, matchID 
 	}
 
 	// Get unique ticks count
+	var uniqueTicks []int64
 	if err := s.db.WithContext(ctx).
 		Model(&types.PlayerTickData{}).
 		Where("match_id = ?", matchID).
 		Distinct("tick").
-		Count(&stats.UniqueTicks).Error; err != nil {
+		Pluck("tick", &uniqueTicks).Error; err != nil {
 		return nil, fmt.Errorf("failed to get unique ticks count: %w", err)
 	}
+	stats.UniqueTicks = int64(len(uniqueTicks))
 
 	// Get unique players count
+	var uniquePlayers []string
 	if err := s.db.WithContext(ctx).
 		Model(&types.PlayerTickData{}).
 		Where("match_id = ?", matchID).
 		Distinct("player_id").
-		Count(&stats.UniquePlayers).Error; err != nil {
+		Pluck("player_id", &uniquePlayers).Error; err != nil {
 		return nil, fmt.Errorf("failed to get unique players count: %w", err)
 	}
+	stats.UniquePlayers = int64(len(uniquePlayers))
 
 	// Get min and max ticks
+	var tickRange struct {
+		MinTick int64 `json:"min_tick"`
+		MaxTick int64 `json:"max_tick"`
+	}
 	if err := s.db.WithContext(ctx).
 		Model(&types.PlayerTickData{}).
 		Where("match_id = ?", matchID).
 		Select("MIN(tick) as min_tick, MAX(tick) as max_tick").
-		Scan(&stats).Error; err != nil {
+		Scan(&tickRange).Error; err != nil {
 		return nil, fmt.Errorf("failed to get tick range: %w", err)
 	}
+	stats.MinTick = tickRange.MinTick
+	stats.MaxTick = tickRange.MaxTick
 
 	return map[string]interface{}{
 		"total_records":  stats.TotalRecords,

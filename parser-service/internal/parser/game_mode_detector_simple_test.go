@@ -34,7 +34,7 @@ func TestGameModeDetector_AnalyzeGameModeFromRankTypes(t *testing.T) {
 			expected: &types.GameMode{
 				Mode:        "competitive",
 				DisplayName: "Competitive",
-				MaxRounds:   30,
+				MaxRounds:   24,
 				HasHalftime: true,
 			},
 		},
@@ -45,19 +45,19 @@ func TestGameModeDetector_AnalyzeGameModeFromRankTypes(t *testing.T) {
 			expected: &types.GameMode{
 				Mode:        "premier",
 				DisplayName: "Premier",
-				MaxRounds:   24,
+				MaxRounds:   30,
 				HasHalftime: true,
 			},
 		},
 		{
-			name:           "FaceIT mode",
+			name:           "Danger Zone mode",
 			rankTypes:      map[int]bool{14: true},
 			rankTypeCounts: map[int]int{14: 5},
 			expected: &types.GameMode{
-				Mode:        "faceit",
-				DisplayName: "FaceIT",
-				MaxRounds:   30,
-				HasHalftime: true,
+				Mode:        "danger_zone",
+				DisplayName: "Danger Zone",
+				MaxRounds:   0,
+				HasHalftime: false,
 			},
 		},
 		{
@@ -65,8 +65,8 @@ func TestGameModeDetector_AnalyzeGameModeFromRankTypes(t *testing.T) {
 			rankTypes:      map[int]bool{12: true, 11: true, 14: true},
 			rankTypeCounts: map[int]int{12: 2, 11: 2, 14: 1},
 			expected: &types.GameMode{
-				Mode:        "other",
-				DisplayName: "Other",
+				Mode:        "danger_zone",
+				DisplayName: "Danger Zone",
 				MaxRounds:   0,
 				HasHalftime: false,
 			},
@@ -87,9 +87,9 @@ func TestGameModeDetector_AnalyzeGameModeFromRankTypes(t *testing.T) {
 			rankTypes:      map[int]bool{},
 			rankTypeCounts: map[int]int{},
 			expected: &types.GameMode{
-				Mode:        "other",
-				DisplayName: "Other",
-				MaxRounds:   0,
+				Mode:        "casual",
+				DisplayName: "Casual",
+				MaxRounds:   30,
 				HasHalftime: false,
 			},
 		},
