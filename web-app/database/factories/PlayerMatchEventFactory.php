@@ -58,6 +58,12 @@ class PlayerMatchEventFactory extends Factory
             'kills_vs_full_buy' => $this->faker->numberBetween(0, 20),
             'average_grenade_value_lost' => $this->faker->randomFloat(2, 0, 1000),
             'matchmaking_rank' => $this->faker->numberBetween(1, 18),
+            'total_impact' => $this->faker->randomFloat(2, 0, 100),
+            'average_impact' => $this->faker->randomFloat(2, 0, 100),
+            'match_swing_percent' => $this->faker->randomFloat(2, 0, 100),
+            'impact_percentage' => $this->faker->randomFloat(2, 0, 100),
+            'rank_value' => $this->faker->numberBetween(1, 18),
+            'rank_type' => $this->faker->randomElement(['DMG', 'LEM', 'SMFC', 'GE']),
         ];
     }
 }
