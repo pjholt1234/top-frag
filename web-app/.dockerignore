@@ -1,0 +1,46 @@
+# Large demo files
+storage/app/public/demos/
+storage/app/public/*.dem
+*.dem
+
+# Node modules
+node_modules/
+
+# Vendor (will be installed in container)
+vendor/
+
+# Logs
+storage/logs/
+*.log
+
+# Cache
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Build artifacts
+public/build/
+public/hot
+
+# Coverage
+coverage-html/
+coverage.txt
+coverage.xml
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Git
+.git/
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+tmp/
+temp/

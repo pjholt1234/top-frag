@@ -1,0 +1,90 @@
+# Large demo files that shouldn't be in Docker context
+storage/app/public/demos/
+storage/app/public/*.dem
+*.dem
+
+# Node modules (will be installed in container)
+node_modules/
+web-app/node_modules/
+valve-demo-url-service/node_modules/
+
+# Vendor directories (will be installed in container)
+vendor/
+web-app/vendor/
+
+# Logs
+logs/
+*.log
+
+# Cache directories
+.cache/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Build artifacts
+dist/
+build/
+coverage/
+coverage-html/
+coverage.txt
+coverage.xml
+coverage.out
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test files
+tests/
+test/
+*_test.go
+*_test.php
+*_test.js
+*_test.ts
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.webm
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z

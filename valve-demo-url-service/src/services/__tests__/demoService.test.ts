@@ -3,6 +3,7 @@ import { SteamService } from '../steamService';
 
 interface MatchInfo {
     matchid: string;
+    matchtime: number;
     roundstatsall?: any[];
     watchablematchinfo?: any;
 }
@@ -32,6 +33,7 @@ describe('DemoService', () => {
             mockSteamService.isGCReady.mockReturnValue(true);
             const mockMatchInfo: MatchInfo = {
                 matchid: '123456789',
+                matchtime: 1640995200,
                 roundstatsall: [
                     { map: null },
                     { map: 'http://replay192.valve.net/730/test.dem.bz2' }
@@ -47,6 +49,7 @@ describe('DemoService', () => {
             mockSteamService.isGCReady.mockReturnValue(true);
             const mockMatchInfo: MatchInfo = {
                 matchid: '123456789',
+                matchtime: 1640995200,
                 roundstatsall: [{ map: null }],
                 watchablematchinfo: {
                     server_ip: 192,
@@ -63,6 +66,7 @@ describe('DemoService', () => {
             mockSteamService.isGCReady.mockReturnValue(true);
             const mockMatchInfo: MatchInfo = {
                 matchid: '123456789',
+                matchtime: 1640995200,
                 roundstatsall: [{ map: null }],
                 watchablematchinfo: {}
             };

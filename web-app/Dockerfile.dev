@@ -1,0 +1,110 @@
+FROM php:8.3-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    nodejs \
+    npm \
+    supervisor \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configure PHP for unbounded file uploads
+RUN echo "upload_max_filesize = 0" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 0" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit = -1" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "max_execution_time = 0" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "max_input_time = -1" >> /usr/local/etc/php/conf.d/uploads.ini
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies (without running scripts that need artisan)
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+# Copy package.json files
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Now run composer scripts that need the application files
+RUN composer run-script post-autoload-dump
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
+
+# Create supervisor configuration for running multiple processes
+RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'user=root' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:php-fpm]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=php-fpm' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/php-fpm.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/php-fpm.out.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:laravel-server]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=php artisan serve --host=0.0.0.0 --port=8000' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'directory=/var/www/html' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/laravel-server.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/laravel-server.out.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:vite-dev]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=npm run dev' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'directory=/var/www/html' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/vite-dev.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/vite-dev.out.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:queue-high]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=php artisan queue:listen --queue=high --tries=3 --timeout=300 --memory=512' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'directory=/var/www/html' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/queue-high.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/queue-high.out.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:queue-normal]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=php artisan queue:listen --queue=normal,steam-processing --tries=3 --timeout=300 --memory=512' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'directory=/var/www/html' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/queue-normal.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/queue-normal.out.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo '[program:queue-low]' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'command=php artisan queue:listen --queue=demo-download,low,default --tries=3 --timeout=300 --memory=512' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'directory=/var/www/html' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stderr_logfile=/var/log/queue-low.err.log' >> /etc/supervisor/conf.d/supervisord.conf \
+    && echo 'stdout_logfile=/var/log/queue-low.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8000 5173
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

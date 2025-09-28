@@ -1,0 +1,39 @@
+# Node modules
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Coverage
+coverage/
+coverage-html/
+coverage.txt
+coverage.xml
+
+# Logs
+logs/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Git
+.git/
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test files
+*_test.js
+*_test.ts
