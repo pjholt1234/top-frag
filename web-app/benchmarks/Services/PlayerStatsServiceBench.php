@@ -10,8 +10,10 @@ use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\Player;
+use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\MatchHistoryService;
+use App\Services\Matches\PlayerComplexionService;
+use App\Services\Matches\PlayerStatsService;
 use PhpBench\Benchmark\Metadata\Annotations\AfterMethods;
 use PhpBench\Benchmark\Metadata\Annotations\Assert;
 use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
@@ -24,19 +26,15 @@ use PhpBench\Benchmark\Metadata\Annotations\Warmup;
  *
  * @AfterMethods({"tearDown"})
  */
-class UserMatchHistoryServiceBench implements BenchmarkInterface
+class PlayerStatsServiceBench implements BenchmarkInterface
 {
-    private MatchHistoryService $service;
+    private PlayerStatsService $service;
 
     private User $user;
 
     private Player $player;
 
     private GameMatch $match;
-
-    private User $userWithMultipleMatches;
-
-    private User $userWithoutPlayer;
 
     private const int MAX_PLAYERS_PER_MATCH = 20;
 
@@ -53,9 +51,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
         // Set CACHE_ENABLED to false for benchmarking
         config(['app.cache_enabled' => false]);
 
-        $this->service = new MatchHistoryService(
-            matchDetailsService: new \App\Services\Matches\MatchDetailsService
-        );
+        $this->service = new PlayerStatsService(new PlayerComplexionService);
 
         $uniqueId = uniqid();
 
@@ -92,6 +88,21 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
             'team' => Team::TEAM_A,
         ]);
 
+        // Create player match events
+        foreach ($players as $player) {
+            PlayerMatchEvent::factory()->create([
+                'match_id' => $this->match->id,
+                'player_steam_id' => $player->steam_id,
+                'kills' => rand(10, 30),
+                'deaths' => rand(10, 30),
+                'assists' => rand(5, 15),
+                'adr' => rand(50, 150),
+                'first_kills' => rand(0, 5),
+                'first_deaths' => rand(0, 5),
+                'rank_value' => rand(1, 18),
+            ]);
+        }
+
         // Create damage events
         for ($i = 0; $i < self::MAX_DAMAGE_EVENTS_PER_MATCH; $i++) {
             DamageEvent::factory()->create([
@@ -109,6 +120,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
             ]);
         }
 
+        // Create gunfight events
         for ($i = 0; $i < self::MAX_GUNFIGHT_EVENTS_PER_MATCH; $i++) {
             $player1 = $players->random();
             $player2 = $players->random();
@@ -145,6 +157,7 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
             ]);
         }
 
+        // Create grenade events
         for ($i = 0; $i < self::MAX_GRENADE_EVENTS_PER_MATCH; $i++) {
             GrenadeEvent::factory()->create([
                 'match_id' => $this->match->id,
@@ -171,59 +184,6 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
                 'tick_timestamp' => rand(1, 100000),
             ]);
         }
-
-        // Create user with multiple matches for multiple matches benchmark
-        $this->userWithMultipleMatches = User::factory()->create([
-            'name' => 'Multiple Matches User '.$uniqueId,
-            'email' => 'multiple'.$uniqueId.'@test.com',
-            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
-        ]);
-
-        $playerWithMultipleMatches = Player::factory()->create([
-            'steam_id' => $this->userWithMultipleMatches->steam_id,
-            'name' => 'Multiple Matches Player '.$uniqueId,
-        ]);
-
-        // Create additional matches for the user
-        for ($i = 0; $i < 3; $i++) {
-            $match = GameMatch::factory()->create([
-                'map' => 'de_mirage',
-                'winning_team' => 'B',
-                'winning_team_score' => 13,
-                'losing_team_score' => 11,
-                'match_type' => 'mm',
-                'total_rounds' => 24,
-                'playback_ticks' => 80000,
-            ]);
-
-            $match->players()->attach($playerWithMultipleMatches->id, [
-                'team' => Team::TEAM_B,
-            ]);
-
-            // Add minimal events to each match for benchmarking
-            for ($j = 0; $j < 10; $j++) {
-                DamageEvent::factory()->create([
-                    'match_id' => $match->id,
-                    'attacker_steam_id' => $playerWithMultipleMatches->steam_id,
-                    'victim_steam_id' => 'STEAM_0:1:999999',
-                    'health_damage' => rand(10, 100),
-                    'armor_damage' => rand(0, 50),
-                    'damage' => rand(10, 100),
-                    'headshot' => rand(0, 1),
-                    'weapon' => 'ak47',
-                    'round_number' => rand(1, 24),
-                    'round_time' => rand(0, 120),
-                    'tick_timestamp' => rand(1, 80000),
-                ]);
-            }
-        }
-
-        // Create user without player for edge case benchmark
-        $this->userWithoutPlayer = User::factory()->create([
-            'name' => 'User Without Player '.$uniqueId,
-            'email' => 'noplayer'.$uniqueId.'@test.com',
-            'steam_id' => 'STEAM_0:1:'.rand(100000000, 999999999),
-        ]);
     }
 
     public function tearDown(): void
@@ -240,80 +200,40 @@ class UserMatchHistoryServiceBench implements BenchmarkInterface
      *
      * @Assert("mode(variant.time.avg) < 100ms")
      */
-    public function benchAggregateMatchData(): void
+    public function benchGetStats(): void
     {
-        $this->service->getPaginatedMatchHistory($this->user, 10, 1);
-    }
-
-    /**
-     * @Revs(50)
-     *
-     * @Iterations(5)
-     *
-     * @Warmup(2)
-     *
-     * @Assert("mode(variant.time.avg) < 75ms")
-     */
-    public function benchGetMatchDetails(): void
-    {
-        $this->service->getPaginatedMatchHistory($this->user, 1, 1);
-    }
-
-    /**
-     * @Revs(100)
-     *
-     * @Iterations(5)
-     *
-     * @Warmup(2)
-     *
-     * @Assert("mode(variant.time.avg) < 50ms")
-     */
-    public function benchGetPlayerStats(): void
-    {
-        // Test player stats calculation through match details
-        $this->service->getPaginatedMatchHistory($this->user, 1, 1);
-    }
-
-    /**
-     * @Revs(50)
-     *
-     * @Iterations(5)
-     *
-     * @Warmup(2)
-     *
-     * @Assert("mode(variant.time.avg) < 100ms")
-     */
-    public function benchGetMatchHistoryWithFilters(): void
-    {
-        // Test match history with filters
-        $this->service->getPaginatedMatchHistory($this->user, 10, 1, ['match_type' => 'mm']);
-    }
-
-    /**
-     * @Revs(10)
-     *
-     * @Iterations(3)
-     *
-     * @Warmup(1)
-     *
-     * @Assert("mode(variant.time.avg) < 150ms")
-     */
-    public function benchMultipleMatchesAggregation(): void
-    {
-        $this->service->getPaginatedMatchHistory($this->userWithMultipleMatches, 10, 1);
+        $this->service->get($this->user, [], $this->match->id);
     }
 
     /**
      * @Revs(25)
      *
-     * @Iterations(3)
+     * @Iterations(5)
      *
-     * @Warmup(1)
+     * @Warmup(2)
      *
      * @Assert("mode(variant.time.avg) < 75ms")
      */
-    public function benchUserWithoutPlayer(): void
+    public function benchGetStatsWithPlayer(): void
     {
-        $this->service->getPaginatedMatchHistory($this->userWithoutPlayer, 10, 1);
+        $this->service->get($this->user, ['player_steam_id' => $this->player->steam_id], $this->match->id);
+    }
+
+    /**
+     * @Revs(25)
+     *
+     * @Iterations(5)
+     *
+     * @Warmup(2)
+     *
+     * @Assert("mode(variant.time.avg) < 125ms")
+     */
+    public function benchGetStatsWithComplexFilters(): void
+    {
+        $this->service->get($this->user, [
+            'player_steam_id' => $this->player->steam_id,
+            'include_complexion' => true,
+            'include_utility_stats' => true,
+        ], $this->match->id);
     }
 }
