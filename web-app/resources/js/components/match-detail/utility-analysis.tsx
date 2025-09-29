@@ -64,6 +64,14 @@ interface UtilityAnalysisData {
     he_stats: {
       avg_damage: number;
     };
+    smoke_stats: {
+      total_smoke_blocking_duration: number;
+      avg_smoke_blocking_duration: number;
+      total_round_smoke_blocking_duration: number;
+      avg_round_smoke_blocking_duration: number;
+      smoke_count: number;
+      rounds_with_smoke: number;
+    };
   };
   players: Array<{
     steam_id: string;

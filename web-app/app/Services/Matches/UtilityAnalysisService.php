@@ -49,10 +49,6 @@ class UtilityAnalysisService
 
         $query = $match->grenadeEvents()->where('player_steam_id', $playerSteamId);
 
-        if ($playerSteamId) {
-            $query->where('player_steam_id', $playerSteamId);
-        }
-
         if ($roundNumber) {
             $query->where('round_number', $roundNumber);
         }
@@ -176,6 +172,7 @@ class UtilityAnalysisService
             'overall_grenade_rating' => round($averageGrenadeEffectiveness, 1),
             'flash_stats' => $this->getFlashStats($flashEvents),
             'he_stats' => $this->getHeStats($heEvents),
+            'smoke_stats' => $this->getSmokeStats($playerRoundsEvents),
         ];
     }
 
@@ -252,5 +249,27 @@ class UtilityAnalysisService
     private function getGrenadeCountForRound(int $roundNumber, Collection $grenadeEvents): int
     {
         return $grenadeEvents->where('round_number', $roundNumber)->count();
+    }
+
+    private function getSmokeStats(Collection $playerRoundsEvents): array
+    {
+        // Calculate total smoke blocking duration from round events
+        $totalSmokeBlockingDuration = $playerRoundsEvents->sum('smoke_blocking_duration');
+
+        // Calculate average smoke blocking duration per round
+        $avgSmokeBlockingDuration = 0;
+        $totalSmokesThrown = $playerRoundsEvents->sum('smokes_thrown');
+        $roundsWithSmoke = $playerRoundsEvents->where('smokes_thrown', '>', 0);
+        if ($roundsWithSmoke->count() > 0) {
+            $avgSmokeBlockingDuration = $totalSmokeBlockingDuration / $totalSmokesThrown;
+        }
+
+        return [
+            'total_smoke_blocking_duration' => $totalSmokeBlockingDuration,
+            'avg_smoke_blocking_duration' => round($avgSmokeBlockingDuration, 1),
+            'total_round_smoke_blocking_duration' => $totalSmokeBlockingDuration,
+            'avg_round_smoke_blocking_duration' => round($avgSmokeBlockingDuration, 1),
+            'smoke_count' => $totalSmokesThrown,
+        ];
     }
 }

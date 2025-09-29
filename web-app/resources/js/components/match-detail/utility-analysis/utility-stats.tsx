@@ -12,10 +12,20 @@ interface HeStats {
   avg_damage: number;
 }
 
+interface SmokeStats {
+  total_smoke_blocking_duration: number;
+  avg_smoke_blocking_duration: number;
+  total_round_smoke_blocking_duration: number;
+  avg_round_smoke_blocking_duration: number;
+  smoke_count: number;
+  rounds_with_smoke: number;
+}
+
 interface OverallStats {
   overall_grenade_rating: number;
   flash_stats: FlashStats;
   he_stats: HeStats;
+  smoke_stats: SmokeStats;
 }
 
 interface UtilityStatsProps {
@@ -23,6 +33,16 @@ interface UtilityStatsProps {
 }
 
 export function UtilityStats({ overallStats }: UtilityStatsProps) {
+  // Add defensive check for smoke_stats
+  const smokeStats = overallStats.smoke_stats || {
+    total_smoke_blocking_duration: 0,
+    avg_smoke_blocking_duration: 0,
+    total_round_smoke_blocking_duration: 0,
+    avg_round_smoke_blocking_duration: 0,
+    smoke_count: 0,
+    rounds_with_smoke: 0,
+  };
+
   const getFlashDurationColor = (duration: number, isEnemy: boolean) => {
     if (isEnemy) {
       // For enemy flash duration, higher is better (more effective)
@@ -46,6 +66,16 @@ export function UtilityStats({ overallStats }: UtilityStatsProps) {
   const getHeDamageColor = (damage: number) => {
     // For HE damage, higher is better (more effective)
     return getCustomRatingColor(damage, [5, 10, 20, 30], 'text');
+  };
+
+  const getSmokeBlockingColor = (duration: number) => {
+    // For smoke blocking duration, higher is better (more effective)
+    return getCustomRatingColor(duration, [50, 100, 200, 300], 'text');
+  };
+
+  const getAVGPerSmokeBlockingColor = (duration: number) => {
+    // For smoke blocking duration, higher is better (more effective)
+    return getCustomRatingColor(duration, [2, 7, 12, 17], 'text');
   };
 
   // Flashbangs Table Data
@@ -116,12 +146,45 @@ export function UtilityStats({ overallStats }: UtilityStatsProps) {
     },
   ];
 
+  // Smoke Stats Table Data
+  const smokeColumns = [
+    { header: 'Smoke Grenades', width: 'w-1/3' },
+    { header: 'Blocking Duration', width: 'w-1/3' },
+    { header: 'Avg per Smoke', width: 'w-1/3' },
+  ];
+
+  const smokeRows = [
+    {
+      label: 'Total',
+      values: [
+        {
+          value: `${smokeStats.total_smoke_blocking_duration}s`,
+          className: getSmokeBlockingColor(
+            smokeStats.total_smoke_blocking_duration
+          ),
+        },
+        {
+          value: `${smokeStats.avg_smoke_blocking_duration}s`,
+          className: getAVGPerSmokeBlockingColor(
+            smokeStats.avg_smoke_blocking_duration
+          ),
+        },
+      ],
+    },
+  ];
+
   return (
     <>
       <StatsTable
         title="Flashbangs"
         columns={flashColumns}
         rows={flashRows}
+        className="mb-4"
+      />
+      <StatsTable
+        title="Smoke Grenades"
+        columns={smokeColumns}
+        rows={smokeRows}
         className="mb-4"
       />
       <StatsTable
