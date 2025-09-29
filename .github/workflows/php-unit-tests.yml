@@ -38,12 +38,6 @@ jobs:
       run: chmod -R 777 storage bootstrap/cache
       working-directory: ./web-app
 
-    - name: Create SQLite Database
-      run: |
-        php artisan migrate --force
-        php artisan db:seed --force
-      working-directory: ./web-app
-
     - name: Execute tests with coverage
       run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-html=coverage-html
       working-directory: ./web-app
