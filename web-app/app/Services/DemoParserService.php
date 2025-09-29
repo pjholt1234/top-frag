@@ -497,6 +497,7 @@ class DemoParserService
                     'flashes_leading_to_kill' => $playerRoundEvent['flashes_leading_to_kill'] ?? 0,
                     'flashes_leading_to_death' => $playerRoundEvent['flashes_leading_to_death'] ?? 0,
                     'grenade_effectiveness' => $playerRoundEvent['grenade_effectiveness'] ?? 0,
+                    'smoke_blocking_duration' => $playerRoundEvent['smoke_blocking_duration'] ?? 0,
 
                     // Trade fields
                     'successful_trades' => $playerRoundEvent['successful_trades'] ?? 0,
@@ -590,6 +591,7 @@ class DemoParserService
                 'flashes_leading_to_kills' => $playerMatchEvent['flashes_leading_to_kills'],
                 'flashes_leading_to_deaths' => $playerMatchEvent['flashes_leading_to_deaths'],
                 'average_grenade_effectiveness' => $playerMatchEvent['average_grenade_effectiveness'],
+                'smoke_blocking_duration' => $playerMatchEvent['smoke_blocking_duration'],
                 'total_successful_trades' => $playerMatchEvent['total_successful_trades'],
                 'total_possible_trades' => $playerMatchEvent['total_possible_trades'],
                 'total_traded_deaths' => $playerMatchEvent['total_traded_deaths'],

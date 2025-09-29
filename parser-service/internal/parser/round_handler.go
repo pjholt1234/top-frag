@@ -200,6 +200,7 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	enemyPlayersAffected := 0
 	flashesLeadingToKill := 0
 	flashesLeadingToDeath := 0
+	smokeBlockingDuration := 0
 
 	// For right now we're only counting the effectiveness flashbangs + fire grenades
 	totalEffectivenessRating := 0
@@ -231,6 +232,8 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 			// Include smoke effectiveness in total rating
 			totalEffectivenessRating += grenadeEvent.EffectivenessRating
 			totalNumberOfMeasuredGrenades++
+			// Aggregate smoke blocking duration
+			smokeBlockingDuration += grenadeEvent.SmokeBlockingDuration
 		}
 
 		if grenadeEvent.GrenadeType == types.GrenadeTypeDecoy || grenadeEvent.GrenadeType == "Decoy Grenade" {
@@ -329,6 +332,7 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	event.FlashesLeadingToKill = flashesLeadingToKill
 	event.FlashesLeadingToDeath = flashesLeadingToDeath
 	event.GrenadeEffectiveness = finalGrenadeEffectiveness
+	event.SmokeBlockingDuration = smokeBlockingDuration
 }
 
 // aggregateTradeMetrics aggregates trade-related statistics from gunfight events

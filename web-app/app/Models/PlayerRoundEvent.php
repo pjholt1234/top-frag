@@ -40,6 +40,7 @@ class PlayerRoundEvent extends Model
         'flashes_leading_to_kill',
         'flashes_leading_to_death',
         'grenade_effectiveness',
+        'smoke_blocking_duration',
 
         // Trade fields
         'successful_trades',

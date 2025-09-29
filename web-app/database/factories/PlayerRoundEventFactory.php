@@ -52,6 +52,7 @@ class PlayerRoundEventFactory extends Factory
             'flashes_leading_to_kill' => $this->faker->numberBetween(0, 2),
             'flashes_leading_to_death' => $this->faker->numberBetween(0, 1),
             'grenade_effectiveness' => $this->faker->randomFloat(4, 0, 1),
+            'smoke_blocking_duration' => $this->faker->numberBetween(0, 1000),
 
             // Trade fields
             'successful_trades' => $this->faker->numberBetween(0, 3),

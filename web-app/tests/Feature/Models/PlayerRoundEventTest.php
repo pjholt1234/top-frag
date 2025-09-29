@@ -49,6 +49,7 @@ class PlayerRoundEventTest extends TestCase
             'is_full_buy' => false,
             'kills_vs_eco' => 1,
             'grenade_value_lost_on_death' => 0,
+            'smoke_blocking_duration' => 150,
         ]);
 
         $this->assertInstanceOf(PlayerRoundEvent::class, $playerRoundEvent);
@@ -77,6 +78,7 @@ class PlayerRoundEventTest extends TestCase
         $this->assertFalse($playerRoundEvent->is_full_buy);
         $this->assertEquals(1, $playerRoundEvent->kills_vs_eco);
         $this->assertEquals(0, $playerRoundEvent->grenade_value_lost_on_death);
+        $this->assertEquals(150, $playerRoundEvent->smoke_blocking_duration);
     }
 
     #[Test]
@@ -113,6 +115,7 @@ class PlayerRoundEventTest extends TestCase
             'flashes_leading_to_kill',
             'flashes_leading_to_death',
             'grenade_effectiveness',
+            'smoke_blocking_duration',
 
             // Trade fields
             'successful_trades',

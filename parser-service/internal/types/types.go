@@ -186,6 +186,7 @@ type PlayerRoundEvent struct {
 	FlashesLeadingToKill    int     `json:"flashes_leading_to_kill"`
 	FlashesLeadingToDeath   int     `json:"flashes_leading_to_death"`
 	GrenadeEffectiveness    int     `json:"grenade_effectiveness"`
+	SmokeBlockingDuration   int     `json:"smoke_blocking_duration"`
 
 	// Details
 	SuccessfulTrades          int `json:"successful_trades"`
@@ -255,6 +256,7 @@ type PlayerMatchEvent struct {
 	FlashesLeadingToKills       int     `json:"flashes_leading_to_kills"`
 	FlashesLeadingToDeaths      int     `json:"flashes_leading_to_deaths"`
 	AverageGrenadeEffectiveness int     `json:"average_grenade_effectiveness"`
+	SmokeBlockingDuration       int     `json:"smoke_blocking_duration"`
 
 	// Details
 	TotalSuccessfulTrades     int     `json:"total_successful_trades"`

@@ -36,6 +36,7 @@ class PlayerMatchEvent extends Model
         'flashes_leading_to_kills',
         'flashes_leading_to_deaths',
         'average_grenade_effectiveness',
+        'smoke_blocking_duration',
         'total_successful_trades',
         'total_possible_trades',
         'total_traded_deaths',

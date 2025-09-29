@@ -38,6 +38,7 @@ class PlayerMatchEventFactory extends Factory
             'flashes_leading_to_kills' => $this->faker->numberBetween(0, 10),
             'flashes_leading_to_deaths' => $this->faker->numberBetween(0, 10),
             'average_grenade_effectiveness' => $this->faker->randomFloat(2, 0, 1),
+            'smoke_blocking_duration' => $this->faker->numberBetween(0, 5000),
             'total_successful_trades' => $this->faker->numberBetween(0, 20),
             'total_possible_trades' => $this->faker->numberBetween(0, 20),
             'total_traded_deaths' => $this->faker->numberBetween(0, 20),

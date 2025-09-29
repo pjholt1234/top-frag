@@ -54,6 +54,7 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		FlashesLeadingToKills:       0,
 		FlashesLeadingToDeaths:      0,
 		AverageGrenadeEffectiveness: 0,
+		SmokeBlockingDuration:       0,
 		TotalSuccessfulTrades:       0,
 		TotalPossibleTrades:         0,
 		TotalTradedDeaths:           0,
@@ -132,6 +133,7 @@ func (mh *PlayerMatchHandler) createPlayerMatchEvent(playerSteamID string) types
 		playerMatchEvent.EnemyPlayersAffected += roundEvent.EnemyPlayersAffected
 		playerMatchEvent.FlashesLeadingToKills += roundEvent.FlashesLeadingToKill
 		playerMatchEvent.FlashesLeadingToDeaths += roundEvent.FlashesLeadingToDeath
+		playerMatchEvent.SmokeBlockingDuration += roundEvent.SmokeBlockingDuration
 		totalGrenadeEffectiveness += roundEvent.GrenadeEffectiveness
 
 		if roundEvent.GrenadeEffectiveness != 0 {
