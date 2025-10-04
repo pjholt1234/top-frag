@@ -155,29 +155,29 @@ func (ep *EventProcessor) aggregateWeaponAimEvents(roundEvents []types.WeaponAim
 			// Average crosshair placement (weighted by shots fired)
 			totalShots := float64(existing.ShotsFired)
 			if totalShots > 0 {
-				existing.CrosshairPlacementX = (existing.CrosshairPlacementX*(totalShots-float64(event.ShotsFired)) + event.CrosshairPlacementX*float64(event.ShotsFired)) / totalShots
-				existing.CrosshairPlacementY = (existing.CrosshairPlacementY*(totalShots-float64(event.ShotsFired)) + event.CrosshairPlacementY*float64(event.ShotsFired)) / totalShots
+				existing.AverageCrosshairPlacementX = (existing.AverageCrosshairPlacementX*(totalShots-float64(event.ShotsFired)) + event.AverageCrosshairPlacementX*float64(event.ShotsFired)) / totalShots
+				existing.AverageCrosshairPlacementY = (existing.AverageCrosshairPlacementY*(totalShots-float64(event.ShotsFired)) + event.AverageCrosshairPlacementY*float64(event.ShotsFired)) / totalShots
 			}
 		} else {
 			// Create new aggregated entry (remove round number as it's match-level)
 			aggregated[k] = &types.WeaponAimAnalysisResult{
-				PlayerSteamID:       event.PlayerSteamID,
-				RoundNumber:         0, // Match-level data, no specific round
-				WeaponName:          event.WeaponName,
-				WeaponDisplayName:   event.WeaponDisplayName,
-				ShotsFired:          event.ShotsFired,
-				ShotsHit:            event.ShotsHit,
-				AccuracyAllShots:    event.AccuracyAllShots,
-				SprayingShotsFired:  event.SprayingShotsFired,
-				SprayingShotsHit:    event.SprayingShotsHit,
-				SprayingAccuracy:    event.SprayingAccuracy,
-				CrosshairPlacementX: event.CrosshairPlacementX,
-				CrosshairPlacementY: event.CrosshairPlacementY,
-				HeadshotAccuracy:    event.HeadshotAccuracy,
-				HeadHitsTotal:       event.HeadHitsTotal,
-				UpperChestHitsTotal: event.UpperChestHitsTotal,
-				ChestHitsTotal:      event.ChestHitsTotal,
-				LegsHitsTotal:       event.LegsHitsTotal,
+				PlayerSteamID:              event.PlayerSteamID,
+				RoundNumber:                0, // Match-level data, no specific round
+				WeaponName:                 event.WeaponName,
+				WeaponDisplayName:          event.WeaponDisplayName,
+				ShotsFired:                 event.ShotsFired,
+				ShotsHit:                   event.ShotsHit,
+				AccuracyAllShots:           event.AccuracyAllShots,
+				SprayingShotsFired:         event.SprayingShotsFired,
+				SprayingShotsHit:           event.SprayingShotsHit,
+				SprayingAccuracy:           event.SprayingAccuracy,
+				AverageCrosshairPlacementX: event.AverageCrosshairPlacementX,
+				AverageCrosshairPlacementY: event.AverageCrosshairPlacementY,
+				HeadshotAccuracy:           event.HeadshotAccuracy,
+				HeadHitsTotal:              event.HeadHitsTotal,
+				UpperChestHitsTotal:        event.UpperChestHitsTotal,
+				ChestHitsTotal:             event.ChestHitsTotal,
+				LegsHitsTotal:              event.LegsHitsTotal,
 			}
 		}
 	}
