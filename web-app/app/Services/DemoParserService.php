@@ -15,6 +15,8 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\MatchPlayer;
 use App\Models\Player;
+use App\Models\PlayerMatchAimEvent;
+use App\Models\PlayerMatchAimWeaponEvent;
 use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRank;
 use App\Models\PlayerRoundEvent;
@@ -152,6 +154,8 @@ class DemoParserService
                 MatchEventType::PLAYER_MATCH->value => $this->createPlayerMatchEvent($match, $eventData),
                 MatchEventType::ROUND->value => $this->createRoundEvent($match, $eventData),
                 MatchEventType::MATCH->value => $this->updateMatchData($match, $eventData),
+                MatchEventType::AIM->value => $this->createAimEvent($match, $eventData),
+                MatchEventType::AIM_WEAPON->value => $this->createAimWeaponEvent($match, $eventData),
                 default => Log::warning('Match event not found', [
                     'event_name' => $eventName,
                 ]),
@@ -764,5 +768,101 @@ class DemoParserService
                 'updated_fields' => array_keys($updateData),
             ]);
         }
+    }
+
+    private function createAimEvent(GameMatch $match, array $aimEvents): void
+    {
+        if (empty($aimEvents)) {
+            return;
+        }
+
+        // Log aim events for debugging
+        Log::info('Processing aim tracking events', [
+            'match_id' => $match->id,
+            'events_count' => count($aimEvents),
+            'sample_event' => $aimEvents[0] ?? null,
+        ]);
+
+        $records = [];
+        $now = now();
+
+        foreach ($aimEvents as $aimEvent) {
+            $records[] = [
+                'match_id' => $match->id,
+                'player_steam_id' => $aimEvent['player_steam_id'],
+                'shots_fired' => $aimEvent['shots_fired'] ?? 0,
+                'shots_hit' => $aimEvent['shots_hit'] ?? 0,
+                'accuracy_all_shots' => $aimEvent['accuracy_all_shots'] ?? 0,
+                'spraying_shots_fired' => $aimEvent['spraying_shots_fired'] ?? 0,
+                'spraying_shots_hit' => $aimEvent['spraying_shots_hit'] ?? 0,
+                'spraying_accuracy' => $aimEvent['spraying_accuracy'] ?? 0,
+                'average_crosshair_placement_x' => $aimEvent['average_crosshair_placement_x'] ?? 0,
+                'average_crosshair_placement_y' => $aimEvent['average_crosshair_placement_y'] ?? 0,
+                'headshot_accuracy' => $aimEvent['headshot_accuracy'] ?? 0,
+                'average_time_to_damage' => $aimEvent['average_time_to_damage'] ?? 0,
+                'head_hits_total' => $aimEvent['head_hits_total'] ?? 0,
+                'upper_chest_hits_total' => $aimEvent['upper_chest_hits_total'] ?? 0,
+                'chest_hits_total' => $aimEvent['chest_hits_total'] ?? 0,
+                'legs_hits_total' => $aimEvent['legs_hits_total'] ?? 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Use bulk insert for better performance
+        PlayerMatchAimEvent::insert($records);
+
+        Log::info('Successfully stored aim tracking events', [
+            'match_id' => $match->id,
+            'events_stored' => count($records),
+        ]);
+    }
+
+    private function createAimWeaponEvent(GameMatch $match, array $aimWeaponEvents): void
+    {
+        if (empty($aimWeaponEvents)) {
+            return;
+        }
+
+        // Log aim weapon events for debugging
+        Log::info('Processing aim weapon tracking events', [
+            'match_id' => $match->id,
+            'events_count' => count($aimWeaponEvents),
+            'sample_event' => $aimWeaponEvents[0] ?? null,
+        ]);
+
+        $records = [];
+        $now = now();
+
+        foreach ($aimWeaponEvents as $aimWeaponEvent) {
+            $records[] = [
+                'match_id' => $match->id,
+                'player_steam_id' => $aimWeaponEvent['player_steam_id'],
+                'weapon_name' => $aimWeaponEvent['weapon_name'],
+                'shots_fired' => $aimWeaponEvent['shots_fired'] ?? 0,
+                'shots_hit' => $aimWeaponEvent['shots_hit'] ?? 0,
+                'accuracy_all_shots' => $aimWeaponEvent['accuracy_all_shots'] ?? 0,
+                'spraying_shots_fired' => $aimWeaponEvent['spraying_shots_fired'] ?? 0,
+                'spraying_shots_hit' => $aimWeaponEvent['spraying_shots_hit'] ?? 0,
+                'spraying_accuracy' => $aimWeaponEvent['spraying_accuracy'] ?? 0,
+                'average_crosshair_placement_x' => $aimWeaponEvent['crosshair_placement_x'] ?? 0,
+                'average_crosshair_placement_y' => $aimWeaponEvent['crosshair_placement_y'] ?? 0,
+                'headshot_accuracy' => $aimWeaponEvent['headshot_accuracy'] ?? 0,
+                'head_hits_total' => $aimWeaponEvent['head_hits_total'] ?? 0,
+                'upper_chest_hits_total' => $aimWeaponEvent['upper_chest_hits_total'] ?? 0,
+                'chest_hits_total' => $aimWeaponEvent['chest_hits_total'] ?? 0,
+                'legs_hits_total' => $aimWeaponEvent['legs_hits_total'] ?? 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Use bulk insert for better performance
+        PlayerMatchAimWeaponEvent::insert($records);
+
+        Log::info('Successfully stored aim weapon tracking events', [
+            'match_id' => $match->id,
+            'events_stored' => count($records),
+        ]);
     }
 }

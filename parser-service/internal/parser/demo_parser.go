@@ -64,6 +64,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	// Initialize progress manager
 	dp.progressManager = NewProgressManager(dp.logger, progressCallback, 100*time.Millisecond)
 
+	// Pointer to eventProcessor for cleanup (will be set once created)
+	var eventProcessor *EventProcessor
+
 	// Enhanced panic recovery with cleanup
 	defer func() {
 		if r := recover(); r != nil {
@@ -72,7 +75,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 			dp.logger.WithField("panic", r).Error("Panic occurred during demo parsing")
 
 			// Cleanup match data on panic if configured
-			dp.cleanupMatchData(ctx)
+			dp.cleanupMatchData(ctx, eventProcessor)
 		}
 	}()
 
@@ -82,7 +85,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		dp.progressManager.ReportParseError(parseError)
 
 		// Cleanup match data on validation error if configured
-		dp.cleanupMatchData(ctx)
+		dp.cleanupMatchData(ctx, eventProcessor)
 		return nil, parseError
 	}
 
@@ -95,7 +98,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		PlayerRoundEvents: make([]types.PlayerRoundEvent, 0),
 	}
 
-	eventProcessor := NewEventProcessor(matchState, dp.logger)
+	eventProcessor = NewEventProcessor(matchState, dp.logger)
 
 	dp.progressManager.UpdateProgress(types.ProgressUpdate{
 		Status:         types.StatusParsing,
@@ -152,7 +155,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		dp.progressManager.ReportParseError(parseError)
 
 		// Cleanup match data on parsing error if configured
-		dp.cleanupMatchData(ctx)
+		dp.cleanupMatchData(ctx, eventProcessor)
 		return nil, parseError
 	}
 
@@ -164,7 +167,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 			WithContext("error_code", errorCode)
 
 		// Cleanup match data on critical error if configured
-		dp.cleanupMatchData(ctx)
+		dp.cleanupMatchData(ctx, eventProcessor)
 		return nil, parseError
 	}
 
@@ -207,7 +210,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	})
 
 	// Cleanup match data on successful completion if configured
-	dp.cleanupMatchData(ctx)
+	dp.cleanupMatchData(ctx, eventProcessor)
 
 	return parsedData, nil
 }
@@ -632,6 +635,8 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		DamageEvents:      matchState.DamageEvents,
 		PlayerRoundEvents: matchState.PlayerRoundEvents,
 		PlayerMatchEvents: matchState.PlayerMatchEvents,
+		AimEvents:         eventProcessor.GetAimEvents(),
+		AimWeaponEvents:   eventProcessor.GetAimWeaponEvents(),
 	}
 }
 
@@ -748,7 +753,7 @@ func (dp *DemoParser) trackPlayerTickData(ctx context.Context, parser demoinfocs
 }
 
 // cleanupMatchData deletes match data if cleanup is enabled in configuration
-func (dp *DemoParser) cleanupMatchData(ctx context.Context) {
+func (dp *DemoParser) cleanupMatchData(ctx context.Context, eventProcessor *EventProcessor) {
 	if !dp.config.Database.CleanupOnFinish {
 		return
 	}
@@ -760,12 +765,25 @@ func (dp *DemoParser) cleanupMatchData(ctx context.Context) {
 
 	// Cleaning up match data
 
+	// Clean up player tick data from database
 	if err := dp.playerTickService.DeletePlayerTickDataByMatch(ctx, dp.matchID); err != nil {
 		dp.logger.WithFields(logrus.Fields{
 			"match_id": dp.matchID,
 			"error":    err,
-		}).Error("Failed to cleanup match data")
+		}).Error("Failed to cleanup player tick data")
 	} else {
-		// Successfully cleaned up match data
+		dp.logger.WithFields(logrus.Fields{
+			"match_id": dp.matchID,
+		}).Info("Successfully cleaned up player tick data")
+	}
+
+	// Clean up in-memory shooting data
+	if eventProcessor != nil && eventProcessor.aimTrackingHandler != nil {
+		shootingDataCount := len(eventProcessor.aimTrackingHandler.GetShootingData())
+		eventProcessor.aimTrackingHandler.ClearShootingData()
+		dp.logger.WithFields(logrus.Fields{
+			"match_id":            dp.matchID,
+			"shooting_data_count": shootingDataCount,
+		}).Info("Successfully cleaned up player shooting data")
 	}
 }

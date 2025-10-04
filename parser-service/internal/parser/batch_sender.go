@@ -656,6 +656,161 @@ func (bs *BatchSender) SendPlayerMatchEvents(ctx context.Context, jobID string, 
 	return nil
 }
 
+func (bs *BatchSender) SendAimEvents(ctx context.Context, jobID string, completionURL string, events []types.AimAnalysisResult) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// DEBUG: Log spraying statistics before sending
+	totalSprayingFired := 0
+	totalSprayingHit := 0
+	for _, event := range events {
+		totalSprayingFired += event.SprayingShotsFired
+		totalSprayingHit += event.SprayingShotsHit
+		bs.logger.WithFields(logrus.Fields{
+			"job_id":               jobID,
+			"player_id":            event.PlayerSteamID,
+			"round":                event.RoundNumber,
+			"spraying_shots_fired": event.SprayingShotsFired,
+			"spraying_shots_hit":   event.SprayingShotsHit,
+			"spraying_accuracy":    event.SprayingAccuracy,
+		}).Info("DEBUG: Sending aim event with spraying stats")
+	}
+
+	bs.logger.WithFields(logrus.Fields{
+		"job_id":               jobID,
+		"events_count":         len(events),
+		"total_spraying_fired": totalSprayingFired,
+		"total_spraying_hit":   totalSprayingHit,
+		"overall_spray_accuracy": func() float64 {
+			if totalSprayingFired > 0 {
+				return float64(totalSprayingHit) / float64(totalSprayingFired) * 100.0
+			}
+			return 0.0
+		}(),
+	}).Info("DEBUG: Sending aim events - spraying summary")
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+	bs.baseURL = baseURL
+
+	// Sending aim events
+
+	flatEvents := make([]map[string]interface{}, len(events))
+	for i, event := range events {
+		flatEvents[i] = map[string]interface{}{
+			"player_steam_id":               event.PlayerSteamID,
+			"round_number":                  event.RoundNumber,
+			"shots_fired":                   event.ShotsFired,
+			"shots_hit":                     event.ShotsHit,
+			"accuracy_all_shots":            event.AccuracyAllShots,
+			"spraying_shots_fired":          event.SprayingShotsFired,
+			"spraying_shots_hit":            event.SprayingShotsHit,
+			"spraying_accuracy":             event.SprayingAccuracy,
+			"average_crosshair_placement_x": event.AverageCrosshairPlacementX,
+			"average_crosshair_placement_y": event.AverageCrosshairPlacementY,
+			"headshot_accuracy":             event.HeadshotAccuracy,
+			"average_time_to_damage":        event.AverageTimeToDamage,
+			"head_hits_total":               event.HeadHitsTotal,
+			"upper_chest_hits_total":        event.UpperChestHitsTotal,
+			"chest_hits_total":              event.ChestHitsTotal,
+			"legs_hits_total":               event.LegsHitsTotal,
+		}
+	}
+
+	payload := map[string]interface{}{
+		"data": flatEvents,
+	}
+
+	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeAim)
+	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("url", url)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+
+	// Sent aim events
+	return nil
+}
+
+func (bs *BatchSender) SendAimWeaponEvents(ctx context.Context, jobID string, completionURL string, events []types.WeaponAimAnalysisResult) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim weapon events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+	bs.baseURL = baseURL
+
+	// Sending aim weapon events
+
+	// Debug: Log first event to verify ShotsHit is populated
+	if len(events) > 0 {
+		bs.logger.WithFields(logrus.Fields{
+			"player_id":   events[0].PlayerSteamID,
+			"weapon":      events[0].WeaponName,
+			"shots_fired": events[0].ShotsFired,
+			"shots_hit":   events[0].ShotsHit,
+			"accuracy":    events[0].AccuracyAllShots,
+		}).Info("DEBUG: First weapon event before sending to Laravel")
+	}
+
+	flatEvents := make([]map[string]interface{}, len(events))
+	for i, event := range events {
+		flatEvents[i] = map[string]interface{}{
+			"player_steam_id":        event.PlayerSteamID,
+			"round_number":           event.RoundNumber,
+			"weapon_name":            event.WeaponDisplayName, // Send display name as weapon_name
+			"weapon_internal_name":   event.WeaponName,        // Send normalized name as internal_name
+			"shots_fired":            event.ShotsFired,
+			"shots_hit":              event.ShotsHit,
+			"accuracy_all_shots":     event.AccuracyAllShots,
+			"spraying_shots_fired":   event.SprayingShotsFired,
+			"spraying_shots_hit":     event.SprayingShotsHit,
+			"spraying_accuracy":      event.SprayingAccuracy,
+			"crosshair_placement_x":  event.CrosshairPlacementX,
+			"crosshair_placement_y":  event.CrosshairPlacementY,
+			"headshot_accuracy":      event.HeadshotAccuracy,
+			"head_hits_total":        event.HeadHitsTotal,
+			"upper_chest_hits_total": event.UpperChestHitsTotal,
+			"chest_hits_total":       event.ChestHitsTotal,
+			"legs_hits_total":        event.LegsHitsTotal,
+		}
+	}
+
+	payload := map[string]interface{}{
+		"data": flatEvents,
+	}
+
+	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeAimWeapon)
+	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim weapon events", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("url", url)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+
+	// Sent aim weapon events
+	return nil
+}
+
 func (bs *BatchSender) SendMatchData(ctx context.Context, jobID string, completionURL string, match types.Match) error {
 	// Sending match data
 

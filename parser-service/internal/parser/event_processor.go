@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"context"
 	"fmt"
 	"parser-service/internal/database"
 	"parser-service/internal/types"
+	"parser-service/internal/utils"
 	"reflect"
 
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
@@ -40,9 +42,14 @@ type EventProcessor struct {
 	matchHandler       *MatchHandler
 	roundHandler       *RoundHandler
 	playerMatchHandler *PlayerMatchHandler
+	aimTrackingHandler *AimTrackingHandler
 	rankExtractor      *RankExtractor
 	playerTickService  *database.PlayerTickService
 	matchID            string
+
+	// Aim tracking results storage
+	aimEvents       []types.AimAnalysisResult
+	aimWeaponEvents []types.WeaponAimAnalysisResult
 }
 
 type FlashEffect struct {
@@ -93,6 +100,7 @@ func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *Eve
 	ep.matchHandler = NewMatchHandler(ep, logger)
 	ep.roundHandler = NewRoundHandler(ep, logger)
 	ep.playerMatchHandler = NewPlayerMatchHandler(ep, logger)
+	ep.aimTrackingHandler = NewAimTrackingHandler(ep, logger)
 	ep.rankExtractor = NewRankExtractor(logger)
 
 	return ep
@@ -135,7 +143,7 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 		ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
 		// Use the new post-processing method for smoke blocking duration
 		if ep.playerTickService != nil {
-			ep.grenadeHandler.ProcessSmokeBlockingDurationPostProcess(ep.matchID)
+			_ = ep.grenadeHandler.ProcessSmokeBlockingDurationPostProcess(ep.matchID)
 		}
 	}
 	if ep.roundHandler == nil {
@@ -148,6 +156,20 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 			WithContext("event", "RoundEnd").
 			WithContext("round", ep.matchState.CurrentRound)
 	}
+
+	// Process aim tracking data for the round
+	if ep.aimTrackingHandler != nil {
+		// First, detect spraying patterns post-round for the current round only
+		ep.aimTrackingHandler.DetectSprayingPatternsForRound(ep.matchState.CurrentRound)
+
+		if err := ep.processAimTrackingForRound(); err != nil {
+			ep.logger.WithError(err).Error("Failed to process aim tracking for round")
+			return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking for round", err).
+				WithContext("event", "RoundEnd").
+				WithContext("round", ep.matchState.CurrentRound)
+		}
+	}
+
 	return nil
 }
 
@@ -180,7 +202,10 @@ func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) error {
 }
 
 func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) error {
-	return ep.matchHandler.HandleWeaponFire(e)
+	if err := ep.matchHandler.HandleWeaponFire(e); err != nil {
+		return err
+	}
+	return ep.aimTrackingHandler.HandleWeaponFire(e)
 }
 
 func (ep *EventProcessor) HandleBombPlanted(e events.BombPlanted) error {
@@ -537,4 +562,125 @@ func (ep *EventProcessor) callMethod(obj interface{}, methodName string) interfa
 	}
 
 	return result.Interface()
+}
+
+// processAimTrackingForRound processes aim tracking data for the current round
+func (ep *EventProcessor) processAimTrackingForRound() error {
+	// Get shooting data for the current round
+	shootingData := ep.aimTrackingHandler.GetShootingData()
+
+	// Filter data for current round
+	var roundShootingData []types.PlayerShootingData
+	for _, shot := range shootingData {
+		if shot.RoundNumber == ep.matchState.CurrentRound {
+			roundShootingData = append(roundShootingData, shot)
+		}
+	}
+
+	// Create aim utility service
+	mapName := ep.matchState.MapName
+	if mapName == "" {
+		mapName = "de_ancient" // Default fallback map
+	}
+
+	aimService, err := utils.NewAimUtilityService(ep.logger, mapName)
+	if err != nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to create aim utility service", err).
+			WithContext("event", "RoundEnd").
+			WithContext("round", ep.matchState.CurrentRound)
+	}
+
+	// Get damage events for the round
+	var damageEvents []types.DamageEvent
+	for _, damage := range ep.matchState.DamageEvents {
+		if damage.RoundNumber == ep.matchState.CurrentRound {
+			damageEvents = append(damageEvents, damage)
+		}
+	}
+
+	// Get player tick data for the round from database
+	// Handle case where RoundEndTick is 0 (not set) by using current tick as fallback
+	roundEndTick := ep.matchState.RoundEndTick
+	if roundEndTick == 0 {
+		roundEndTick = ep.currentTick
+		ep.logger.WithFields(logrus.Fields{
+			"round":         ep.matchState.CurrentRound,
+			"round_start":   ep.matchState.RoundStartTick,
+			"round_end":     ep.matchState.RoundEndTick,
+			"current_tick":  ep.currentTick,
+			"fallback_used": true,
+		}).Warn("RoundEndTick is 0, using current tick as fallback for player tick data query")
+	}
+
+	playerTickDataPointers, err := ep.playerTickService.GetPlayerTickDataByRound(
+		context.Background(),
+		ep.matchID,
+		ep.matchState.RoundStartTick,
+		roundEndTick,
+	)
+	if err != nil {
+		ep.logger.WithError(err).Error("Failed to retrieve player tick data for round")
+		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to retrieve player tick data", err).
+			WithContext("event", "RoundEnd").
+			WithContext("round", ep.matchState.CurrentRound)
+	}
+
+	// Convert pointers to values for compatibility
+	var playerTickData []types.PlayerTickData
+	for _, ptr := range playerTickDataPointers {
+		playerTickData = append(playerTickData, *ptr)
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"round":         ep.matchState.CurrentRound,
+		"round_start":   ep.matchState.RoundStartTick,
+		"round_end":     ep.matchState.RoundEndTick,
+		"query_end":     roundEndTick,
+		"player_ticks":  len(playerTickData),
+		"fallback_used": ep.matchState.RoundEndTick == 0,
+	}).Info("Retrieved player tick data for aim tracking analysis")
+
+	// Process aim tracking calculations
+	aimResults, weaponResults, err := aimService.ProcessAimTrackingForRound(
+		roundShootingData,
+		damageEvents,
+		playerTickData,
+		ep.matchState.CurrentRound,
+	)
+	if err != nil {
+		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking calculations", err).
+			WithContext("event", "RoundEnd").
+			WithContext("round", ep.matchState.CurrentRound)
+	}
+
+	ep.logger.WithFields(logrus.Fields{
+		"round":           ep.matchState.CurrentRound,
+		"shooting_events": len(roundShootingData),
+		"aim_results":     len(aimResults),
+		"weapon_results":  len(weaponResults),
+		"map_name":        mapName,
+	}).Info("Processed aim tracking data for round")
+
+	// Store results for batch sending to Laravel
+	if len(aimResults) > 0 {
+		// Store aim results for batch sending
+		ep.aimEvents = append(ep.aimEvents, aimResults...)
+
+		ep.logger.WithFields(logrus.Fields{
+			"aim_results_count": len(aimResults),
+			"round":             ep.matchState.CurrentRound,
+		}).Info("Aim tracking results calculated and stored for batch sending")
+	}
+
+	if len(weaponResults) > 0 {
+		// Store weapon aim results for batch sending
+		ep.aimWeaponEvents = append(ep.aimWeaponEvents, weaponResults...)
+
+		ep.logger.WithFields(logrus.Fields{
+			"weapon_results_count": len(weaponResults),
+			"round":                ep.matchState.CurrentRound,
+		}).Info("Weapon aim tracking results calculated and stored for batch sending")
+	}
+
+	return nil
 }

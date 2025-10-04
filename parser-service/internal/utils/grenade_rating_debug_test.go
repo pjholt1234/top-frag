@@ -1,4 +1,4 @@
-package grenade_rating
+package utils
 
 import (
 	"parser-service/internal/types"

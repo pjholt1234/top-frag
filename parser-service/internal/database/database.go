@@ -63,7 +63,10 @@ func NewDatabase(cfg *config.DatabaseConfig, logger *logrus.Logger) (*Database, 
 func (d *Database) AutoMigrate() error {
 	d.Logger.Info("Running database migrations...")
 
-	err := d.DB.AutoMigrate(&types.PlayerTickData{})
+	err := d.DB.AutoMigrate(
+		&types.PlayerTickData{},
+		&types.PlayerShootingData{},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}

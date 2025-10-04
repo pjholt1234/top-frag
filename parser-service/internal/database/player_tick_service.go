@@ -130,6 +130,33 @@ func (s *PlayerTickService) DeletePlayerTickDataByMatch(ctx context.Context, mat
 	return nil
 }
 
+// GetPlayerTickDataByRound retrieves player tick data for a specific round
+func (s *PlayerTickService) GetPlayerTickDataByRound(ctx context.Context, matchID string, roundStartTick, roundEndTick int64) ([]*types.PlayerTickData, error) {
+	var data []*types.PlayerTickData
+
+	if err := s.db.WithContext(ctx).
+		Where("match_id = ? AND tick >= ? AND tick <= ?", matchID, roundStartTick, roundEndTick).
+		Order("tick ASC, player_id ASC").
+		Find(&data).Error; err != nil {
+		s.logger.WithFields(logrus.Fields{
+			"match_id":         matchID,
+			"round_start_tick": roundStartTick,
+			"round_end_tick":   roundEndTick,
+			"error":            err,
+		}).Error("Failed to get player tick data by round")
+		return nil, fmt.Errorf("failed to get player tick data by round: %w", err)
+	}
+
+	s.logger.WithFields(logrus.Fields{
+		"match_id":         matchID,
+		"round_start_tick": roundStartTick,
+		"round_end_tick":   roundEndTick,
+		"records_found":    len(data),
+	}).Debug("Retrieved player tick data for round")
+
+	return data, nil
+}
+
 // GetPlayerTickDataStats returns statistics about player tick data for a match
 func (s *PlayerTickService) GetPlayerTickDataStats(ctx context.Context, matchID string) (map[string]interface{}, error) {
 	var stats struct {

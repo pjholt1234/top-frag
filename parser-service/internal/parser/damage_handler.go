@@ -77,6 +77,7 @@ func (dh *DamageHandler) HandlePlayerHurt(e events.PlayerHurt) error {
 		HealthDamage:    actualHealthDamage,
 		Headshot:        false,
 		Weapon:          weaponName,
+		HitGroup:        int(e.HitGroup),
 	}
 
 	// Log damage events for grenades to help debug

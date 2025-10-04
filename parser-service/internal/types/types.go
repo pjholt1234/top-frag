@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"mime/multipart"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -154,6 +156,7 @@ type DamageEvent struct {
 	HealthDamage int    `json:"health_damage"`
 	Headshot     bool   `json:"headshot"`
 	Weapon       string `json:"weapon"`
+	HitGroup     int    `json:"hit_group"`
 }
 
 type PlayerRoundEvent struct {
@@ -326,14 +329,16 @@ type GameMode struct {
 }
 
 type ParsedDemoData struct {
-	Match             Match              `json:"match"`
-	Players           []Player           `json:"players"`
-	GunfightEvents    []GunfightEvent    `json:"gunfight_events"`
-	GrenadeEvents     []GrenadeEvent     `json:"grenade_events"`
-	RoundEvents       []RoundEvent       `json:"round_events"`
-	DamageEvents      []DamageEvent      `json:"damage_events"`
-	PlayerRoundEvents []PlayerRoundEvent `json:"player_round_events"`
-	PlayerMatchEvents []PlayerMatchEvent `json:"player_match_events"`
+	Match             Match                     `json:"match"`
+	Players           []Player                  `json:"players"`
+	GunfightEvents    []GunfightEvent           `json:"gunfight_events"`
+	GrenadeEvents     []GrenadeEvent            `json:"grenade_events"`
+	RoundEvents       []RoundEvent              `json:"round_events"`
+	DamageEvents      []DamageEvent             `json:"damage_events"`
+	PlayerRoundEvents []PlayerRoundEvent        `json:"player_round_events"`
+	PlayerMatchEvents []PlayerMatchEvent        `json:"player_match_events"`
+	AimEvents         []AimAnalysisResult       `json:"aim_events"`
+	AimWeaponEvents   []WeaponAimAnalysisResult `json:"aim_weapon_events"`
 }
 
 // ParseDemoRequest represents a request with an uploaded demo file
@@ -401,6 +406,7 @@ type MatchState struct {
 	TotalRounds        int
 	RoundStartTick     int64
 	RoundEndTick       int64
+	MapName            string
 	Players            map[string]*Player
 	RoundEvents        []RoundEvent
 	GunfightEvents     []GunfightEvent
@@ -501,6 +507,25 @@ const (
 	MatchTypeFaceit   = "faceit"
 	MatchTypeESPortal = "esportal"
 	MatchTypeOther    = "other"
+)
+
+// Weapon categories for aim tracking
+const (
+	WeaponCategorySMG   = "smg"
+	WeaponCategoryRifle = "rifle"
+	WeaponCategoryOther = "other"
+)
+
+// Hit group constants
+const (
+	HitGroupGeneric  = 0
+	HitGroupHead     = 1
+	HitGroupChest    = 2
+	HitGroupStomach  = 3
+	HitGroupLeftArm  = 4
+	HitGroupRightArm = 5
+	HitGroupLeftLeg  = 6
+	HitGroupRightLeg = 7
 )
 
 // Game timing constants
@@ -706,8 +731,181 @@ func SteamIDToString(steamID uint64) string {
 
 func StringToSteamID(steamIDString string) uint64 {
 	var steamID uint64
-	fmt.Sscanf(steamIDString, "%d", &steamID)
+	_, _ = fmt.Sscanf(steamIDString, "%d", &steamID)
 	return steamID
+}
+
+// GetWeaponCategory returns the weapon category for aim tracking
+func GetWeaponCategory(weaponName string) string {
+	normalizedName := NormalizeWeaponName(weaponName)
+	switch normalizedName {
+	case WeaponBizon, WeaponP90, WeaponUMP45, WeaponMAC10, WeaponMP9:
+		return WeaponCategorySMG
+	case WeaponAK47, WeaponM4A4, WeaponM4A1, WeaponAUG, WeaponSG556, WeaponFamas, WeaponGalil:
+		return WeaponCategoryRifle
+	default:
+		return WeaponCategoryOther
+	}
+}
+
+// IsSprayWeapon checks if a weapon is capable of spraying (SMG or Rifle)
+func IsSprayWeapon(weaponName string) bool {
+	category := GetWeaponCategory(weaponName)
+	return category == WeaponCategorySMG || category == WeaponCategoryRifle
+}
+
+// NormalizeWeaponName converts display weapon names to internal weapon names
+func NormalizeWeaponName(displayName string) string {
+	// Convert to lowercase and replace common display name patterns
+	normalized := strings.ToLower(displayName)
+	normalized = strings.ReplaceAll(normalized, "-", "")
+	normalized = strings.ReplaceAll(normalized, " ", "")
+	normalized = strings.ReplaceAll(normalized, "_", "")
+
+	// Handle specific weapon name mappings
+	weaponMappings := map[string]string{
+		"ump45":         "ump45",
+		"ump-45":        "ump45",
+		"deserteagle":   "deagle",
+		"desert eagle":  "deagle",
+		"m4a1s":         "m4a1",
+		"m4a1-s":        "m4a1",
+		"m4a1-silencer": "m4a1",
+		"ak-47":         "ak47",
+		"ak47":          "ak47",
+		"m4a4":          "m4a4",
+		"m4a1":          "m4a1",
+		"awp":           "awp",
+		"p250":          "p250",
+		"tec-9":         "tec9",
+		"tec9":          "tec9",
+		"five-seven":    "fiveseven",
+		"fiveseven":     "fiveseven",
+		"cz75":          "cz75a",
+		"cz75a":         "cz75a",
+		"ssg08":         "ssg08",
+		"scout":         "ssg08",
+		"aug":           "aug",
+		"sg556":         "sg556",
+		"sg 556":        "sg556",
+		"famas":         "famas",
+		"galil":         "galilar",
+		"galilar":       "galilar",
+		"mp9":           "mp9",
+		"mac10":         "mac10",
+		"mac-10":        "mac10",
+		"p90":           "p90",
+		"bizon":         "bizon",
+		"pp-bizon":      "bizon",
+		"ppbizon":       "bizon",
+		"nova":          "nova",
+		"xm1014":        "xm1014",
+		"mag7":          "mag7",
+		"mag-7":         "mag7",
+		"sawedoff":      "sawedoff",
+		"sawed-off":     "sawedoff",
+		"m249":          "m249",
+		"negev":         "negev",
+		"knife":         "knife",
+		"hegrenade":     "hegrenade",
+		"he grenade":    "hegrenade",
+		"flashbang":     "flashbang",
+		"flash bang":    "flashbang",
+		"smokegrenade":  "smokegrenade",
+		"smoke grenade": "smokegrenade",
+		"molotov":       "molotov",
+		"incendiary":    "incendiary",
+		"decoy":         "decoy",
+		"usp":           "usp_silencer",
+		"usp-s":         "usp_silencer",
+		"usps":          "usp_silencer",
+		"glock":         "glock",
+	}
+
+	if mapped, exists := weaponMappings[normalized]; exists {
+		return mapped
+	}
+
+	return normalized
+}
+
+// FormatWeaponName creates a user-friendly display name for weapons
+func FormatWeaponName(normalizedName string) string {
+	weaponDisplayNames := map[string]string{
+		"ump45":        "UMP-45",
+		"deagle":       "Desert Eagle",
+		"ak47":         "AK-47",
+		"m4a1":         "M4A1-S",
+		"m4a4":         "M4A4",
+		"awp":          "AWP",
+		"p250":         "P250",
+		"tec9":         "Tec-9",
+		"fiveseven":    "Five-Seven",
+		"cz75a":        "CZ75-Auto",
+		"ssg08":        "SSG 08",
+		"aug":          "AUG",
+		"sg556":        "SG 553",
+		"famas":        "FAMAS",
+		"galilar":      "Galil AR",
+		"mp9":          "MP9",
+		"mac10":        "MAC-10",
+		"p90":          "P90",
+		"bizon":        "PP-Bizon",
+		"nova":         "Nova",
+		"xm1014":       "XM1014",
+		"mag7":         "MAG-7",
+		"sawedoff":     "Sawed-Off",
+		"m249":         "M249",
+		"negev":        "Negev",
+		"knife":        "Knife",
+		"hegrenade":    "HE Grenade",
+		"flashbang":    "Flashbang",
+		"smokegrenade": "Smoke Grenade",
+		"molotov":      "Molotov",
+		"incendiary":   "Incendiary",
+		"decoy":        "Decoy",
+		"usp_silencer": "USP-S",
+		"glock":        "Glock-18",
+	}
+
+	if displayName, exists := weaponDisplayNames[normalizedName]; exists {
+		return displayName
+	}
+
+	// Fallback: capitalize first letter and replace underscores with spaces
+	formatted := strings.ReplaceAll(normalizedName, "_", " ")
+	formatted = strings.Title(strings.ToLower(formatted))
+	return formatted
+}
+
+// ShouldExcludeFromAimTracking checks if a weapon should be excluded from aim tracking
+func ShouldExcludeFromAimTracking(weaponName string) bool {
+	// Normalize the weapon name first
+	normalizedName := NormalizeWeaponName(weaponName)
+
+	excludedWeapons := []string{
+		WeaponHEGrenade,
+		WeaponFlashbang,
+		WeaponSmokeGrenade,
+		WeaponMolotov,
+		WeaponIncendiary,
+		WeaponDecoy,
+		WeaponKnife,
+	}
+
+	// Direct match
+	if slices.Contains(excludedWeapons, normalizedName) {
+		return true
+	}
+
+	// Also check if weapon name contains grenade or knife (case-insensitive)
+	weaponLower := strings.ToLower(weaponName)
+	return strings.Contains(weaponLower, "grenade") ||
+		strings.Contains(weaponLower, "knife") ||
+		strings.Contains(weaponLower, "molotov") ||
+		strings.Contains(weaponLower, "incendiary") ||
+		strings.Contains(weaponLower, "decoy") ||
+		strings.Contains(weaponLower, "flash")
 }
 
 // StepManager manages progress tracking with granular steps
@@ -786,4 +984,89 @@ type PlayerTickData struct {
 // TableName specifies the table name for GORM
 func (PlayerTickData) TableName() string {
 	return "player_tick_data"
+}
+
+// PlayerShootingData represents raw shooting data for aim analysis
+type PlayerShootingData struct {
+	ID             uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	MatchID        string    `gorm:"type:varchar(36);not null;index:idx_match_tick_player" json:"match_id"`
+	RoundNumber    int       `gorm:"not null;index:idx_match_round_player" json:"round_number"`
+	Tick           int64     `gorm:"not null;index:idx_match_tick_player" json:"tick"`
+	PlayerID       string    `gorm:"type:varchar(20);not null;index:idx_match_tick_player" json:"player_id"`
+	PositionX      float64   `gorm:"type:double;not null" json:"position_x"`
+	PositionY      float64   `gorm:"type:double;not null" json:"position_y"`
+	PositionZ      float64   `gorm:"type:double;not null" json:"position_z"`
+	WeaponName     string    `gorm:"type:varchar(50);not null" json:"weapon_name"`
+	WeaponCategory string    `gorm:"type:varchar(20);not null" json:"weapon_category"`
+	IsSpraying     bool      `gorm:"not null;default:false" json:"is_spraying"`
+	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+// TableName specifies the table name for GORM
+func (PlayerShootingData) TableName() string {
+	return "player_shooting_data"
+}
+
+// AimAnalysisResult contains aggregated aim statistics for a player
+type AimAnalysisResult struct {
+	PlayerSteamID string
+	RoundNumber   int
+
+	// Basic statistics
+	ShotsFired       int
+	ShotsHit         int
+	AccuracyAllShots float64
+
+	// Spray statistics
+	SprayingShotsFired int
+	SprayingShotsHit   int
+	SprayingAccuracy   float64
+
+	// Crosshair placement
+	AverageCrosshairPlacementX float64
+	AverageCrosshairPlacementY float64
+
+	// Headshot accuracy
+	HeadshotAccuracy float64
+
+	// Time to damage (in milliseconds)
+	AverageTimeToDamage float64
+
+	// Hit region breakdown
+	HeadHitsTotal       int
+	UpperChestHitsTotal int
+	ChestHitsTotal      int
+	LegsHitsTotal       int
+}
+
+// WeaponAimAnalysisResult contains weapon-specific aim statistics
+type WeaponAimAnalysisResult struct {
+	PlayerSteamID     string
+	RoundNumber       int
+	WeaponName        string
+	WeaponDisplayName string // User-friendly weapon name for display
+
+	// Basic statistics
+	ShotsFired       int
+	ShotsHit         int
+	AccuracyAllShots float64
+
+	// Spray statistics
+	SprayingShotsFired int
+	SprayingShotsHit   int
+	SprayingAccuracy   float64
+
+	// Crosshair placement
+	CrosshairPlacementX float64
+	CrosshairPlacementY float64
+
+	// Headshot accuracy
+	HeadshotAccuracy float64
+
+	// Hit region breakdown
+	HeadHitsTotal       int
+	UpperChestHitsTotal int
+	ChestHitsTotal      int
+	LegsHitsTotal       int
 }

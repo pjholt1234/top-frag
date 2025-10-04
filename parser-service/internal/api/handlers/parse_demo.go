@@ -603,5 +603,14 @@ func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.Process
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player match events", err)
 	}
 
+	// Send aim tracking events
+	if err := h.batchSender.SendAimEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.AimEvents); err != nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim events", err)
+	}
+
+	if err := h.batchSender.SendAimWeaponEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.AimWeaponEvents); err != nil {
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim weapon events", err)
+	}
+
 	return nil
 }

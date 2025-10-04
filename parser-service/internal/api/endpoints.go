@@ -22,4 +22,6 @@ const (
 	EventTypePlayerRound = "player-round"
 	EventTypePlayerMatch = "player-match"
 	EventTypeMatch       = "match"
+	EventTypeAim         = "aim"
+	EventTypeAimWeapon   = "aim-weapon"
 )
