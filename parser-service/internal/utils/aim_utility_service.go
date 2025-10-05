@@ -79,9 +79,6 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 	reactionTimes := aus.calculateReactionTimesFromDamageEvents(damageEvents, playerTickData, roundNumber)
 
 	for playerID, shots := range playerShootingData {
-		if playerID != "76561198081165057" {
-			continue
-		}
 		damages := playerDamageEvents[playerID]
 
 		shotAnalyses := aus.analyzeShots(shots, damages, playerTickData, playerID, roundNumber)
@@ -133,9 +130,6 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 
 	// Calculate reaction times for first shots
 	for _, damage := range firstShots {
-		if damage.AttackerSteamID != "76561198081165057" {
-			continue
-		}
 		reactionTime := aus.calculateReactionTimeForFirstShot(damage, playerTickData)
 		if reactionTime >= 50.0 {
 			reactionTimes[damage.AttackerSteamID] = reactionTime
