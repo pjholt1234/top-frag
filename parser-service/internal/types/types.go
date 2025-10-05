@@ -1061,9 +1061,6 @@ type WeaponAimAnalysisResult struct {
 	AverageCrosshairPlacementX float64
 	AverageCrosshairPlacementY float64
 
-	// Time to damage (in milliseconds)
-	AverageTimeToDamage float64
-
 	// Headshot accuracy
 	HeadshotAccuracy float64
 

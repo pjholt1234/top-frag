@@ -23,7 +23,6 @@ class PlayerMatchAimWeaponEvent extends Model
         'average_crosshair_placement_x',
         'average_crosshair_placement_y',
         'headshot_accuracy',
-        'average_time_to_damage',
         'head_hits_total',
         'upper_chest_hits_total',
         'chest_hits_total',
@@ -36,7 +35,6 @@ class PlayerMatchAimWeaponEvent extends Model
         'average_crosshair_placement_x' => 'decimal:4',
         'average_crosshair_placement_y' => 'decimal:4',
         'headshot_accuracy' => 'decimal:2',
-        'average_reaction_time' => 'decimal:4',
     ];
 
     public function match(): BelongsTo

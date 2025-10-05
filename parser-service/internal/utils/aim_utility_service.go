@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-
-	"github.com/sirupsen/logrus"
 )
 
 // CalculationCache holds cached expensive calculations
@@ -28,7 +26,6 @@ type ObjectPool struct {
 
 // AimUtilityService handles aim tracking calculations and analysis
 type AimUtilityService struct {
-	logger      *logrus.Logger
 	losDetector *LOSDetector
 	cache       *CalculationCache
 	pool        *ObjectPool
@@ -53,14 +50,13 @@ const (
 )
 
 // NewAimUtilityService creates a new aim utility service
-func NewAimUtilityService(logger *logrus.Logger, mapName string) (*AimUtilityService, error) {
+func NewAimUtilityService(mapName string) (*AimUtilityService, error) {
 	losDetector, err := NewLOSDetector(mapName)
 	if err != nil {
 		return nil, err
 	}
 
 	return &AimUtilityService{
-		logger:      logger,
 		losDetector: losDetector,
 		cache: &CalculationCache{
 			distanceCache: make(map[string]float64),
@@ -89,26 +85,11 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 	roundNumber int,
 ) ([]types.AimAnalysisResult, []types.WeaponAimAnalysisResult, error) {
 
-	aus.logger.WithFields(logrus.Fields{
-		"round":           roundNumber,
-		"shooting_events": len(shootingData),
-		"damage_events":   len(damageEvents),
-		"player_ticks":    len(playerTickData),
-	}).Info("Starting aim tracking analysis for round")
-
 	// Group shooting data by player
 	playerShootingData := aus.groupShootingDataByPlayer(shootingData, roundNumber)
-	aus.logger.WithFields(logrus.Fields{
-		"round":              roundNumber,
-		"players_with_shots": len(playerShootingData),
-	}).Debug("Grouped shooting data by player")
 
 	// Group damage events by player
 	playerDamageEvents := aus.groupDamageEventsByPlayer(damageEvents, roundNumber)
-	aus.logger.WithFields(logrus.Fields{
-		"round":               roundNumber,
-		"players_with_damage": len(playerDamageEvents),
-	}).Debug("Grouped damage events by player")
 
 	var aimResults []types.AimAnalysisResult
 	var weaponResults []types.WeaponAimAnalysisResult
@@ -120,22 +101,6 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 	for playerID, shots := range playerShootingData {
 		damages := playerDamageEvents[playerID]
 
-		// DEBUG: Count spraying shots before processing
-		sprayingShotsCount := 0
-		for _, shot := range shots {
-			if shot.IsSpraying {
-				sprayingShotsCount++
-			}
-		}
-
-		aus.logger.WithFields(logrus.Fields{
-			"round":          roundNumber,
-			"player_id":      playerID,
-			"shots_count":    len(shots),
-			"damages_count":  len(damages),
-			"spraying_shots": sprayingShotsCount,
-		}).Info("DEBUG: Processing aim tracking for player - pre-analysis")
-
 		// Analyze all shots once to avoid duplicate calculations
 		shotAnalyses := aus.analyzeShots(shots, damages, playerTickData, playerID, roundNumber)
 
@@ -144,27 +109,14 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 
 		// Integrate reaction times from damage events
 		if reactionTime, exists := reactionTimes[playerID]; exists {
-			// Only integrate if we have a valid reaction time (> 0)
-			if reactionTime > 0 {
+			// Only integrate if we have a valid reaction time (>= 50ms)
+			if reactionTime >= 50.0 {
 				// Average with existing reaction time: (old + new) / 2
 				if aimResult.AverageTimeToDamage > 0 {
 					aimResult.AverageTimeToDamage = (aimResult.AverageTimeToDamage + reactionTime) / 2.0
 				} else {
 					aimResult.AverageTimeToDamage = reactionTime
 				}
-
-				aus.logger.WithFields(logrus.Fields{
-					"round":           roundNumber,
-					"player_id":       playerID,
-					"damage_reaction": reactionTime,
-					"final_reaction":  aimResult.AverageTimeToDamage,
-				}).Debug("Integrated damage-based reaction time")
-			} else {
-				aus.logger.WithFields(logrus.Fields{
-					"round":           roundNumber,
-					"player_id":       playerID,
-					"damage_reaction": reactionTime,
-				}).Debug("Skipped integration of invalid reaction time (0.0)")
 			}
 		}
 
@@ -174,23 +126,7 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 		weaponStats := aus.calculateWeaponAimStatsFromAnalysis(playerID, roundNumber, shotAnalyses)
 		weaponResults = append(weaponResults, weaponStats...)
 
-		aus.logger.WithFields(logrus.Fields{
-			"round":                roundNumber,
-			"player_id":            playerID,
-			"accuracy":             aimResult.AccuracyAllShots,
-			"spray_accuracy":       aimResult.SprayingAccuracy,
-			"spraying_shots_fired": aimResult.SprayingShotsFired,
-			"spraying_shots_hit":   aimResult.SprayingShotsHit,
-			"time_to_damage":       aimResult.AverageTimeToDamage,
-			"weapon_stats_count":   len(weaponStats),
-		}).Info("DEBUG: Completed aim analysis for player - post-analysis")
 	}
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":          roundNumber,
-		"aim_results":    len(aimResults),
-		"weapon_results": len(weaponResults),
-	}).Info("Completed aim tracking analysis for round")
 
 	return aimResults, weaponResults, nil
 }
@@ -202,13 +138,6 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 	roundNumber int,
 ) map[string]float64 {
 	reactionTimes := make(map[string]float64)
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":         roundNumber,
-		"damage_events": len(damageEvents),
-		"player_ticks":  len(playerTickData),
-		"gap_seconds":   EngagementGapSeconds,
-	}).Info("Starting reaction time calculation from damage events")
 
 	// Sort damage events by timestamp
 	sortedDamageEvents := make([]types.DamageEvent, len(damageEvents))
@@ -223,40 +152,16 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 		}
 	}
 
-	// Debug: Log first few damage events to verify sorting
-	aus.logger.WithFields(logrus.Fields{
-		"round":        roundNumber,
-		"total_events": len(sortedDamageEvents),
-	}).Debug("Sorted damage events for first shot detection")
-
 	// Find first shots using time gap approach
 	firstShots := aus.identifyFirstShots(sortedDamageEvents)
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":       roundNumber,
-		"first_shots": len(firstShots),
-	}).Info("Identified first shots using time gap approach")
 
 	// Calculate reaction times for first shots
 	for _, damage := range firstShots {
 		reactionTime := aus.calculateReactionTimeForFirstShot(damage, playerTickData)
-		if reactionTime > 0 {
+		if reactionTime >= 50.0 {
 			reactionTimes[damage.AttackerSteamID] = reactionTime
-
-			aus.logger.WithFields(logrus.Fields{
-				"attacker_id":   damage.AttackerSteamID,
-				"victim_id":     damage.VictimSteamID,
-				"damage_tick":   damage.TickTimestamp,
-				"reaction_time": reactionTime,
-			}).Debug("Calculated reaction time for first shot")
 		}
 	}
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":             roundNumber,
-		"reaction_times":    len(reactionTimes),
-		"first_shots_found": len(firstShots),
-	}).Info("Completed reaction time calculation from damage events")
 
 	return reactionTimes
 }
@@ -266,11 +171,6 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 func (aus *AimUtilityService) identifyFirstShots(damageEvents []types.DamageEvent) []types.DamageEvent {
 	var firstShots []types.DamageEvent
 	gapTicks := int64(EngagementGapSeconds * 64) // Convert seconds to ticks
-
-	aus.logger.WithFields(logrus.Fields{
-		"total_events": len(damageEvents),
-		"gap_ticks":    gapTicks,
-	}).Debug("Identifying first shots using time gap")
 
 	for i, damage := range damageEvents {
 		// Skip non-gun damage events (grenades, knife, etc.)
@@ -294,33 +194,12 @@ func (aus *AimUtilityService) identifyFirstShots(damageEvents []types.DamageEven
 				damageEvents[j].Weapon == damage.Weapon {
 				previousDamageCount++
 				isFirstShot = false
-				aus.logger.WithFields(logrus.Fields{
-					"current_attacker":  damage.AttackerSteamID,
-					"current_victim":    damage.VictimSteamID,
-					"current_weapon":    damage.Weapon,
-					"current_tick":      damage.TickTimestamp,
-					"previous_attacker": damageEvents[j].AttackerSteamID,
-					"previous_victim":   damageEvents[j].VictimSteamID,
-					"previous_weapon":   damageEvents[j].Weapon,
-					"previous_tick":     damageEvents[j].TickTimestamp,
-					"time_diff":         timeDiff,
-					"gap_ticks":         gapTicks,
-				}).Debug("Found previous damage from same attacker-victim-weapon - not first shot")
 				break
 			}
 		}
 
 		if isFirstShot {
 			firstShots = append(firstShots, damage)
-			aus.logger.WithFields(logrus.Fields{
-				"attacker_id":           damage.AttackerSteamID,
-				"victim_id":             damage.VictimSteamID,
-				"weapon":                damage.Weapon,
-				"tick":                  damage.TickTimestamp,
-				"damage":                damage.Damage,
-				"index":                 i,
-				"previous_damage_count": previousDamageCount,
-			}).Info("Identified first shot")
 		}
 	}
 
@@ -339,25 +218,13 @@ func (aus *AimUtilityService) isGunDamage(damage types.DamageEvent) bool {
 	}
 
 	weapon := strings.ToLower(damage.Weapon)
-	aus.logger.WithFields(logrus.Fields{
-		"weapon":   weapon,
-		"attacker": damage.AttackerSteamID,
-		"victim":   damage.VictimSteamID,
-	}).Debug("Checking if weapon is gun damage")
 
 	for _, nonGun := range nonGunWeapons {
 		if strings.Contains(weapon, nonGun) {
-			aus.logger.WithFields(logrus.Fields{
-				"weapon":  weapon,
-				"non_gun": nonGun,
-			}).Debug("Weapon is non-gun, excluding from first shot detection")
 			return false
 		}
 	}
 
-	aus.logger.WithFields(logrus.Fields{
-		"weapon": weapon,
-	}).Debug("Weapon is gun, including in first shot detection")
 	return true
 }
 
@@ -385,24 +252,7 @@ func (aus *AimUtilityService) findFirstAttackerLOS(
 			// Check if attacker has LOS to victim at this tick
 			hasLOS := aus.checkLineOfSight(&attackerTick, &victimTick)
 
-			aus.logger.WithFields(logrus.Fields{
-				"attacker_id": damage.AttackerSteamID,
-				"victim_id":   damage.VictimSteamID,
-				"tick":        attackerTick.Tick,
-				"damage_tick": damage.TickTimestamp,
-				"tick_diff":   damage.TickTimestamp - attackerTick.Tick,
-				"has_los":     hasLOS,
-			}).Debug("Checked LOS at tick for first occurrence")
-
 			if hasLOS {
-				aus.logger.WithFields(logrus.Fields{
-					"attacker_id":     damage.AttackerSteamID,
-					"victim_id":       damage.VictimSteamID,
-					"visibility_tick": attackerTick.Tick,
-					"damage_tick":     damage.TickTimestamp,
-					"tick_diff":       damage.TickTimestamp - attackerTick.Tick,
-				}).Info("Found first LOS for reaction time calculation")
-
 				return attackerTick.Tick, true
 			}
 		}
@@ -432,10 +282,6 @@ func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
 	}
 
 	if len(attackerTicks) == 0 {
-		aus.logger.WithFields(logrus.Fields{
-			"attacker_id": damage.AttackerSteamID,
-			"damage_tick": damage.TickTimestamp,
-		}).Debug("No attacker tick data found for reaction time calculation")
 		return 0.0
 	}
 
@@ -464,43 +310,17 @@ func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
 		return victimTicks[i].Tick < victimTicks[j].Tick
 	})
 
-	// Check LOS at each tick to find when attacker first saw victim (parallel)
-	aus.logger.WithFields(logrus.Fields{
-		"attacker_id":    damage.AttackerSteamID,
-		"victim_id":      damage.VictimSteamID,
-		"damage_tick":    damage.TickTimestamp,
-		"search_start":   searchStartTick,
-		"attacker_ticks": len(attackerTicks),
-		"victim_ticks":   len(victimTicks),
-		"search_window":  damage.TickTimestamp - searchStartTick,
-	}).Debug("Starting parallel LOS detection for reaction time calculation")
-
 	// Use parallel processing to find the OLDEST (first) LOS occurrence
 	visibilityTick, foundVisibility = aus.findFirstAttackerLOSParallel(attackerTicks, victimTicks, damage)
 
 	// If no visibility found, we can't calculate reaction time
 	if !foundVisibility {
-		aus.logger.WithFields(logrus.Fields{
-			"attacker_id": damage.AttackerSteamID,
-			"victim_id":   damage.VictimSteamID,
-			"damage_tick": damage.TickTimestamp,
-		}).Debug("No LOS found, skipping reaction time calculation")
 		return 0.0
 	}
 
 	// Calculate reaction time in milliseconds
 	tickDiff := float64(damage.TickTimestamp - visibilityTick)
 	reactionTimeMs := (tickDiff / 64.0) * 1000.0
-
-	aus.logger.WithFields(logrus.Fields{
-		"attacker_id":      damage.AttackerSteamID,
-		"victim_id":        damage.VictimSteamID,
-		"damage_tick":      damage.TickTimestamp,
-		"visibility_tick":  visibilityTick,
-		"tick_diff":        tickDiff,
-		"reaction_time_ms": reactionTimeMs,
-		"found_los":        foundVisibility,
-	}).Debug("Calculated reaction time for first shot")
 
 	return reactionTimeMs
 }
@@ -579,13 +399,6 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 	playerTickData []types.PlayerTickData,
 ) types.AimAnalysisResult {
 
-	aus.logger.WithFields(logrus.Fields{
-		"round":         roundNumber,
-		"player_id":     playerID,
-		"shots_count":   len(shots),
-		"damages_count": len(damages),
-	}).Debug("Calculating player aim statistics")
-
 	result := types.AimAnalysisResult{
 		PlayerSteamID: playerID,
 		RoundNumber:   roundNumber,
@@ -639,17 +452,6 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 				sprayingShotsHit++
 			}
 
-			// Debug logging for spraying shots
-			aus.logger.WithFields(logrus.Fields{
-				"round":          roundNumber,
-				"player_id":      playerID,
-				"shot_tick":      shot.Tick,
-				"weapon":         shot.WeaponName,
-				"is_spraying":    shot.IsSpraying,
-				"shot_hit":       shotHit,
-				"spraying_fired": sprayingShotsFired,
-				"spraying_hit":   sprayingShotsHit,
-			}).Info("Processing spraying shot")
 		}
 
 		// Calculate crosshair placement using LOS detection
@@ -661,16 +463,6 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 		reactionTime := aus.calculateReactionTime(shot, damages, playerTickData)
 		reactionTimes = append(reactionTimes, reactionTime)
 
-		aus.logger.WithFields(logrus.Fields{
-			"round":         roundNumber,
-			"player_id":     playerID,
-			"shot_tick":     shot.Tick,
-			"weapon":        shot.WeaponName,
-			"is_spraying":   shot.IsSpraying,
-			"crosshair_x":   crosshairX,
-			"crosshair_y":   crosshairY,
-			"reaction_time": reactionTime,
-		}).Debug("Processed individual shot analysis")
 	}
 
 	// Calculate accuracy
@@ -686,18 +478,6 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 	if sprayingShotsFired > 0 {
 		result.SprayingAccuracy = float64(sprayingShotsHit) / float64(sprayingShotsFired) * 100.0
 	}
-
-	// DEBUG: Log final spraying statistics
-	aus.logger.WithFields(logrus.Fields{
-		"round":                roundNumber,
-		"player_id":            playerID,
-		"total_shots":          len(shots),
-		"spraying_shots_fired": sprayingShotsFired,
-		"spraying_shots_hit":   sprayingShotsHit,
-		"spraying_accuracy":    result.SprayingAccuracy,
-		"shots_hit":            shotsOnHit,
-		"accuracy_all_shots":   result.AccuracyAllShots,
-	}).Info("DEBUG: Final spraying statistics calculated")
 
 	// Calculate average crosshair placement
 	if len(crosshairPlacementsX) > 0 {
@@ -760,10 +540,9 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 		chestHits := 0
 		legsHits := 0
 
-		// Arrays to store crosshair placement and reaction time data for this weapon
+		// Arrays to store crosshair placement data for this weapon
 		var crosshairPlacementsX []float64
 		var crosshairPlacementsY []float64
-		var reactionTimes []float64
 
 		for _, shot := range weaponShotData {
 			// Check if this shot resulted in damage
@@ -802,20 +581,6 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 			crosshairPlacementsX = append(crosshairPlacementsX, crosshairX)
 			crosshairPlacementsY = append(crosshairPlacementsY, crosshairY)
 
-			// Calculate reaction time for this weapon shot
-			reactionTime := aus.calculateReactionTime(shot, damages, playerTickData)
-			reactionTimes = append(reactionTimes, reactionTime)
-
-			aus.logger.WithFields(logrus.Fields{
-				"round":         roundNumber,
-				"player_id":     playerID,
-				"weapon":        weaponName,
-				"shot_tick":     shot.Tick,
-				"is_spraying":   shot.IsSpraying,
-				"crosshair_x":   crosshairX,
-				"crosshair_y":   crosshairY,
-				"reaction_time": reactionTime,
-			}).Debug("Processed weapon shot analysis")
 		}
 
 		// Persist shots hit for downstream consumers
@@ -838,11 +603,6 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 			result.AverageCrosshairPlacementY = aus.calculateAverage(crosshairPlacementsY)
 		}
 
-		// Calculate average reaction time for this weapon
-		if len(reactionTimes) > 0 {
-			result.AverageTimeToDamage = aus.calculateAverage(reactionTimes)
-		}
-
 		// Calculate headshot accuracy
 		if result.ShotsHit > 0 {
 			result.HeadshotAccuracy = float64(headHits) / float64(result.ShotsHit) * 100.0
@@ -853,20 +613,6 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 		result.UpperChestHitsTotal = upperChestHits
 		result.ChestHitsTotal = chestHits
 		result.LegsHitsTotal = legsHits
-
-		aus.logger.WithFields(logrus.Fields{
-			"round":             roundNumber,
-			"player_id":         playerID,
-			"weapon":            weaponName,
-			"shots_fired":       result.ShotsFired,
-			"shots_hit":         result.ShotsHit,
-			"accuracy":          result.AccuracyAllShots,
-			"spray_accuracy":    result.SprayingAccuracy,
-			"crosshair_x":       result.AverageCrosshairPlacementX,
-			"crosshair_y":       result.AverageCrosshairPlacementY,
-			"reaction_time":     result.AverageTimeToDamage,
-			"headshot_accuracy": result.HeadshotAccuracy,
-		}).Info("Completed weapon-specific aim analysis")
 
 		results = append(results, result)
 	}
@@ -903,12 +649,6 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 	playerTickData []types.PlayerTickData,
 ) (float64, float64) {
 
-	aus.logger.WithFields(logrus.Fields{
-		"player_id": shot.PlayerID,
-		"shot_tick": shot.Tick,
-		"weapon":    shot.WeaponName,
-	}).Debug("Calculating crosshair placement for shot")
-
 	// Find the player's position and aim data at the time of the shot
 	var playerTick *types.PlayerTickData
 	for _, tick := range playerTickData {
@@ -919,10 +659,6 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 	}
 
 	if playerTick == nil {
-		aus.logger.WithFields(logrus.Fields{
-			"player_id": shot.PlayerID,
-			"shot_tick": shot.Tick,
-		}).Warn("Player tick data not found for crosshair placement calculation")
 		return 0.0, 0.0
 	}
 
@@ -939,10 +675,6 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 	}
 
 	if closestDamage == nil {
-		aus.logger.WithFields(logrus.Fields{
-			"player_id": shot.PlayerID,
-			"shot_tick": shot.Tick,
-		}).Debug("No damage event found for crosshair placement calculation")
 		return 0.0, 0.0
 	}
 
@@ -962,13 +694,6 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 
 	// Calculate crosshair placement using LOS detection
 	crosshairX, crosshairY := aus.calculateCrosshairPlacementWithLOS(playerTick, victimTick)
-
-	aus.logger.WithFields(logrus.Fields{
-		"player_id":   shot.PlayerID,
-		"shot_tick":   shot.Tick,
-		"crosshair_x": crosshairX,
-		"crosshair_y": crosshairY,
-	}).Debug("Calculated crosshair placement")
 
 	return crosshairX, crosshairY
 }
@@ -1034,12 +759,6 @@ func (aus *AimUtilityService) calculateReactionTime(
 	playerTickData []types.PlayerTickData,
 ) float64 {
 
-	aus.logger.WithFields(logrus.Fields{
-		"player_id": shot.PlayerID,
-		"shot_tick": shot.Tick,
-		"weapon":    shot.WeaponName,
-	}).Debug("Calculating reaction time for shot")
-
 	// Find the closest damage event to this shot (within 10 ticks)
 	var closestDamage *types.DamageEvent
 	minTimeDiff := int64(10)
@@ -1053,10 +772,6 @@ func (aus *AimUtilityService) calculateReactionTime(
 	}
 
 	if closestDamage == nil {
-		aus.logger.WithFields(logrus.Fields{
-			"player_id": shot.PlayerID,
-			"shot_tick": shot.Tick,
-		}).Debug("No damage event found for reaction time calculation")
 		return 0.0
 	}
 
@@ -1069,13 +784,6 @@ func (aus *AimUtilityService) calculateReactionTime(
 	// Convert ticks to milliseconds (assuming 64 tick server)
 	tickDiff := float64(abs(shot.Tick - closestDamage.TickTimestamp))
 	reactionTimeMs := (tickDiff / 64.0) * 1000.0 // Convert to milliseconds
-
-	aus.logger.WithFields(logrus.Fields{
-		"player_id":        shot.PlayerID,
-		"shot_tick":        shot.Tick,
-		"tick_diff":        tickDiff,
-		"reaction_time_ms": reactionTimeMs,
-	}).Debug("Calculated reaction time")
 
 	return reactionTimeMs
 }
@@ -1134,13 +842,6 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 		numWorkers = MaxParallelLOSWorkers
 	}
 
-	aus.logger.WithFields(logrus.Fields{
-		"attacker_id": damage.AttackerSteamID,
-		"victim_id":   damage.VictimSteamID,
-		"total_ticks": len(attackerTicks),
-		"workers":     numWorkers,
-	}).Debug("Starting parallel LOS workers for first occurrence")
-
 	var wg sync.WaitGroup
 
 	// Start workers
@@ -1160,17 +861,6 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 				if victimTick, exists := victimTickMap[attackerTick.Tick]; exists {
 					// Check LOS between attacker and victim at this tick
 					hasLOS := aus.checkLineOfSight(&attackerTick, &victimTick)
-
-					aus.logger.WithFields(logrus.Fields{
-						"attacker_id": damage.AttackerSteamID,
-						"victim_id":   damage.VictimSteamID,
-						"tick":        attackerTick.Tick,
-						"damage_tick": damage.TickTimestamp,
-						"tick_diff":   damage.TickTimestamp - attackerTick.Tick,
-						"has_los":     hasLOS,
-						"tick_index":  tickIndex,
-						"worker_id":   workerID,
-					}).Debug("Checked LOS at tick (parallel)")
 
 					results <- LOSResult{
 						TickIndex: tickIndex,
@@ -1210,14 +900,6 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 	}
 
 	if firstLOSResult != nil {
-		aus.logger.WithFields(logrus.Fields{
-			"attacker_id":     damage.AttackerSteamID,
-			"victim_id":       damage.VictimSteamID,
-			"visibility_tick": firstLOSResult.Tick,
-			"damage_tick":     damage.TickTimestamp,
-			"tick_diff":       damage.TickTimestamp - firstLOSResult.Tick,
-			"tick_index":      firstLOSResult.TickIndex,
-		}).Info("Found first LOS for reaction time calculation (parallel)")
 
 		return firstLOSResult.Tick, true
 	}
@@ -1253,13 +935,6 @@ func (aus *AimUtilityService) analyzeShots(
 ) []ShotAnalysisData {
 	var shotAnalyses []ShotAnalysisData
 
-	aus.logger.WithFields(logrus.Fields{
-		"round":         roundNumber,
-		"player_id":     playerID,
-		"shots_count":   len(shots),
-		"damages_count": len(damages),
-	}).Debug("Analyzing all shots for player")
-
 	for _, shot := range shots {
 		analysis := ShotAnalysisData{
 			Shot:         shot,
@@ -1292,24 +967,7 @@ func (aus *AimUtilityService) analyzeShots(
 
 		shotAnalyses = append(shotAnalyses, analysis)
 
-		aus.logger.WithFields(logrus.Fields{
-			"round":         roundNumber,
-			"player_id":     playerID,
-			"shot_tick":     shot.Tick,
-			"weapon":        shot.WeaponName,
-			"is_spraying":   shot.IsSpraying,
-			"hit":           shotHit,
-			"crosshair_x":   crosshairX,
-			"crosshair_y":   crosshairY,
-			"reaction_time": reactionTime,
-		}).Debug("Analyzed individual shot")
 	}
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":          roundNumber,
-		"player_id":      playerID,
-		"shots_analyzed": len(shotAnalyses),
-	}).Info("Completed shot analysis for player")
 
 	return shotAnalyses
 }
@@ -1320,12 +978,6 @@ func (aus *AimUtilityService) calculatePlayerAimStatsFromAnalysis(
 	roundNumber int,
 	shotAnalyses []ShotAnalysisData,
 ) types.AimAnalysisResult {
-
-	aus.logger.WithFields(logrus.Fields{
-		"round":       roundNumber,
-		"player_id":   playerID,
-		"shots_count": len(shotAnalyses),
-	}).Debug("Calculating player aim statistics from analysis")
 
 	result := types.AimAnalysisResult{
 		PlayerSteamID: playerID,
@@ -1375,7 +1027,10 @@ func (aus *AimUtilityService) calculatePlayerAimStatsFromAnalysis(
 		// Collect crosshair placement and reaction time data
 		crosshairPlacementsX = append(crosshairPlacementsX, analysis.CrosshairX)
 		crosshairPlacementsY = append(crosshairPlacementsY, analysis.CrosshairY)
-		reactionTimes = append(reactionTimes, analysis.ReactionTime)
+		// Only include reaction times >= 50ms
+		if analysis.ReactionTime >= 50.0 {
+			reactionTimes = append(reactionTimes, analysis.ReactionTime)
+		}
 	}
 
 	// Calculate accuracy
@@ -1450,10 +1105,9 @@ func (aus *AimUtilityService) calculateWeaponAimStatsFromAnalysis(
 		chestHits := 0
 		legsHits := 0
 
-		// Arrays to store crosshair placement and reaction time data for this weapon
+		// Arrays to store crosshair placement data for this weapon
 		var crosshairPlacementsX []float64
 		var crosshairPlacementsY []float64
-		var reactionTimes []float64
 
 		for _, analysis := range weaponShotAnalyses {
 			if analysis.Hit {
@@ -1480,10 +1134,9 @@ func (aus *AimUtilityService) calculateWeaponAimStatsFromAnalysis(
 				}
 			}
 
-			// Collect crosshair placement and reaction time data
+			// Collect crosshair placement data
 			crosshairPlacementsX = append(crosshairPlacementsX, analysis.CrosshairX)
 			crosshairPlacementsY = append(crosshairPlacementsY, analysis.CrosshairY)
-			reactionTimes = append(reactionTimes, analysis.ReactionTime)
 		}
 
 		// Persist shots hit for downstream consumers
@@ -1506,11 +1159,6 @@ func (aus *AimUtilityService) calculateWeaponAimStatsFromAnalysis(
 			result.AverageCrosshairPlacementY = aus.calculateAverage(crosshairPlacementsY)
 		}
 
-		// Calculate average reaction time for this weapon
-		if len(reactionTimes) > 0 {
-			result.AverageTimeToDamage = aus.calculateAverage(reactionTimes)
-		}
-
 		// Calculate headshot accuracy
 		if result.ShotsHit > 0 {
 			result.HeadshotAccuracy = float64(headHits) / float64(result.ShotsHit) * 100.0
@@ -1521,20 +1169,6 @@ func (aus *AimUtilityService) calculateWeaponAimStatsFromAnalysis(
 		result.UpperChestHitsTotal = upperChestHits
 		result.ChestHitsTotal = chestHits
 		result.LegsHitsTotal = legsHits
-
-		aus.logger.WithFields(logrus.Fields{
-			"round":             roundNumber,
-			"player_id":         playerID,
-			"weapon":            weaponName,
-			"shots_fired":       result.ShotsFired,
-			"shots_hit":         result.ShotsHit,
-			"accuracy":          result.AccuracyAllShots,
-			"spray_accuracy":    result.SprayingAccuracy,
-			"crosshair_x":       result.AverageCrosshairPlacementX,
-			"crosshair_y":       result.AverageCrosshairPlacementY,
-			"reaction_time":     result.AverageTimeToDamage,
-			"headshot_accuracy": result.HeadshotAccuracy,
-		}).Info("Completed weapon-specific aim analysis")
 
 		results = append(results, result)
 	}
