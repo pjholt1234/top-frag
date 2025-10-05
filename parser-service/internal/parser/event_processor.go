@@ -583,7 +583,7 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 		mapName = "de_ancient" // Default fallback map
 	}
 
-	aimService, err := utils.NewAimUtilityService(ep.logger, mapName)
+	aimService, err := utils.NewAimUtilityService(mapName)
 	if err != nil {
 		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to create aim utility service", err).
 			WithContext("event", "RoundEnd").

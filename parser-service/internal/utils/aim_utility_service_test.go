@@ -4,12 +4,9 @@ import (
 	"testing"
 
 	"parser-service/internal/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 func TestNewAimUtilityService(t *testing.T) {
-	logger := logrus.New()
 
 	tests := []struct {
 		name     string
@@ -30,7 +27,7 @@ func TestNewAimUtilityService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, err := NewAimUtilityService(logger, tt.mapName)
+			service, err := NewAimUtilityService(tt.mapName)
 
 			if tt.expected {
 				if err != nil {
@@ -49,8 +46,7 @@ func TestNewAimUtilityService(t *testing.T) {
 }
 
 func TestAimUtilityService_ProcessAimTrackingForRound(t *testing.T) {
-	logger := logrus.New()
-	service, err := NewAimUtilityService(logger, "de_ancient")
+	service, err := NewAimUtilityService("de_ancient")
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -126,8 +122,7 @@ func TestAimUtilityService_ProcessAimTrackingForRound(t *testing.T) {
 }
 
 func TestAimUtilityService_calculateAverage(t *testing.T) {
-	logger := logrus.New()
-	service, err := NewAimUtilityService(logger, "de_ancient")
+	service, err := NewAimUtilityService("de_ancient")
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -170,8 +165,7 @@ func TestAimUtilityService_calculateAverage(t *testing.T) {
 }
 
 func TestAimUtilityService_groupShootingDataByPlayer(t *testing.T) {
-	logger := logrus.New()
-	service, err := NewAimUtilityService(logger, "de_ancient")
+	service, err := NewAimUtilityService("de_ancient")
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -207,8 +201,7 @@ func TestAimUtilityService_groupShootingDataByPlayer(t *testing.T) {
 }
 
 func TestAimUtilityService_groupDamageEventsByPlayer(t *testing.T) {
-	logger := logrus.New()
-	service, err := NewAimUtilityService(logger, "de_ancient")
+	service, err := NewAimUtilityService("de_ancient")
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
