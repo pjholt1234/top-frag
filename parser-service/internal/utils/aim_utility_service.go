@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"math"
 	"parser-service/internal/types"
 	"runtime"
@@ -112,18 +113,13 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 ) map[string]float64 {
 	reactionTimes := make(map[string]float64)
 
-	// Sort damage events by timestamp
+	// Sort damage events by timestamp using optimized sort
 	sortedDamageEvents := make([]types.DamageEvent, len(damageEvents))
 	copy(sortedDamageEvents, damageEvents)
 
-	// Simple bubble sort by tick timestamp
-	for i := 0; i < len(sortedDamageEvents)-1; i++ {
-		for j := 0; j < len(sortedDamageEvents)-i-1; j++ {
-			if sortedDamageEvents[j].TickTimestamp > sortedDamageEvents[j+1].TickTimestamp {
-				sortedDamageEvents[j], sortedDamageEvents[j+1] = sortedDamageEvents[j+1], sortedDamageEvents[j]
-			}
-		}
-	}
+	sort.Slice(sortedDamageEvents, func(i, j int) bool {
+		return sortedDamageEvents[i].TickTimestamp < sortedDamageEvents[j].TickTimestamp
+	})
 
 	// Find first shots using time gap approach
 	firstShots := aus.identifyFirstShots(sortedDamageEvents)
@@ -277,6 +273,17 @@ func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
 }
 
 func (aus *AimUtilityService) checkLineOfSight(attacker, victim *types.PlayerTickData) bool {
+	// Create cache key for this LOS check
+	cacheKey := fmt.Sprintf("%s_%d_%s_%d", attacker.PlayerID, attacker.Tick, victim.PlayerID, victim.Tick)
+
+	// Check cache first
+	aus.cache.mutex.RLock()
+	if hasLOS, exists := aus.cache.fovCache[cacheKey]; exists {
+		aus.cache.mutex.RUnlock()
+		return hasLOS
+	}
+	aus.cache.mutex.RUnlock()
+
 	attackerPos := Vector3{
 		X: float32(attacker.PositionX),
 		Y: float32(attacker.PositionY),
@@ -300,6 +307,11 @@ func (aus *AimUtilityService) checkLineOfSight(attacker, victim *types.PlayerTic
 		attacker.AimX, attacker.AimY,
 		victim.AimX, victim.AimY,
 	)
+
+	// Cache the result
+	aus.cache.mutex.Lock()
+	aus.cache.fovCache[cacheKey] = attackerCanSee
+	aus.cache.mutex.Unlock()
 
 	return attackerCanSee
 }
@@ -348,13 +360,26 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 		ShotsFired:    len(shots),
 	}
 
+	if len(shots) == 0 {
+		return result
+	}
+
+	// Create damage lookup map for O(1) access
+	damageByTick := make(map[int64][]types.DamageEvent)
+	for _, damage := range damages {
+		if damage.AttackerSteamID == playerID {
+			damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
+		}
+	}
+
 	shotsOnHit := 0
 	sprayingShotsFired := 0
 	sprayingShotsHit := 0
 
-	var crosshairPlacementsX []float64
-	var crosshairPlacementsY []float64
-	var reactionTimes []float64
+	// Pre-allocate slices with known capacity
+	crosshairPlacementsX := make([]float64, 0, len(shots))
+	crosshairPlacementsY := make([]float64, 0, len(shots))
+	reactionTimes := make([]float64, 0, len(shots))
 
 	headHits := 0
 	upperChestHits := 0
@@ -363,22 +388,30 @@ func (aus *AimUtilityService) calculatePlayerAimStats(
 
 	for _, shot := range shots {
 		shotHit := false
-		for _, damage := range damages {
-			if damage.AttackerSteamID == shot.PlayerID &&
-				abs(damage.TickTimestamp-shot.Tick) <= 10 {
-				shotHit = true
-				shotsOnHit++
+		// Check for damage within 10 tick window using hash map lookup
+		for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
+			if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
+				for _, damage := range damages {
+					shotHit = true
+					shotsOnHit++
 
-				switch damage.HitGroup {
-				case types.HitGroupHead:
-					headHits++
-				case types.HitGroupChest:
-					chestHits++
-				case types.HitGroupStomach:
-					upperChestHits++
-				case types.HitGroupLeftLeg, types.HitGroupRightLeg:
-					legsHits++
+					switch damage.HitGroup {
+					case types.HitGroupHead:
+						headHits++
+					case types.HitGroupChest:
+						chestHits++
+					case types.HitGroupStomach:
+						upperChestHits++
+					case types.HitGroupLeftLeg, types.HitGroupRightLeg:
+						legsHits++
+					}
+					break
 				}
+				if shotHit {
+					break
+				}
+			}
+			if shotHit {
 				break
 			}
 		}
@@ -443,7 +476,15 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 		weaponShots[shot.WeaponName] = append(weaponShots[shot.WeaponName], shot)
 	}
 
-	var results []types.WeaponAimAnalysisResult
+	// Create damage lookup map for O(1) access
+	damageByTick := make(map[int64][]types.DamageEvent)
+	for _, damage := range damages {
+		if damage.AttackerSteamID == playerID {
+			damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
+		}
+	}
+
+	results := make([]types.WeaponAimAnalysisResult, 0, len(weaponShots))
 
 	for weaponName, weaponShotData := range weaponShots {
 		result := types.WeaponAimAnalysisResult{
@@ -463,27 +504,36 @@ func (aus *AimUtilityService) calculateWeaponAimStats(
 		chestHits := 0
 		legsHits := 0
 
-		var crosshairPlacementsX []float64
-		var crosshairPlacementsY []float64
+		// Pre-allocate slices with known capacity
+		crosshairPlacementsX := make([]float64, 0, len(weaponShotData))
+		crosshairPlacementsY := make([]float64, 0, len(weaponShotData))
 
 		for _, shot := range weaponShotData {
 			shotHit := false
-			for _, damage := range damages {
-				if damage.AttackerSteamID == shot.PlayerID &&
-					abs(damage.TickTimestamp-shot.Tick) <= 10 {
-					shotHit = true
-					shotsOnHit++
+			// Check for damage within 10 tick window using hash map lookup
+			for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
+				if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
+					for _, damage := range damages {
+						shotHit = true
+						shotsOnHit++
 
-					switch damage.HitGroup {
-					case types.HitGroupHead:
-						headHits++
-					case types.HitGroupChest:
-						chestHits++
-					case types.HitGroupStomach:
-						upperChestHits++
-					case types.HitGroupLeftLeg, types.HitGroupRightLeg:
-						legsHits++
+						switch damage.HitGroup {
+						case types.HitGroupHead:
+							headHits++
+						case types.HitGroupChest:
+							chestHits++
+						case types.HitGroupStomach:
+							upperChestHits++
+						case types.HitGroupLeftLeg, types.HitGroupRightLeg:
+							legsHits++
+						}
+						break
 					}
+					if shotHit {
+						break
+					}
+				}
+				if shotHit {
 					break
 				}
 			}
@@ -557,26 +607,39 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 	playerTickData []types.PlayerTickData,
 ) (float64, float64) {
 
-	var playerTick *types.PlayerTickData
+	// Create player tick lookup map for O(1) access
+	playerTickMap := make(map[string]map[int64]types.PlayerTickData)
 	for _, tick := range playerTickData {
-		if tick.PlayerID == shot.PlayerID && tick.Tick == shot.Tick {
-			playerTick = &tick
-			break
+		if playerTickMap[tick.PlayerID] == nil {
+			playerTickMap[tick.PlayerID] = make(map[int64]types.PlayerTickData)
 		}
+		playerTickMap[tick.PlayerID][tick.Tick] = tick
 	}
 
-	if playerTick == nil {
+	playerTick, exists := playerTickMap[shot.PlayerID][shot.Tick]
+	if !exists {
 		return 0.0, 0.0
+	}
+
+	// Create damage lookup map for O(1) access
+	damageByTick := make(map[int64][]types.DamageEvent)
+	for _, damage := range damages {
+		damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
 	}
 
 	var closestDamage *types.DamageEvent
 	minTimeDiff := int64(10)
 
-	for i, damage := range damages {
-		timeDiff := abs(shot.Tick - damage.TickTimestamp)
-		if timeDiff <= minTimeDiff {
-			minTimeDiff = timeDiff
-			closestDamage = &damages[i]
+	// Check for damage within 10 tick window using hash map lookup
+	for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
+		if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
+			for i, damage := range damages {
+				timeDiff := abs(shot.Tick - damage.TickTimestamp)
+				if timeDiff <= minTimeDiff {
+					minTimeDiff = timeDiff
+					closestDamage = &damages[i]
+				}
+			}
 		}
 	}
 
@@ -584,10 +647,15 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 		return 0.0, 0.0
 	}
 
+	// Find victim tick using hash map lookup
+	victimTickMap := playerTickMap[closestDamage.VictimSteamID]
+	if victimTickMap == nil {
+		return 0.0, 0.0
+	}
+
 	var victimTick *types.PlayerTickData
-	for _, tick := range playerTickData {
-		if tick.PlayerID == closestDamage.VictimSteamID &&
-			abs(tick.Tick-closestDamage.TickTimestamp) <= 5 {
+	for tickOffset := int64(-5); tickOffset <= 5; tickOffset++ {
+		if tick, exists := victimTickMap[closestDamage.TickTimestamp+tickOffset]; exists {
 			victimTick = &tick
 			break
 		}
@@ -597,7 +665,7 @@ func (aus *AimUtilityService) calculateCrosshairPlacement(
 		return 0.0, 0.0
 	}
 
-	crosshairX, crosshairY := aus.calculateCrosshairPlacementWithLOS(playerTick, victimTick)
+	crosshairX, crosshairY := aus.calculateCrosshairPlacementWithLOS(&playerTick, victimTick)
 
 	return crosshairX, crosshairY
 }
@@ -651,14 +719,25 @@ func (aus *AimUtilityService) calculateReactionTime(
 	playerTickData []types.PlayerTickData,
 ) float64 {
 
+	// Create damage lookup map for O(1) access
+	damageByTick := make(map[int64][]types.DamageEvent)
+	for _, damage := range damages {
+		damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
+	}
+
 	var closestDamage *types.DamageEvent
 	minTimeDiff := int64(10)
 
-	for i, damage := range damages {
-		timeDiff := abs(shot.Tick - damage.TickTimestamp)
-		if timeDiff <= minTimeDiff {
-			minTimeDiff = timeDiff
-			closestDamage = &damages[i]
+	// Check for damage within 10 tick window using hash map lookup
+	for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
+		if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
+			for i, damage := range damages {
+				timeDiff := abs(shot.Tick - damage.TickTimestamp)
+				if timeDiff <= minTimeDiff {
+					minTimeDiff = timeDiff
+					closestDamage = &damages[i]
+				}
+			}
 		}
 	}
 
@@ -703,15 +782,18 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 		return 0, false
 	}
 
+	// For small datasets, use sequential processing
+	if len(attackerTicks) < 50 {
+		return aus.findFirstAttackerLOS(attackerTicks, victimTicks, damage)
+	}
+
 	victimTickMap := make(map[int64]types.PlayerTickData)
 	for _, tick := range victimTicks {
 		victimTickMap[tick.Tick] = tick
 	}
 
-	jobs := make(chan int, len(attackerTicks))
-	results := make(chan LOSResult, len(attackerTicks))
-
-	numWorkers := min(len(attackerTicks)/10, runtime.NumCPU())
+	// Optimize worker count based on data size and CPU cores
+	numWorkers := min(len(attackerTicks)/20, runtime.NumCPU())
 	if numWorkers < 1 {
 		numWorkers = 1
 	}
@@ -719,8 +801,15 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 		numWorkers = MaxParallelLOSWorkers
 	}
 
-	var wg sync.WaitGroup
+	// Use buffered channels to reduce blocking
+	jobs := make(chan int, numWorkers*2)
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var firstLOSResult *LOSResult
+	minTickIndex := len(attackerTicks)
+
+	// Start workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
@@ -735,16 +824,24 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 				if victimTick, exists := victimTickMap[attackerTick.Tick]; exists {
 					hasLOS := aus.checkLineOfSight(&attackerTick, &victimTick)
 
-					results <- LOSResult{
-						TickIndex: tickIndex,
-						Tick:      attackerTick.Tick,
-						HasLOS:    hasLOS,
+					if hasLOS {
+						mu.Lock()
+						if tickIndex < minTickIndex {
+							minTickIndex = tickIndex
+							firstLOSResult = &LOSResult{
+								TickIndex: tickIndex,
+								Tick:      attackerTick.Tick,
+								HasLOS:    hasLOS,
+							}
+						}
+						mu.Unlock()
 					}
 				}
 			}
 		}(i)
 	}
 
+	// Send jobs
 	go func() {
 		for i := range attackerTicks {
 			jobs <- i
@@ -752,20 +849,8 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 		close(jobs)
 	}()
 
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var firstLOSResult *LOSResult
-	minTickIndex := len(attackerTicks)
-
-	for result := range results {
-		if result.HasLOS && result.TickIndex < minTickIndex {
-			minTickIndex = result.TickIndex
-			firstLOSResult = &result
-		}
-	}
+	// Wait for completion
+	wg.Wait()
 
 	if firstLOSResult != nil {
 		return firstLOSResult.Tick, true
@@ -798,7 +883,20 @@ func (aus *AimUtilityService) analyzeShots(
 	playerID string,
 	roundNumber int,
 ) []ShotAnalysisData {
-	var shotAnalyses []ShotAnalysisData
+	if len(shots) == 0 {
+		return []ShotAnalysisData{}
+	}
+
+	// Create damage lookup map for O(1) access
+	damageByTick := make(map[int64][]types.DamageEvent)
+	for _, damage := range damages {
+		if damage.AttackerSteamID == playerID {
+			damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
+		}
+	}
+
+	// Pre-allocate slice with known capacity
+	shotAnalyses := make([]ShotAnalysisData, 0, len(shots))
 
 	for _, shot := range shots {
 		analysis := ShotAnalysisData{
@@ -808,12 +906,17 @@ func (aus *AimUtilityService) analyzeShots(
 
 		shotHit := false
 		var hitGroup int
-		for _, damage := range damages {
-			if damage.AttackerSteamID == shot.PlayerID &&
-				abs(damage.TickTimestamp-shot.Tick) <= 10 {
-				shotHit = true
-				hitGroup = damage.HitGroup
-				break
+		// Check for damage within 10 tick window using hash map lookup
+		for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
+			if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
+				for _, damage := range damages {
+					shotHit = true
+					hitGroup = damage.HitGroup
+					break
+				}
+				if shotHit {
+					break
+				}
 			}
 		}
 
