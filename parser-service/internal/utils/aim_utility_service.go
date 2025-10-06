@@ -37,6 +37,39 @@ const (
 	MovementThreshold        = 5.0
 )
 
+// Aim Rating Constants
+const (
+	// Accuracy bounds (percentage)
+	AccuracyMaxScore = 25.0
+	AccuracyMinScore = 0.0
+	AccuracyMaxValue = 90.0 // >= 90% gets max score
+	AccuracyMinValue = 10.0 // <= 10% gets min score
+
+	// Crosshair placement bounds (degrees)
+	CrosshairMaxScore = 25.0
+	CrosshairMinScore = 0.0
+	CrosshairMaxValue = 5.0  // <= 5 degrees gets max score
+	CrosshairMinValue = 30.0 // >= 30 degrees gets min score
+
+	// Time to damage bounds (milliseconds)
+	TimeToDamageMaxScore = 20.0
+	TimeToDamageMinScore = 0.0
+	TimeToDamageMaxValue = 250.0 // <= 250ms gets max score
+	TimeToDamageMinValue = 750.0 // >= 750ms gets min score
+
+	// Headshot accuracy bounds (percentage)
+	HeadshotMaxScore = 15.0
+	HeadshotMinScore = 0.0
+	HeadshotMaxValue = 90.0 // >= 90% gets max score
+	HeadshotMinValue = 10.0 // <= 10% gets min score
+
+	// Spray accuracy bounds (percentage)
+	SprayMaxScore = 15.0
+	SprayMinScore = 0.0
+	SprayMaxValue = 90.0 // >= 90% gets max score
+	SprayMinValue = 10.0 // <= 10% gets min score
+)
+
 func NewAimUtilityService(mapName string) (*AimUtilityService, error) {
 	losDetector, err := NewLOSDetector(mapName)
 	if err != nil {
@@ -70,7 +103,6 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 	playerTickData []types.PlayerTickData,
 	roundNumber int,
 ) ([]types.AimAnalysisResult, []types.WeaponAimAnalysisResult, error) {
-
 	playerShootingData := aus.groupShootingDataByPlayer(shootingData, roundNumber)
 	playerDamageEvents := aus.groupDamageEventsByPlayer(damageEvents, roundNumber)
 
@@ -126,6 +158,9 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 
 	// Calculate reaction times for first shots
 	for _, damage := range firstShots {
+		if damage.AttackerSteamID != "76561198081165057" {
+			continue
+		}
 		reactionTime := aus.calculateReactionTimeForFirstShot(damage, playerTickData)
 		if reactionTime >= 50.0 {
 			reactionTimes[damage.AttackerSteamID] = reactionTime
@@ -1020,6 +1055,9 @@ func (aus *AimUtilityService) calculatePlayerAimStatsFromAnalysis(
 	result.ChestHitsTotal = chestHits
 	result.LegsHitsTotal = legsHits
 
+	// Calculate overall aim rating (0-100)
+	result.AimRating = aus.calculateAimRating(result)
+
 	return result
 }
 
@@ -1160,4 +1198,103 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// calculateAimRating calculates the overall aim rating (0-100) based on the specified weights
+func (aus *AimUtilityService) calculateAimRating(result types.AimAnalysisResult) float64 {
+	var totalScore float64
+
+	// 1. Accuracy all shots (25 points)
+	accuracyScore := aus.calculateLinearScore(
+		result.AccuracyAllShots,
+		AccuracyMaxValue, AccuracyMinValue,
+		AccuracyMaxScore, AccuracyMinScore,
+		true, // higher is better
+	)
+	totalScore += accuracyScore
+
+	// 2. Crosshair placement (25 points) - using average of X and Y
+	crosshairAvg := (result.AverageCrosshairPlacementX + result.AverageCrosshairPlacementY) / 2.0
+	crosshairScore := aus.calculateLinearScore(
+		crosshairAvg,
+		CrosshairMaxValue, CrosshairMinValue,
+		CrosshairMaxScore, CrosshairMinScore,
+		false, // lower is better
+	)
+	totalScore += crosshairScore
+
+	// 3. Time to damage (20 points)
+	timeToDamageScore := aus.calculateLinearScore(
+		result.AverageTimeToDamage,
+		TimeToDamageMaxValue, TimeToDamageMinValue,
+		TimeToDamageMaxScore, TimeToDamageMinScore,
+		false, // lower is better
+	)
+	totalScore += timeToDamageScore
+
+	// 4. Headshot accuracy (15 points)
+	headshotScore := aus.calculateLinearScore(
+		result.HeadshotAccuracy,
+		HeadshotMaxValue, HeadshotMinValue,
+		HeadshotMaxScore, HeadshotMinScore,
+		true, // higher is better
+	)
+	totalScore += headshotScore
+
+	// 5. Spray accuracy (15 points)
+	sprayScore := aus.calculateLinearScore(
+		result.SprayingAccuracy,
+		SprayMaxValue, SprayMinValue,
+		SprayMaxScore, SprayMinScore,
+		true, // higher is better
+	)
+	totalScore += sprayScore
+
+	// Ensure the result is between 0 and 100
+	if totalScore > 100.0 {
+		return 100.0
+	}
+	if totalScore < 0.0 {
+		return 0.0
+	}
+
+	return totalScore
+}
+
+// calculateLinearScore calculates a linear score between minScore and maxScore based on value
+// higherIsBetter determines if higher values are better (true) or lower values are better (false)
+func (aus *AimUtilityService) calculateLinearScore(value, maxValue, minValue, maxScore, minScore float64, higherIsBetter bool) float64 {
+	// Handle edge cases
+	if maxValue == minValue {
+		return minScore
+	}
+
+	var normalizedValue float64
+	var score float64
+
+	if higherIsBetter {
+		// For higher-is-better metrics (accuracy, headshot accuracy, spray accuracy)
+		if value >= maxValue {
+			score = maxScore
+		} else if value <= minValue {
+			score = minScore
+		} else {
+			// Linear interpolation: (value - minValue) / (maxValue - minValue)
+			normalizedValue = (value - minValue) / (maxValue - minValue)
+			score = minScore + normalizedValue*(maxScore-minScore)
+		}
+	} else {
+		// For lower-is-better metrics (crosshair placement, time to damage)
+		if value <= maxValue {
+			score = maxScore
+		} else if value >= minValue {
+			score = minScore
+		} else {
+			// Linear interpolation: (minValue - value) / (minValue - maxValue)
+			normalizedValue = (minValue - value) / (minValue - maxValue)
+			score = minScore + normalizedValue*(maxScore-minScore)
+		}
+	}
+
+	return score
 }

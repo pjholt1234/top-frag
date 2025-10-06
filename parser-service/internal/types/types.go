@@ -1038,6 +1038,9 @@ type AimAnalysisResult struct {
 	UpperChestHitsTotal int
 	ChestHitsTotal      int
 	LegsHitsTotal       int
+
+	// Overall aim rating (0-100)
+	AimRating float64
 }
 
 // WeaponAimAnalysisResult contains weapon-specific aim statistics

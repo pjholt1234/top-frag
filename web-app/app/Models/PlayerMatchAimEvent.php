@@ -27,6 +27,7 @@ class PlayerMatchAimEvent extends Model
         'upper_chest_hits_total',
         'chest_hits_total',
         'legs_hits_total',
+        'aim_rating',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class PlayerMatchAimEvent extends Model
         'average_crosshair_placement_y' => 'decimal:4',
         'headshot_accuracy' => 'decimal:2',
         'average_reaction_time' => 'decimal:4',
+        'aim_rating' => 'decimal:2',
     ];
 
     public function match(): BelongsTo

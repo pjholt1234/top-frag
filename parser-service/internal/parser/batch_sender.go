@@ -705,6 +705,19 @@ func (bs *BatchSender) SendAimEvents(ctx context.Context, jobID string, completi
 
 	flatEvents := make([]map[string]interface{}, len(events))
 	for i, event := range events {
+		// Debug logging for aim rating
+		bs.logger.WithFields(logrus.Fields{
+			"player_id":      event.PlayerSteamID,
+			"round":          event.RoundNumber,
+			"aim_rating":     event.AimRating,
+			"accuracy":       event.AccuracyAllShots,
+			"spraying":       event.SprayingAccuracy,
+			"headshot":       event.HeadshotAccuracy,
+			"crosshair_x":    event.AverageCrosshairPlacementX,
+			"crosshair_y":    event.AverageCrosshairPlacementY,
+			"time_to_damage": event.AverageTimeToDamage,
+		}).Info("DEBUG: Sending aim event with aim rating")
+
 		flatEvents[i] = map[string]interface{}{
 			"player_steam_id":               event.PlayerSteamID,
 			"round_number":                  event.RoundNumber,
@@ -722,6 +735,7 @@ func (bs *BatchSender) SendAimEvents(ctx context.Context, jobID string, completi
 			"upper_chest_hits_total":        event.UpperChestHitsTotal,
 			"chest_hits_total":              event.ChestHitsTotal,
 			"legs_hits_total":               event.LegsHitsTotal,
+			"aim_rating":                    event.AimRating,
 		}
 	}
 

@@ -804,6 +804,7 @@ class DemoParserService
                 'upper_chest_hits_total' => $aimEvent['upper_chest_hits_total'] ?? 0,
                 'chest_hits_total' => $aimEvent['chest_hits_total'] ?? 0,
                 'legs_hits_total' => $aimEvent['legs_hits_total'] ?? 0,
+                'aim_rating' => $aimEvent['aim_rating'] ?? 0,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

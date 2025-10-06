@@ -77,6 +77,7 @@ func (ep *EventProcessor) aggregateAimEvents(roundEvents []types.AimAnalysisResu
 				UpperChestHitsTotal:        event.UpperChestHitsTotal,
 				ChestHitsTotal:             event.ChestHitsTotal,
 				LegsHitsTotal:              event.LegsHitsTotal,
+				AimRating:                  event.AimRating,
 			}
 		}
 	}
