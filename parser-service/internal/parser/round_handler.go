@@ -305,19 +305,6 @@ func (rh *RoundHandler) aggregateGrenadeMetrics(event *types.PlayerRoundEvent, p
 	}
 
 	// Debug logging for final grenade effectiveness calculation
-	rh.logger.WithFields(logrus.Fields{
-		"player_steam_id":                   playerSteamID,
-		"round_number":                      roundNumber,
-		"grenades_thrown":                   flashesThrown + fireGrenadesThrown + hesThrown + smokesThrown + decoysThrown,
-		"grenade_used_bonus":                grenadeUsedBonus,
-		"utility_management_score":          utilityManagementScore,
-		"total_effectiveness_rating":        totalEffectivenessRating,
-		"total_number_of_measured_grenades": totalNumberOfMeasuredGrenades,
-		"grenade_effectiveness_average":     grenadeEffectivenessAverage,
-		"final_grenade_effectiveness":       finalGrenadeEffectiveness,
-		"grenade_value_lost_on_death":       event.GrenadeValueLostOnDeath,
-	}).Info("Final grenade effectiveness calculated")
-
 	// Set the aggregated values
 	event.DamageDealt = damageDealt
 	event.FlashesThrown = flashesThrown

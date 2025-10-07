@@ -159,7 +159,7 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 		parseError = parseError.WithContext("temp_file", filePath)
 		h.progressManager.ReportParseError(parseError)
 	} else {
-		h.logger.WithField("temp_file", filePath).Info("Cleaned up temporary file")
+
 	}
 }
 
@@ -201,17 +201,17 @@ func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string,
 
 	if isCompressed {
 		// Decompress bz2 file
-		h.logger.WithField("temp_file", tempFilePath).Info("Decompressing bz2 demo file")
+
 		if err := h.decompressBz2File(src, dst); err != nil {
 			return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to decompress bz2 file", err)
 		}
-		h.logger.WithField("temp_file", tempFilePath).Info("Successfully decompressed bz2 demo file")
+
 	} else {
 		// Copy the file content directly
 		if _, err = io.Copy(dst, src); err != nil {
 			return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to copy file content", err)
 		}
-		h.logger.WithField("temp_file", tempFilePath).Info("Saved uploaded demo file")
+
 	}
 
 	return tempFilePath, nil
@@ -257,7 +257,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		}
 	}()
 
-	h.logger.WithField("job_id", job.JobID).Info("Starting demo processing")
+
 
 	// Validating
 	job.Status = types.StatusValidating
@@ -431,7 +431,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Progress = 100
 	job.CurrentStep = "Completed"
 
-	h.logger.WithField("job_id", job.JobID).Info("Demo processing completed successfully")
+
 }
 
 // Sends progress updates to the callback URLs

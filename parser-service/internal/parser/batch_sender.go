@@ -237,13 +237,6 @@ func (bs *BatchSender) SendGrenadeEvents(ctx context.Context, jobID string, comp
 
 			// Log smoke grenade events with blocking duration
 			if event.GrenadeType == "Smoke Grenade" {
-				bs.logger.WithFields(logrus.Fields{
-					"player_steam_id":         event.PlayerSteamID,
-					"grenade_type":            event.GrenadeType,
-					"smoke_blocking_duration": event.SmokeBlockingDuration,
-					"effectiveness_rating":    event.EffectivenessRating,
-					"round_number":            event.RoundNumber,
-				}).Info("Sending smoke grenade event with blocking duration")
 			}
 
 			if len(event.AffectedPlayers) > 0 {
@@ -667,29 +660,8 @@ func (bs *BatchSender) SendAimEvents(ctx context.Context, jobID string, completi
 	for _, event := range events {
 		totalSprayingFired += event.SprayingShotsFired
 		totalSprayingHit += event.SprayingShotsHit
-		bs.logger.WithFields(logrus.Fields{
-			"job_id":               jobID,
-			"player_id":            event.PlayerSteamID,
-			"round":                event.RoundNumber,
-			"spraying_shots_fired": event.SprayingShotsFired,
-			"spraying_shots_hit":   event.SprayingShotsHit,
-			"spraying_accuracy":    event.SprayingAccuracy,
-		}).Info("DEBUG: Sending aim event with spraying stats")
+
 	}
-
-	bs.logger.WithFields(logrus.Fields{
-		"job_id":               jobID,
-		"events_count":         len(events),
-		"total_spraying_fired": totalSprayingFired,
-		"total_spraying_hit":   totalSprayingHit,
-		"overall_spray_accuracy": func() float64 {
-			if totalSprayingFired > 0 {
-				return float64(totalSprayingHit) / float64(totalSprayingFired) * 100.0
-			}
-			return 0.0
-		}(),
-	}).Info("DEBUG: Sending aim events - spraying summary")
-
 	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
@@ -706,18 +678,6 @@ func (bs *BatchSender) SendAimEvents(ctx context.Context, jobID string, completi
 	flatEvents := make([]map[string]interface{}, len(events))
 	for i, event := range events {
 		// Debug logging for aim rating
-		bs.logger.WithFields(logrus.Fields{
-			"player_id":      event.PlayerSteamID,
-			"round":          event.RoundNumber,
-			"aim_rating":     event.AimRating,
-			"accuracy":       event.AccuracyAllShots,
-			"spraying":       event.SprayingAccuracy,
-			"headshot":       event.HeadshotAccuracy,
-			"crosshair_x":    event.AverageCrosshairPlacementX,
-			"crosshair_y":    event.AverageCrosshairPlacementY,
-			"time_to_damage": event.AverageTimeToDamage,
-		}).Info("DEBUG: Sending aim event with aim rating")
-
 		flatEvents[i] = map[string]interface{}{
 			"player_steam_id":               event.PlayerSteamID,
 			"round_number":                  event.RoundNumber,
@@ -761,7 +721,6 @@ func (bs *BatchSender) SendAimWeaponEvents(ctx context.Context, jobID string, co
 		return nil
 	}
 
-	// Extract base URL from completion URL
 	baseURL, err := bs.extractBaseURL(completionURL)
 	if err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim weapon events", err)
@@ -772,26 +731,13 @@ func (bs *BatchSender) SendAimWeaponEvents(ctx context.Context, jobID string, co
 	}
 	bs.baseURL = baseURL
 
-	// Sending aim weapon events
-
-	// Debug: Log first event to verify ShotsHit is populated
-	if len(events) > 0 {
-		bs.logger.WithFields(logrus.Fields{
-			"player_id":   events[0].PlayerSteamID,
-			"weapon":      events[0].WeaponName,
-			"shots_fired": events[0].ShotsFired,
-			"shots_hit":   events[0].ShotsHit,
-			"accuracy":    events[0].AccuracyAllShots,
-		}).Info("DEBUG: First weapon event before sending to Laravel")
-	}
-
 	flatEvents := make([]map[string]interface{}, len(events))
 	for i, event := range events {
 		flatEvents[i] = map[string]interface{}{
 			"player_steam_id":        event.PlayerSteamID,
 			"round_number":           event.RoundNumber,
-			"weapon_name":            event.WeaponDisplayName, // Send display name as weapon_name
-			"weapon_internal_name":   event.WeaponName,        // Send normalized name as internal_name
+			"weapon_name":            event.WeaponDisplayName,
+			"weapon_internal_name":   event.WeaponName,
 			"shots_fired":            event.ShotsFired,
 			"shots_hit":              event.ShotsHit,
 			"accuracy_all_shots":     event.AccuracyAllShots,
@@ -821,7 +767,6 @@ func (bs *BatchSender) SendAimWeaponEvents(ctx context.Context, jobID string, co
 		return parseError
 	}
 
-	// Sent aim weapon events
 	return nil
 }
 

@@ -498,13 +498,13 @@ func (ep *EventProcessor) getCurrentRoundTime() int {
 
 func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string {
 	if ep.demoParser == nil {
-		ep.logger.Warn("Demo parser not available for round scenario calculation")
+		// removed non-error warn log
 		return "0v0"
 	}
 
 	gameState := ep.demoParser.GameState()
 	if gameState == nil {
-		ep.logger.Warn("Game state not available for round scenario calculation")
+		// removed non-error warn log
 		return "0v0"
 	}
 
@@ -513,7 +513,7 @@ func (ep *EventProcessor) getRoundScenario(killerSide, victimSide string) string
 
 	participants := gameState.Participants()
 	if participants == nil {
-		ep.logger.Warn("Participants not available for round scenario calculation")
+		// removed non-error warn log
 		return "0v0"
 	}
 
@@ -631,15 +631,6 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 		playerTickData = append(playerTickData, *ptr)
 	}
 
-	ep.logger.WithFields(logrus.Fields{
-		"round":         ep.matchState.CurrentRound,
-		"round_start":   ep.matchState.RoundStartTick,
-		"round_end":     ep.matchState.RoundEndTick,
-		"query_end":     roundEndTick,
-		"player_ticks":  len(playerTickData),
-		"fallback_used": ep.matchState.RoundEndTick == 0,
-	}).Info("Retrieved player tick data for aim tracking analysis")
-
 	// Process aim tracking calculations
 	aimResults, weaponResults, err := aimService.ProcessAimTrackingForRound(
 		roundShootingData,
@@ -653,33 +644,17 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 			WithContext("round", ep.matchState.CurrentRound)
 	}
 
-	ep.logger.WithFields(logrus.Fields{
-		"round":           ep.matchState.CurrentRound,
-		"shooting_events": len(roundShootingData),
-		"aim_results":     len(aimResults),
-		"weapon_results":  len(weaponResults),
-		"map_name":        mapName,
-	}).Info("Processed aim tracking data for round")
-
 	// Store results for batch sending to Laravel
 	if len(aimResults) > 0 {
 		// Store aim results for batch sending
 		ep.aimEvents = append(ep.aimEvents, aimResults...)
 
-		ep.logger.WithFields(logrus.Fields{
-			"aim_results_count": len(aimResults),
-			"round":             ep.matchState.CurrentRound,
-		}).Info("Aim tracking results calculated and stored for batch sending")
 	}
 
 	if len(weaponResults) > 0 {
 		// Store weapon aim results for batch sending
 		ep.aimWeaponEvents = append(ep.aimWeaponEvents, weaponResults...)
 
-		ep.logger.WithFields(logrus.Fields{
-			"weapon_results_count": len(weaponResults),
-			"round":                ep.matchState.CurrentRound,
-		}).Info("Weapon aim tracking results calculated and stored for batch sending")
 	}
 
 	return nil

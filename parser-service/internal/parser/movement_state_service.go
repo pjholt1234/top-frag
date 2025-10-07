@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"math"
 	"strings"
 
@@ -39,6 +40,7 @@ type MovementStateService struct {
 	logger          *logrus.Logger
 	positionRecords []PlayerPositionRecord
 	currentRound    int
+	positionIndex   map[string]*PlayerPositionRecord
 }
 
 // NewMovementStateService creates a new movement state service
@@ -47,6 +49,7 @@ func NewMovementStateService(logger *logrus.Logger) *MovementStateService {
 		logger:          logger,
 		positionRecords: make([]PlayerPositionRecord, 0),
 		currentRound:    0,
+		positionIndex:   make(map[string]*PlayerPositionRecord),
 	}
 }
 
@@ -98,6 +101,10 @@ func (mss *MovementStateService) RecordPlayerPosition(player *common.Player, cur
 
 	mss.positionRecords = append(mss.positionRecords, record)
 
+	// Add to index for O(1) lookups
+	key := fmt.Sprintf("%d:%d:%d", record.SteamID, record.Round, record.Tick)
+	mss.positionIndex[key] = &mss.positionRecords[len(mss.positionRecords)-1]
+
 	// Debug: Log position recording every 5000 ticks for first player to avoid spam
 	if currentTick%5000 == 0 && len(mss.positionRecords)%10 == 1 {
 		mss.logger.WithFields(logrus.Fields{
@@ -127,40 +134,10 @@ func (mss *MovementStateService) GetPlayerThrowType(player *common.Player, curre
 
 // findPosition finds a position record for specific steamID, round, and tick
 func (mss *MovementStateService) findPosition(steamID uint64, round int, tick int64) *PlayerPositionRecord {
-	// Debug: Show sample records for debugging
-	sampleCount := 0
-	for i := 0; i < len(mss.positionRecords) && sampleCount < 5; i++ {
-		record := &mss.positionRecords[i]
-		if record.SteamID == steamID && record.Round == round {
-			mss.logger.WithFields(logrus.Fields{
-				"steam_id":    steamID,
-				"round":       round,
-				"tick":        record.Tick,
-				"target_tick": tick,
-			}).Debug("Sample position record")
-			sampleCount++
-		}
+	key := fmt.Sprintf("%d:%d:%d", steamID, round, tick)
+	if record, exists := mss.positionIndex[key]; exists {
+		return record
 	}
-
-	// Search for exact tick match - but search in chronological order
-	for i := 0; i < len(mss.positionRecords); i++ {
-		record := &mss.positionRecords[i]
-		if record.SteamID == steamID && record.Round == round && record.Tick == tick {
-			mss.logger.WithFields(logrus.Fields{
-				"steam_id":    steamID,
-				"round":       round,
-				"tick":        tick,
-				"found_exact": true,
-			}).Debug("Found exact position match")
-			return record
-		}
-	}
-
-	mss.logger.WithFields(logrus.Fields{
-		"steam_id": steamID,
-		"round":    round,
-		"tick":     tick,
-	}).Debug("No exact position match found")
 	return nil
 }
 

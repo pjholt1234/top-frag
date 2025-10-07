@@ -8,6 +8,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type CalculationCache struct {
@@ -27,13 +30,14 @@ type AimUtilityService struct {
 	losDetector *LOSDetector
 	cache       *CalculationCache
 	pool        *ObjectPool
+	logger      *logrus.Logger
 }
 
 const (
 	EngagementGapSeconds     = 5
 	ReactionTimeSearchWindow = 128
 	MaxParallelLOSWorkers    = 9
-	LOSCheckInterval         = 4
+	LOSCheckInterval         = 2
 	MovementThreshold        = 5.0
 )
 
@@ -94,6 +98,7 @@ func NewAimUtilityService(mapName string) (*AimUtilityService, error) {
 				New: func() interface{} { return &LOSResult{} },
 			},
 		},
+		logger: logrus.StandardLogger(),
 	}, nil
 }
 
@@ -158,9 +163,6 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 
 	// Calculate reaction times for first shots
 	for _, damage := range firstShots {
-		if damage.AttackerSteamID != "76561198081165057" {
-			continue
-		}
 		reactionTime := aus.calculateReactionTimeForFirstShot(damage, playerTickData)
 		if reactionTime >= 50.0 {
 			reactionTimes[damage.AttackerSteamID] = reactionTime
@@ -221,39 +223,6 @@ func (aus *AimUtilityService) isGunDamage(damage types.DamageEvent) bool {
 	}
 
 	return true
-}
-
-// findFirstAttackerLOS finds the OLDEST (first) occurrence where attacker has LOS on victim
-// We only care if attacker can see victim, not vice versa
-func (aus *AimUtilityService) findFirstAttackerLOS(
-	attackerTicks []types.PlayerTickData,
-	victimTicks []types.PlayerTickData,
-	damage types.DamageEvent,
-) (int64, bool) {
-	// Create a map for quick victim tick lookup
-	victimTickMap := make(map[int64]types.PlayerTickData)
-	for _, tick := range victimTicks {
-		victimTickMap[tick.Tick] = tick
-	}
-
-	// Sort attacker ticks by tick number (oldest first) - O(n log n) instead of O(n²)
-	sort.Slice(attackerTicks, func(i, j int) bool {
-		return attackerTicks[i].Tick < attackerTicks[j].Tick
-	})
-
-	// Find the OLDEST (first) occurrence where attacker has LOS on victim
-	for _, attackerTick := range attackerTicks {
-		if victimTick, exists := victimTickMap[attackerTick.Tick]; exists {
-			// Check if attacker has LOS to victim at this tick
-			hasLOS := aus.checkLineOfSight(&attackerTick, &victimTick)
-
-			if hasLOS {
-				return attackerTick.Tick, true
-			}
-		}
-	}
-
-	return 0, false
 }
 
 func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
@@ -379,241 +348,6 @@ func (aus *AimUtilityService) groupDamageEventsByPlayer(
 	}
 
 	return playerDamages
-}
-
-func (aus *AimUtilityService) calculatePlayerAimStats(
-	playerID string,
-	roundNumber int,
-	shots []types.PlayerShootingData,
-	damages []types.DamageEvent,
-	playerTickData []types.PlayerTickData,
-) types.AimAnalysisResult {
-
-	result := types.AimAnalysisResult{
-		PlayerSteamID: playerID,
-		RoundNumber:   roundNumber,
-		ShotsFired:    len(shots),
-	}
-
-	if len(shots) == 0 {
-		return result
-	}
-
-	// Create damage lookup map for O(1) access
-	damageByTick := make(map[int64][]types.DamageEvent)
-	for _, damage := range damages {
-		if damage.AttackerSteamID == playerID {
-			damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
-		}
-	}
-
-	shotsOnHit := 0
-	sprayingShotsFired := 0
-	sprayingShotsHit := 0
-
-	// Pre-allocate slices with known capacity
-	crosshairPlacementsX := make([]float64, 0, len(shots))
-	crosshairPlacementsY := make([]float64, 0, len(shots))
-	reactionTimes := make([]float64, 0, len(shots))
-
-	headHits := 0
-	upperChestHits := 0
-	chestHits := 0
-	legsHits := 0
-
-	for _, shot := range shots {
-		shotHit := false
-		// Check for damage within 10 tick window using hash map lookup
-		for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
-			if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
-				for _, damage := range damages {
-					shotHit = true
-					shotsOnHit++
-
-					switch damage.HitGroup {
-					case types.HitGroupHead:
-						headHits++
-					case types.HitGroupChest:
-						chestHits++
-					case types.HitGroupStomach:
-						upperChestHits++
-					case types.HitGroupLeftLeg, types.HitGroupRightLeg:
-						legsHits++
-					}
-					break
-				}
-				if shotHit {
-					break
-				}
-			}
-			if shotHit {
-				break
-			}
-		}
-
-		if shot.IsSpraying {
-			sprayingShotsFired++
-			if shotHit {
-				sprayingShotsHit++
-			}
-		}
-
-		crosshairX, crosshairY := aus.calculateCrosshairPlacement(shot, damages, playerTickData)
-		crosshairPlacementsX = append(crosshairPlacementsX, crosshairX)
-		crosshairPlacementsY = append(crosshairPlacementsY, crosshairY)
-
-		reactionTime := aus.calculateReactionTime(shot, damages, playerTickData)
-		reactionTimes = append(reactionTimes, reactionTime)
-	}
-
-	result.ShotsHit = shotsOnHit
-	if result.ShotsFired > 0 {
-		result.AccuracyAllShots = float64(result.ShotsHit) / float64(result.ShotsFired) * 100.0
-	}
-
-	result.SprayingShotsFired = sprayingShotsFired
-	result.SprayingShotsHit = sprayingShotsHit
-	if sprayingShotsFired > 0 {
-		result.SprayingAccuracy = float64(sprayingShotsHit) / float64(sprayingShotsFired) * 100.0
-	}
-
-	if len(crosshairPlacementsX) > 0 {
-		result.AverageCrosshairPlacementX = aus.calculateAverage(crosshairPlacementsX)
-		result.AverageCrosshairPlacementY = aus.calculateAverage(crosshairPlacementsY)
-	}
-
-	if result.ShotsHit > 0 {
-		result.HeadshotAccuracy = float64(headHits) / float64(result.ShotsHit) * 100.0
-	}
-
-	if len(reactionTimes) > 0 {
-		result.AverageTimeToDamage = aus.calculateAverage(reactionTimes)
-	}
-
-	result.HeadHitsTotal = headHits
-	result.UpperChestHitsTotal = upperChestHits
-	result.ChestHitsTotal = chestHits
-	result.LegsHitsTotal = legsHits
-
-	return result
-}
-
-func (aus *AimUtilityService) calculateWeaponAimStats(
-	playerID string,
-	roundNumber int,
-	shots []types.PlayerShootingData,
-	damages []types.DamageEvent,
-	playerTickData []types.PlayerTickData,
-) []types.WeaponAimAnalysisResult {
-
-	weaponShots := make(map[string][]types.PlayerShootingData)
-	for _, shot := range shots {
-		weaponShots[shot.WeaponName] = append(weaponShots[shot.WeaponName], shot)
-	}
-
-	// Create damage lookup map for O(1) access
-	damageByTick := make(map[int64][]types.DamageEvent)
-	for _, damage := range damages {
-		if damage.AttackerSteamID == playerID {
-			damageByTick[damage.TickTimestamp] = append(damageByTick[damage.TickTimestamp], damage)
-		}
-	}
-
-	results := make([]types.WeaponAimAnalysisResult, 0, len(weaponShots))
-
-	for weaponName, weaponShotData := range weaponShots {
-		result := types.WeaponAimAnalysisResult{
-			PlayerSteamID:     playerID,
-			RoundNumber:       roundNumber,
-			WeaponName:        weaponName,
-			WeaponDisplayName: types.FormatWeaponName(weaponName),
-			ShotsFired:        len(weaponShotData),
-		}
-
-		shotsOnHit := 0
-		sprayingShotsFired := 0
-		sprayingShotsHit := 0
-
-		headHits := 0
-		upperChestHits := 0
-		chestHits := 0
-		legsHits := 0
-
-		// Pre-allocate slices with known capacity
-		crosshairPlacementsX := make([]float64, 0, len(weaponShotData))
-		crosshairPlacementsY := make([]float64, 0, len(weaponShotData))
-
-		for _, shot := range weaponShotData {
-			shotHit := false
-			// Check for damage within 10 tick window using hash map lookup
-			for tickOffset := int64(-10); tickOffset <= 10; tickOffset++ {
-				if damages, exists := damageByTick[shot.Tick+tickOffset]; exists {
-					for _, damage := range damages {
-						shotHit = true
-						shotsOnHit++
-
-						switch damage.HitGroup {
-						case types.HitGroupHead:
-							headHits++
-						case types.HitGroupChest:
-							chestHits++
-						case types.HitGroupStomach:
-							upperChestHits++
-						case types.HitGroupLeftLeg, types.HitGroupRightLeg:
-							legsHits++
-						}
-						break
-					}
-					if shotHit {
-						break
-					}
-				}
-				if shotHit {
-					break
-				}
-			}
-
-			if shot.IsSpraying {
-				sprayingShotsFired++
-				if shotHit {
-					sprayingShotsHit++
-				}
-			}
-
-			crosshairX, crosshairY := aus.calculateCrosshairPlacement(shot, damages, playerTickData)
-			crosshairPlacementsX = append(crosshairPlacementsX, crosshairX)
-			crosshairPlacementsY = append(crosshairPlacementsY, crosshairY)
-		}
-
-		result.ShotsHit = shotsOnHit
-		if result.ShotsFired > 0 {
-			result.AccuracyAllShots = float64(result.ShotsHit) / float64(result.ShotsFired) * 100.0
-		}
-
-		result.SprayingShotsFired = sprayingShotsFired
-		if sprayingShotsFired > 0 {
-			result.SprayingShotsHit = sprayingShotsHit
-			result.SprayingAccuracy = float64(sprayingShotsHit) / float64(sprayingShotsFired) * 100.0
-		}
-
-		if len(crosshairPlacementsX) > 0 {
-			result.AverageCrosshairPlacementX = aus.calculateAverage(crosshairPlacementsX)
-			result.AverageCrosshairPlacementY = aus.calculateAverage(crosshairPlacementsY)
-		}
-
-		if result.ShotsHit > 0 {
-			result.HeadshotAccuracy = float64(headHits) / float64(result.ShotsHit) * 100.0
-		}
-
-		result.HeadHitsTotal = headHits
-		result.UpperChestHitsTotal = upperChestHits
-		result.ChestHitsTotal = chestHits
-		result.LegsHitsTotal = legsHits
-
-		results = append(results, result)
-	}
-
-	return results
 }
 
 func (aus *AimUtilityService) calculateAverage(values []float64) float64 {
@@ -918,6 +652,7 @@ func (aus *AimUtilityService) analyzeShots(
 	playerID string,
 	roundNumber int,
 ) []ShotAnalysisData {
+	start := time.Now()
 	if len(shots) == 0 {
 		return []ShotAnalysisData{}
 	}
@@ -934,6 +669,7 @@ func (aus *AimUtilityService) analyzeShots(
 	shotAnalyses := make([]ShotAnalysisData, 0, len(shots))
 
 	for _, shot := range shots {
+		crosshairStart := time.Now()
 		analysis := ShotAnalysisData{
 			Shot:         shot,
 			SprayingShot: shot.IsSpraying,
@@ -961,11 +697,46 @@ func (aus *AimUtilityService) analyzeShots(
 		crosshairX, crosshairY := aus.calculateCrosshairPlacement(shot, damages, playerTickData)
 		analysis.CrosshairX = crosshairX
 		analysis.CrosshairY = crosshairY
+		crosshairElapsed := time.Since(crosshairStart)
 
+		reactionStart := time.Now()
 		reactionTime := aus.calculateReactionTime(shot, damages, playerTickData)
 		analysis.ReactionTime = reactionTime
+		reactionElapsed := time.Since(reactionStart)
+
+		if aus.logger != nil {
+			aus.logger.WithFields(logrus.Fields{
+				"label":        "crosshair_placement",
+				"player_id":    playerID,
+				"round_number": roundNumber,
+				"start_time":   crosshairStart,
+				"end_time":     crosshairStart.Add(crosshairElapsed),
+				"duration_ms":  crosshairElapsed.Milliseconds(),
+			}).Info("performance")
+
+			aus.logger.WithFields(logrus.Fields{
+				"label":        "reaction_time",
+				"player_id":    playerID,
+				"round_number": roundNumber,
+				"start_time":   reactionStart,
+				"end_time":     reactionStart.Add(reactionElapsed),
+				"duration_ms":  reactionElapsed.Milliseconds(),
+			}).Info("performance")
+		}
 
 		shotAnalyses = append(shotAnalyses, analysis)
+	}
+
+	if aus.logger != nil {
+		totalElapsed := time.Since(start)
+		aus.logger.WithFields(logrus.Fields{
+			"label":        "analyze_shots_total",
+			"player_id":    playerID,
+			"round_number": roundNumber,
+			"start_time":   start,
+			"end_time":     start.Add(totalElapsed),
+			"duration_ms":  totalElapsed.Milliseconds(),
+		}).Info("performance")
 	}
 
 	return shotAnalyses
@@ -1152,15 +923,6 @@ func (aus *AimUtilityService) calculateWeaponAimStatsFromAnalysis(
 	}
 
 	return results
-}
-
-func (aus *AimUtilityService) shouldCheckLOS(prevTick, currentTick types.PlayerTickData) bool {
-	movement := math.Sqrt(
-		math.Pow(currentTick.PositionX-prevTick.PositionX, 2) +
-			math.Pow(currentTick.PositionY-prevTick.PositionY, 2) +
-			math.Pow(currentTick.PositionZ-prevTick.PositionZ, 2))
-
-	return movement > MovementThreshold
 }
 
 func (p *ObjectPool) GetVector() *Vector3 {

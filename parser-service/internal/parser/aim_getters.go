@@ -2,19 +2,12 @@ package parser
 
 import (
 	"parser-service/internal/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 // GetAimEvents returns the collected aim tracking events
 // aggregated at the match level (one entry per player)
 func (ep *EventProcessor) GetAimEvents() []types.AimAnalysisResult {
 	aggregated := ep.aggregateAimEvents(ep.aimEvents)
-
-	ep.logger.WithFields(logrus.Fields{
-		"per_round_count":  len(ep.aimEvents),
-		"aggregated_count": len(aggregated),
-	}).Info("Aggregated aim events from per-round to match-level")
 
 	return aggregated
 }
@@ -96,11 +89,6 @@ func (ep *EventProcessor) aggregateAimEvents(roundEvents []types.AimAnalysisResu
 func (ep *EventProcessor) GetAimWeaponEvents() []types.WeaponAimAnalysisResult {
 	aggregated := ep.aggregateWeaponAimEvents(ep.aimWeaponEvents)
 
-	ep.logger.WithFields(logrus.Fields{
-		"per_round_count":  len(ep.aimWeaponEvents),
-		"aggregated_count": len(aggregated),
-	}).Info("Aggregated weapon aim events from per-round to match-level")
-
 	return aggregated
 }
 
@@ -108,13 +96,6 @@ func (ep *EventProcessor) GetAimWeaponEvents() []types.WeaponAimAnalysisResult {
 func (ep *EventProcessor) aggregateWeaponAimEvents(roundEvents []types.WeaponAimAnalysisResult) []types.WeaponAimAnalysisResult {
 	// Debug: Log input
 	if len(roundEvents) > 0 {
-		ep.logger.WithFields(logrus.Fields{
-			"total_events":    len(roundEvents),
-			"first_weapon":    roundEvents[0].WeaponName,
-			"first_shots":     roundEvents[0].ShotsFired,
-			"first_shots_hit": roundEvents[0].ShotsHit,
-			"first_accuracy":  roundEvents[0].AccuracyAllShots,
-		}).Info("DEBUG: Starting weapon aggregation")
 	}
 
 	// Group by player + weapon
@@ -191,13 +172,6 @@ func (ep *EventProcessor) aggregateWeaponAimEvents(roundEvents []types.WeaponAim
 
 	// Debug: Log output
 	if len(result) > 0 {
-		ep.logger.WithFields(logrus.Fields{
-			"aggregated_count": len(result),
-			"first_weapon":     result[0].WeaponName,
-			"first_shots":      result[0].ShotsFired,
-			"first_shots_hit":  result[0].ShotsHit,
-			"first_accuracy":   result[0].AccuracyAllShots,
-		}).Info("DEBUG: Completed weapon aggregation")
 	}
 
 	return result

@@ -144,34 +144,6 @@ func BenchmarkMemoryAllocations(b *testing.B) {
 	})
 }
 
-// BenchmarkParallelProcessing tests parallel processing performance
-func BenchmarkParallelProcessing(b *testing.B) {
-	attackerTicks := generateTestPlayerTickData(1000)
-	victimTicks := generateTestPlayerTickData(1000)
-	damage := types.DamageEvent{
-		AttackerSteamID: "test_attacker",
-		VictimSteamID:   "test_victim",
-		TickTimestamp:   1000,
-	}
-
-	service, err := NewAimUtilityService("de_dust2")
-	if err != nil {
-		b.Fatalf("Failed to create service: %v", err)
-	}
-
-	b.Run("ParallelLOS", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = service.findFirstAttackerLOSParallel(attackerTicks, victimTicks, damage)
-		}
-	})
-
-	b.Run("SequentialLOS", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = service.findFirstAttackerLOS(attackerTicks, victimTicks, damage)
-		}
-	})
-}
-
 // Helper functions to generate test data
 func generateTestShootingData(count int) []types.PlayerShootingData {
 	rand.Seed(time.Now().UnixNano())

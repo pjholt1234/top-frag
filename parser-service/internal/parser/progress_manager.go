@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -51,6 +52,13 @@ func (pm *ProgressManager) UpdateProgress(update types.ProgressUpdate) {
 
 	if pm.progressCallback != nil {
 		pm.progressCallback(update)
+	}
+
+	// Performance log: timestamp and current step name only
+	// Example: "2025-10-07 12:34:56.789 Parsing demo file"
+	if update.CurrentStep != "" {
+		ts := time.Now().Format("2006-01-02 15:04:05.000")
+		pm.logger.Info(fmt.Sprintf("%s %s", ts, update.CurrentStep))
 	}
 }
 

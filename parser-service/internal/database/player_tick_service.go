@@ -53,7 +53,7 @@ func (s *PlayerTickService) SavePlayerTickDataBatch(ctx context.Context, data []
 		return fmt.Errorf("failed to save player tick data batch: %w", err)
 	}
 
-	s.logger.WithField("batch_size", len(data)).Debug("Successfully saved player tick data batch")
+	// removed non-error debug log
 	return nil
 }
 
@@ -126,7 +126,7 @@ func (s *PlayerTickService) DeletePlayerTickDataByMatch(ctx context.Context, mat
 		return fmt.Errorf("failed to delete player tick data by match: %w", err)
 	}
 
-	s.logger.WithField("match_id", matchID).Info("Successfully deleted player tick data for match")
+
 	return nil
 }
 
@@ -146,13 +146,6 @@ func (s *PlayerTickService) GetPlayerTickDataByRound(ctx context.Context, matchI
 		}).Error("Failed to get player tick data by round")
 		return nil, fmt.Errorf("failed to get player tick data by round: %w", err)
 	}
-
-	s.logger.WithFields(logrus.Fields{
-		"match_id":         matchID,
-		"round_start_tick": roundStartTick,
-		"round_end_tick":   roundEndTick,
-		"records_found":    len(data),
-	}).Debug("Retrieved player tick data for round")
 
 	return data, nil
 }

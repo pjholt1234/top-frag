@@ -49,9 +49,8 @@ func (gmd *GameModeDetector) DetectGameMode(parser demoinfocs.Parser) (*types.Ga
 	// Get all players to analyze their rank types
 	players := gameState.Participants().All()
 	if len(players) == 0 {
-		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "no players found, falling back to ConVar detection", nil).
+		_ = types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "no players found, falling back to ConVar detection", nil).
 			WithContext("method", "DetectGameMode")
-		gmd.logger.WithError(parseError).Warn("No players found for rank type analysis")
 		return gmd.detectGameModeFromConVars(parser)
 	}
 
@@ -64,38 +63,17 @@ func (gmd *GameModeDetector) DetectGameMode(parser demoinfocs.Parser) (*types.Ga
 			rankType := player.RankType()
 			rankTypeCounts[rankType]++
 			rankTypes[rankType] = true
-
-			gmd.logger.WithFields(logrus.Fields{
-				"player_name": player.Name,
-				"steam_id":    types.SteamIDToString(player.SteamID64),
-				"rank_type":   rankType,
-				"rank":        player.Rank(),
-			}).Debug("Player rank type analysis")
 		}
 	}
 
 	// Log rank type distribution
-	gmd.logger.WithFields(logrus.Fields{
-		"rank_type_counts":  rankTypeCounts,
-		"unique_rank_types": len(rankTypes),
-	}).Debug("Rank type distribution analysis")
-
 	// Determine game mode based on rank types
 	gameMode := gmd.analyzeGameModeFromRankTypes(rankTypes, rankTypeCounts)
 
 	// If we couldn't determine from rank types, fall back to ConVars
 	if gameMode.Mode == "other" {
-		gmd.logger.Info("Could not determine game mode from rank types, falling back to ConVar analysis")
 		return gmd.detectGameModeFromConVars(parser)
 	}
-
-	gmd.logger.WithFields(logrus.Fields{
-		"detected_mode": gameMode.Mode,
-		"display_name":  gameMode.DisplayName,
-		"max_rounds":    gameMode.MaxRounds,
-		"has_halftime":  gameMode.HasHalftime,
-		"rank_types":    rankTypes,
-	}).Info("Game mode detected from rank types")
 
 	return gameMode, nil
 }
@@ -104,12 +82,7 @@ func (gmd *GameModeDetector) DetectGameMode(parser demoinfocs.Parser) (*types.Ga
 func (gmd *GameModeDetector) analyzeGameModeFromRankTypes(rankTypes map[int]bool, rankTypeCounts map[int]int) *types.GameMode {
 	// Check for Danger Zone rank type (typically rank type 10 or 14)
 	if rankTypes[10] || rankTypes[14] {
-		return &types.GameMode{
-			Mode:        "danger_zone",
-			DisplayName: "Danger Zone",
-			MaxRounds:   0, // Danger Zone doesn't use traditional rounds
-			HasHalftime: false,
-		}
+		return &types.GameMode{Mode: "danger_zone", DisplayName: "Danger Zone", MaxRounds: 0, HasHalftime: false}
 	}
 
 	// Premier mode uses rank type 11
@@ -170,7 +143,7 @@ func (gmd *GameModeDetector) detectGameModeFromConVars(parser demoinfocs.Parser)
 	// Validate the game mode configuration
 	if validationError := gmd.validateGameModeConfiguration(conVars); validationError != nil {
 		// Log validation errors but continue with detection
-		gmd.logger.WithError(validationError).Warn("Game mode configuration validation failed")
+		// removed non-error warn log
 	}
 
 	// Extract key configuration values
@@ -183,45 +156,27 @@ func (gmd *GameModeDetector) detectGameModeFromConVars(parser demoinfocs.Parser)
 
 	// Validate critical configuration values
 	if maxRounds == "" {
-		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "max_rounds configuration missing, using default", nil).
+		_ = types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "max_rounds configuration missing, using default", nil).
 			WithContext("method", "detectGameModeFromConVars").
 			WithContext("missing_config", "mp_maxrounds")
-		gmd.logger.WithError(parseError).Warn("Warning in game mode detection")
 		maxRounds = "24" // Default fallback
 	}
 
 	if halftime == "" {
-		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "halftime configuration missing, using default", nil).
+		_ = types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "halftime configuration missing, using default", nil).
 			WithContext("method", "detectGameModeFromConVars").
 			WithContext("missing_config", "mp_halftime")
-		gmd.logger.WithError(parseError).Info("Info in game mode detection")
 		halftime = "true" // Default fallback
 	}
 
 	// Log the key values for debugging
-	gmd.logger.WithFields(logrus.Fields{
-		"max_rounds":       maxRounds,
-		"halftime":         halftime,
-		"friendly_fire":    friendlyFire,
-		"timeout_duration": timeoutDuration,
-		"timeout_per_team": timeoutPerTeam,
-		"starting_losses":  startingLosses,
-	}).Debug("Game mode detection - key rule values (ConVar fallback)")
-
 	// Determine game mode based on rules
 	gameMode, analysisError := gmd.analyzeGameMode(maxRounds, halftime, friendlyFire, timeoutDuration, timeoutPerTeam, startingLosses)
 
 	// Log analysis errors as warnings but continue
 	if analysisError != nil {
-		gmd.logger.WithError(analysisError).Warn("Warning during game mode analysis (ConVar fallback)")
+		// removed non-error warn log
 	}
-
-	gmd.logger.WithFields(logrus.Fields{
-		"detected_mode": gameMode.Mode,
-		"display_name":  gameMode.DisplayName,
-		"max_rounds":    gameMode.MaxRounds,
-		"has_halftime":  gameMode.HasHalftime,
-	}).Info("Game mode detected from ConVars (fallback)")
 
 	return gameMode, nil
 }
@@ -276,7 +231,6 @@ func (gmd *GameModeDetector) analyzeGameMode(maxRounds, halftime, friendlyFire, 
 			WithContext("max_rounds", maxRounds).
 			WithContext("halftime", halftime).
 			WithContext("friendly_fire", friendlyFire)
-		gmd.logger.WithError(parseError).Info("Custom server detected")
 
 		return &types.GameMode{
 			Mode:        "custom",
@@ -292,7 +246,7 @@ func (gmd *GameModeDetector) analyzeGameMode(maxRounds, halftime, friendlyFire, 
 		WithContext("max_rounds", maxRounds).
 		WithContext("halftime", halftime).
 		WithContext("friendly_fire", friendlyFire)
-	gmd.logger.WithError(parseError).Warn("Could not determine game mode")
+		// removed non-error warn log
 
 	return &types.GameMode{
 		Mode:        "other",
@@ -335,7 +289,7 @@ func (gmd *GameModeDetector) validateGameModeConfiguration(conVars map[string]st
 			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityWarning, "critical game mode configuration missing", nil).
 				WithContext("method", "validateGameModeConfiguration").
 				WithContext("missing_config", config)
-			gmd.logger.WithError(parseError).Warn("Critical configuration missing")
+				// removed non-error warn log
 			return parseError
 		}
 	}
@@ -356,7 +310,6 @@ func (gmd *GameModeDetector) validateGameModeConfiguration(conVars map[string]st
 			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityInfo, "unusual max rounds configuration detected", nil).
 				WithContext("method", "validateGameModeConfiguration").
 				WithContext("max_rounds", maxRounds)
-			gmd.logger.WithError(parseError).Info("Unusual configuration detected")
 			return parseError
 		}
 	}

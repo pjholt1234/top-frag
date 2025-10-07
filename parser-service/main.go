@@ -28,7 +28,6 @@ func main() {
 	}
 
 	logger := setupLogger(cfg)
-	logger.Info("Starting CS:GO Demo Parser Service")
 
 	demoParser, err := parser.NewDemoParser(cfg, logger)
 	if err != nil {
@@ -57,7 +56,6 @@ func main() {
 	}
 
 	go func() {
-		logger.WithField("port", cfg.Server.Port).Info("Starting HTTP server")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Failed to start server")
 		}
@@ -67,8 +65,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("Shutting down server...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -76,7 +72,6 @@ func main() {
 		logger.WithError(err).Fatal("Server forced to shutdown")
 	}
 
-	logger.Info("Server exited")
 }
 
 func setupLogger(cfg *config.Config) *logrus.Logger {
@@ -126,7 +121,8 @@ func setupRouter(parseDemoHandler *handlers.ParseDemoHandler, healthHandler *han
 	router := gin.New()
 
 	router.Use(gin.Recovery())
-	router.Use(loggingMiddleware())
+	// disabled HTTP access logging
+	// router.Use(loggingMiddleware())
 
 	router.GET(api.HealthEndpoint, healthHandler.HandleHealth)
 	router.GET(api.ReadinessEndpoint, healthHandler.HandleReadiness)

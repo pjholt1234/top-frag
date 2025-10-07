@@ -188,13 +188,38 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		IsFinal:        false,
 	})
 
-	dp.postProcessGrenadeMovement(eventProcessor)
-	dp.postProcessDamageAssists(eventProcessor)
+	{
+		start := time.Now()
+		dp.postProcessGrenadeMovement(eventProcessor)
+		elapsed := time.Since(start)
+		dp.logger.WithFields(logrus.Fields{
+			"label":       "post_process_grenade_movement",
+			"start_time":  start,
+			"end_time":    start.Add(elapsed),
+			"duration_ms": elapsed.Milliseconds(),
+		}).Info("performance")
+	}
+	{
+		start := time.Now()
+		dp.postProcessDamageAssists(eventProcessor)
+		elapsed := time.Since(start)
+		dp.logger.WithFields(logrus.Fields{
+			"label":       "post_process_damage_assists",
+			"start_time":  start,
+			"end_time":    start.Add(elapsed),
+			"duration_ms": elapsed.Milliseconds(),
+		}).Info("performance")
+	}
 
+	buildStart := time.Now()
 	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor, demoParser)
-
-	dp.logger.WithField("total_events", len(matchState.GunfightEvents)+len(matchState.GrenadeEvents)+len(matchState.DamageEvents)).
-		Info("Demo parsing completed")
+	buildElapsed := time.Since(buildStart)
+	dp.logger.WithFields(logrus.Fields{
+		"label":       "match_aggregation",
+		"start_time":  buildStart,
+		"end_time":    buildStart.Add(buildElapsed),
+		"duration_ms": buildElapsed.Milliseconds(),
+	}).Info("performance")
 
 	// Report completion
 	dp.progressManager.ReportCompletion(types.ProgressUpdate{

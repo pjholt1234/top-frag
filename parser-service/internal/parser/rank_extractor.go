@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"parser-service/internal/types"
-
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/sirupsen/logrus"
 )
@@ -38,16 +36,6 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 	// Get the rank using the built-in Rank() method
 	rank := player.Rank()
 	rankType := player.RankType()
-	competitiveWins := player.CompetitiveWins()
-
-	// Log the raw values for debugging
-	re.logger.WithFields(logrus.Fields{
-		"player_name":      player.Name,
-		"steam_id":         types.SteamIDToString(player.SteamID64),
-		"rank":             rank,
-		"rank_type":        rankType,
-		"competitive_wins": competitiveWins,
-	}).Info("Extracted raw rank data from player")
 
 	// Convert rank to string representation and determine rank type
 	rankStr := re.convertRankToString(rank, rankType)
@@ -57,25 +45,6 @@ func (re *RankExtractor) ExtractPlayerRank(player *common.Player) *RankInfo {
 		RankString: rankStr,
 		RankType:   rankTypeStr,
 		RankValue:  &rank,
-	}
-
-	if rankStr != nil {
-		re.logger.WithFields(logrus.Fields{
-			"player_name":      player.Name,
-			"steam_id":         types.SteamIDToString(player.SteamID64),
-			"rank_string":      *rankStr,
-			"rank_type":        *rankTypeStr,
-			"rank_value":       rank,
-			"competitive_wins": competitiveWins,
-		}).Info("Successfully extracted player rank")
-	} else {
-		re.logger.WithFields(logrus.Fields{
-			"player_name":      player.Name,
-			"steam_id":         types.SteamIDToString(player.SteamID64),
-			"rank":             rank,
-			"rank_type":        rankType,
-			"competitive_wins": competitiveWins,
-		}).Debug("No rank string generated for player")
 	}
 
 	return rankInfo

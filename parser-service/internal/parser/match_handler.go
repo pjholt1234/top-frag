@@ -73,10 +73,6 @@ func (mh *MatchHandler) HandleRoundStart(e events.RoundStart) error {
 	}
 	mh.processor.matchState.RoundEvents = append(mh.processor.matchState.RoundEvents, roundEvent)
 
-	mh.logger.WithFields(logrus.Fields{
-		"round": mh.processor.matchState.CurrentRound,
-	}).Debug("Round started")
-
 	return nil
 }
 
