@@ -12,6 +12,7 @@ import (
 	"parser-service/internal/api"
 	"parser-service/internal/config"
 	"parser-service/internal/types"
+	"parser-service/internal/utils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -22,13 +23,16 @@ type BatchSender struct {
 	client          *http.Client
 	baseURL         string
 	progressManager *ProgressManager
+	perfLogger      *utils.PerformanceLogger
 }
 
 func NewBatchSender(cfg *config.Config, logger *logrus.Logger, progressManager *ProgressManager) *BatchSender {
+	perfLogger, _ := utils.NewPerformanceLogger(cfg, logger)
 	return &BatchSender{
 		config:          cfg,
 		logger:          logger,
 		progressManager: progressManager,
+		perfLogger:      perfLogger,
 		client: &http.Client{
 			Timeout: cfg.Batch.HTTPTimeout,
 		},
@@ -57,6 +61,11 @@ func (bs *BatchSender) extractBaseURL(completionURL string) (string, error) {
 }
 
 func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, completionURL string, events []types.GunfightEvent) error {
+	timer := bs.perfLogger.StartTimer("send_gunfight_events").
+		WithMetadata("job_id", jobID).
+		WithMetadata("event_count", len(events))
+	defer timer.Stop()
+
 	if len(events) == 0 {
 		return nil
 	}
@@ -74,10 +83,15 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 
 	batchSize := bs.config.Batch.GunfightEventsSize
 	totalBatches := (len(events) + batchSize - 1) / batchSize
+	timer.WithMetadata("batch_count", totalBatches).WithMetadata("batch_size", batchSize)
 
 	// Sending gunfight events
 
 	for i := 0; i < totalBatches; i++ {
+		batchTimer := bs.perfLogger.StartTimer("send_gunfight_events_batch").
+			WithMetadata("job_id", jobID).
+			WithMetadata("batch_number", i+1).
+			WithMetadata("total_batches", totalBatches)
 		start := i * batchSize
 		end := start + batchSize
 		if end > len(events) {
@@ -145,6 +159,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 
 		url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeGunfight)
 		if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+			batchTimer.StopWithError(err)
 			parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send gunfight events", err)
 			parseError = parseError.WithContext("job_id", jobID)
 			parseError = parseError.WithContext("batch_number", i+1)
@@ -159,6 +174,7 @@ func (bs *BatchSender) SendGunfightEvents(ctx context.Context, jobID string, com
 		}
 
 		// Sent gunfight events batch
+		batchTimer.Stop()
 	}
 
 	return nil

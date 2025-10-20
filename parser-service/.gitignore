@@ -28,4 +28,12 @@ go.work
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# Log files
+logs/*.log
+!logs/.gitkeep
+!logs/EXAMPLE_PERFORMANCE.json
+
+# Temporary files
+tmp/ 

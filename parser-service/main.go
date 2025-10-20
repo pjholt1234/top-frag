@@ -15,6 +15,7 @@ import (
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
 	"parser-service/internal/types"
+	"parser-service/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,13 @@ func main() {
 
 	logger := setupLogger(cfg)
 
+	// Setup performance logger
+	perfLogger, err := utils.NewPerformanceLogger(cfg, logger)
+	if err != nil {
+		logger.WithError(err).Warn("Failed to initialize performance logger")
+	}
+	defer perfLogger.Close()
+
 	demoParser, err := parser.NewDemoParser(cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize demo parser")
@@ -42,7 +50,7 @@ func main() {
 
 	batchSender := parser.NewBatchSender(cfg, logger, progressManager)
 
-	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender, progressManager)
+	parseDemoHandler := handlers.NewParseDemoHandler(cfg, logger, demoParser, batchSender, progressManager, perfLogger)
 	healthHandler := handlers.NewHealthHandler(logger)
 
 	router := setupRouter(parseDemoHandler, healthHandler, cfg)

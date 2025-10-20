@@ -48,10 +48,13 @@ type BatchConfig struct {
 }
 
 type LoggingConfig struct {
-	Level     string `mapstructure:"level"`
-	Format    string `mapstructure:"format"`
-	File      string `mapstructure:"file"`
-	ErrorFile string `mapstructure:"error_file"`
+	Level             string `mapstructure:"level"`
+	Format            string `mapstructure:"format"`
+	File              string `mapstructure:"file"`
+	ErrorFile         string `mapstructure:"error_file"`
+	PerformanceLog    bool   `mapstructure:"performance_log"`
+	PerformanceFile   string `mapstructure:"performance_file"`
+	PerformanceDetail string `mapstructure:"performance_detail"` // "basic", "detailed", "verbose"
 }
 
 type DatabaseConfig struct {
@@ -119,6 +122,9 @@ func setDefaults() {
 	viper.SetDefault("logging.format", "json")
 	viper.SetDefault("logging.file", "logs/service.log")
 	viper.SetDefault("logging.error_file", "logs/errors.log")
+	viper.SetDefault("logging.performance_log", true)
+	viper.SetDefault("logging.performance_file", "logs/performance.log")
+	viper.SetDefault("logging.performance_detail", "detailed")
 
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 3306)

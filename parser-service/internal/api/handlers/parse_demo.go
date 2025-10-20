@@ -18,6 +18,7 @@ import (
 	"parser-service/internal/config"
 	"parser-service/internal/parser"
 	"parser-service/internal/types"
+	"parser-service/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -30,16 +31,18 @@ type ParseDemoHandler struct {
 	demoParser      *parser.DemoParser
 	batchSender     *parser.BatchSender
 	progressManager *parser.ProgressManager
+	perfLogger      *utils.PerformanceLogger
 	jobs            map[string]*types.ProcessingJob
 }
 
-func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *parser.DemoParser, batchSender *parser.BatchSender, progressManager *parser.ProgressManager) *ParseDemoHandler {
+func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *parser.DemoParser, batchSender *parser.BatchSender, progressManager *parser.ProgressManager, perfLogger *utils.PerformanceLogger) *ParseDemoHandler {
 	return &ParseDemoHandler{
 		config:          cfg,
 		logger:          logger,
 		demoParser:      demoParser,
 		batchSender:     batchSender,
 		progressManager: progressManager,
+		perfLogger:      perfLogger,
 		jobs:            make(map[string]*types.ProcessingJob),
 	}
 }
@@ -55,6 +58,9 @@ func NewParseDemoHandler(cfg *config.Config, logger *logrus.Logger, demoParser *
 
 // gin.Context: Represents the HTTP request and response
 func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
+	requestTimer := h.perfLogger.StartTimer("http_request_parse_demo")
+	defer requestTimer.Stop()
+
 	var req types.ParseDemoRequest
 	if err := c.ShouldBind(&req); err != nil {
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeValidation, types.ErrorSeverityError, "Failed to bind file upload request", err)
@@ -94,8 +100,10 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 	}
 
 	// Save uploaded file to temporary location
+	saveTimer := h.perfLogger.StartTimer("save_uploaded_file").WithMetadata("job_id", req.JobID)
 	tempFilePath, err := h.saveUploadedFile(req.DemoFile)
 	if err != nil {
+		saveTimer.StopWithError(err)
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "Failed to save uploaded file", err)
 		h.progressManager.ReportParseError(parseError)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -104,6 +112,7 @@ func (h *ParseDemoHandler) HandleParseDemo(c *gin.Context) {
 		})
 		return
 	}
+	saveTimer.Stop()
 
 	job := &types.ProcessingJob{
 		JobID:                 req.JobID,
@@ -166,6 +175,10 @@ func (h *ParseDemoHandler) cleanupTempFile(filePath string) {
 // saveUploadedFile saves the uploaded file to a temporary location
 // If the file is a .dem.bz2 file, it will be decompressed to a .dem file
 func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string, error) {
+	timer := h.perfLogger.StartTimer("save_and_decompress_file").
+		WithMetadata("file_size", file.Size).
+		WithMetadata("file_name", file.Filename)
+	defer timer.Stop()
 	// Create temp directory if it doesn't exist
 	if err := os.MkdirAll(h.config.Parser.TempDir, 0755); err != nil {
 		return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to create temp directory", err)
@@ -201,11 +214,13 @@ func (h *ParseDemoHandler) saveUploadedFile(file *multipart.FileHeader) (string,
 
 	if isCompressed {
 		// Decompress bz2 file
-
+		decompressTimer := h.perfLogger.StartTimer("bz2_decompression").
+			WithMetadata("file_size", file.Size)
 		if err := h.decompressBz2File(src, dst); err != nil {
+			decompressTimer.StopWithError(err)
 			return "", types.NewParseErrorWithSeverity(types.ErrorTypeResourceExhausted, types.ErrorSeverityCritical, "failed to decompress bz2 file", err)
 		}
-
+		decompressTimer.Stop()
 	} else {
 		// Copy the file content directly
 		if _, err = io.Copy(dst, src); err != nil {
@@ -237,6 +252,9 @@ func (h *ParseDemoHandler) decompressBz2File(src io.Reader, dst io.Writer) error
 // Handles errors and sends error messages to the callback URLs
 // Ensures temporary files are cleaned up in all scenarios
 func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.ProcessingJob) {
+	jobTimer := h.perfLogger.StartTimer("process_demo_job").
+		WithMetadata("job_id", job.JobID)
+
 	defer func() {
 		// Clean up temporary file if it exists
 		h.cleanupTempFile(job.TempFilePath)
@@ -256,8 +274,6 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 			}
 		}
 	}()
-
-
 
 	// Validating
 	job.Status = types.StatusValidating
@@ -305,6 +321,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		h.progressManager.ReportParseError(parseError)
 	}
 
+	parseTimer := h.perfLogger.StartTimer("parse_demo").WithMetadata("job_id", job.JobID)
 	parsedData, err := h.demoParser.ParseDemo(ctx, job.TempFilePath, func(update types.ProgressUpdate) {
 		// Update job with new progress data
 		job.Progress = update.Progress
@@ -331,6 +348,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	})
 
 	if err != nil {
+		parseTimer.StopWithError(err)
 		// Check if it's a ParseError with severity information
 		if parseErr, ok := err.(*types.ParseError); ok {
 			h.progressManager.ReportParseError(parseErr)
@@ -351,6 +369,11 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 
 		return
 	}
+	parseTimer.WithMetadata("total_rounds", len(parsedData.RoundEvents)).
+		WithMetadata("total_gunfights", len(parsedData.GunfightEvents)).
+		WithMetadata("total_grenades", len(parsedData.GrenadeEvents)).
+		WithMetadata("total_damage_events", len(parsedData.DamageEvents))
+	parseTimer.Stop()
 
 	job.MatchData = parsedData
 
@@ -384,7 +407,9 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		h.progressManager.ReportParseError(parseError)
 	}
 
+	sendEventsTimer := h.perfLogger.StartTimer("send_all_events").WithMetadata("job_id", job.JobID)
 	if err := h.sendAllEvents(ctx, job, parsedData); err != nil {
+		sendEventsTimer.StopWithError(err)
 		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "Failed to send events", err)
 		parseError = parseError.WithContext("job_id", job.JobID)
 		h.progressManager.ReportParseError(parseError)
@@ -397,6 +422,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 		}
 		return
 	}
+	sendEventsTimer.Stop()
 
 	// Finalizing
 	job.Status = types.StatusFinalizing
@@ -431,7 +457,7 @@ func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.Processin
 	job.Progress = 100
 	job.CurrentStep = "Completed"
 
-
+	jobTimer.WithMetadata("status", "completed").Stop()
 }
 
 // Sends progress updates to the callback URLs
