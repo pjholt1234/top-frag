@@ -17,7 +17,7 @@ func TestNewAimTrackingHandler(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 
 	handler := NewAimTrackingHandler(processor, logger)
 
@@ -44,7 +44,7 @@ func TestAimTrackingHandler_HandleWeaponFire(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	tests := []struct {
@@ -101,7 +101,7 @@ func TestAimTrackingHandler_GetShootingData(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	// Initially should be empty
@@ -117,7 +117,7 @@ func TestAimTrackingHandler_ClearShootingData(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	// Add some dummy data

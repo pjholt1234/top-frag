@@ -16,7 +16,7 @@ func BenchmarkAimUtilityService(b *testing.B) {
 	playerTickData := generateTestPlayerTickData(1000)
 
 	// Create service
-	service, err := NewAimUtilityService("de_dust2")
+	service, err := NewAimUtilityService("de_dust2", nil)
 	if err != nil {
 		b.Fatalf("Failed to create service: %v", err)
 	}

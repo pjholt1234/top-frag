@@ -46,7 +46,7 @@ func TestNewAimUtilityService(t *testing.T) {
 }
 
 func TestAimUtilityService_ProcessAimTrackingForRound(t *testing.T) {
-	service, err := NewAimUtilityService("de_ancient")
+	service, err := NewAimUtilityService("de_ancient", nil)
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestAimUtilityService_ProcessAimTrackingForRound(t *testing.T) {
 }
 
 func TestAimUtilityService_calculateAverage(t *testing.T) {
-	service, err := NewAimUtilityService("de_ancient")
+	service, err := NewAimUtilityService("de_ancient", nil)
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestAimUtilityService_calculateAverage(t *testing.T) {
 }
 
 func TestAimUtilityService_groupShootingDataByPlayer(t *testing.T) {
-	service, err := NewAimUtilityService("de_ancient")
+	service, err := NewAimUtilityService("de_ancient", nil)
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestAimUtilityService_groupShootingDataByPlayer(t *testing.T) {
 }
 
 func TestAimUtilityService_groupDamageEventsByPlayer(t *testing.T) {
-	service, err := NewAimUtilityService("de_ancient")
+	service, err := NewAimUtilityService("de_ancient", nil)
 	if err != nil {
 		t.Fatalf("Failed to create aim utility service: %v", err)
 	}

@@ -251,7 +251,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	}
 
 	// Create an event processor with team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1 // CT wins 1 round
@@ -324,7 +324,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	}
 
 	// Create an event processor
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 
 	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
 
@@ -375,7 +375,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	}
 
 	// Create an event processor with tied scores
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1 // CT wins 1 round
@@ -456,7 +456,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	}
 
 	// Create an event processor with the team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 10 // CT wins 10 rounds total
@@ -505,7 +505,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	}
 
 	// Create an event processor
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1
@@ -704,7 +704,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	})
 
 	// Create an event processor with the team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger)
+	eventProcessor := NewEventProcessor(matchState, logger, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamACurrentSide = "CT"

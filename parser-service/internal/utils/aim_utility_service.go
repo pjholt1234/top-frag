@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"math"
+	"parser-service/internal/config"
 	"parser-service/internal/types"
 	"runtime"
 	"sort"
@@ -31,6 +32,7 @@ type AimUtilityService struct {
 	cache       *CalculationCache
 	pool        *ObjectPool
 	logger      *logrus.Logger
+	config      *config.Config
 }
 
 const (
@@ -74,7 +76,7 @@ const (
 	SprayMinValue = 10.0 // <= 10% gets min score
 )
 
-func NewAimUtilityService(mapName string) (*AimUtilityService, error) {
+func NewAimUtilityService(mapName string, cfg *config.Config) (*AimUtilityService, error) {
 	losDetector, err := NewLOSDetector(mapName)
 	if err != nil {
 		return nil, err
@@ -99,7 +101,19 @@ func NewAimUtilityService(mapName string) (*AimUtilityService, error) {
 			},
 		},
 		logger: logrus.StandardLogger(),
+		config: cfg,
 	}, nil
+}
+
+// shouldProcessPlayer checks if we should process this player based on environment and Steam ID
+func (aus *AimUtilityService) shouldProcessPlayer(playerID string) bool {
+	// In development environment, process all players
+	if aus.config != nil && aus.config.Environment == "development" {
+		return true
+	}
+
+	// In other environments, only process specific Steam ID
+	return playerID == "76561198081165057"
 }
 
 func (aus *AimUtilityService) ProcessAimTrackingForRound(
@@ -117,6 +131,10 @@ func (aus *AimUtilityService) ProcessAimTrackingForRound(
 	reactionTimes := aus.calculateReactionTimesFromDamageEvents(damageEvents, playerTickData, roundNumber)
 
 	for playerID, shots := range playerShootingData {
+		if !aus.shouldProcessPlayer(playerID) {
+			continue
+		}
+
 		damages := playerDamageEvents[playerID]
 
 		shotAnalyses := aus.analyzeShots(shots, damages, playerTickData, playerID, roundNumber)
@@ -161,9 +179,38 @@ func (aus *AimUtilityService) calculateReactionTimesFromDamageEvents(
 	// Find first shots using time gap approach
 	firstShots := aus.identifyFirstShots(sortedDamageEvents)
 
-	// Calculate reaction times for first shots
+	// Pre-index player tick data by PlayerID for O(1) lookups
+	indexStart := time.Now()
+	tickDataByPlayer := make(map[string][]types.PlayerTickData)
+	for i := range playerTickData {
+		tick := &playerTickData[i]
+		tickDataByPlayer[tick.PlayerID] = append(tickDataByPlayer[tick.PlayerID], *tick)
+	}
+
+	// Ensure each player's ticks are sorted by tick
+	for playerID := range tickDataByPlayer {
+		sort.Slice(tickDataByPlayer[playerID], func(i, j int) bool {
+			return tickDataByPlayer[playerID][i].Tick < tickDataByPlayer[playerID][j].Tick
+		})
+	}
+
+	if aus.logger != nil {
+		elapsed := time.Since(indexStart)
+		aus.logger.WithFields(logrus.Fields{
+			"label":       "player_tick_indexing",
+			"duration_ms": elapsed.Milliseconds(),
+			"tick_count":  len(playerTickData),
+			"players":     len(tickDataByPlayer),
+		}).Info("performance")
+	}
+
+	// Calculate reaction times for first shots using indexed data
 	for _, damage := range firstShots {
-		reactionTime := aus.calculateReactionTimeForFirstShot(damage, playerTickData)
+		if !aus.shouldProcessPlayer(damage.AttackerSteamID) {
+			continue
+		}
+
+		reactionTime := aus.calculateReactionTimeForFirstShotOptimized(damage, tickDataByPlayer)
 		if reactionTime >= 50.0 {
 			reactionTimes[damage.AttackerSteamID] = reactionTime
 		}
@@ -225,6 +272,8 @@ func (aus *AimUtilityService) isGunDamage(damage types.DamageEvent) bool {
 	return true
 }
 
+// Deprecated: Use calculateReactionTimeForFirstShotOptimized with pre-indexed data instead
+// This function is kept for backwards compatibility but performs poorly with large datasets
 func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
 	damage types.DamageEvent,
 	playerTickData []types.PlayerTickData,
@@ -274,6 +323,68 @@ func (aus *AimUtilityService) calculateReactionTimeForFirstShot(
 	reactionTimeMs := (tickDiff / 64.0) * 1000.0
 
 	return reactionTimeMs
+}
+
+func (aus *AimUtilityService) calculateReactionTimeForFirstShotOptimized(
+	damage types.DamageEvent,
+	tickDataByPlayer map[string][]types.PlayerTickData,
+) float64 {
+	searchStartTick := damage.TickTimestamp - ReactionTimeSearchWindow
+	if searchStartTick < 0 {
+		searchStartTick = 0
+	}
+
+	// O(1) lookups for attacker and victim tick slices
+	allAttackerTicks, hasAttacker := tickDataByPlayer[damage.AttackerSteamID]
+	if !hasAttacker || len(allAttackerTicks) == 0 {
+		return 0.0
+	}
+
+	allVictimTicks, hasVictim := tickDataByPlayer[damage.VictimSteamID]
+	if !hasVictim || len(allVictimTicks) == 0 {
+		return 0.0
+	}
+
+	attackerTicks := aus.filterTicksByRange(allAttackerTicks, searchStartTick, damage.TickTimestamp)
+	if len(attackerTicks) == 0 {
+		return 0.0
+	}
+
+	victimTicks := aus.filterTicksByRange(allVictimTicks, searchStartTick, damage.TickTimestamp)
+
+	visibilityTick, foundVisibility := aus.findFirstAttackerLOSParallel(attackerTicks, victimTicks, damage)
+	if !foundVisibility {
+		return 0.0
+	}
+
+	tickDiff := float64(damage.TickTimestamp - visibilityTick)
+	reactionTimeMs := (tickDiff / 64.0) * 1000.0
+	return reactionTimeMs
+}
+
+// filterTicksByRange uses binary search to efficiently filter ticks within a range
+func (aus *AimUtilityService) filterTicksByRange(
+	sortedTicks []types.PlayerTickData,
+	startTick, endTick int64,
+) []types.PlayerTickData {
+	if len(sortedTicks) == 0 {
+		return nil
+	}
+
+	// Binary search for start index
+	startIdx := sort.Search(len(sortedTicks), func(i int) bool {
+		return sortedTicks[i].Tick >= startTick
+	})
+	if startIdx >= len(sortedTicks) {
+		return nil
+	}
+
+	// Binary search for end index (first index with tick > endTick)
+	endIdx := sort.Search(len(sortedTicks), func(i int) bool {
+		return sortedTicks[i].Tick > endTick
+	})
+
+	return sortedTicks[startIdx:endIdx]
 }
 
 func (aus *AimUtilityService) checkLineOfSight(attacker, victim *types.PlayerTickData) bool {
@@ -623,6 +734,37 @@ func (aus *AimUtilityService) findFirstAttackerLOSParallel(
 
 	if firstLOSResult != nil {
 		return firstLOSResult.Tick, true
+	}
+
+	return 0, false
+}
+
+// findFirstAttackerLOS performs a sequential LOS search suitable for small datasets
+func (aus *AimUtilityService) findFirstAttackerLOS(
+	attackerTicks []types.PlayerTickData,
+	victimTicks []types.PlayerTickData,
+	damage types.DamageEvent,
+) (int64, bool) {
+	if len(attackerTicks) == 0 || len(victimTicks) == 0 {
+		return 0, false
+	}
+
+	victimTickMap := make(map[int64]types.PlayerTickData)
+	for _, tick := range victimTicks {
+		victimTickMap[tick.Tick] = tick
+	}
+
+	for idx := 0; idx < len(attackerTicks); idx++ {
+		if idx%LOSCheckInterval != 0 {
+			continue
+		}
+		attackerTick := attackerTicks[idx]
+		if victimTick, exists := victimTickMap[attackerTick.Tick]; exists {
+			hasLOS := aus.checkLineOfSight(&attackerTick, &victimTick)
+			if hasLOS {
+				return attackerTick.Tick, true
+			}
+		}
 	}
 
 	return 0, false

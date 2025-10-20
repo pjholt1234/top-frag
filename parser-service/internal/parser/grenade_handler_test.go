@@ -25,7 +25,7 @@ func TestGrenadeHandlerRefactor(t *testing.T) {
 	}
 
 	// Create event processor
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	processor.currentTick = 2000 // Set current tick to simulate time passing
 
 	// Create grenade handler
@@ -273,7 +273,7 @@ func TestGrenadeHandlerRefactorIntegration(t *testing.T) {
 	}
 
 	// Create event processor
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	processor.currentTick = 2000
 
 	// Create grenade handler
@@ -401,7 +401,7 @@ func TestGrenadeHandler_HandleGrenadeProjectileThrow(t *testing.T) {
 		Players:       make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	grenadeHandler := NewGrenadeHandler(processor, logger)
 
 	tests := []struct {
@@ -475,7 +475,7 @@ func TestGrenadeHandler_HandleGrenadeProjectileDestroy(t *testing.T) {
 		Players:       make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	grenadeHandler := NewGrenadeHandler(processor, logger)
 
 	tests := []struct {
@@ -558,7 +558,7 @@ func TestGrenadeHandler_HandlePlayerFlashed(t *testing.T) {
 		Players:       make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	grenadeHandler := NewGrenadeHandler(processor, logger)
 
 	tests := []struct {
@@ -619,7 +619,7 @@ func TestGrenadeHandler_HandlePlayerFlashed(t *testing.T) {
 func TestGrenadeHandler_HandleSmokeStart(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	grenadeHandler := processor.grenadeHandler
 
 	// Create a mock smoke start event
@@ -644,7 +644,7 @@ func TestGrenadeHandler_HandleSmokeStart(t *testing.T) {
 func TestGrenadeHandler_GetGrenadeDisplayName(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger)
+	processor := NewEventProcessor(matchState, logger, nil)
 	grenadeHandler := processor.grenadeHandler
 
 	// Test various grenade types

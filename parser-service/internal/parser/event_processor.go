@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"fmt"
+	"parser-service/internal/config"
 	"parser-service/internal/database"
 	"parser-service/internal/types"
 	"parser-service/internal/utils"
@@ -17,6 +18,7 @@ import (
 type EventProcessor struct {
 	matchState   *types.MatchState
 	logger       *logrus.Logger
+	config       *config.Config
 	playerStates map[uint64]*types.PlayerState
 
 	teamAssignments    map[string]string
@@ -72,10 +74,11 @@ type PlayerFlashInfo struct {
 	IsFriendly    bool
 }
 
-func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger) *EventProcessor {
+func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger, cfg *config.Config) *EventProcessor {
 	ep := &EventProcessor{
 		matchState:   matchState,
 		logger:       logger,
+		config:       cfg,
 		playerStates: make(map[uint64]*types.PlayerState),
 
 		teamAssignments:    make(map[string]string),
@@ -583,7 +586,7 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 		mapName = "de_ancient" // Default fallback map
 	}
 
-	aimService, err := utils.NewAimUtilityService(mapName)
+	aimService, err := utils.NewAimUtilityService(mapName, ep.config)
 	if err != nil {
 		return types.NewParseError(types.ErrorTypeEventProcessing, "failed to create aim utility service", err).
 			WithContext("event", "RoundEnd").

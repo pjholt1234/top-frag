@@ -14,11 +14,12 @@ import (
 // This is using a library called viper to parse the config file
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Parser   ParserConfig   `mapstructure:"parser"`
-	Batch    BatchConfig    `mapstructure:"batch"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
-	Database DatabaseConfig `mapstructure:"database"`
+	Environment string         `mapstructure:"environment"`
+	Server      ServerConfig   `mapstructure:"server"`
+	Parser      ParserConfig   `mapstructure:"parser"`
+	Batch       BatchConfig    `mapstructure:"batch"`
+	Logging     LoggingConfig  `mapstructure:"logging"`
+	Database    DatabaseConfig `mapstructure:"database"`
 }
 
 type ServerConfig struct {
@@ -94,6 +95,7 @@ func Load() (*Config, error) {
 // This is used to set the default values for the config file
 // If the config file doesn't have a value for a field, it will use the default value
 func setDefaults() {
+	viper.SetDefault("environment", "development")
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.read_timeout", "30s")
 	viper.SetDefault("server.write_timeout", "30s")

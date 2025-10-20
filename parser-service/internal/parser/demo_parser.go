@@ -98,7 +98,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		PlayerRoundEvents: make([]types.PlayerRoundEvent, 0),
 	}
 
-	eventProcessor = NewEventProcessor(matchState, dp.logger)
+	eventProcessor = NewEventProcessor(matchState, dp.logger, dp.config)
 
 	dp.progressManager.UpdateProgress(types.ProgressUpdate{
 		Status:         types.StatusParsing,
