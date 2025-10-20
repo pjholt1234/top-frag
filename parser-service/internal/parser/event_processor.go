@@ -47,6 +47,7 @@ type EventProcessor struct {
 	aimTrackingHandler *AimTrackingHandler
 	rankExtractor      *RankExtractor
 	playerTickService  *database.PlayerTickService
+	roundTickCache     *RoundTickCache
 	matchID            string
 
 	// Aim tracking results storage
@@ -115,6 +116,12 @@ func (ep *EventProcessor) SetDemoParser(parser demoinfocs.Parser) {
 
 func (ep *EventProcessor) SetPlayerTickService(service *database.PlayerTickService) {
 	ep.playerTickService = service
+}
+
+func (ep *EventProcessor) InitializeRoundTickCache(matchID string) {
+	if ep.playerTickService != nil {
+		ep.roundTickCache = NewRoundTickCache(ep.playerTickService, ep.logger, matchID)
+	}
 }
 
 func (ep *EventProcessor) SetMatchID(matchID string) {
@@ -601,7 +608,7 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 		}
 	}
 
-	// Get player tick data for the round from database
+	// Get player tick data for the round using cache
 	// Handle case where RoundEndTick is 0 (not set) by using current tick as fallback
 	roundEndTick := ep.matchState.RoundEndTick
 	if roundEndTick == 0 {
@@ -615,6 +622,64 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 		}).Warn("RoundEndTick is 0, using current tick as fallback for player tick data query")
 	}
 
+	// Load tick data for this round into cache (single bulk query)
+	if ep.roundTickCache != nil {
+		err := ep.roundTickCache.LoadRound(
+			context.Background(),
+			ep.matchState.CurrentRound,
+			ep.matchState.RoundStartTick,
+			roundEndTick,
+		)
+		if err != nil {
+			ep.logger.WithError(err).Error("Failed to load round tick data into cache")
+			return types.NewParseError(types.ErrorTypeEventProcessing, "failed to load round tick data", err).
+				WithContext("event", "RoundEnd").
+				WithContext("round", ep.matchState.CurrentRound)
+		}
+
+		// Log cache statistics
+		cacheStats := ep.roundTickCache.GetCacheStats()
+		ep.logger.WithFields(logrus.Fields{
+			"round":            cacheStats["round"],
+			"rows_loaded":      cacheStats["rows_loaded"],
+			"load_duration_ms": cacheStats["load_duration_ms"],
+			"memory_mb":        cacheStats["memory_estimate_mb"],
+		}).Info("Round tick cache loaded")
+
+		// Get all data from cache
+		playerTickDataPointers := ep.roundTickCache.GetAllTickDataForRound()
+
+		// Convert pointers to values for compatibility
+		var playerTickData []types.PlayerTickData
+		for _, ptr := range playerTickDataPointers {
+			playerTickData = append(playerTickData, *ptr)
+		}
+
+		// Process aim tracking calculations
+		aimResults, weaponResults, err := aimService.ProcessAimTrackingForRound(
+			roundShootingData,
+			damageEvents,
+			playerTickData,
+			ep.matchState.CurrentRound,
+		)
+		if err != nil {
+			return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking calculations", err).
+				WithContext("event", "RoundEnd").
+				WithContext("round", ep.matchState.CurrentRound)
+		}
+
+		// Store results
+		if len(aimResults) > 0 {
+			ep.aimEvents = append(ep.aimEvents, aimResults...)
+		}
+		if len(weaponResults) > 0 {
+			ep.aimWeaponEvents = append(ep.aimWeaponEvents, weaponResults...)
+		}
+
+		return nil
+	}
+
+	// Fallback to direct database query if cache not available
 	playerTickDataPointers, err := ep.playerTickService.GetPlayerTickDataByRound(
 		context.Background(),
 		ep.matchID,

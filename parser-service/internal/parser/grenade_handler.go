@@ -851,17 +851,25 @@ func (gh *GrenadeHandler) calculateSmokeBlockingDurationPostProcess(matchID stri
 	startTick := smokeEvent.ExplosionTick
 	endTick := startTick + SMOKE_DURATION_TICKS
 
-	// Get player tick data for the smoke duration period
-	playerTickData, err := gh.processor.playerTickService.GetPlayerTickDataByTickRange(
-		context.Background(), matchID, startTick, endTick)
-	if err != nil {
-		gh.logger.WithFields(logrus.Fields{
-			"match_id":   matchID,
-			"start_tick": startTick,
-			"end_tick":   endTick,
-			"error":      err,
-		}).Error("Failed to get player tick data for smoke blocking calculation")
-		return 0
+	// Get player tick data for the smoke duration period from cache if available
+	var playerTickData []*types.PlayerTickData
+	if gh.processor.roundTickCache != nil && gh.processor.roundTickCache.IsRoundLoaded(smokeEvent.RoundNumber) {
+		// Use cache for faster lookups
+		playerTickData = gh.processor.roundTickCache.GetTickDataByTickRange(startTick, endTick)
+	} else {
+		// Fallback to direct database query if cache not available
+		var err error
+		playerTickData, err = gh.processor.playerTickService.GetPlayerTickDataByTickRange(
+			context.Background(), matchID, startTick, endTick)
+		if err != nil {
+			gh.logger.WithFields(logrus.Fields{
+				"match_id":   matchID,
+				"start_tick": startTick,
+				"end_tick":   endTick,
+				"error":      err,
+			}).Error("Failed to get player tick data for smoke blocking calculation")
+			return 0
+		}
 	}
 
 	blockingTicks := 0

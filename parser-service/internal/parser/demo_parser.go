@@ -26,6 +26,8 @@ type DemoParser struct {
 	db                *database.Database
 	playerTickService *database.PlayerTickService
 	matchID           string
+	ticksProcessed    int64 // Track number of ticks processed for sampling stats
+	ticksSkipped      int64 // Track number of ticks skipped due to sampling
 }
 
 func NewDemoParser(cfg *config.Config, logger *logrus.Logger) (*DemoParser, error) {
@@ -60,6 +62,10 @@ func (dp *DemoParser) ParseDemo(ctx context.Context, demoPath string, progressCa
 func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, progressCallback func(types.ProgressUpdate)) (*types.ParsedDemoData, error) {
 	// Generate unique match ID for this parsing session
 	dp.matchID = uuid.New().String()
+
+	// Reset tick counters for this parse
+	dp.ticksProcessed = 0
+	dp.ticksSkipped = 0
 
 	// Initialize progress manager
 	dp.progressManager = NewProgressManager(dp.logger, progressCallback, 100*time.Millisecond)
@@ -125,6 +131,9 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		eventProcessor.SetDemoParser(parser)
 		eventProcessor.SetPlayerTickService(dp.playerTickService)
 		eventProcessor.SetMatchID(dp.matchID)
+
+		// Initialize round tick cache for performance optimization
+		eventProcessor.InitializeRoundTickCache(dp.matchID)
 
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
@@ -649,6 +658,19 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	// Aggregate player match events before logging
 	eventProcessor.playerMatchHandler.aggregatePlayerMatchEvent()
 
+	// Log tick sampling statistics
+	totalTicks := dp.ticksProcessed + dp.ticksSkipped
+	if totalTicks > 0 {
+		reductionPercent := (float64(dp.ticksSkipped) / float64(totalTicks)) * 100
+		dp.logger.WithFields(logrus.Fields{
+			"ticks_processed":   dp.ticksProcessed,
+			"ticks_skipped":     dp.ticksSkipped,
+			"total_ticks":       totalTicks,
+			"reduction_percent": fmt.Sprintf("%.1f%%", reductionPercent),
+			"sample_rate":       dp.config.Parser.TickSampleRate,
+		}).Info("Tick sampling statistics")
+	}
+
 	// Match data built with event counts
 
 	return &types.ParsedDemoData{
@@ -726,6 +748,18 @@ func (dp *DemoParser) trackPlayerTickData(ctx context.Context, parser demoinfocs
 	}
 
 	currentTick := int64(gameState.IngameTick())
+
+	// Apply tick sampling - only store every Nth tick
+	tickSampleRate := dp.config.Parser.TickSampleRate
+	if tickSampleRate < 1 {
+		tickSampleRate = 1 // Safety: minimum sample rate is 1 (every tick)
+	}
+	if currentTick%int64(tickSampleRate) != 0 {
+		dp.ticksSkipped++
+		return // Skip this tick
+	}
+	dp.ticksProcessed++
+
 	participants := gameState.Participants().All()
 
 	var tickData []*types.PlayerTickData

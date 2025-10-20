@@ -35,6 +35,7 @@ type ParserConfig struct {
 	ProgressInterval  time.Duration `mapstructure:"progress_interval"`
 	MaxDemoSize       int64         `mapstructure:"max_demo_size"`
 	TempDir           string        `mapstructure:"temp_dir"`
+	TickSampleRate    int           `mapstructure:"tick_sample_rate"` // Store every Nth tick (1=all, 2=every 2nd, 3=every 3rd)
 }
 
 type BatchConfig struct {
@@ -109,6 +110,7 @@ func setDefaults() {
 	viper.SetDefault("parser.progress_interval", "5s")
 	viper.SetDefault("parser.max_demo_size", 500*1024*1024)
 	viper.SetDefault("parser.temp_dir", "/tmp/parser-service")
+	viper.SetDefault("parser.tick_sample_rate", 2) // Default: store every 2nd tick (50% reduction)
 
 	viper.SetDefault("batch.gunfight_events_size", 100)
 	viper.SetDefault("batch.grenade_events_size", 50)
