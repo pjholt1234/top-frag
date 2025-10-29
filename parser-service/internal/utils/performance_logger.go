@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"parser-service/internal/config"
@@ -121,7 +122,6 @@ func (pl *PerformanceLogger) writeInitialLog() error {
 	pl.writeLine(fmt.Sprintf("  Parser Max Concurrent Jobs: %d", pl.config.Parser.MaxConcurrentJobs))
 	pl.writeLine(fmt.Sprintf("  Parser Progress Interval: %s", pl.config.Parser.ProgressInterval))
 	pl.writeLine(fmt.Sprintf("  Parser Max Demo Size: %d bytes", pl.config.Parser.MaxDemoSize))
-	pl.writeLine(fmt.Sprintf("  Parser Temp Dir: %s", pl.config.Parser.TempDir))
 	pl.writeLine(fmt.Sprintf("  Parser Tick Sample Rate: %d", pl.config.Parser.TickSampleRate))
 	pl.writeLine("")
 	pl.writeLine(fmt.Sprintf("  Batch Gunfight Events Size: %d", pl.config.Batch.GunfightEventsSize))
@@ -136,14 +136,9 @@ func (pl *PerformanceLogger) writeInitialLog() error {
 	pl.writeLine(fmt.Sprintf("  Logging Format: %s", pl.config.Logging.Format))
 	pl.writeLine(fmt.Sprintf("  Logging Performance Detail: %s", pl.config.Logging.PerformanceDetail))
 	pl.writeLine("")
-	pl.writeLine(fmt.Sprintf("  Database Host: %s", pl.config.Database.Host))
-	pl.writeLine(fmt.Sprintf("  Database Port: %d", pl.config.Database.Port))
-	pl.writeLine(fmt.Sprintf("  Database User: %s", pl.config.Database.User))
-	pl.writeLine(fmt.Sprintf("  Database Name: %s", pl.config.Database.DBName))
-	pl.writeLine(fmt.Sprintf("  Database Charset: %s", pl.config.Database.Charset))
-	pl.writeLine(fmt.Sprintf("  Database Max Idle: %d", pl.config.Database.MaxIdle))
-	pl.writeLine(fmt.Sprintf("  Database Max Open: %d", pl.config.Database.MaxOpen))
 	pl.writeLine(fmt.Sprintf("  Database Cleanup On Finish: %t", pl.config.Database.CleanupOnFinish))
+	pl.writeLine(fmt.Sprintf("  Limit Aim Processing: %t", pl.config.AimProcessing.LimitAimProcessing))
+	pl.writeLine(fmt.Sprintf("  Limited Aim Processing To Player IDs: %s", strings.Join(pl.config.AimProcessing.PlayerIds, ", ")))
 	pl.writeLine("")
 
 	// Write file details
