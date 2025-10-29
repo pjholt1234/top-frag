@@ -27,7 +27,7 @@ func TestNewAimUtilityService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, err := NewAimUtilityService(tt.mapName)
+			service, err := NewAimUtilityService(tt.mapName, nil)
 
 			if tt.expected {
 				if err != nil {
