@@ -21,7 +21,7 @@ func TestNewEventProcessor(t *testing.T) {
 	}
 	logger := logrus.New()
 
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	if processor == nil {
 		t.Fatal("Expected EventProcessor to be created, got nil")
@@ -47,7 +47,7 @@ func TestEventProcessor_HandleRoundStart(t *testing.T) {
 		RoundEvents:  make([]types.RoundEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Add some player states
 	processor.playerStates[123] = &types.PlayerState{
@@ -135,7 +135,7 @@ func TestEventProcessor_HandleRoundEnd(t *testing.T) {
 		RoundEvents:  make([]types.RoundEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Add some players to avoid "no players found in round" error
 	matchState.Players["123"] = &types.Player{
@@ -205,7 +205,7 @@ func TestEventProcessor_HandlePlayerKilled(t *testing.T) {
 		RoundEvents:  make([]types.RoundEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Add player states directly to avoid player method calls
 	processor.playerStates[123] = &types.PlayerState{
@@ -250,7 +250,7 @@ func TestEventProcessor_HandlePlayerKilled_NilPlayers(t *testing.T) {
 		RoundEvents:  make([]types.RoundEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test with nil killer
 	event := events.Kill{
@@ -284,7 +284,7 @@ func TestEventProcessor_HandlePlayerKilled_NilPlayers(t *testing.T) {
 func TestEventProcessor_GetPlayerPosition(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test with nil player
 	position := processor.getPlayerPosition(nil)
@@ -296,7 +296,7 @@ func TestEventProcessor_GetPlayerPosition(t *testing.T) {
 func TestEventProcessor_GetPlayerAim(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test with nil player
 	aim := processor.getPlayerAim(nil)
@@ -308,7 +308,7 @@ func TestEventProcessor_GetPlayerAim(t *testing.T) {
 func TestGunfightHandler_GetPlayerHP(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	handler := NewGunfightHandler(processor, logger)
 
 	// Test with nil player
@@ -321,7 +321,7 @@ func TestGunfightHandler_GetPlayerHP(t *testing.T) {
 func TestGunfightHandler_GetPlayerArmor(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	handler := NewGunfightHandler(processor, logger)
 
 	// Test with nil player
@@ -340,7 +340,7 @@ func TestGunfightHandler_GetPlayerArmor(t *testing.T) {
 func TestEventProcessor_GetTeamString(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test CT team
 	team := processor.getTeamString(common.TeamCounterTerrorists)
@@ -364,7 +364,7 @@ func TestEventProcessor_GetTeamString(t *testing.T) {
 func TestEventProcessor_GetPlayerCurrentSide(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set up team assignments and current sides
 	processor.teamAssignments["123"] = "A"
@@ -414,7 +414,7 @@ func TestEventProcessor_HandlePlayerConnect(t *testing.T) {
 		Players: make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set current round to 1 (within rounds 1-12 for team assignment)
 	processor.currentRound = 1
@@ -483,7 +483,7 @@ func TestEventProcessor_HandlePlayerDisconnected(t *testing.T) {
 		Players: make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Create mock player
 	player := &common.Player{
@@ -513,7 +513,7 @@ func TestEventProcessor_HandlePlayerTeamChange(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set current round to 1 (within rounds 1-12 for team assignment)
 	processor.currentRound = 1
@@ -560,7 +560,7 @@ func TestEventProcessor_EnsurePlayerTracked(t *testing.T) {
 		Players: make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set current round to 1 (within rounds 1-12 for team assignment)
 	processor.currentRound = 1
@@ -646,7 +646,7 @@ func TestEventProcessor_HandlePlayerKilled_WithPlayerTracking(t *testing.T) {
 		RoundEvents:  make([]types.RoundEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set current round to 1 (within rounds 1-12 for team assignment)
 	processor.currentRound = 1
@@ -741,7 +741,7 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 		GunfightEvents: make([]types.GunfightEvent, 0),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test the core logic: FirstKillPlayer should be nil initially
 	if processor.matchState.FirstKillPlayer != nil {
@@ -784,7 +784,7 @@ func TestEventProcessor_IsFirstKill(t *testing.T) {
 func TestEventProcessor_FlashTracking(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set up team assignments for side tracking
 	processor.teamAssignments["76561198012345678"] = "A"
@@ -842,7 +842,7 @@ func TestEventProcessor_SideInformationInEvents(t *testing.T) {
 		Players: make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set up team assignments and current sides
 	processor.teamAssignments["123"] = "A"
@@ -888,7 +888,7 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 		Players: make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Set up team assignments for side tracking
 	processor.teamAssignments["76561198012345678"] = "A"
@@ -933,7 +933,7 @@ func TestEventProcessor_GrenadeEventIncludesPlayerSide(t *testing.T) {
 func TestEventProcessor_SetDemoParser(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test that SetDemoParser doesn't panic
 	processor.SetDemoParser(nil)
@@ -974,7 +974,7 @@ func TestEventProcessor_HandlePlayerFlashed(t *testing.T) {
 func TestEventProcessor_UpdateCurrentTick(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test UpdateCurrentTick
 	processor.UpdateCurrentTick(1000)
@@ -989,7 +989,7 @@ func TestEventProcessor_UpdateCurrentTick(t *testing.T) {
 func TestEventProcessor_UpdateCurrentTickAndPlayers(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test UpdateCurrentTickAndPlayers with nil game state (simpler test)
 	processor.UpdateCurrentTickAndPlayers(2000, nil)
@@ -1006,7 +1006,7 @@ func TestEventProcessor_GetCurrentRoundTime(t *testing.T) {
 		CurrentRound: 1,
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test getCurrentRoundTime
 	roundTime := processor.getCurrentRoundTime()
@@ -1028,7 +1028,7 @@ func TestEventProcessor_GetRoundScenario(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	// Test getRoundScenario
 	scenario := processor.getRoundScenario("CT", "T")

@@ -55,7 +55,7 @@ func TestProgressTracking_StepProgression(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -124,7 +124,7 @@ func TestProgressTracking_ErrorHandling(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{

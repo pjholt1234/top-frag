@@ -59,8 +59,18 @@ func (rh *RoundHandler) ProcessRoundEnd() error {
 				WithContext("event_type", "ProcessRoundEnd")
 		}
 
-		playerRoundEvent := rh.createPlayerRoundEvent(playerSteamID, roundNumber)
-		rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
+		// Performance tracking for createPlayerRoundEvent
+		if rh.processor.perfLogger != nil {
+			timer := rh.processor.perfLogger.StartTimer("createPlayerRoundEvent").
+				WithMetadata("round_number", roundNumber).
+				WithMetadata("player_steam_id", playerSteamID)
+			playerRoundEvent := rh.createPlayerRoundEvent(playerSteamID, roundNumber)
+			timer.Stop()
+			rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
+		} else {
+			playerRoundEvent := rh.createPlayerRoundEvent(playerSteamID, roundNumber)
+			rh.processor.matchState.PlayerRoundEvents = append(rh.processor.matchState.PlayerRoundEvents, playerRoundEvent)
+		}
 	}
 
 	// Calculate impact values for gunfight events in this round

@@ -14,7 +14,7 @@ func TestDetectSprayingPatterns(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	// Create test shooting data with a spray pattern
@@ -152,7 +152,7 @@ func TestAnalyzeWeaponSprayPattern_NoSpray(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	// Create shots that are too far apart to be considered spraying
@@ -187,7 +187,7 @@ func TestAnalyzeWeaponSprayPattern_InsufficientShots(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	handler := NewAimTrackingHandler(processor, logger)
 
 	// Create only 2 shots (insufficient for spray detection)

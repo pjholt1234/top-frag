@@ -80,7 +80,7 @@ func TestDamageCappingLogic(t *testing.T) {
 func TestDamageHandler_NewDamageHandler(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	damageHandler := NewDamageHandler(processor, logger)
 
@@ -107,7 +107,7 @@ func TestDamageHandler_HandlePlayerHurt(t *testing.T) {
 		Players:      make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	damageHandler := NewDamageHandler(processor, logger)
 
 	tests := []struct {

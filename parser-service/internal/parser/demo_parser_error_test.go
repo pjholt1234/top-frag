@@ -38,7 +38,7 @@ func TestDemoParser_ErrorScenarios(t *testing.T) {
 					},
 				}
 				logger := logrus.New()
-				parser, err := NewDemoParser(cfg, logger)
+				parser, err := NewDemoParser(cfg, logger, nil)
 				if err != nil {
 					// For testing purposes, create a mock parser without database
 					return &DemoParser{
@@ -72,7 +72,7 @@ func TestDemoParser_ErrorScenarios(t *testing.T) {
 					},
 				}
 				logger := logrus.New()
-				parser, err := NewDemoParser(cfg, logger)
+				parser, err := NewDemoParser(cfg, logger, nil)
 				if err != nil {
 					// For testing purposes, create a mock parser without database
 					return &DemoParser{
@@ -106,7 +106,7 @@ func TestDemoParser_ErrorScenarios(t *testing.T) {
 						MaxOpen:  100,
 					},
 				}
-				parser, err := NewDemoParser(cfg, logger)
+				parser, err := NewDemoParser(cfg, logger, nil)
 				if err != nil {
 					// For testing purposes, create a mock parser without database
 					return &DemoParser{
@@ -289,7 +289,7 @@ func TestDemoParser_ProgressManagerIntegration(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{

@@ -22,7 +22,7 @@ func createMockParser() demoinfocs.Parser {
 
 // setupTestParser creates a DemoParser with initialized progress manager for testing
 func setupTestParser(cfg *config.Config, logger *logrus.Logger) *DemoParser {
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -51,7 +51,7 @@ func TestNewDemoParser(t *testing.T) {
 	}
 	logger := logrus.New()
 
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -91,7 +91,7 @@ func TestDemoParser_ValidateDemoFile(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -251,7 +251,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	}
 
 	// Create an event processor with team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1 // CT wins 1 round
@@ -324,7 +324,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	}
 
 	// Create an event processor
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 
 	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
 
@@ -375,7 +375,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	}
 
 	// Create an event processor with tied scores
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1 // CT wins 1 round
@@ -456,7 +456,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	}
 
 	// Create an event processor with the team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 10 // CT wins 10 rounds total
@@ -505,7 +505,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	}
 
 	// Create an event processor
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamAWins = 1
@@ -540,7 +540,7 @@ func TestDemoParser_ParseDemo_InvalidPath(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -579,7 +579,7 @@ func TestDemoParser_ParseDemo_InvalidExtension(t *testing.T) {
 		},
 	}
 	logger := logrus.New()
-	parser, err := NewDemoParser(cfg, logger)
+	parser, err := NewDemoParser(cfg, logger, nil)
 	if err != nil {
 		// For testing purposes, create a mock parser without database
 		parser = &DemoParser{
@@ -704,7 +704,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	})
 
 	// Create an event processor with the team assignment data
-	eventProcessor := NewEventProcessor(matchState, logger, nil)
+	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamACurrentSide = "CT"
@@ -746,7 +746,7 @@ func TestDemoParser_OvertimeSideSwitchingLogic(t *testing.T) {
 
 	// Test the corrected overtime side switching logic
 	// This test verifies that side switches happen at the correct rounds
-	eventProcessor := NewEventProcessor(&types.MatchState{}, logger)
+	eventProcessor := NewEventProcessor(&types.MatchState{}, logger, nil, nil)
 	eventProcessor.teamAStartedAs = "CT"
 	eventProcessor.teamBStartedAs = "T"
 	eventProcessor.teamACurrentSide = "CT"

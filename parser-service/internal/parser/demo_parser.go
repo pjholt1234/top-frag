@@ -10,6 +10,7 @@ import (
 	"parser-service/internal/config"
 	"parser-service/internal/database"
 	"parser-service/internal/types"
+	"parser-service/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
@@ -21,6 +22,7 @@ import (
 type DemoParser struct {
 	config            *config.Config
 	logger            *logrus.Logger
+	perfLogger        *utils.PerformanceLogger
 	progressManager   *ProgressManager
 	gameModeDetector  *GameModeDetector
 	db                *database.Database
@@ -30,7 +32,7 @@ type DemoParser struct {
 	ticksSkipped      int64 // Track number of ticks skipped due to sampling
 }
 
-func NewDemoParser(cfg *config.Config, logger *logrus.Logger) (*DemoParser, error) {
+func NewDemoParser(cfg *config.Config, logger *logrus.Logger, perfLogger *utils.PerformanceLogger) (*DemoParser, error) {
 	// Initialize database connection
 	db, err := database.NewDatabase(&cfg.Database, logger)
 	if err != nil {
@@ -48,6 +50,7 @@ func NewDemoParser(cfg *config.Config, logger *logrus.Logger) (*DemoParser, erro
 	return &DemoParser{
 		config:            cfg,
 		logger:            logger,
+		perfLogger:        perfLogger,
 		gameModeDetector:  NewGameModeDetector(logger),
 		db:                db,
 		playerTickService: playerTickService,
@@ -104,7 +107,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		PlayerRoundEvents: make([]types.PlayerRoundEvent, 0),
 	}
 
-	eventProcessor = NewEventProcessor(matchState, dp.logger, dp.config)
+	eventProcessor = NewEventProcessor(matchState, dp.logger, dp.config, dp.perfLogger)
 
 	dp.progressManager.UpdateProgress(types.ProgressUpdate{
 		Status:         types.StatusParsing,
@@ -197,27 +200,22 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		IsFinal:        false,
 	})
 
-	{
-		start := time.Now()
+	// Performance tracking for postProcessGrenadeMovement
+	if dp.perfLogger != nil {
+		timer := dp.perfLogger.StartTimer("postProcessGrenadeMovement")
 		dp.postProcessGrenadeMovement(eventProcessor)
-		elapsed := time.Since(start)
-		dp.logger.WithFields(logrus.Fields{
-			"label":       "post_process_grenade_movement",
-			"start_time":  start,
-			"end_time":    start.Add(elapsed),
-			"duration_ms": elapsed.Milliseconds(),
-		}).Info("performance")
+		timer.Stop()
+	} else {
+		dp.postProcessGrenadeMovement(eventProcessor)
 	}
-	{
-		start := time.Now()
+
+	// Performance tracking for postProcessDamageAssists
+	if dp.perfLogger != nil {
+		timer := dp.perfLogger.StartTimer("postProcessDamageAssists")
 		dp.postProcessDamageAssists(eventProcessor)
-		elapsed := time.Since(start)
-		dp.logger.WithFields(logrus.Fields{
-			"label":       "post_process_damage_assists",
-			"start_time":  start,
-			"end_time":    start.Add(elapsed),
-			"duration_ms": elapsed.Milliseconds(),
-		}).Info("performance")
+		timer.Stop()
+	} else {
+		dp.postProcessDamageAssists(eventProcessor)
 	}
 
 	buildStart := time.Now()

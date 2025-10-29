@@ -20,3 +20,4 @@ demo.dem
 /parser-service/logs/errors.log
 /parser-service/logs/service.log
 /parser-service/tmp
+/parser-service/logs/performance

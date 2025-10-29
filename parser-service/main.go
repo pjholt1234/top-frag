@@ -37,7 +37,7 @@ func main() {
 	}
 	defer perfLogger.Close()
 
-	demoParser, err := parser.NewDemoParser(cfg, logger)
+	demoParser, err := parser.NewDemoParser(cfg, logger, perfLogger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize demo parser")
 	}

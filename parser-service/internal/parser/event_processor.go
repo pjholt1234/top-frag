@@ -20,6 +20,7 @@ type EventProcessor struct {
 	logger       *logrus.Logger
 	config       *config.Config
 	playerStates map[uint64]*types.PlayerState
+	perfLogger   *utils.PerformanceLogger
 
 	teamAssignments    map[string]string
 	teamAWins          int
@@ -75,11 +76,12 @@ type PlayerFlashInfo struct {
 	IsFriendly    bool
 }
 
-func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger, cfg *config.Config) *EventProcessor {
+func NewEventProcessor(matchState *types.MatchState, logger *logrus.Logger, cfg *config.Config, perfLogger *utils.PerformanceLogger) *EventProcessor {
 	ep := &EventProcessor{
 		matchState:   matchState,
 		logger:       logger,
 		config:       cfg,
+		perfLogger:   perfLogger,
 		playerStates: make(map[uint64]*types.PlayerState),
 
 		teamAssignments:    make(map[string]string),
@@ -149,8 +151,27 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 	}
 	if ep.grenadeHandler != nil {
 		ep.grenadeHandler.CleanupDuplicateFlashGrenades()
-		ep.grenadeHandler.AggregateAllGrenadeDamage()
-		ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+
+		// Performance tracking for AggregateAllGrenadeDamage
+		if ep.perfLogger != nil {
+			timer := ep.perfLogger.StartTimer("AggregateAllGrenadeDamage").
+				WithMetadata("round_number", ep.matchState.CurrentRound)
+			ep.grenadeHandler.AggregateAllGrenadeDamage()
+			timer.Stop()
+		} else {
+			ep.grenadeHandler.AggregateAllGrenadeDamage()
+		}
+
+		// Performance tracking for PopulateFlashGrenadeEffectiveness
+		if ep.perfLogger != nil {
+			timer := ep.perfLogger.StartTimer("PopulateFlashGrenadeEffectiveness").
+				WithMetadata("round_number", ep.matchState.CurrentRound)
+			ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+			timer.Stop()
+		} else {
+			ep.grenadeHandler.PopulateFlashGrenadeEffectiveness()
+		}
+
 		// Use the new post-processing method for smoke blocking duration
 		if ep.playerTickService != nil {
 			_ = ep.grenadeHandler.ProcessSmokeBlockingDurationPostProcess(ep.matchID)
@@ -169,14 +190,35 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 
 	// Process aim tracking data for the round
 	if ep.aimTrackingHandler != nil {
-		// First, detect spraying patterns post-round for the current round only
-		ep.aimTrackingHandler.DetectSprayingPatternsForRound(ep.matchState.CurrentRound)
+		// Performance tracking for DetectSprayingPatternsForRound
+		if ep.perfLogger != nil {
+			timer := ep.perfLogger.StartTimer("DetectSprayingPatternsForRound").
+				WithMetadata("round_number", ep.matchState.CurrentRound)
+			ep.aimTrackingHandler.DetectSprayingPatternsForRound(ep.matchState.CurrentRound)
+			timer.Stop()
+		} else {
+			ep.aimTrackingHandler.DetectSprayingPatternsForRound(ep.matchState.CurrentRound)
+		}
 
-		if err := ep.processAimTrackingForRound(); err != nil {
-			ep.logger.WithError(err).Error("Failed to process aim tracking for round")
-			return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking for round", err).
-				WithContext("event", "RoundEnd").
-				WithContext("round", ep.matchState.CurrentRound)
+		// Performance tracking for processAimTrackingForRound
+		if ep.perfLogger != nil {
+			timer := ep.perfLogger.StartTimer("processAimTrackingForRound").
+				WithMetadata("round_number", ep.matchState.CurrentRound)
+			err := ep.processAimTrackingForRound()
+			timer.Stop()
+			if err != nil {
+				ep.logger.WithError(err).Error("Failed to process aim tracking for round")
+				return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking for round", err).
+					WithContext("event", "RoundEnd").
+					WithContext("round", ep.matchState.CurrentRound)
+			}
+		} else {
+			if err := ep.processAimTrackingForRound(); err != nil {
+				ep.logger.WithError(err).Error("Failed to process aim tracking for round")
+				return types.NewParseError(types.ErrorTypeEventProcessing, "failed to process aim tracking for round", err).
+					WithContext("event", "RoundEnd").
+					WithContext("round", ep.matchState.CurrentRound)
+			}
 		}
 	}
 

@@ -12,7 +12,7 @@ import (
 func TestGunfightHandler_NewGunfightHandler(t *testing.T) {
 	matchState := &types.MatchState{}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 
 	gunfightHandler := NewGunfightHandler(processor, logger)
 
@@ -39,7 +39,7 @@ func TestGunfightHandler_HandlePlayerKilled(t *testing.T) {
 		Players:        make(map[string]*types.Player),
 	}
 	logger := logrus.New()
-	processor := NewEventProcessor(matchState, logger, nil)
+	processor := NewEventProcessor(matchState, logger, nil, nil)
 	gunfightHandler := NewGunfightHandler(processor, logger)
 
 	tests := []struct {

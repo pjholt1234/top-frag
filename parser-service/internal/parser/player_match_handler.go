@@ -23,8 +23,17 @@ func NewPlayerMatchHandler(processor *EventProcessor, logger *logrus.Logger) *Pl
 
 func (mh *PlayerMatchHandler) aggregatePlayerMatchEvent() {
 	for steamID := range mh.processor.matchState.Players {
-		playerMatchEvent := mh.createPlayerMatchEvent(steamID)
-		mh.processor.matchState.PlayerMatchEvents = append(mh.processor.matchState.PlayerMatchEvents, playerMatchEvent)
+		// Performance tracking for createPlayerMatchEvent
+		if mh.processor.perfLogger != nil {
+			timer := mh.processor.perfLogger.StartTimer("createPlayerMatchEvent").
+				WithMetadata("player_steam_id", steamID)
+			playerMatchEvent := mh.createPlayerMatchEvent(steamID)
+			timer.Stop()
+			mh.processor.matchState.PlayerMatchEvents = append(mh.processor.matchState.PlayerMatchEvents, playerMatchEvent)
+		} else {
+			playerMatchEvent := mh.createPlayerMatchEvent(steamID)
+			mh.processor.matchState.PlayerMatchEvents = append(mh.processor.matchState.PlayerMatchEvents, playerMatchEvent)
+		}
 	}
 }
 

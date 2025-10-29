@@ -252,10 +252,28 @@ func (h *ParseDemoHandler) decompressBz2File(src io.Reader, dst io.Writer) error
 // Handles errors and sends error messages to the callback URLs
 // Ensures temporary files are cleaned up in all scenarios
 func (h *ParseDemoHandler) processDemo(ctx context.Context, job *types.ProcessingJob) {
+	// Get file info for performance logging
+	fileInfo, err := os.Stat(job.TempFilePath)
+	var fileSize int64
+	var fileName string
+	if err == nil {
+		fileSize = fileInfo.Size()
+		fileName = filepath.Base(job.TempFilePath)
+	}
+
+	// Initialize performance logger for this run
+	if err := h.perfLogger.InitializeRun(job.JobID, fileName, fileSize); err != nil {
+		h.logger.WithError(err).Warn("Failed to initialize performance logger for run")
+	}
+
 	jobTimer := h.perfLogger.StartTimer("process_demo_job").
 		WithMetadata("job_id", job.JobID)
 
 	defer func() {
+		// Finalize performance logging
+		h.perfLogger.FinalizeRun()
+		h.perfLogger.Close()
+
 		// Clean up temporary file if it exists
 		h.cleanupTempFile(job.TempFilePath)
 
@@ -601,42 +619,86 @@ func (h *ParseDemoHandler) sendProgressUpdateWithMatchData(ctx context.Context, 
 
 func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.ProcessingJob, parsedData *types.ParsedDemoData) error {
 	// Send match data first (includes game mode and match type)
+	timer := h.perfLogger.StartTimer("send_match_data").
+		WithMetadata("job_id", job.JobID)
 	if err := h.batchSender.SendMatchData(ctx, job.JobID, job.CompletionCallbackURL, parsedData.Match); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send match data", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_round_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.RoundEvents))
 	if err := h.batchSender.SendRoundEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.RoundEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send round events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_damage_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.DamageEvents))
 	if err := h.batchSender.SendDamageEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.DamageEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send damage events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_grenade_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.GrenadeEvents))
 	if err := h.batchSender.SendGrenadeEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.GrenadeEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send grenade events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_gunfight_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.GunfightEvents))
 	if err := h.batchSender.SendGunfightEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.GunfightEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send gunfight events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_player_round_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.PlayerRoundEvents))
 	if err := h.batchSender.SendPlayerRoundEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.PlayerRoundEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player round events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_player_match_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.PlayerMatchEvents))
 	if err := h.batchSender.SendPlayerMatchEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.PlayerMatchEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send player match events", err)
 	}
+	timer.Stop()
 
 	// Send aim tracking events
+	timer = h.perfLogger.StartTimer("send_aim_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.AimEvents))
 	if err := h.batchSender.SendAimEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.AimEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim events", err)
 	}
+	timer.Stop()
 
+	timer = h.perfLogger.StartTimer("send_aim_weapon_events").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.AimWeaponEvents))
 	if err := h.batchSender.SendAimWeaponEvents(ctx, job.JobID, job.CompletionCallbackURL, parsedData.AimWeaponEvents); err != nil {
+		timer.StopWithError(err)
 		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send aim weapon events", err)
 	}
+	timer.Stop()
 
 	return nil
 }
