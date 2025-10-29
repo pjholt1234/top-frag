@@ -126,7 +126,6 @@ func (s *PlayerTickService) DeletePlayerTickDataByMatch(ctx context.Context, mat
 		return fmt.Errorf("failed to delete player tick data by match: %w", err)
 	}
 
-
 	return nil
 }
 

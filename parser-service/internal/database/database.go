@@ -51,8 +51,6 @@ func NewDatabase(cfg *config.DatabaseConfig, logger *logrus.Logger) (*Database, 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-
-
 	return &Database{
 		DB:     db,
 		Logger: logger,
@@ -62,7 +60,6 @@ func NewDatabase(cfg *config.DatabaseConfig, logger *logrus.Logger) (*Database, 
 // AutoMigrate runs database migrations
 func (d *Database) AutoMigrate() error {
 
-
 	err := d.DB.AutoMigrate(
 		&types.PlayerTickData{},
 		&types.PlayerShootingData{},
@@ -70,7 +67,6 @@ func (d *Database) AutoMigrate() error {
 	if err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
-
 
 	return nil
 }
