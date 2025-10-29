@@ -14,12 +14,13 @@ import (
 // This is using a library called viper to parse the config file
 
 type Config struct {
-	Environment string         `mapstructure:"environment"`
-	Server      ServerConfig   `mapstructure:"server"`
-	Parser      ParserConfig   `mapstructure:"parser"`
-	Batch       BatchConfig    `mapstructure:"batch"`
-	Logging     LoggingConfig  `mapstructure:"logging"`
-	Database    DatabaseConfig `mapstructure:"database"`
+	Environment   string              `mapstructure:"environment"`
+	Server        ServerConfig        `mapstructure:"server"`
+	Parser        ParserConfig        `mapstructure:"parser"`
+	Batch         BatchConfig         `mapstructure:"batch"`
+	Logging       LoggingConfig       `mapstructure:"logging"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	AimProcessing AimProcessingConfig `mapstructure:"aim_processing"`
 }
 
 type ServerConfig struct {
@@ -68,6 +69,11 @@ type DatabaseConfig struct {
 	MaxIdle         int    `mapstructure:"max_idle"`
 	MaxOpen         int    `mapstructure:"max_open"`
 	CleanupOnFinish bool   `mapstructure:"cleanup_on_finish"`
+}
+
+type AimProcessingConfig struct {
+	LimitAimProcessing bool     `mapstructure:"limit_aim_processing"`
+	PlayerIds          []string `mapstructure:"player_ids"`
 }
 
 func Load() (*Config, error) {
@@ -137,4 +143,7 @@ func setDefaults() {
 	viper.SetDefault("database.max_idle", 10)
 	viper.SetDefault("database.max_open", 100)
 	viper.SetDefault("database.cleanup_on_finish", false)
+
+	viper.SetDefault("aim_processing.limit_aim_processing", false)
+	viper.SetDefault("aim_processing.player_ids", []string{})
 }

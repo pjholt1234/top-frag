@@ -105,15 +105,26 @@ func NewAimUtilityService(mapName string, cfg *config.Config) (*AimUtilityServic
 	}, nil
 }
 
-// shouldProcessPlayer checks if we should process this player based on environment and Steam ID
+// shouldProcessPlayer checks if we should process this player based on config
 func (aus *AimUtilityService) shouldProcessPlayer(playerID string) bool {
-	// In development environment, process all players
-	if aus.config != nil && aus.config.Environment == "development" {
+	// If config is not available, process all players
+	if aus.config == nil {
 		return true
 	}
 
-	// In other environments, only process specific Steam ID
-	return playerID == "76561198081165057"
+	// If LimitAimProcessing is false, process all players
+	if !aus.config.AimProcessing.LimitAimProcessing {
+		return true
+	}
+
+	// If LimitAimProcessing is true, check if player ID exists in the list
+	for _, id := range aus.config.AimProcessing.PlayerIds {
+		if id == playerID {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (aus *AimUtilityService) ProcessAimTrackingForRound(
