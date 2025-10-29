@@ -1,0 +1,25 @@
+meta {
+  name: Aim Tracking Filter Options
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{base_url}}/api/matches/{{match_id}}/aim-tracking/filter-options?player_steam_id={{player_steam_id}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  player_steam_id: {{player_steam_id}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+

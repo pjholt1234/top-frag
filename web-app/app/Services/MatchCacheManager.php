@@ -82,7 +82,7 @@ class MatchCacheManager
             return;
         }
 
-        $components = ['match-details', 'player-stats', 'utility-analysis', 'grenade-explorer', 'head-to-head'];
+        $components = ['match-details', 'player-stats', 'utility-analysis', 'grenade-explorer', 'head-to-head', 'aim-tracking', 'aim-tracking-weapon', 'aim-tracking-filter-options'];
 
         foreach ($components as $component) {
             Cache::forget(self::getKey($component, $matchId));

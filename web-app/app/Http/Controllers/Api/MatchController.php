@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Exceptions\PlayerNotFound;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AimTrackingRequest;
+use App\Http\Requests\AimTrackingWeaponRequest;
 use App\Http\Requests\GrenadeExplorerFilterOptionsRequest;
 use App\Http\Requests\GrenadeExplorerRequest;
 use App\Http\Requests\HeadToHeadRequest;
 use App\Http\Requests\IndexMatchHistoryRequest;
 use App\Http\Requests\PlayerStatsRequest;
 use App\Http\Requests\UtilityAnalysisRequest;
+use App\Services\Matches\AimTrackingService;
 use App\Services\Matches\GrenadeExplorerService;
 use App\Services\Matches\HeadToHeadService;
 use App\Services\Matches\MatchDetailsService;
@@ -31,6 +34,7 @@ class MatchController extends Controller
         private readonly UtilityAnalysisService $utilityAnalysisService,
         private readonly GrenadeExplorerService $grenadeExplorerService,
         private readonly HeadToHeadService $headToHeadService,
+        private readonly AimTrackingService $aimTrackingService,
     ) {}
 
     public function index(IndexMatchHistoryRequest $request): JsonResponse
@@ -292,5 +296,77 @@ class MatchController extends Controller
         }
 
         return response()->json($topRolePlayers);
+    }
+
+    public function aimTracking(AimTrackingRequest $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
+        }
+
+        $filters = $request->only(['player_steam_id']);
+
+        try {
+            $aimTracking = $this->aimTrackingService->get($user, $filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
+
+        if (empty($aimTracking)) {
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
+        }
+
+        return response()->json($aimTracking);
+    }
+
+    public function aimTrackingWeapon(AimTrackingWeaponRequest $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
+        }
+
+        $filters = $request->only(['player_steam_id', 'weapon_name']);
+
+        try {
+            $weaponStats = $this->aimTrackingService->getWeaponStats($user, $filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
+
+        if (empty($weaponStats)) {
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
+        }
+
+        return response()->json($weaponStats);
+    }
+
+    public function aimTrackingFilterOptions(Request $request, int $matchId): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => config('messaging.auth.unauthorised')], 403);
+        }
+
+        $filters = $request->only(['player_steam_id']);
+
+        try {
+            $filterOptions = $this->aimTrackingService->getFilterOptions($user, $filters, $matchId);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+
+            return response()->json(['message' => config('messaging.generic.critical-error')], 500);
+        }
+
+        if (empty($filterOptions)) {
+            return response()->json(['message' => config('messaging.matches.not-found-error')], 404);
+        }
+
+        return response()->json($filterOptions);
     }
 }

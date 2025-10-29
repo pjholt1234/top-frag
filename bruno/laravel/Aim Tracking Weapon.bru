@@ -1,0 +1,26 @@
+meta {
+  name: Aim Tracking Weapon
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{base_url}}/api/matches/{{match_id}}/aim-tracking/weapon?player_steam_id={{player_steam_id}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  player_steam_id: {{player_steam_id}}
+  ~weapon_name: ak47
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+

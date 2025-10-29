@@ -16,6 +16,7 @@ import { MatchUtilityAnalysis } from '@/components/match-detail/utility-analysis
 import { MatchPlayerStats } from '@/components/match-detail/player-stats';
 import { TopPlayers } from '@/components/match-detail/top-players';
 import { HeadToHead } from '@/components/match-detail/head-to-head';
+import { AimTracking } from '@/components/match-detail/aim-tracking';
 import { getMapMetadata } from '@/config/maps';
 
 interface Scoreboard {
@@ -71,6 +72,7 @@ const MatchDetail = () => {
     'utility-analysis': 'utility',
     'grenade-explorer': 'grenades',
     'head-to-head': 'head-to-head',
+    'aim-tracking': 'aim-tracking',
   };
 
   // Get current tab from route parameter
@@ -282,7 +284,7 @@ const MatchDetail = () => {
                   </div>
                 </div>
 
-                <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 rounded-b-lg px-3">
+                <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 rounded-b-lg px-3">
                   <TabsTrigger
                     value="match-details"
                     className="!bg-transparent rounded-none"
@@ -294,6 +296,12 @@ const MatchDetail = () => {
                     className="!bg-transparent rounded-none"
                   >
                     Player Stats
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="aim-tracking"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Aim Tracking
                   </TabsTrigger>
                   <TabsTrigger
                     value="utility"
@@ -340,6 +348,12 @@ const MatchDetail = () => {
                   matchId={match.id}
                   selectedPlayerId={playerId}
                 />
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="aim-tracking" className="mt-0">
+              <CardContent className="p-0">
+                <AimTracking matchId={match.id} />
               </CardContent>
             </TabsContent>
 

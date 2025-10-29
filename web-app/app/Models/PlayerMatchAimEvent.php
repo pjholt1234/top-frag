@@ -14,7 +14,7 @@ class PlayerMatchAimEvent extends Model
         'match_id',
         'player_steam_id',
         'shots_fired',
-        'shots_on_hit',
+        'shots_hit',
         'accuracy_all_shots',
         'spraying_shots_fired',
         'spraying_shots_hit',

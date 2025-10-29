@@ -75,6 +75,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/matches/{matchId}/grenade-explorer/filter-options', [MatchController::class, 'grenadeExplorerFilterOptions']);
     Route::get('/matches/{matchId}/head-to-head', [MatchController::class, 'headToHead']);
     Route::get('/matches/{matchId}/head-to-head/player', [MatchController::class, 'headToHeadPlayer']);
+    Route::get('/matches/{matchId}/aim-tracking', [MatchController::class, 'aimTracking']);
+    Route::get('/matches/{matchId}/aim-tracking/weapon', [MatchController::class, 'aimTrackingWeapon']);
+    Route::get('/matches/{matchId}/aim-tracking/filter-options', [MatchController::class, 'aimTrackingFilterOptions']);
     Route::post('/user/upload/demo', [UploadController::class, 'userDemo']);
     Route::get('/user/upload/in-progress-jobs', [UploadController::class, 'getInProgressJobs']);
 
