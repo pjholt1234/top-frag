@@ -29,7 +29,7 @@ class PlayerMatchAimEventFactory extends Factory
 
         return [
             'match_id' => \App\Models\GameMatch::factory(),
-            'player_steam_id' => 'STEAM_'.$this->faker->randomNumber(9),
+            'player_steam_id' => 'STEAM_' . $this->faker->randomNumber(9),
             'shots_fired' => $shotsFired,
             'shots_hit' => $shotsHit,
             'accuracy_all_shots' => $accuracyAllShots,

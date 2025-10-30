@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
 use App\Http\Controllers\Api\HealthController;
@@ -65,6 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/steam-sharecode/toggle-processing', [SteamSharecodeController::class, 'toggleProcessing']);
 
     Route::get('/matches', [MatchController::class, 'index']);
+
+    // Dashboard routes
+    Route::get('/dashboard/player-stats', [DashboardController::class, 'playerStats']);
+    Route::get('/dashboard/aim-stats', [DashboardController::class, 'aimStats']);
+    Route::get('/dashboard/utility-stats', [DashboardController::class, 'utilityStats']);
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    Route::get('/dashboard/map-stats', [DashboardController::class, 'mapStats']);
 
     // Match detail sections
     Route::get('/matches/{matchId}/match-details', [MatchController::class, 'matchDetails']);

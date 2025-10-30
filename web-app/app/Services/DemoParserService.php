@@ -76,6 +76,11 @@ class DemoParserService
         $job->update($updateData);
 
         $this->clearJobCache($jobId);
+
+        // If job is completed, warm dashboard cache synchronously
+        if ($isCompleted && $job->match_id) {
+            app(DashboardService::class)->warmCacheForMatch($job->match_id);
+        }
     }
 
     /**

@@ -88,7 +88,7 @@ export function StackedBarChart({
             }
           />
           <Tooltip content={customTooltip || defaultTooltip} />
-          {showLegend && <Legend />}
+          {showLegend && <Legend wrapperStyle={{ paddingTop: '20px' }} />}
           {bars.map(bar => (
             <Bar
               key={bar.dataKey}

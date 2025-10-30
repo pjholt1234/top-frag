@@ -6,7 +6,7 @@ interface GaugeChartProps {
   maxValue: number;
   title?: string;
   unit?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   color?: string;
   showValue?: boolean;
   showPercentage?: boolean;
@@ -43,6 +43,11 @@ export function GaugeChart({
       fontSize: 'text-lg',
       textSize: 'text-base',
       containerClass: 'w-80 h-50',
+    },
+    xl: {
+      fontSize: 'text-xl',
+      textSize: 'text-base',
+      containerClass: 'w-100 h-50',
     },
   };
 
