@@ -1,6 +1,7 @@
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { QUALITY_COLORS } from '@/constants/colors';
 import { Info } from 'lucide-react';
+import { getImpactPercentageColor, getRoundSwingColor } from '@/lib/utils';
 
 interface DeepDiveData {
   round_swing: number;
@@ -59,43 +60,6 @@ const firstDeathColours = (firstKills: number) => {
   }
 
   return color;
-};
-
-// Impact percentage color function (handles negative values)
-const getImpactPercentageColor = (impactPercentage: number) => {
-  if (impactPercentage < 0) {
-    return QUALITY_COLORS.poor.text;
-  }
-
-  if (impactPercentage >= 60) {
-    return QUALITY_COLORS.excellent.text;
-  }
-  if (impactPercentage >= 40) {
-    return QUALITY_COLORS.good.text;
-  }
-  if (impactPercentage >= 15) {
-    return QUALITY_COLORS.fair.text;
-  }
-
-  return QUALITY_COLORS.poor.text;
-};
-
-// Round swing percentage color function (handles negative values)
-const getRoundSwingColor = (roundSwingPercent: number) => {
-  if (roundSwingPercent < 0) {
-    return QUALITY_COLORS.poor.text;
-  }
-
-  if (roundSwingPercent >= 10) {
-    return QUALITY_COLORS.excellent.text;
-  }
-  if (roundSwingPercent >= 5) {
-    return QUALITY_COLORS.good.text;
-  }
-  if (roundSwingPercent >= 2) {
-    return QUALITY_COLORS.fair.text;
-  }
-  return QUALITY_COLORS.poor.text;
 };
 
 export function DeepDiveStats({ deepDive, openingTiming }: DeepDiveStatsProps) {

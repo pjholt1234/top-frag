@@ -5,7 +5,7 @@ import { DashboardFilters } from '@/pages/dashboard';
 import { StatCard, StatWithTrend } from './stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { StackedBarChart } from '@/components/charts/stacked-bar-chart';
 import { cn } from '@/lib/utils';
 import {
@@ -16,6 +16,8 @@ import {
     getOpeningKillsColor,
     getOpeningDeathsColor,
     getWinRateColor,
+    getImpactPercentageColor,
+    getRoundSwingColor,
 } from '@/lib/utils';
 
 interface ClutchStat {
@@ -252,15 +254,125 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
             {/* High Level Stats Section */}
             <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <StatCard
-                        title="Average Impact Rating"
-                        stat={data.high_level_stats.average_impact}
-                    />
-                    <StatCard
-                        title="Average Round Swing %"
-                        stat={data.high_level_stats.average_round_swing}
-                        suffix="%"
-                    />
+                    {/* Average Impact Rating */}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Average Impact Rating
+                                </CardTitle>
+                                <div className="group relative">
+                                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                                    <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                        <div className="text-sm">
+                                            <div className="font-semibold text-white mb-2">
+                                                Impact %
+                                            </div>
+                                            <div className="text-gray-300 mb-3">
+                                                Shows how effective your individual actions are. Based on
+                                                context, opponent strength, and situation multipliers.
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                                <div className="font-medium mb-1">
+                                                    Excellent: 60%+ | Good: 40-59% | Fair: 15-39% | Poor: 0-14%
+                                                </div>
+                                                <div>
+                                                    Higher = more impactful kills, assists, and plays
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <div className={cn('text-2xl font-bold', getImpactPercentageColor(Number(data.high_level_stats.average_impact.value)))}>
+                                    {data.high_level_stats.average_impact.value}
+                                </div>
+                                {data.high_level_stats.average_impact.change > 0 && (
+                                    <div className="flex items-center gap-1">
+                                        {data.high_level_stats.average_impact.trend === 'up' ? (
+                                            <TrendingUp className="h-4 w-4 text-green-500" />
+                                        ) : data.high_level_stats.average_impact.trend === 'down' ? (
+                                            <TrendingDown className="h-4 w-4 text-red-500" />
+                                        ) : (
+                                            <Minus className="h-4 w-4 text-gray-500" />
+                                        )}
+                                        <span className={cn(
+                                            'text-sm font-medium',
+                                            data.high_level_stats.average_impact.trend === 'up' ? 'text-green-500' :
+                                                data.high_level_stats.average_impact.trend === 'down' ? 'text-red-500' :
+                                                    'text-gray-500'
+                                        )}>
+                                            {data.high_level_stats.average_impact.change}%
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Average Round Swing % */}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Average Round Swing %
+                                </CardTitle>
+                                <div className="group relative">
+                                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-300 cursor-help" />
+                                    <div className="absolute top-full right-0 mt-2 w-80 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                        <div className="text-sm">
+                                            <div className="font-semibold text-white mb-2">
+                                                Round Swing %
+                                            </div>
+                                            <div className="text-gray-300 mb-3">
+                                                Measures your influence on round outcomes. Higher values
+                                                indicate you're consistently making impactful plays
+                                                that help your team win rounds.
+                                            </div>
+                                            <div className="text-xs text-gray-400 mb-3">
+                                                <div className="font-medium mb-1">
+                                                    Excellent: 10%+ | Good: 5-9% | Fair: 2-4% | Poor: 0-1%
+                                                </div>
+                                                <div>
+                                                    Negative values indicate you're hurting your
+                                                    team's chances
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <div className={cn('text-2xl font-bold', getRoundSwingColor(Number(data.high_level_stats.average_round_swing.value)))}>
+                                    {data.high_level_stats.average_round_swing.value}%
+                                </div>
+                                {data.high_level_stats.average_round_swing.change > 0 && (
+                                    <div className="flex items-center gap-1">
+                                        {data.high_level_stats.average_round_swing.trend === 'up' ? (
+                                            <TrendingUp className="h-4 w-4 text-green-500" />
+                                        ) : data.high_level_stats.average_round_swing.trend === 'down' ? (
+                                            <TrendingDown className="h-4 w-4 text-red-500" />
+                                        ) : (
+                                            <Minus className="h-4 w-4 text-gray-500" />
+                                        )}
+                                        <span className={cn(
+                                            'text-sm font-medium',
+                                            data.high_level_stats.average_round_swing.trend === 'up' ? 'text-green-500' :
+                                                data.high_level_stats.average_round_swing.trend === 'down' ? 'text-red-500' :
+                                                    'text-gray-500'
+                                        )}>
+                                            {data.high_level_stats.average_round_swing.change}%
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
 

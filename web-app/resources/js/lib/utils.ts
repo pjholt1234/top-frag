@@ -116,6 +116,29 @@ export function getImpactColor(impact: number): string {
 }
 
 /**
+ * Returns the appropriate color class for Impact Percentage values
+ * @param impactPercentage - The impact percentage value
+ * @returns Tailwind CSS color class
+ */
+export function getImpactPercentageColor(impactPercentage: number): string {
+  if (impactPercentage < 0) {
+    return QUALITY_COLORS.poor.text;
+  }
+
+  if (impactPercentage >= 60) {
+    return QUALITY_COLORS.excellent.text;
+  }
+  if (impactPercentage >= 40) {
+    return QUALITY_COLORS.good.text;
+  }
+  if (impactPercentage >= 15) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
  * Returns the appropriate color class for Round Swing percentage values
  * @param roundSwing - The round swing percentage
  * @returns Tailwind CSS color class
