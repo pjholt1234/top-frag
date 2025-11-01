@@ -3,6 +3,13 @@ import { api } from '@/lib/api';
 import { DashboardFilters } from '@/pages/dashboard';
 import { StatCard, StatWithTrend } from './stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    getFlashDurationColor,
+    getPlayersBlindedColor,
+    getHeMolotovDamageColor,
+    getGrenadeEffectivenessColor,
+    getGrenadeUsageColor,
+} from '@/lib/utils';
 
 interface UtilityData {
     avg_blind_duration_enemy: StatWithTrend;
@@ -76,21 +83,45 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
                         title="Avg Enemy Blind Duration"
                         stat={data.avg_blind_duration_enemy}
                         suffix="s"
+                        valueClassName={getFlashDurationColor(
+                            typeof data.avg_blind_duration_enemy === 'object'
+                                ? (data.avg_blind_duration_enemy.value as number)
+                                : (data.avg_blind_duration_enemy as number),
+                            true
+                        )}
                     />
                     <StatCard
                         title="Avg Friendly Blind Duration"
                         stat={data.avg_blind_duration_friendly}
                         suffix="s"
                         lowerIsBetter={true}
+                        valueClassName={getFlashDurationColor(
+                            typeof data.avg_blind_duration_friendly === 'object'
+                                ? (data.avg_blind_duration_friendly.value as number)
+                                : (data.avg_blind_duration_friendly as number),
+                            false
+                        )}
                     />
                     <StatCard
                         title="Avg Enemy Players Blinded"
                         stat={data.avg_players_blinded_enemy}
+                        valueClassName={getPlayersBlindedColor(
+                            typeof data.avg_players_blinded_enemy === 'object'
+                                ? (data.avg_players_blinded_enemy.value as number)
+                                : (data.avg_players_blinded_enemy as number),
+                            true
+                        )}
                     />
                     <StatCard
                         title="Avg Friendly Players Blinded"
                         stat={data.avg_players_blinded_friendly}
                         lowerIsBetter={true}
+                        valueClassName={getPlayersBlindedColor(
+                            typeof data.avg_players_blinded_friendly === 'object'
+                                ? (data.avg_players_blinded_friendly.value as number)
+                                : (data.avg_players_blinded_friendly as number),
+                            false
+                        )}
                     />
                 </div>
             </div>
@@ -102,15 +133,30 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
                     <StatCard
                         title="HE + Molotov Damage"
                         stat={data.he_molotov_damage}
+                        valueClassName={getHeMolotovDamageColor(
+                            typeof data.he_molotov_damage === 'object'
+                                ? (data.he_molotov_damage.value as number)
+                                : (data.he_molotov_damage as number)
+                        )}
                     />
                     <StatCard
                         title="Grenade Effectiveness"
                         stat={data.grenade_effectiveness}
                         suffix="%"
+                        valueClassName={getGrenadeEffectivenessColor(
+                            typeof data.grenade_effectiveness === 'object'
+                                ? (data.grenade_effectiveness.value as number)
+                                : (data.grenade_effectiveness as number)
+                        )}
                     />
                     <StatCard
                         title="Average Grenade Usage"
                         stat={data.average_grenade_usage}
+                        valueClassName={getGrenadeUsageColor(
+                            typeof data.average_grenade_usage === 'object'
+                                ? (data.average_grenade_usage.value as number)
+                                : (data.average_grenade_usage as number)
+                        )}
                     />
                 </div>
             </div>

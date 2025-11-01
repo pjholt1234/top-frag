@@ -3,6 +3,13 @@ import { api } from '@/lib/api';
 import { DashboardFilters } from '@/pages/dashboard';
 import { StatCard, StatWithTrend } from './stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    getAimRatingColor,
+    getHeadshotPercentageColor,
+    getSprayAccuracyColor,
+    getCrosshairPlacementColor,
+    getTimeToDamageColor,
+} from '@/lib/utils';
 
 interface AimStatistics {
     average_aim_rating: StatWithTrend;
@@ -86,28 +93,53 @@ export const AimTab = ({ filters }: AimTabProps) => {
                     <StatCard
                         title="Average Aim Rating"
                         stat={data.aim_statistics.average_aim_rating}
+                        valueClassName={getAimRatingColor(
+                            typeof data.aim_statistics.average_aim_rating === 'object'
+                                ? (data.aim_statistics.average_aim_rating.value as number)
+                                : (data.aim_statistics.average_aim_rating as number)
+                        )}
                     />
                     <StatCard
                         title="Headshot Percentage"
                         stat={data.aim_statistics.average_headshot_percentage}
                         suffix="%"
+                        valueClassName={getHeadshotPercentageColor(
+                            typeof data.aim_statistics.average_headshot_percentage === 'object'
+                                ? (data.aim_statistics.average_headshot_percentage.value as number)
+                                : (data.aim_statistics.average_headshot_percentage as number)
+                        )}
                     />
                     <StatCard
                         title="Spray Accuracy"
                         stat={data.aim_statistics.average_spray_accuracy}
                         suffix="%"
+                        valueClassName={getSprayAccuracyColor(
+                            typeof data.aim_statistics.average_spray_accuracy === 'object'
+                                ? (data.aim_statistics.average_spray_accuracy.value as number)
+                                : (data.aim_statistics.average_spray_accuracy as number)
+                        )}
                     />
                     <StatCard
                         title="Crosshair Placement"
                         stat={data.aim_statistics.average_crosshair_placement}
                         suffix="°"
                         lowerIsBetter={true}
+                        valueClassName={getCrosshairPlacementColor(
+                            typeof data.aim_statistics.average_crosshair_placement === 'object'
+                                ? (data.aim_statistics.average_crosshair_placement.value as number)
+                                : (data.aim_statistics.average_crosshair_placement as number)
+                        )}
                     />
                     <StatCard
                         title="Time to Damage"
                         stat={data.aim_statistics.average_time_to_damage}
                         suffix="s"
                         lowerIsBetter={true}
+                        valueClassName={getTimeToDamageColor(
+                            typeof data.aim_statistics.average_time_to_damage === 'object'
+                                ? (data.aim_statistics.average_time_to_damage.value as number)
+                                : (data.aim_statistics.average_time_to_damage as number)
+                        )}
                     />
                 </div>
             </div>

@@ -247,3 +247,165 @@ export function getComplexionScoreColor(score: number): string {
 
   return QUALITY_COLORS.excellent.text;
 }
+
+/**
+ * Returns the appropriate color class for Aim Rating values (0-100)
+ * @param aimRating - The aim rating value (0-100)
+ * @returns Tailwind CSS color class
+ */
+export function getAimRatingColor(aimRating: number): string {
+  if (aimRating >= 75) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (aimRating >= 50) {
+    return QUALITY_COLORS.good.text;
+  } else if (aimRating >= 25) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Headshot Percentage values
+ * @param headshotPercentage - The headshot percentage (0-100)
+ * @returns Tailwind CSS color class
+ */
+export function getHeadshotPercentageColor(headshotPercentage: number): string {
+  if (headshotPercentage >= 50) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (headshotPercentage >= 35) {
+    return QUALITY_COLORS.good.text;
+  } else if (headshotPercentage >= 20) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Spray Accuracy values
+ * @param sprayAccuracy - The spray accuracy percentage (0-100)
+ * @returns Tailwind CSS color class
+ */
+export function getSprayAccuracyColor(sprayAccuracy: number): string {
+  if (sprayAccuracy >= 40) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (sprayAccuracy >= 30) {
+    return QUALITY_COLORS.good.text;
+  } else if (sprayAccuracy >= 20) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Crosshair Placement values
+ * Note: Lower is better for crosshair placement
+ * @param crosshairPlacement - The crosshair placement value in degrees
+ * @returns Tailwind CSS color class
+ */
+export function getCrosshairPlacementColor(crosshairPlacement: number): string {
+  if (crosshairPlacement <= 5) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (crosshairPlacement <= 10) {
+    return QUALITY_COLORS.good.text;
+  } else if (crosshairPlacement <= 15) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Time to Damage values
+ * Note: Lower is better for time to damage
+ * @param timeToDamage - The time to damage in seconds
+ * @returns Tailwind CSS color class
+ */
+export function getTimeToDamageColor(timeToDamage: number): string {
+  if (timeToDamage <= 0.3) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (timeToDamage <= 0.5) {
+    return QUALITY_COLORS.good.text;
+  } else if (timeToDamage <= 0.7) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Flash Duration values
+ * @param duration - The flash duration in seconds
+ * @param isEnemy - Whether this is for enemy flashes (true) or friendly flashes (false)
+ * @returns Tailwind CSS color class
+ */
+export function getFlashDurationColor(duration: number, isEnemy: boolean): string {
+  if (isEnemy) {
+    // For enemy flash duration, higher is better (more effective)
+    return getCustomRatingColor(duration, [1, 2, 3, 4], 'text');
+  } else {
+    // For friendly flash duration, lower is better (less friendly fire)
+    return getCustomRatingColor(4 - duration, [1, 2, 3, 4], 'text');
+  }
+}
+
+/**
+ * Returns the appropriate color class for Players Blinded count values
+ * @param count - The number of players blinded
+ * @param isEnemy - Whether this is for enemy blinds (true) or friendly blinds (false)
+ * @returns Tailwind CSS color class
+ */
+export function getPlayersBlindedColor(count: number, isEnemy: boolean): string {
+  if (isEnemy) {
+    // For enemy blinded count, higher is better (more effective)
+    return getCustomRatingColor(count, [1, 2, 3, 4], 'text');
+  } else {
+    // For friendly blinded count, lower is better (less friendly fire)
+    return getCustomRatingColor(4 - count, [1, 2, 3, 4], 'text');
+  }
+}
+
+/**
+ * Returns the appropriate color class for HE + Molotov Damage values
+ * @param damage - The damage value
+ * @returns Tailwind CSS color class
+ */
+export function getHeMolotovDamageColor(damage: number): string {
+  return getCustomRatingColor(damage, [5, 10, 20, 30], 'text');
+}
+
+/**
+ * Returns the appropriate color class for Grenade Effectiveness values
+ * @param effectiveness - The grenade effectiveness percentage (0-100)
+ * @returns Tailwind CSS color class
+ */
+export function getGrenadeEffectivenessColor(effectiveness: number): string {
+  if (effectiveness >= 75) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (effectiveness >= 50) {
+    return QUALITY_COLORS.good.text;
+  } else if (effectiveness >= 25) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
+
+/**
+ * Returns the appropriate color class for Average Grenade Usage values
+ * @param usage - The average grenade usage count
+ * @returns Tailwind CSS color class
+ */
+export function getGrenadeUsageColor(usage: number): string {
+  if (usage >= 5) {
+    return QUALITY_COLORS.excellent.text;
+  } else if (usage >= 4) {
+    return QUALITY_COLORS.good.text;
+  } else if (usage >= 3) {
+    return QUALITY_COLORS.fair.text;
+  }
+
+  return QUALITY_COLORS.poor.text;
+}
