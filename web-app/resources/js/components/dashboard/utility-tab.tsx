@@ -81,6 +81,7 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
                         title="Avg Friendly Blind Duration"
                         stat={data.avg_blind_duration_friendly}
                         suffix="s"
+                        lowerIsBetter={true}
                     />
                     <StatCard
                         title="Avg Enemy Players Blinded"
@@ -89,6 +90,7 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
                     <StatCard
                         title="Avg Friendly Players Blinded"
                         stat={data.avg_players_blinded_friendly}
+                        lowerIsBetter={true}
                     />
                 </div>
             </div>

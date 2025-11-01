@@ -121,16 +121,30 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
         return null;
     }
 
-    const renderBasicStat = (label: string, stat: StatWithTrend, colorClass?: string) => {
+    const renderBasicStat = (label: string, stat: StatWithTrend, colorClass?: string, lowerIsBetter: boolean = false) => {
         const getTrendIcon = () => {
-            if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-green-500" />;
-            if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-red-500" />;
+            if (lowerIsBetter) {
+                // Inverted: down is good, up is bad
+                if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-red-500" />;
+                if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-green-500" />;
+            } else {
+                // Normal: up is good, down is bad
+                if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-green-500" />;
+                if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-red-500" />;
+            }
             return <Minus className="h-4 w-4 text-gray-400" />;
         };
 
         const getTrendColor = () => {
-            if (stat.trend === 'up') return 'text-green-500';
-            if (stat.trend === 'down') return 'text-red-500';
+            if (lowerIsBetter) {
+                // Inverted: down is good, up is bad
+                if (stat.trend === 'up') return 'text-red-500';
+                if (stat.trend === 'down') return 'text-green-500';
+            } else {
+                // Normal: up is good, down is bad
+                if (stat.trend === 'up') return 'text-green-500';
+                if (stat.trend === 'down') return 'text-red-500';
+            }
             return 'text-gray-400';
         };
 
@@ -170,7 +184,7 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
                 openingDeaths: data.opening_stats.total_opening_deaths.value,
             },
             {
-                name: 'Average',
+                name: 'Average Per Match',
                 openingKills: data.opening_stats.average_opening_kills.value,
                 openingDeaths: data.opening_stats.average_opening_deaths.value,
             },
@@ -226,9 +240,9 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         {renderBasicStat('Total Kills', data.basic_stats.total_kills, getAvgKillsColor(data.basic_stats.average_kills.value))}
-                        {renderBasicStat('Total Deaths', data.basic_stats.total_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value))}
+                        {renderBasicStat('Total Deaths', data.basic_stats.total_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value), true)}
                         {renderBasicStat('Average Kills', data.basic_stats.average_kills, getAvgKillsColor(data.basic_stats.average_kills.value))}
-                        {renderBasicStat('Average Deaths', data.basic_stats.average_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value))}
+                        {renderBasicStat('Average Deaths', data.basic_stats.average_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value), true)}
                         {renderBasicStat('Average K/D', data.basic_stats.average_kd, getKdColor(data.basic_stats.average_kd.value))}
                         {renderBasicStat('Average ADR', data.basic_stats.average_adr, getAdrColor(data.basic_stats.average_adr.value))}
                     </div>
@@ -280,17 +294,11 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
                         />
 
                         {/* Win Percentages */}
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div className="pt-4 border-t">
                             <div className="text-center">
                                 <div className="text-xs text-muted-foreground mb-1">Opening Duel Win Rate</div>
                                 <div className={cn("text-2xl font-bold", getWinRateColor(data.opening_stats.opening_duel_winrate.value))}>
                                     {data.opening_stats.opening_duel_winrate.value}%
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-xs text-muted-foreground mb-1">Avg Duel Win Rate</div>
-                                <div className={cn("text-2xl font-bold", getWinRateColor(data.opening_stats.average_duel_winrate.value))}>
-                                    {data.opening_stats.average_duel_winrate.value}%
                                 </div>
                             </div>
                         </div>

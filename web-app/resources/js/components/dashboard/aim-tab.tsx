@@ -106,6 +106,7 @@ export const AimTab = ({ filters }: AimTabProps) => {
                         title="Time to Damage"
                         stat={data.aim_statistics.average_time_to_damage}
                         suffix="s"
+                        lowerIsBetter={true}
                     />
                 </div>
             </div>
