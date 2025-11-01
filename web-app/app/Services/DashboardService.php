@@ -6,12 +6,11 @@ use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\PlayerMatchAimEvent;
 use App\Models\PlayerMatchEvent;
+use App\Models\PlayerRank;
 use App\Models\User;
 use App\Services\Matches\PlayerComplexionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class DashboardService
 {
@@ -87,11 +86,23 @@ class DashboardService
     }
 
     /**
+     * Get rank stats dashboard data with filters
+     */
+    public function getRankStats(User $user, array $filters): array
+    {
+        $cacheKey = $this->getCacheKey('rank-stats', $user, $filters);
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($user, $filters) {
+            return $this->buildRankStats($user, $filters);
+        });
+    }
+
+    /**
      * Invalidate all dashboard caches for a user
      */
     public function invalidateUserCache(string $steamId): void
     {
-        $tabs = ['player-stats', 'aim', 'utility', 'summary', 'map-stats'];
+        $tabs = ['player-stats', 'aim', 'utility', 'summary', 'map-stats', 'rank-stats'];
 
         foreach ($tabs as $tab) {
             // We invalidate by pattern since we don't know all filter combinations
@@ -135,6 +146,7 @@ class DashboardService
                         $this->getUtilityStats($user, $filters);
                         $this->getSummary($user, $filters);
                         $this->getMapStats($user, $filters);
+                        $this->getRankStats($user, $filters);
                     } catch (\Exception $e) {
                         // Silently fail individual cache warming attempts
                         continue;
@@ -414,23 +426,23 @@ class DashboardService
         $statsCollection = collect($allStatsWithTrends);
 
         $improvedStats = $statsCollection
-            ->filter(fn($stat) => $stat['trend'] === 'up' && $stat['change'] > 0)
+            ->filter(fn ($stat) => $stat['trend'] === 'up' && $stat['change'] > 0)
             ->sortByDesc('change')
             ->take(2)
-            ->map(fn($stat, $name) => array_merge($stat, ['name' => $name]))
+            ->map(fn ($stat, $name) => array_merge($stat, ['name' => $name]))
             ->values()
             ->toArray();
 
         $declinedStats = $statsCollection
-            ->filter(fn($stat) => $stat['trend'] === 'down' && $stat['change'] > 0)
+            ->filter(fn ($stat) => $stat['trend'] === 'down' && $stat['change'] > 0)
             ->sortByDesc('change')
             ->take(2)
-            ->map(fn($stat, $name) => array_merge($stat, ['name' => $name]))
+            ->map(fn ($stat, $name) => array_merge($stat, ['name' => $name]))
             ->values()
             ->toArray();
 
-        $mostImproved = !empty($improvedStats) ? $improvedStats : null;
-        $leastImproved = !empty($declinedStats) ? $declinedStats : null;
+        $mostImproved = ! empty($improvedStats) ? $improvedStats : null;
+        $leastImproved = ! empty($declinedStats) ? $declinedStats : null;
 
         // Get player complexion data
         $complexion = $this->getPlayerComplexion($user, $currentMatches);
@@ -538,6 +550,7 @@ class DashboardService
         // Calculate average duel winrate across matches
         $duelWinrates = $matches->map(function ($match) {
             $matchDuels = $match->first_kills + $match->first_deaths;
+
             return $matchDuels > 0 ? ($match->first_kills / $matchDuels) * 100 : 0;
         });
         $averageDuelWinrate = round($duelWinrates->avg(), 1);
@@ -710,10 +723,10 @@ class DashboardService
 
     /**
      * Build a stat object with trend information
-     * 
-     * @param float $current Current period value
-     * @param float $previous Previous period value
-     * @param bool $lowerIsBetter If true, lower values are considered better (reversed trend logic)
+     *
+     * @param  float  $current  Current period value
+     * @param  float  $previous  Previous period value
+     * @param  bool  $lowerIsBetter  If true, lower values are considered better (reversed trend logic)
      */
     private function buildStatWithTrend($current, $previous, bool $lowerIsBetter = false): array
     {
@@ -823,7 +836,7 @@ class DashboardService
         // First, get the player's integer ID from their steam_id
         $player = Player::where('steam_id', $playerSteamId)->first();
 
-        if (!$player) {
+        if (! $player) {
             return;
         }
 
@@ -864,16 +877,18 @@ class DashboardService
         // Fallback to direct query if not cached (shouldn't happen in normal flow)
         $match = GameMatch::find($matchId);
 
-        if (!$match) {
+        if (! $match) {
             $this->winStatusCache[$cacheKey] = false;
+
             return false;
         }
 
         // Get the player's integer ID from their steam_id
         $player = Player::where('steam_id', $playerSteamId)->first();
 
-        if (!$player) {
+        if (! $player) {
             $this->winStatusCache[$cacheKey] = false;
+
             return false;
         }
 
@@ -881,8 +896,9 @@ class DashboardService
             ->where('player_id', $player->id)
             ->first();
 
-        if (!$matchPlayer || !$match->winning_team) {
+        if (! $matchPlayer || ! $match->winning_team) {
             $this->winStatusCache[$cacheKey] = false;
+
             return false;
         }
 
@@ -897,7 +913,7 @@ class DashboardService
      */
     private function getPlayerComplexion(User $user, Collection $matches): array
     {
-        if ($matches->isEmpty() || !$user->steam_id) {
+        if ($matches->isEmpty() || ! $user->steam_id) {
             return [
                 'opener' => 0,
                 'closer' => 0,
@@ -918,7 +934,7 @@ class DashboardService
             try {
                 $complexion = $this->playerComplexionService->get($user->steam_id, $match->match_id);
 
-                if (!empty($complexion)) {
+                if (! empty($complexion)) {
                     $complexionScores['opener'][] = $complexion['opener'] ?? 0;
                     $complexionScores['closer'][] = $complexion['closer'] ?? 0;
                     $complexionScores['support'][] = $complexion['support'] ?? 0;
@@ -931,10 +947,10 @@ class DashboardService
         }
 
         return [
-            'opener' => !empty($complexionScores['opener']) ? round(array_sum($complexionScores['opener']) / count($complexionScores['opener']), 0) : 0,
-            'closer' => !empty($complexionScores['closer']) ? round(array_sum($complexionScores['closer']) / count($complexionScores['closer']), 0) : 0,
-            'support' => !empty($complexionScores['support']) ? round(array_sum($complexionScores['support']) / count($complexionScores['support']), 0) : 0,
-            'fragger' => !empty($complexionScores['fragger']) ? round(array_sum($complexionScores['fragger']) / count($complexionScores['fragger']), 0) : 0,
+            'opener' => ! empty($complexionScores['opener']) ? round(array_sum($complexionScores['opener']) / count($complexionScores['opener']), 0) : 0,
+            'closer' => ! empty($complexionScores['closer']) ? round(array_sum($complexionScores['closer']) / count($complexionScores['closer']), 0) : 0,
+            'support' => ! empty($complexionScores['support']) ? round(array_sum($complexionScores['support']) / count($complexionScores['support']), 0) : 0,
+            'fragger' => ! empty($complexionScores['fragger']) ? round(array_sum($complexionScores['fragger']) / count($complexionScores['fragger']), 0) : 0,
         ];
     }
 
@@ -996,6 +1012,150 @@ class DashboardService
         return [
             'maps' => $mapStats,
             'total_matches' => $currentMatches->count(),
+        ];
+    }
+
+    /**
+     * Build rank stats section
+     */
+    private function buildRankStats(User $user, array $filters): array
+    {
+        if (! $user->steam_id) {
+            return [
+                'competitive' => [],
+                'premier' => [],
+                'faceit' => [],
+            ];
+        }
+
+        // Get player record
+        $player = Player::where('steam_id', $user->steam_id)->first();
+
+        if (! $player) {
+            return [
+                'competitive' => [],
+                'premier' => [],
+                'faceit' => [],
+            ];
+        }
+
+        // Build query for rank data based on filters
+        $query = PlayerRank::query()
+            ->where('player_id', $player->id)
+            ->orderBy('created_at', 'desc');
+
+        // Apply date filters
+        if (! empty($filters['date_from']) && ! empty($filters['date_to'])) {
+            $query->whereBetween('created_at', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        // Apply match count limit
+        $matchCount = $filters['past_match_count'] ?? 10;
+        $query->take($matchCount * 10); // Get enough records for all rank types and maps
+
+        // Get all rank records
+        $ranks = $query->get();
+
+        // Group by rank type
+        $competitive = $ranks->where('rank_type', 'competitive')->values();
+        $premier = $ranks->where('rank_type', 'premier')->values();
+        $faceit = $ranks->where('rank_type', 'faceit')->values();
+
+        return [
+            'competitive' => $this->formatRankHistory($competitive, 'competitive', $filters),
+            'premier' => $this->formatRankHistory($premier, 'premier', $filters),
+            'faceit' => $this->formatRankHistory($faceit, 'faceit', $filters),
+        ];
+    }
+
+    /**
+     * Format rank history for display
+     */
+    private function formatRankHistory(Collection $ranks, string $rankType, array $filters): array
+    {
+        if ($ranks->isEmpty()) {
+            return [
+                'rank_type' => $rankType,
+                'current_rank' => null,
+                'current_rank_value' => null,
+                'history' => [],
+                'trend' => 'neutral',
+                'maps' => [],
+            ];
+        }
+
+        $matchCount = $filters['past_match_count'] ?? 10;
+
+        // For competitive, group by map
+        if ($rankType === 'competitive') {
+            $mapGroups = $ranks->groupBy('map');
+            $maps = [];
+
+            foreach ($mapGroups as $map => $mapRanks) {
+                // Sort by date (oldest first for chronological graph), then limit
+                $sortedRanks = $mapRanks->sortBy('created_at')->values()->take($matchCount);
+                $currentRank = $sortedRanks->last();
+                $previousRank = $sortedRanks->count() > 1 ? $sortedRanks->get($sortedRanks->count() - 2) : null;
+
+                $trend = 'neutral';
+                if ($previousRank) {
+                    if ($currentRank->rank_value > $previousRank->rank_value) {
+                        $trend = 'up';
+                    } elseif ($currentRank->rank_value < $previousRank->rank_value) {
+                        $trend = 'down';
+                    }
+                }
+
+                $maps[] = [
+                    'map' => $map,
+                    'current_rank' => $currentRank->rank,
+                    'current_rank_value' => $currentRank->rank_value,
+                    'trend' => $trend,
+                    'history' => $sortedRanks->map(function ($rank) {
+                        return [
+                            'rank' => $rank->rank,
+                            'rank_value' => $rank->rank_value,
+                            'date' => $rank->created_at->format('Y-m-d'),
+                            'timestamp' => $rank->created_at->timestamp,
+                        ];
+                    })->toArray(),
+                ];
+            }
+
+            return [
+                'rank_type' => $rankType,
+                'maps' => $maps,
+            ];
+        }
+
+        // For premier/faceit (non-map-specific)
+        // Sort by date (oldest first for chronological graph), then limit
+        $sortedRanks = $ranks->sortBy('created_at')->values()->take($matchCount);
+        $currentRank = $sortedRanks->last();
+        $previousRank = $sortedRanks->count() > 1 ? $sortedRanks->get($sortedRanks->count() - 2) : null;
+
+        $trend = 'neutral';
+        if ($previousRank) {
+            if ($currentRank->rank_value > $previousRank->rank_value) {
+                $trend = 'up';
+            } elseif ($currentRank->rank_value < $previousRank->rank_value) {
+                $trend = 'down';
+            }
+        }
+
+        return [
+            'rank_type' => $rankType,
+            'current_rank' => $currentRank->rank,
+            'current_rank_value' => $currentRank->rank_value,
+            'trend' => $trend,
+            'history' => $sortedRanks->map(function ($rank) {
+                return [
+                    'rank' => $rank->rank,
+                    'rank_value' => $rank->rank_value,
+                    'date' => $rank->created_at->format('Y-m-d'),
+                    'timestamp' => $rank->created_at->timestamp,
+                ];
+            })->toArray(),
         ];
     }
 }

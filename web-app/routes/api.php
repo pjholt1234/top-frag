@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/utility-stats', [DashboardController::class, 'utilityStats']);
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/map-stats', [DashboardController::class, 'mapStats']);
+    Route::get('/dashboard/rank-stats', [DashboardController::class, 'rankStats']);
 
     // Match detail sections
     Route::get('/matches/{matchId}/match-details', [MatchController::class, 'matchDetails']);

@@ -6,6 +6,7 @@ import { PlayerStatsTab } from '@/components/dashboard/player-stats-tab';
 import { AimTab } from '@/components/dashboard/aim-tab';
 import { UtilityTab } from '@/components/dashboard/utility-tab';
 import { MapStatsTab } from '@/components/dashboard/map-stats-tab';
+import { RanksTab } from '@/components/dashboard/ranks-tab';
 import { Card, CardContent } from '@/components/ui/card';
 
 export interface DashboardFilters {
@@ -75,24 +76,50 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <Card className="p-0">
             <CardContent className="pt-6">
-              <DashboardFilters filters={filters} onFiltersChange={setFilters} />
+              <DashboardFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                disableGameType={activeTab === 'ranks'}
+                disableMap={activeTab === 'ranks'}
+              />
 
               <div className="mt-6">
-                <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 rounded-b-lg">
-                  <TabsTrigger value="summary" className="!bg-transparent rounded-none">
+                <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 rounded-b-lg">
+                  <TabsTrigger
+                    value="summary"
+                    className="!bg-transparent rounded-none"
+                  >
                     Summary
                   </TabsTrigger>
-                  <TabsTrigger value="player-stats" className="!bg-transparent rounded-none">
+                  <TabsTrigger
+                    value="player-stats"
+                    className="!bg-transparent rounded-none"
+                  >
                     Player Stats
                   </TabsTrigger>
-                  <TabsTrigger value="aim" className="!bg-transparent rounded-none">
+                  <TabsTrigger
+                    value="aim"
+                    className="!bg-transparent rounded-none"
+                  >
                     Aim
                   </TabsTrigger>
-                  <TabsTrigger value="utility" className="!bg-transparent rounded-none">
+                  <TabsTrigger
+                    value="utility"
+                    className="!bg-transparent rounded-none"
+                  >
                     Utility
                   </TabsTrigger>
-                  <TabsTrigger value="map-stats" className="!bg-transparent rounded-none">
+                  <TabsTrigger
+                    value="map-stats"
+                    className="!bg-transparent rounded-none"
+                  >
                     Map Stats
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ranks"
+                    className="!bg-transparent rounded-none"
+                  >
+                    Ranks
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -118,6 +145,10 @@ const Dashboard = () => {
 
             <TabsContent value="map-stats" className="mt-0">
               <MapStatsTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="ranks" className="mt-0">
+              <RanksTab filters={filters} />
             </TabsContent>
           </div>
         </Tabs>

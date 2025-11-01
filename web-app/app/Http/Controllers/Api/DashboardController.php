@@ -69,6 +69,17 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get rank stats dashboard data
+     */
+    public function rankStats(Request $request): JsonResponse
+    {
+        $filters = $this->parseFilters($request);
+        $data = $this->dashboardService->getRankStats($request->user(), $filters);
+
+        return response()->json($data);
+    }
+
+    /**
      * Parse and validate filters from request
      */
     private function parseFilters(Request $request): array

@@ -341,7 +341,10 @@ export function getTimeToDamageColor(timeToDamage: number): string {
  * @param isEnemy - Whether this is for enemy flashes (true) or friendly flashes (false)
  * @returns Tailwind CSS color class
  */
-export function getFlashDurationColor(duration: number, isEnemy: boolean): string {
+export function getFlashDurationColor(
+  duration: number,
+  isEnemy: boolean
+): string {
   if (isEnemy) {
     // For enemy flash duration, higher is better (more effective)
     return getCustomRatingColor(duration, [1, 2, 3, 4], 'text');
@@ -357,7 +360,10 @@ export function getFlashDurationColor(duration: number, isEnemy: boolean): strin
  * @param isEnemy - Whether this is for enemy blinds (true) or friendly blinds (false)
  * @returns Tailwind CSS color class
  */
-export function getPlayersBlindedColor(count: number, isEnemy: boolean): string {
+export function getPlayersBlindedColor(
+  count: number,
+  isEnemy: boolean
+): string {
   if (isEnemy) {
     // For enemy blinded count, higher is better (more effective)
     return getCustomRatingColor(count, [1, 2, 3, 4], 'text');
