@@ -397,7 +397,8 @@ class DashboardService
             ),
             'Crosshair Placement' => $this->buildStatWithTrend(
                 $aimStats['crosshair_placement'],
-                $previousAimStats['crosshair_placement']
+                $previousAimStats['crosshair_placement'],
+                true
             ),
             'Grenade Effectiveness' => $this->buildStatWithTrend(
                 $utilityStats['grenade_effectiveness'],
@@ -661,17 +662,17 @@ class DashboardService
             return $this->getEmptyAimStats();
         }
 
-        // Calculate crosshair placement as percentage (0-100)
+        // Calculate crosshair placement in degrees using Pythagorean theorem (magnitude of displacement)
         $avgX = $aimEvents->avg('average_crosshair_placement_x');
         $avgY = $aimEvents->avg('average_crosshair_placement_y');
-        $crosshairPlacement = $avgY ? round($avgY * 100, 1) : 0;
+        $crosshairPlacement = round(sqrt(pow($avgX, 2) + pow($avgY, 2)), 1);
 
         return [
             'aim_rating' => round($aimEvents->avg('aim_rating'), 1),
             'headshot_percentage' => round($aimEvents->avg('headshot_accuracy'), 1),
             'spray_accuracy' => round($aimEvents->avg('spraying_accuracy'), 1),
             'crosshair_placement' => $crosshairPlacement,
-            'time_to_damage' => round($aimEvents->avg('average_time_to_damage'), 3),
+            'time_to_damage' => round($aimEvents->avg('average_time_to_damage'), 0),
             'weapon_breakdown' => [], // TODO: Implement weapon breakdown
         ];
     }

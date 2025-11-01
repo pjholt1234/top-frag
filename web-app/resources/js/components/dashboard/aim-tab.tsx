@@ -100,7 +100,8 @@ export const AimTab = ({ filters }: AimTabProps) => {
                     <StatCard
                         title="Crosshair Placement"
                         stat={data.aim_statistics.average_crosshair_placement}
-                        suffix="%"
+                        suffix="°"
+                        lowerIsBetter={true}
                     />
                     <StatCard
                         title="Time to Damage"
