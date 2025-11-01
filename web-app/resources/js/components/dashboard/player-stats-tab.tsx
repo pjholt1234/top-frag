@@ -123,30 +123,16 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
         return null;
     }
 
-    const renderBasicStat = (label: string, stat: StatWithTrend, colorClass?: string, lowerIsBetter: boolean = false) => {
+    const renderBasicStat = (label: string, stat: StatWithTrend, colorClass?: string) => {
         const getTrendIcon = () => {
-            if (lowerIsBetter) {
-                // Inverted: down is good, up is bad
-                if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-red-500" />;
-                if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-green-500" />;
-            } else {
-                // Normal: up is good, down is bad
-                if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-green-500" />;
-                if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-red-500" />;
-            }
+            if (stat.trend === 'up') return <TrendingUp className="h-4 w-4 text-green-500" />;
+            if (stat.trend === 'down') return <TrendingDown className="h-4 w-4 text-red-500" />;
             return <Minus className="h-4 w-4 text-gray-400" />;
         };
 
         const getTrendColor = () => {
-            if (lowerIsBetter) {
-                // Inverted: down is good, up is bad
-                if (stat.trend === 'up') return 'text-red-500';
-                if (stat.trend === 'down') return 'text-green-500';
-            } else {
-                // Normal: up is good, down is bad
-                if (stat.trend === 'up') return 'text-green-500';
-                if (stat.trend === 'down') return 'text-red-500';
-            }
+            if (stat.trend === 'up') return 'text-green-500';
+            if (stat.trend === 'down') return 'text-red-500';
             return 'text-gray-400';
         };
 
@@ -242,9 +228,9 @@ export const PlayerStatsTab = ({ filters }: PlayerStatsTabProps) => {
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         {renderBasicStat('Total Kills', data.basic_stats.total_kills, getAvgKillsColor(data.basic_stats.average_kills.value))}
-                        {renderBasicStat('Total Deaths', data.basic_stats.total_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value), true)}
+                        {renderBasicStat('Total Deaths', data.basic_stats.total_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value))}
                         {renderBasicStat('Average Kills', data.basic_stats.average_kills, getAvgKillsColor(data.basic_stats.average_kills.value))}
-                        {renderBasicStat('Average Deaths', data.basic_stats.average_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value), true)}
+                        {renderBasicStat('Average Deaths', data.basic_stats.average_deaths, getAvgDeathsColor(data.basic_stats.average_deaths.value))}
                         {renderBasicStat('Average K/D', data.basic_stats.average_kd, getKdColor(data.basic_stats.average_kd.value))}
                         {renderBasicStat('Average ADR', data.basic_stats.average_adr, getAdrColor(data.basic_stats.average_adr.value))}
                     </div>

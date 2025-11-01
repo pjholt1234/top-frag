@@ -166,7 +166,8 @@ class DashboardService
                 ),
                 'total_deaths' => $this->buildStatWithTrend(
                     $currentStats['total_deaths'],
-                    $previousStats['total_deaths']
+                    $previousStats['total_deaths'],
+                    true
                 ),
                 'average_kills' => $this->buildStatWithTrend(
                     $currentStats['average_kills'],
@@ -174,7 +175,8 @@ class DashboardService
                 ),
                 'average_deaths' => $this->buildStatWithTrend(
                     $currentStats['average_deaths'],
-                    $previousStats['average_deaths']
+                    $previousStats['average_deaths'],
+                    true
                 ),
                 'average_kd' => $this->buildStatWithTrend(
                     $currentStats['average_kd'],
@@ -214,7 +216,8 @@ class DashboardService
                 ),
                 'average_opening_deaths' => $this->buildStatWithTrend(
                     $currentStats['average_opening_deaths'],
-                    $previousStats['average_opening_deaths']
+                    $previousStats['average_opening_deaths'],
+                    true
                 ),
                 'average_duel_winrate' => $this->buildStatWithTrend(
                     $currentStats['average_duel_winrate'],
@@ -294,11 +297,13 @@ class DashboardService
                 ),
                 'average_crosshair_placement' => $this->buildStatWithTrend(
                     $currentStats['crosshair_placement'],
-                    $previousStats['crosshair_placement']
+                    $previousStats['crosshair_placement'],
+                    true
                 ),
                 'average_time_to_damage' => $this->buildStatWithTrend(
                     $currentStats['time_to_damage'],
-                    $previousStats['time_to_damage']
+                    $previousStats['time_to_damage'],
+                    true
                 ),
             ],
             'weapon_breakdown' => $currentStats['weapon_breakdown'],
@@ -323,7 +328,8 @@ class DashboardService
             ),
             'avg_blind_duration_friendly' => $this->buildStatWithTrend(
                 $currentStats['friendly_flash_duration'],
-                $previousStats['friendly_flash_duration']
+                $previousStats['friendly_flash_duration'],
+                true
             ),
             'avg_players_blinded_enemy' => $this->buildStatWithTrend(
                 $currentStats['enemy_players_blinded'],
@@ -331,7 +337,8 @@ class DashboardService
             ),
             'avg_players_blinded_friendly' => $this->buildStatWithTrend(
                 $currentStats['friendly_players_blinded'],
-                $previousStats['friendly_players_blinded']
+                $previousStats['friendly_players_blinded'],
+                true
             ),
             'he_molotov_damage' => $this->buildStatWithTrend(
                 $currentStats['he_molotov_damage'],
@@ -702,8 +709,12 @@ class DashboardService
 
     /**
      * Build a stat object with trend information
+     * 
+     * @param float $current Current period value
+     * @param float $previous Previous period value
+     * @param bool $lowerIsBetter If true, lower values are considered better (reversed trend logic)
      */
-    private function buildStatWithTrend($current, $previous): array
+    private function buildStatWithTrend($current, $previous, bool $lowerIsBetter = false): array
     {
         $trend = 'neutral';
         $change = 0;
@@ -712,12 +723,12 @@ class DashboardService
             $change = round((($current - $previous) / $previous) * 100, 1);
 
             if ($change > 0) {
-                $trend = 'up';
+                $trend = $lowerIsBetter ? 'down' : 'up';
             } elseif ($change < 0) {
-                $trend = 'down';
+                $trend = $lowerIsBetter ? 'up' : 'down';
             }
         } elseif ($current > 0 && $previous == 0) {
-            $trend = 'up';
+            $trend = $lowerIsBetter ? 'down' : 'up';
             $change = 100;
         }
 
