@@ -56,86 +56,102 @@ export const DashboardFilters = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="date-from">Date From</Label>
-        <Input
-          id="date-from"
-          type="date"
-          value={filters.date_from}
-          onChange={e => handleFilterChange('date_from', e.target.value)}
-        />
-      </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/50">
+        <div className="space-y-1 min-w-[140px]">
+          <Label htmlFor="date-from" className="text-xs">
+            Date From
+          </Label>
+          <Input
+            id="date-from"
+            type="date"
+            value={filters.date_from}
+            onChange={e => handleFilterChange('date_from', e.target.value)}
+            className="h-8"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="date-to">Date To</Label>
-        <Input
-          id="date-to"
-          type="date"
-          value={filters.date_to}
-          onChange={e => handleFilterChange('date_to', e.target.value)}
-        />
-      </div>
+        <div className="space-y-1 min-w-[140px]">
+          <Label htmlFor="date-to" className="text-xs">
+            Date To
+          </Label>
+          <Input
+            id="date-to"
+            type="date"
+            value={filters.date_to}
+            onChange={e => handleFilterChange('date_to', e.target.value)}
+            className="h-8"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="game-type">Game Type</Label>
-        <Select
-          value={filters.game_type}
-          onValueChange={value => handleFilterChange('game_type', value)}
-          disabled={disableGameType}
-        >
-          <SelectTrigger id="game-type" className="w-full">
-            <SelectValue placeholder="Select game type" />
-          </SelectTrigger>
-          <SelectContent>
-            {GAME_TYPES.map(type => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        {!disableGameType && (
+          <div className="space-y-1 min-w-[140px]">
+            <Label htmlFor="game-type" className="text-xs">
+              Game Type
+            </Label>
+            <Select
+              value={filters.game_type}
+              onValueChange={value => handleFilterChange('game_type', value)}
+            >
+              <SelectTrigger id="game-type" className="h-8 w-full">
+                <SelectValue placeholder="Select game type" />
+              </SelectTrigger>
+              <SelectContent>
+                {GAME_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-      <div className="space-y-2">
-        <Label htmlFor="map">Map</Label>
-        <Select
-          value={filters.map}
-          onValueChange={value => handleFilterChange('map', value)}
-          disabled={disableMap}
-        >
-          <SelectTrigger id="map" className="w-full">
-            <SelectValue placeholder="Select map" />
-          </SelectTrigger>
-          <SelectContent>
-            {MAPS.map(map => (
-              <SelectItem key={map.value} value={map.value}>
-                {map.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        {!disableMap && (
+          <div className="space-y-1 min-w-[140px]">
+            <Label htmlFor="map" className="text-xs">
+              Map
+            </Label>
+            <Select
+              value={filters.map}
+              onValueChange={value => handleFilterChange('map', value)}
+            >
+              <SelectTrigger id="map" className="h-8 w-full">
+                <SelectValue placeholder="Select map" />
+              </SelectTrigger>
+              <SelectContent>
+                {MAPS.map(map => (
+                  <SelectItem key={map.value} value={map.value}>
+                    {map.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-      <div className="space-y-2">
-        <Label htmlFor="match-count">Match Count</Label>
-        <Select
-          value={filters.past_match_count.toString()}
-          onValueChange={value =>
-            handleFilterChange('past_match_count', parseInt(value))
-          }
-        >
-          <SelectTrigger id="match-count" className="w-full">
-            <SelectValue placeholder="Select count" />
-          </SelectTrigger>
-          <SelectContent>
-            {MATCH_COUNTS.map(count => (
-              <SelectItem key={count.value} value={count.value.toString()}>
-                {count.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-1 min-w-[140px]">
+          <Label htmlFor="match-count" className="text-xs">
+            Match Count
+          </Label>
+          <Select
+            value={filters.past_match_count.toString()}
+            onValueChange={value =>
+              handleFilterChange('past_match_count', parseInt(value))
+            }
+          >
+            <SelectTrigger id="match-count" className="h-8 w-full">
+              <SelectValue placeholder="Select count" />
+            </SelectTrigger>
+            <SelectContent>
+              {MATCH_COUNTS.map(count => (
+                <SelectItem key={count.value} value={count.value.toString()}>
+                  {count.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );

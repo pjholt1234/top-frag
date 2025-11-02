@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { DashboardFilters } from '@/components/dashboard/filters';
-import { SummaryTab } from '@/components/dashboard/summary-tab';
-import { PlayerStatsTab } from '@/components/dashboard/player-stats-tab';
+import { UtilityTab } from '@/components/dashboard/utility-tab';
 
-export interface DashboardFilters {
+export interface PageFilters {
   date_from: string;
   date_to: string;
   game_type: string;
@@ -11,8 +10,8 @@ export interface DashboardFilters {
   past_match_count: number;
 }
 
-const Dashboard = () => {
-  const [filters, setFilters] = useState<DashboardFilters>({
+const UtilityPage = () => {
+  const [filters, setFilters] = useState<PageFilters>({
     date_from: '',
     date_to: '',
     game_type: 'all',
@@ -23,9 +22,11 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="mt-4">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Utility Statistics
+        </h1>
         <p className="text-muted-foreground">
-          View your performance statistics and trends
+          Analyze your grenade usage and effectiveness
         </p>
       </div>
 
@@ -36,11 +37,9 @@ const Dashboard = () => {
         disableMap={false}
       />
 
-      <SummaryTab filters={filters} />
-
-      <PlayerStatsTab filters={filters} />
+      <UtilityTab filters={filters} />
     </div>
   );
 };
 
-export default Dashboard;
+export default UtilityPage;

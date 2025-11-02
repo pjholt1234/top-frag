@@ -36,7 +36,7 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
       setError(null);
 
       try {
-        const response = await api.get('/dashboard/utility-stats', {
+        const response = await api.get('/utility', {
           params: {
             date_from: filters.date_from || undefined,
             date_to: filters.date_to || undefined,

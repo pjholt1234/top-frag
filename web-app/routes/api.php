@@ -1,13 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\AimController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\MapStatsController;
 use App\Http\Controllers\Api\MatchController;
+use App\Http\Controllers\Api\RanksController;
 use App\Http\Controllers\Api\SteamSharecodeController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\UtilityController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -74,6 +78,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/map-stats', [DashboardController::class, 'mapStats']);
     Route::get('/dashboard/rank-stats', [DashboardController::class, 'rankStats']);
+
+    // Dedicated page routes
+    Route::get('/aim', [AimController::class, 'index']);
+    Route::get('/utility', [UtilityController::class, 'index']);
+    Route::get('/map-stats', [MapStatsController::class, 'index']);
+    Route::get('/ranks', [RanksController::class, 'index']);
 
     // Match detail sections
     Route::get('/matches/{matchId}/match-details', [MatchController::class, 'matchDetails']);

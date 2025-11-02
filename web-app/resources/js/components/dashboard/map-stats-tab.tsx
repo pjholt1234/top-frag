@@ -87,7 +87,7 @@ export const MapStatsTab = ({ filters }: MapStatsTabProps) => {
       setError(null);
 
       try {
-        const response = await api.get('/dashboard/map-stats', {
+        const response = await api.get('/map-stats', {
           params: {
             date_from: filters.date_from || undefined,
             date_to: filters.date_to || undefined,

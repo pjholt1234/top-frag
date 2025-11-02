@@ -193,7 +193,7 @@ export const RanksTab = ({ filters }: RanksTabProps) => {
       setError(null);
 
       try {
-        const response = await api.get('/dashboard/rank-stats', {
+        const response = await api.get('/ranks', {
           params: {
             date_from: filters.date_from || undefined,
             date_to: filters.date_to || undefined,

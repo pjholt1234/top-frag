@@ -16,6 +16,10 @@ import RegisterPage from '@/pages/register';
 import { SteamCallbackPage } from '@/pages/steam-callback';
 import { OnboardingPage } from '@/pages/onboarding';
 import AccountSettingsPage from '@/pages/account-settings';
+import AimPage from '@/pages/aim';
+import UtilityPage from '@/pages/utility';
+import MapStatsPage from '@/pages/map-stats';
+import RanksPage from '@/pages/ranks';
 import { Toaster } from '@/components/ui/sonner';
 
 const App: React.FC = () => {
@@ -56,6 +60,10 @@ const App: React.FC = () => {
               <Route index element={<YourMatches />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="grenade-library" element={<GrenadeLibrary />} />
+              <Route path="aim" element={<AimPage />} />
+              <Route path="utility" element={<UtilityPage />} />
+              <Route path="map-stats" element={<MapStatsPage />} />
+              <Route path="ranks" element={<RanksPage />} />
               <Route
                 path="matches/:id/:tab/:playerId?"
                 element={<MatchDetail />}

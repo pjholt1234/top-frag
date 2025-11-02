@@ -47,7 +47,7 @@ export const AimTab = ({ filters }: AimTabProps) => {
       setError(null);
 
       try {
-        const response = await api.get('/dashboard/aim-stats', {
+        const response = await api.get('/aim', {
           params: {
             date_from: filters.date_from || undefined,
             date_to: filters.date_to || undefined,

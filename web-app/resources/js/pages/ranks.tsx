@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { DashboardFilters } from '@/components/dashboard/filters';
-import { SummaryTab } from '@/components/dashboard/summary-tab';
-import { PlayerStatsTab } from '@/components/dashboard/player-stats-tab';
+import { RanksTab } from '@/components/dashboard/ranks-tab';
 
-export interface DashboardFilters {
+export interface PageFilters {
   date_from: string;
   date_to: string;
   game_type: string;
@@ -11,8 +10,8 @@ export interface DashboardFilters {
   past_match_count: number;
 }
 
-const Dashboard = () => {
-  const [filters, setFilters] = useState<DashboardFilters>({
+const RanksPage = () => {
+  const [filters, setFilters] = useState<PageFilters>({
     date_from: '',
     date_to: '',
     game_type: 'all',
@@ -23,24 +22,22 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="mt-4">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Rank History</h1>
         <p className="text-muted-foreground">
-          View your performance statistics and trends
+          Track your competitive, premier, and Faceit rank progression
         </p>
       </div>
 
       <DashboardFilters
         filters={filters}
         onFiltersChange={setFilters}
-        disableGameType={false}
-        disableMap={false}
+        disableGameType={true}
+        disableMap={true}
       />
 
-      <SummaryTab filters={filters} />
-
-      <PlayerStatsTab filters={filters} />
+      <RanksTab filters={filters} />
     </div>
   );
 };
 
-export default Dashboard;
+export default RanksPage;

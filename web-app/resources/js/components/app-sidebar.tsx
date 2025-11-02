@@ -5,6 +5,10 @@ import {
   IconDashboard,
   IconInnerShadowTop,
   IconListDetails,
+  IconTarget,
+  IconBomb,
+  IconMap,
+  IconTrophy,
 } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -31,6 +35,26 @@ const data = {
       title: 'Dashboard',
       url: '/dashboard',
       icon: IconDashboard,
+    },
+    {
+      title: 'Aim',
+      url: '/aim',
+      icon: IconTarget,
+    },
+    {
+      title: 'Utility',
+      url: '/utility',
+      icon: IconBomb,
+    },
+    {
+      title: 'Map Stats',
+      url: '/map-stats',
+      icon: IconMap,
+    },
+    {
+      title: 'Ranks',
+      url: '/ranks',
+      icon: IconTrophy,
     },
     {
       title: 'Grenade Library',
