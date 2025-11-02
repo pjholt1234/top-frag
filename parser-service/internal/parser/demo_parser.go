@@ -671,6 +671,9 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 
 	// Match data built with event counts
 
+	aimEvents := eventProcessor.GetAimEvents()
+	achievements := calculateAchievements(matchState.PlayerMatchEvents, aimEvents)
+
 	return &types.ParsedDemoData{
 		Match:             match,
 		Players:           players,
@@ -680,8 +683,9 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		DamageEvents:      matchState.DamageEvents,
 		PlayerRoundEvents: matchState.PlayerRoundEvents,
 		PlayerMatchEvents: matchState.PlayerMatchEvents,
-		AimEvents:         eventProcessor.GetAimEvents(),
+		AimEvents:         aimEvents,
 		AimWeaponEvents:   eventProcessor.GetAimWeaponEvents(),
+		Achievements:      achievements,
 	}
 }
 

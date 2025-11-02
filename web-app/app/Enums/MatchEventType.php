@@ -13,4 +13,5 @@ enum MatchEventType: string
     case MATCH = 'match';
     case AIM = 'aim';
     case AIM_WEAPON = 'aim-weapon';
+    case ACHIEVEMENTS = 'achievements';
 }

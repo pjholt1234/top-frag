@@ -339,6 +339,13 @@ type ParsedDemoData struct {
 	PlayerMatchEvents []PlayerMatchEvent        `json:"player_match_events"`
 	AimEvents         []AimAnalysisResult       `json:"aim_events"`
 	AimWeaponEvents   []WeaponAimAnalysisResult `json:"aim_weapon_events"`
+	Achievements      []Achievement             `json:"achievements"`
+}
+
+// Achievement represents an achievement awarded to a player
+type Achievement struct {
+	PlayerSteamID string `json:"player_steam_id"`
+	AwardName     string `json:"award_name"` // "fragger", "support", "opener", "closer", "top_aimer", "impact_player", "difference_maker"
 }
 
 // ParseDemoRequest represents a request with an uploaded demo file

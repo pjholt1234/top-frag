@@ -8,6 +8,7 @@ use App\Enums\ProcessingStatus;
 use App\Enums\Team;
 use App\Exceptions\DemoParserJobNotFoundException;
 use App\Exceptions\DemoParserMatchNotFoundException;
+use App\Models\Achievement;
 use App\Models\DamageEvent;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
@@ -161,6 +162,7 @@ class DemoParserService
                 MatchEventType::MATCH->value => $this->updateMatchData($match, $eventData),
                 MatchEventType::AIM->value => $this->createAimEvent($match, $eventData),
                 MatchEventType::AIM_WEAPON->value => $this->createAimWeaponEvent($match, $eventData),
+                MatchEventType::ACHIEVEMENTS->value => $this->createAchievements($match, $eventData),
                 default => Log::warning('Match event not found', [
                     'event_name' => $eventName,
                 ]),
@@ -867,6 +869,61 @@ class DemoParserService
         PlayerMatchAimWeaponEvent::insert($records);
 
         Log::info('Successfully stored aim weapon tracking events', [
+            'match_id' => $match->id,
+            'events_stored' => count($records),
+        ]);
+    }
+
+    private function createAchievements(GameMatch $match, array $achievementEvents): void
+    {
+        if (empty($achievementEvents)) {
+            return;
+        }
+
+        // Log achievements for debugging
+        Log::info('Processing achievement events', [
+            'match_id' => $match->id,
+            'events_count' => count($achievementEvents),
+            'sample_event' => $achievementEvents[0] ?? null,
+        ]);
+
+        $records = [];
+        $now = now();
+
+        foreach ($achievementEvents as $achievementEvent) {
+            // Find the player by steam_id
+            $player = Player::where('steam_id', $achievementEvent['player_steam_id'])->first();
+            if (! $player) {
+                Log::warning('Player not found for achievement', [
+                    'match_id' => $match->id,
+                    'player_steam_id' => $achievementEvent['player_steam_id'] ?? 'unknown',
+                    'award_name' => $achievementEvent['award_name'] ?? 'unknown',
+                ]);
+
+                continue;
+            }
+
+            $records[] = [
+                'match_id' => $match->id,
+                'player_id' => $player->id,
+                'award_name' => $achievementEvent['award_name'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (empty($records)) {
+            Log::warning('No valid achievement records to insert', [
+                'match_id' => $match->id,
+            ]);
+
+            return;
+        }
+
+        // Use bulk insert for better performance
+        Achievement::insert($records);
+
+        Log::info('Successfully stored achievement events', [
             'match_id' => $match->id,
             'events_stored' => count($records),
         ]);

@@ -700,5 +700,15 @@ func (h *ParseDemoHandler) sendAllEvents(ctx context.Context, job *types.Process
 	}
 	timer.Stop()
 
+	// Send achievements (final post-processing step)
+	timer = h.perfLogger.StartTimer("send_achievements").
+		WithMetadata("job_id", job.JobID).
+		WithMetadata("event_count", len(parsedData.Achievements))
+	if err := h.batchSender.SendAchievements(ctx, job.JobID, job.CompletionCallbackURL, parsedData.Achievements); err != nil {
+		timer.StopWithError(err)
+		return types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send achievements", err)
+	}
+	timer.Stop()
+
 	return nil
 }

@@ -819,6 +819,46 @@ func (bs *BatchSender) SendMatchData(ctx context.Context, jobID string, completi
 	return nil
 }
 
+func (bs *BatchSender) SendAchievements(ctx context.Context, jobID string, completionURL string, achievements []types.Achievement) error {
+	if len(achievements) == 0 {
+		return nil
+	}
+
+	// Extract base URL from completion URL
+	baseURL, err := bs.extractBaseURL(completionURL)
+	if err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send achievements", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("completion_url", completionURL)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+	bs.baseURL = baseURL
+
+	flatAchievements := make([]map[string]interface{}, len(achievements))
+	for i, achievement := range achievements {
+		flatAchievements[i] = map[string]interface{}{
+			"player_steam_id": achievement.PlayerSteamID,
+			"award_name":      achievement.AwardName,
+		}
+	}
+
+	payload := map[string]interface{}{
+		"data": flatAchievements,
+	}
+
+	url := bs.baseURL + fmt.Sprintf(api.JobEventEndpoint, jobID, api.EventTypeAchievements)
+	if err := bs.sendRequestWithRetry(ctx, url, payload); err != nil {
+		parseError := types.NewParseErrorWithSeverity(types.ErrorTypeNetwork, types.ErrorSeverityError, "failed to send achievements", err)
+		parseError = parseError.WithContext("job_id", jobID)
+		parseError = parseError.WithContext("url", url)
+		bs.progressManager.ReportParseError(parseError)
+		return parseError
+	}
+
+	return nil
+}
+
 func (bs *BatchSender) SendCompletion(ctx context.Context, jobID string, completionURL string) error {
 	// Sending completion signal
 

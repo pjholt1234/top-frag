@@ -24,4 +24,5 @@ const (
 	EventTypeMatch       = "match"
 	EventTypeAim         = "aim"
 	EventTypeAimWeapon   = "aim-weapon"
+	EventTypeAchievements = "achievements"
 )
