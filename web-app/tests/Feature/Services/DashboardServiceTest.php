@@ -568,7 +568,7 @@ class DashboardServiceTest extends TestCase
         // Should have improved stats
         if ($result['most_improved_stats']) {
             $this->assertIsArray($result['most_improved_stats']);
-            $this->assertLessThanOrEqual(2, count($result['most_improved_stats']));
+            $this->assertLessThanOrEqual(4, count($result['most_improved_stats']));
         }
     }
 

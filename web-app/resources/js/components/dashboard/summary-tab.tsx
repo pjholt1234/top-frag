@@ -165,7 +165,7 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Most Improved Stats */}
               {data.most_improved_stats &&
-                data.most_improved_stats.length > 0 ? (
+              data.most_improved_stats.length > 0 ? (
                 data.most_improved_stats
                   .slice(0, 4)
                   .map((stat, index) => (
@@ -193,7 +193,7 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
 
               {/* Least Improved Stats */}
               {data.least_improved_stats &&
-                data.least_improved_stats.length > 0 ? (
+              data.least_improved_stats.length > 0 ? (
                 data.least_improved_stats
                   .slice(0, 4)
                   .map((stat, index) => (

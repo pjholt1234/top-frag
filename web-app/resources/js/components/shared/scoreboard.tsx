@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { getAdrColor } from '@/lib/utils';
 import { QUALITY_COLORS } from '@/constants/colors';
 import { getRankDisplay } from '@/lib/rank-utils';
+import { usePlayerCard } from '@/hooks/use-player-card';
 
 interface Scoreboard {
   rank_value: number;
@@ -26,6 +27,7 @@ interface Scoreboard {
   player_kill_death_ratio: number;
   player_adr: number;
   team: string;
+  player_steam_id?: string;
 }
 
 interface MatchDetails {
@@ -83,6 +85,7 @@ export function Scoreboard({
   onSort,
   match,
 }: ScoreboardProps) {
+  const { showPlayerCard, hidePlayerCard } = usePlayerCard();
   const [internalSortColumn, setInternalSortColumn] = useState<SortColumn>(
     'player_kill_death_ratio'
   );
@@ -313,7 +316,21 @@ export function Scoreboard({
                       </TableCell>
                     )}
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
-                      {player.player_name || `Player ${index + 1}`}
+                      {player.player_steam_id ? (
+                        <span
+                          className="cursor-pointer hover:text-blue-400 transition-colors"
+                          onMouseEnter={e => {
+                            if (player.player_steam_id) {
+                              showPlayerCard(player.player_steam_id, e);
+                            }
+                          }}
+                          onMouseLeave={hidePlayerCard}
+                        >
+                          {player.player_name || `Player ${index + 1}`}
+                        </span>
+                      ) : (
+                        player.player_name || `Player ${index + 1}`
+                      )}
                     </TableCell>
                     <TableCell className="text-sm py-2 px-3 border-0">
                       <span
@@ -470,7 +487,21 @@ export function Scoreboard({
                       </TableCell>
                     )}
                     <TableCell className="text-sm font-medium py-2 pl-6 pr-3 border-0">
-                      {player.player_name || `Player ${index + 1}`}
+                      {player.player_steam_id ? (
+                        <span
+                          className="cursor-pointer hover:text-blue-400 transition-colors"
+                          onMouseEnter={e => {
+                            if (player.player_steam_id) {
+                              showPlayerCard(player.player_steam_id, e);
+                            }
+                          }}
+                          onMouseLeave={hidePlayerCard}
+                        >
+                          {player.player_name || `Player ${index + 1}`}
+                        </span>
+                      ) : (
+                        player.player_name || `Player ${index + 1}`
+                      )}
                     </TableCell>
                     <TableCell className="text-sm py-2 px-3 border-0">
                       <span
@@ -585,7 +616,23 @@ export function Scoreboard({
       <TableBody>
         {sortedPlayers.map((player, index) => (
           <TableRow key={index}>
-            <TableCell className="font-medium">{player.player_name}</TableCell>
+            <TableCell className="font-medium">
+              {player.player_steam_id ? (
+                <span
+                  className="cursor-pointer hover:text-blue-400 transition-colors"
+                  onMouseEnter={e => {
+                    if (player.player_steam_id) {
+                      showPlayerCard(player.player_steam_id, e);
+                    }
+                  }}
+                  onMouseLeave={hidePlayerCard}
+                >
+                  {player.player_name}
+                </span>
+              ) : (
+                player.player_name
+              )}
+            </TableCell>
             <TableCell>
               <Badge className={getTeamColor(player.team)}>
                 Team {player.team}

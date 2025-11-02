@@ -94,6 +94,7 @@ class MatchDetailsService
                 'player_adr' => round($playerMatchEvent['adr']) ?? 0,
                 'team' => $match->players->where('steam_id', $playerSteamId)->first()->pivot->team,
                 'player_name' => $playerMatchEvent->player->name,
+                'player_steam_id' => $playerSteamId,
             ];
         })->toArray();
     }

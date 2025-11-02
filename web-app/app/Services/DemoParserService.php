@@ -639,8 +639,33 @@ class DemoParserService
 
         PlayerMatchEvent::insert($records);
 
+        // Invalidate player card cache for all players in this match
+        $this->invalidatePlayerCardCache($playerMatchEvents);
+
         // Record player ranks
         $this->recordPlayerRanks($match, $playerMatchEvents);
+    }
+
+    /**
+     * Invalidate player card cache for all players in the match
+     */
+    private function invalidatePlayerCardCache(array $playerMatchEvents): void
+    {
+        try {
+            $playerCardService = app(\App\Services\PlayerCardService::class);
+            $steamIds = array_unique(array_column($playerMatchEvents, 'player_steam_id'));
+
+            foreach ($steamIds as $steamId) {
+                if ($steamId) {
+                    $playerCardService->invalidatePlayerCache($steamId);
+                }
+            }
+        } catch (\Exception $e) {
+            // Don't let cache invalidation errors break match processing
+            Log::warning('Failed to invalidate player card cache', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function recordPlayerRanks(GameMatch $match, array $playerMatchEvents): void

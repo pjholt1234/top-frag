@@ -79,6 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/map-stats', [DashboardController::class, 'mapStats']);
     Route::get('/dashboard/rank-stats', [DashboardController::class, 'rankStats']);
 
+    // Player card route
+    Route::get('/player-card/{steamId}', [\App\Http\Controllers\Api\PlayerCardController::class, 'getPlayerCard']);
+
     // Dedicated page routes
     Route::get('/aim', [AimController::class, 'index']);
     Route::get('/aim/weapons', [AimController::class, 'weapons']);
