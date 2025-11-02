@@ -25,6 +25,34 @@ class AimController extends Controller
     }
 
     /**
+     * Get available weapons for filtered matches
+     */
+    public function weapons(Request $request): JsonResponse
+    {
+        $filters = $this->parseFilters($request);
+        $weapons = $this->aimService->getAvailableWeapons($request->user(), $filters);
+
+        return response()->json($weapons);
+    }
+
+    /**
+     * Get hit distribution data
+     */
+    public function hitDistribution(Request $request): JsonResponse
+    {
+        $filters = $this->parseFilters($request);
+        $weaponName = $request->input('weapon_name');
+
+        $data = $this->aimService->getHitDistribution(
+            $request->user(),
+            $filters,
+            $weaponName
+        );
+
+        return response()->json($data);
+    }
+
+    /**
      * Parse and validate filters from request
      */
     private function parseFilters(Request $request): array

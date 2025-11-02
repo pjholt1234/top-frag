@@ -81,6 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dedicated page routes
     Route::get('/aim', [AimController::class, 'index']);
+    Route::get('/aim/weapons', [AimController::class, 'weapons']);
+    Route::get('/aim/hit-distribution', [AimController::class, 'hitDistribution']);
     Route::get('/utility', [UtilityController::class, 'index']);
     Route::get('/map-stats', [MapStatsController::class, 'index']);
     Route::get('/ranks', [RanksController::class, 'index']);
