@@ -25,6 +25,9 @@ const UtilityPage = () => {
         <h1 className="text-3xl font-bold tracking-tight">
           Utility Statistics
         </h1>
+        <p className="text-muted-foreground">
+          Analyze your grenade usage and effectiveness
+        </p>
       </div>
 
       <DashboardFilters

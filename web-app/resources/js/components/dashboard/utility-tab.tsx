@@ -161,25 +161,6 @@ export const UtilityTab = ({ filters }: UtilityTabProps) => {
           />
         </div>
       </div>
-
-      <div className="text-sm text-muted-foreground mt-6 p-4 bg-muted rounded-lg">
-        <p className="mb-2">
-          <strong>Blind Duration:</strong> Total time enemies/teammates were
-          blinded by your flashes
-        </p>
-        <p className="mb-2">
-          <strong>Players Blinded:</strong> Average number of players affected
-          per flashbang
-        </p>
-        <p className="mb-2">
-          <strong>HE + Molotov Damage:</strong> Total damage dealt with
-          explosive and incendiary grenades
-        </p>
-        <p>
-          <strong>Grenade Effectiveness:</strong> Overall utility impact score
-          based on timing and placement
-        </p>
-      </div>
     </div>
   );
 };
