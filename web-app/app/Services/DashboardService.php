@@ -392,7 +392,7 @@ class DashboardService
         $improvedStats = $statsCollection
             ->filter(fn ($stat) => $stat['trend'] === 'up' && $stat['change'] > 0)
             ->sortByDesc('change')
-            ->take(2)
+            ->take(4)
             ->map(fn ($stat, $name) => array_merge($stat, ['name' => $name]))
             ->values()
             ->toArray();
@@ -400,7 +400,7 @@ class DashboardService
         $declinedStats = $statsCollection
             ->filter(fn ($stat) => $stat['trend'] === 'down' && $stat['change'] > 0)
             ->sortByDesc('change')
-            ->take(2)
+            ->take(4)
             ->map(fn ($stat, $name) => array_merge($stat, ['name' => $name]))
             ->values()
             ->toArray();

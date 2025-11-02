@@ -7,7 +7,6 @@ import { GaugeChart } from '@/components/charts/gauge-chart';
 import { PlayerSummaryCard } from './player-summary-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getImpactColor, getRoundSwingColor } from '@/lib/utils';
 
 interface PlayerComplexion {
   opener: number;
@@ -124,63 +123,6 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Stats Row - Takes 3 columns on large screens */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Most/Least Improved Stats */}
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Most Improved Stats */}
-              {data.most_improved_stats &&
-              data.most_improved_stats.length > 0 ? (
-                data.most_improved_stats.map((stat, index) => (
-                  <StatCard
-                    key={`improved-${index}`}
-                    title={`🔥 ${stat.name}`}
-                    stat={stat}
-                    className="border-green-500/20"
-                  />
-                ))
-              ) : (
-                <Card className="border-gray-500/20 md:col-span-2">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col items-center justify-center py-4 text-center">
-                      <span className="text-gray-400 text-sm">
-                        No improved stats in this period
-                      </span>
-                      <span className="text-gray-500 text-xs mt-1">
-                        Keep practicing to see improvements!
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Least Improved Stats */}
-              {data.least_improved_stats &&
-              data.least_improved_stats.length > 0 ? (
-                data.least_improved_stats.map((stat, index) => (
-                  <StatCard
-                    key={`needs-work-${index}`}
-                    title={`⚠️ ${stat.name}`}
-                    stat={stat}
-                    className="border-red-500/20"
-                  />
-                ))
-              ) : (
-                <Card className="border-gray-500/20 md:col-span-2">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col items-center justify-center py-4 text-center">
-                      <span className="text-gray-400 text-sm">
-                        No declining stats in this period
-                      </span>
-                      <span className="text-gray-500 text-xs mt-1">
-                        Great work! Keep it up!
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-
           {/* Gauges */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,38 +160,64 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
             </div>
           </div>
 
-          {/* Impact & Round Swing Stats */}
+          {/* Most/Least Improved Stats */}
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">
-                      Average Impact Rating
-                    </span>
-                    <span
-                      className={`text-2xl font-bold ${getImpactColor(data.player_card.average_impact)}`}
-                    >
-                      {data.player_card.average_impact.toFixed(2)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Most Improved Stats */}
+              {data.most_improved_stats &&
+                data.most_improved_stats.length > 0 ? (
+                data.most_improved_stats
+                  .slice(0, 4)
+                  .map((stat, index) => (
+                    <StatCard
+                      key={`improved-${index}`}
+                      title={`🔥 ${stat.name}`}
+                      stat={stat}
+                      className="border-green-500/20"
+                    />
+                  ))
+              ) : (
+                <Card className="border-gray-500/20 md:col-span-2 lg:col-span-4">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <span className="text-gray-400 text-sm">
+                        No improved stats in this period
+                      </span>
+                      <span className="text-gray-500 text-xs mt-1">
+                        Keep practicing to see improvements!
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-              <Card>
-                <CardContent>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">
-                      Average Round Swing
-                    </span>
-                    <span
-                      className={`text-2xl font-bold ${getRoundSwingColor(data.player_card.average_round_swing)}`}
-                    >
-                      {data.player_card.average_round_swing.toFixed(1)}%
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Least Improved Stats */}
+              {data.least_improved_stats &&
+                data.least_improved_stats.length > 0 ? (
+                data.least_improved_stats
+                  .slice(0, 4)
+                  .map((stat, index) => (
+                    <StatCard
+                      key={`needs-work-${index}`}
+                      title={`⚠️ ${stat.name}`}
+                      stat={stat}
+                      className="border-red-500/20"
+                    />
+                  ))
+              ) : (
+                <Card className="border-gray-500/20 md:col-span-2 lg:col-span-4">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <span className="text-gray-400 text-sm">
+                        No declining stats in this period
+                      </span>
+                      <span className="text-gray-500 text-xs mt-1">
+                        Great work! Keep it up!
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
@@ -286,13 +254,6 @@ const SummaryTabSkeleton = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Skeleton className="h-48" />
               <Skeleton className="h-48" />
-            </div>
-          </div>
-
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
             </div>
           </div>
         </div>

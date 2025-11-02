@@ -6,6 +6,8 @@ import {
   getAvgKillsColor,
   getAvgDeathsColor,
   getWinRateColor,
+  getImpactColor,
+  getRoundSwingColor,
 } from '@/lib/utils';
 import { OpenerIcon } from '@/components/icons/opener-icon';
 import { CloserIcon } from '@/components/icons/closer-icon';
@@ -214,6 +216,26 @@ export function PlayerSummaryCard({
         {/* Stats Grid */}
         <div>
           <div className="grid grid-cols-2 gap-3">
+            {/* Average Impact Rating */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Avg Impact Rating</span>
+              <span
+                className={`font-medium ${getImpactColor(playerCard.average_impact)}`}
+              >
+                {playerCard.average_impact.toFixed(2)}
+              </span>
+            </div>
+
+            {/* Average Round Swing */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Avg Round Swing</span>
+              <span
+                className={`font-medium ${getRoundSwingColor(playerCard.average_round_swing)}`}
+              >
+                {playerCard.average_round_swing.toFixed(1)}%
+              </span>
+            </div>
+
             {/* Avg Kills */}
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-400">Avg Kills</span>
