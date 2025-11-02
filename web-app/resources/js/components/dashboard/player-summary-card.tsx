@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { COMPLEXION_COLORS } from '@/constants/colors';
 import {
-  getImpactColor,
-  getRoundSwingColor,
   getKdColor,
+  getAdrColor,
   getAvgKillsColor,
+  getAvgDeathsColor,
   getWinRateColor,
 } from '@/lib/utils';
 import { OpenerIcon } from '@/components/icons/opener-icon';
@@ -25,8 +25,11 @@ interface PlayerCardData {
   average_impact: number;
   average_round_swing: number;
   average_kd: number;
+  average_adr: number;
   average_kills: number;
   average_deaths: number;
+  total_kills: number;
+  total_deaths: number;
   total_matches: number;
   win_percentage: number;
   player_complexion: PlayerComplexion;
@@ -68,39 +71,6 @@ const roleData = [
 ];
 
 export function PlayerSummaryCard({ playerCard }: PlayerSummaryCardProps) {
-  const statsData = [
-    {
-      label: 'Avg Impact',
-      value: playerCard.average_impact.toFixed(2),
-      color: getImpactColor(playerCard.average_impact),
-    },
-    {
-      label: 'Round Swing',
-      value: `${playerCard.average_round_swing.toFixed(1)}%`,
-      color: getRoundSwingColor(playerCard.average_round_swing),
-    },
-    {
-      label: 'K/D Ratio',
-      value: playerCard.average_kd.toFixed(2),
-      color: getKdColor(playerCard.average_kd),
-    },
-    {
-      label: 'Avg Kills',
-      value: playerCard.average_kills.toFixed(1),
-      color: getAvgKillsColor(playerCard.average_kills),
-    },
-    {
-      label: 'Matches',
-      value: playerCard.total_matches,
-      color: 'text-gray-200',
-    },
-    {
-      label: 'Win Rate',
-      value: `${playerCard.win_percentage.toFixed(1)}%`,
-      color: getWinRateColor(playerCard.win_percentage),
-    },
-  ];
-
   return (
     <Card className="h-full">
       <CardHeader>
@@ -123,20 +93,82 @@ export function PlayerSummaryCard({ playerCard }: PlayerSummaryCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Basic Stats */}
+        {/* Stats Grid */}
         <div>
           <div className="grid grid-cols-2 gap-3">
-            {statsData.map(stat => (
-              <div
-                key={stat.label}
-                className="flex justify-between items-center"
+            {/* Avg Kills */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Avg Kills</span>
+              <span
+                className={`font-medium ${getAvgKillsColor(playerCard.average_kills)}`}
               >
-                <span className="text-sm text-gray-400">{stat.label}</span>
-                <span className={`font-medium ${stat.color}`}>
-                  {stat.value}
-                </span>
-              </div>
-            ))}
+                {playerCard.average_kills.toFixed(1)}
+              </span>
+            </div>
+
+            {/* Avg Deaths */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Avg Deaths</span>
+              <span
+                className={`font-medium ${getAvgDeathsColor(playerCard.average_deaths)}`}
+              >
+                {playerCard.average_deaths.toFixed(1)}
+              </span>
+            </div>
+
+            {/* Total Kills */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Total Kills</span>
+              <span className="font-medium text-gray-200">
+                {playerCard.total_kills}
+              </span>
+            </div>
+
+            {/* Total Deaths */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Total Deaths</span>
+              <span className="font-medium text-gray-200">
+                {playerCard.total_deaths}
+              </span>
+            </div>
+
+            {/* Average K/D */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Average K/D</span>
+              <span
+                className={`font-medium ${getKdColor(playerCard.average_kd)}`}
+              >
+                {playerCard.average_kd.toFixed(2)}
+              </span>
+            </div>
+
+            {/* Average ADR */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Average ADR</span>
+              <span
+                className={`font-medium ${getAdrColor(playerCard.average_adr)}`}
+              >
+                {playerCard.average_adr.toFixed(1)}
+              </span>
+            </div>
+
+            {/* Total Matches */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Matches</span>
+              <span className="font-medium text-gray-200">
+                {playerCard.total_matches}
+              </span>
+            </div>
+
+            {/* Win Percentage */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-400">Win Rate</span>
+              <span
+                className={`font-medium ${getWinRateColor(playerCard.win_percentage)}`}
+              >
+                {playerCard.win_percentage.toFixed(1)}%
+              </span>
+            </div>
           </div>
         </div>
 

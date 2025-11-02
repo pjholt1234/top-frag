@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { DashboardFilters } from '@/pages/dashboard';
 import { StatCard, StatWithTrend } from './stat-card';
@@ -6,6 +7,7 @@ import { GaugeChart } from '@/components/charts/gauge-chart';
 import { PlayerSummaryCard } from './player-summary-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getImpactColor, getRoundSwingColor } from '@/lib/utils';
 
 interface PlayerComplexion {
   opener: number;
@@ -20,8 +22,11 @@ interface PlayerCardData {
   average_impact: number;
   average_round_swing: number;
   average_kd: number;
+  average_adr: number;
   average_kills: number;
   average_deaths: number;
+  total_kills: number;
+  total_deaths: number;
   total_matches: number;
   win_percentage: number;
   player_complexion: PlayerComplexion;
@@ -50,6 +55,7 @@ interface SummaryTabProps {
 }
 
 export const SummaryTab = ({ filters }: SummaryTabProps) => {
+  const navigate = useNavigate();
   const [data, setData] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,29 +173,70 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
           {/* Gauges */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-0 pb-16">
-                <CardContent className="pb-6 flex justify-center">
+              <Card
+                className="p-0 pb-8 cursor-pointer transition-all hover:scale-105 hover:shadow-lg hover:border-orange-500/50"
+                onClick={() => navigate('/aim')}
+              >
+                <CardContent className="flex justify-center">
                   <GaugeChart
                     title="Avg Aim Rating"
                     currentValue={data.average_aim_rating.value}
                     maxValue={data.average_aim_rating.max}
-                    size="xl"
+                    size="lg"
                     color="#f97316"
                     showPercentage={false}
                   />
                 </CardContent>
               </Card>
 
-              <Card className="p-0 pb-16">
-                <CardContent className="pb-4 flex justify-center">
+              <Card
+                className="p-0 pb-8 cursor-pointer transition-all hover:scale-105 hover:shadow-lg hover:border-blue-500/50"
+                onClick={() => navigate('/utility')}
+              >
+                <CardContent className="flex justify-center">
                   <GaugeChart
                     title="Avg Utility Effectiveness"
                     currentValue={data.average_utility_effectiveness.value}
                     maxValue={data.average_utility_effectiveness.max}
-                    size="xl"
+                    size="lg"
                     color="#3b82f6"
                     showPercentage={false}
                   />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Impact & Round Swing Stats */}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      Average Impact Rating
+                    </span>
+                    <span
+                      className={`text-2xl font-bold ${getImpactColor(data.player_card.average_impact)}`}
+                    >
+                      {data.player_card.average_impact.toFixed(2)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      Average Round Swing
+                    </span>
+                    <span
+                      className={`text-2xl font-bold ${getRoundSwingColor(data.player_card.average_round_swing)}`}
+                    >
+                      {data.player_card.average_round_swing.toFixed(1)}%
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -225,6 +272,13 @@ const SummaryTabSkeleton = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Skeleton className="h-48" />
               <Skeleton className="h-48" />
+            </div>
+          </div>
+
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
             </div>
           </div>
         </div>

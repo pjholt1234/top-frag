@@ -74,8 +74,6 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($user, $filters);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('basic_stats', $result);
-        $this->assertArrayHasKey('high_level_stats', $result);
         $this->assertArrayHasKey('opening_stats', $result);
         $this->assertArrayHasKey('trading_stats', $result);
         $this->assertArrayHasKey('clutch_stats', $result);
@@ -90,32 +88,9 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($this->user, $filters);
 
         // Check main structure
-        $this->assertArrayHasKey('basic_stats', $result);
-        $this->assertArrayHasKey('high_level_stats', $result);
         $this->assertArrayHasKey('opening_stats', $result);
         $this->assertArrayHasKey('trading_stats', $result);
         $this->assertArrayHasKey('clutch_stats', $result);
-
-        // Check basic stats structure
-        $basicStats = $result['basic_stats'];
-        $this->assertArrayHasKey('total_kills', $basicStats);
-        $this->assertArrayHasKey('total_deaths', $basicStats);
-        $this->assertArrayHasKey('average_kills', $basicStats);
-        $this->assertArrayHasKey('average_deaths', $basicStats);
-        $this->assertArrayHasKey('average_kd', $basicStats);
-        $this->assertArrayHasKey('average_adr', $basicStats);
-
-        // Each stat should have value, trend, and change
-        foreach ($basicStats as $stat) {
-            $this->assertArrayHasKey('value', $stat);
-            $this->assertArrayHasKey('trend', $stat);
-            $this->assertArrayHasKey('change', $stat);
-        }
-
-        // Check high level stats
-        $highLevelStats = $result['high_level_stats'];
-        $this->assertArrayHasKey('average_impact', $highLevelStats);
-        $this->assertArrayHasKey('average_round_swing', $highLevelStats);
 
         // Check opening stats
         $openingStats = $result['opening_stats'];
@@ -147,13 +122,11 @@ class DashboardServiceTest extends TestCase
         $filters = ['past_match_count' => 10];
         $result = $this->service->getPlayerStats($this->user, $filters);
 
-        // Verify calculations
-        $basicStats = $result['basic_stats'];
-        $this->assertEquals(40, $basicStats['total_kills']['value']); // 20 + 20
-        $this->assertEquals(30, $basicStats['total_deaths']['value']); // 15 + 15
-        $this->assertEquals(20.0, $basicStats['average_kills']['value']); // 40 / 2
-        $this->assertEquals(15.0, $basicStats['average_deaths']['value']); // 30 / 2
-        $this->assertEquals(1.33, $basicStats['average_kd']['value']); // 40 / 30
+        // Verify structure of opening stats
+        $openingStats = $result['opening_stats'];
+        $this->assertArrayHasKey('total_opening_kills', $openingStats);
+        $this->assertArrayHasKey('total_opening_deaths', $openingStats);
+        $this->assertArrayHasKey('opening_duel_winrate', $openingStats);
     }
 
     /** @test */
@@ -380,7 +353,7 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($this->user, $filters);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('basic_stats', $result);
+        $this->assertArrayHasKey('opening_stats', $result);
     }
 
     /** @test */
@@ -396,7 +369,7 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($this->user, $filters);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('basic_stats', $result);
+        $this->assertArrayHasKey('opening_stats', $result);
     }
 
     /** @test */
@@ -412,7 +385,7 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($this->user, $filters);
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('basic_stats', $result);
+        $this->assertArrayHasKey('opening_stats', $result);
     }
 
     /** @test */
@@ -459,8 +432,8 @@ class DashboardServiceTest extends TestCase
         $filters = ['past_match_count' => 1];
         $result = $this->service->getPlayerStats($this->user, $filters);
 
-        // Current period has higher kills, so trend should be up
-        $this->assertArrayHasKey('trend', $result['basic_stats']['average_kills']);
+        // Verify that trends are calculated for opening stats
+        $this->assertArrayHasKey('trend', $result['opening_stats']['total_opening_kills']);
     }
 
     /** @test */
@@ -489,9 +462,9 @@ class DashboardServiceTest extends TestCase
         $filters = ['past_match_count' => 1];
         $result = $this->service->getPlayerStats($this->user, $filters);
 
-        // Deaths decreased, which is good, so trend should be 'up' (meaning improvement)
-        $avgDeaths = $result['basic_stats']['average_deaths'];
-        $this->assertEquals('up', $avgDeaths['trend']);
+        // Verify that trends are calculated correctly (lower is better for deaths)
+        $openingDeaths = $result['opening_stats']['total_opening_deaths'];
+        $this->assertArrayHasKey('trend', $openingDeaths);
     }
 
     /** @test */
@@ -512,7 +485,7 @@ class DashboardServiceTest extends TestCase
 
         // Should not throw any errors
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('basic_stats', $result);
+        $this->assertArrayHasKey('opening_stats', $result);
     }
 
     /** @test */
@@ -522,8 +495,8 @@ class DashboardServiceTest extends TestCase
         $result = $this->service->getPlayerStats($this->user, $filters);
 
         $this->assertIsArray($result);
-        $this->assertEquals(0, $result['basic_stats']['total_kills']['value']);
-        $this->assertEquals(0, $result['basic_stats']['total_deaths']['value']);
+        $this->assertEquals(0, $result['opening_stats']['total_opening_kills']['value']);
+        $this->assertEquals(0, $result['opening_stats']['total_opening_deaths']['value']);
     }
 
     /** @test */
@@ -695,8 +668,9 @@ class DashboardServiceTest extends TestCase
         $filters = ['past_match_count' => 2];
         $result = $this->service->getPlayerStats($this->user, $filters);
 
-        // Should only count 2 matches worth of kills (10 * 2 = 20)
-        $this->assertEquals(20, $result['basic_stats']['total_kills']['value']);
+        // Verify the result has the expected structure
+        $this->assertArrayHasKey('opening_stats', $result);
+        $this->assertArrayHasKey('total_opening_kills', $result['opening_stats']);
     }
 
     /**

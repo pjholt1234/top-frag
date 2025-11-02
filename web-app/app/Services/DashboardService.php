@@ -171,44 +171,6 @@ class DashboardService
         $previousStats = $this->aggregatePlayerMatchStats($previousMatches);
 
         return [
-            'basic_stats' => [
-                'total_kills' => $this->buildStatWithTrend(
-                    $currentStats['total_kills'],
-                    $previousStats['total_kills']
-                ),
-                'total_deaths' => $this->buildStatWithTrend(
-                    $currentStats['total_deaths'],
-                    $previousStats['total_deaths'],
-                    true
-                ),
-                'average_kills' => $this->buildStatWithTrend(
-                    $currentStats['average_kills'],
-                    $previousStats['average_kills']
-                ),
-                'average_deaths' => $this->buildStatWithTrend(
-                    $currentStats['average_deaths'],
-                    $previousStats['average_deaths'],
-                    true
-                ),
-                'average_kd' => $this->buildStatWithTrend(
-                    $currentStats['average_kd'],
-                    $previousStats['average_kd']
-                ),
-                'average_adr' => $this->buildStatWithTrend(
-                    $currentStats['average_adr'],
-                    $previousStats['average_adr']
-                ),
-            ],
-            'high_level_stats' => [
-                'average_impact' => $this->buildStatWithTrend(
-                    $currentStats['average_impact'],
-                    $previousStats['average_impact']
-                ),
-                'average_round_swing' => $this->buildStatWithTrend(
-                    $currentStats['average_round_swing'],
-                    $previousStats['average_round_swing']
-                ),
-            ],
             'opening_stats' => [
                 'total_opening_kills' => $this->buildStatWithTrend(
                     $currentStats['total_opening_kills'],
@@ -464,8 +426,11 @@ class DashboardService
                 'average_impact' => $currentMatches->avg('average_impact') ?? 0,
                 'average_round_swing' => $currentMatches->avg('match_swing_percent') ?? 0,
                 'average_kd' => $playerStats['average_kd'],
+                'average_adr' => $playerStats['average_adr'],
                 'average_kills' => $playerStats['average_kills'],
                 'average_deaths' => $playerStats['average_deaths'],
+                'total_kills' => $playerStats['total_kills'],
+                'total_deaths' => $playerStats['total_deaths'],
                 'total_matches' => $playerStats['total_matches'],
                 'win_percentage' => $playerStats['win_percentage'],
                 'player_complexion' => $complexion,
