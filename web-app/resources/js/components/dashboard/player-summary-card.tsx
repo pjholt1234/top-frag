@@ -11,12 +11,30 @@ import { OpenerIcon } from '@/components/icons/opener-icon';
 import { CloserIcon } from '@/components/icons/closer-icon';
 import { SupportIcon } from '@/components/icons/support-icon';
 import { FraggerIcon } from '@/components/icons/fragger-icon';
+import { TopAimerIcon } from '@/components/icons/top-aimer-icon';
+import { ImpactPlayerIcon } from '@/components/icons/impact-player-icon';
+import { DifferenceMakerIcon } from '@/components/icons/difference-maker-icon';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface PlayerComplexion {
   opener: number;
   closer: number;
   support: number;
   fragger: number;
+}
+
+interface AchievementCounts {
+  fragger: number;
+  support: number;
+  opener: number;
+  closer: number;
+  top_aimer: number;
+  impact_player: number;
+  difference_maker: number;
 }
 
 interface PlayerCardData {
@@ -37,6 +55,7 @@ interface PlayerCardData {
 
 interface PlayerSummaryCardProps {
   playerCard: PlayerCardData;
+  achievements?: AchievementCounts;
 }
 
 const roleData = [
@@ -70,7 +89,63 @@ const roleData = [
   },
 ];
 
-export function PlayerSummaryCard({ playerCard }: PlayerSummaryCardProps) {
+const achievementData = [
+  {
+    key: 'fragger',
+    label: 'Fragger',
+    description: 'Awarded for having the highest fragger score in a match',
+    color: COMPLEXION_COLORS.fragger.hex,
+    IconComponent: FraggerIcon,
+  },
+  {
+    key: 'support',
+    label: 'Support',
+    description: 'Awarded for having the highest support score in a match',
+    color: COMPLEXION_COLORS.support.hex,
+    IconComponent: SupportIcon,
+  },
+  {
+    key: 'opener',
+    label: 'Opener',
+    description: 'Awarded for having the highest opener score in a match',
+    color: COMPLEXION_COLORS.opener.hex,
+    IconComponent: OpenerIcon,
+  },
+  {
+    key: 'closer',
+    label: 'Closer',
+    description: 'Awarded for having the highest closer score in a match',
+    color: COMPLEXION_COLORS.closer.hex,
+    IconComponent: CloserIcon,
+  },
+  {
+    key: 'top_aimer',
+    label: 'Top Aimer',
+    description: 'Awarded for having the highest aim rating in a match',
+    color: '#f97316',
+    IconComponent: TopAimerIcon,
+  },
+  {
+    key: 'impact_player',
+    label: 'Impact Player',
+    description: 'Awarded for having the highest total impact in a match',
+    color: '#22c55e',
+    IconComponent: ImpactPlayerIcon,
+  },
+  {
+    key: 'difference_maker',
+    label: 'Difference Maker',
+    description:
+      'Awarded for having the highest round swing percentage in a match',
+    color: '#a855f7',
+    IconComponent: DifferenceMakerIcon,
+  },
+];
+
+export function PlayerSummaryCard({
+  playerCard,
+  achievements,
+}: PlayerSummaryCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -85,9 +160,52 @@ export function PlayerSummaryCard({ playerCard }: PlayerSummaryCardProps) {
               }}
             />
           )}
-          <div>
+          <div className="flex-1">
             <h3 className="text-xl font-bold">{playerCard.username}</h3>
-            <p className="text-sm text-muted-foreground">Performance Summary</p>
+            {/* Achievement Icons */}
+            {achievements && (
+              <div className="flex items-center gap-2 mt-0 flex-wrap">
+                {achievementData.map(
+                  ({ key, label, description, color, IconComponent }) => {
+                    const count = achievements[key as keyof AchievementCounts];
+                    if (count === 0) return null;
+
+                    return (
+                      <Tooltip key={key}>
+                        <TooltipTrigger asChild>
+                          <div className="relative cursor-pointer group">
+                            <IconComponent size={20} color={color} />
+                            {/* Badge with count */}
+                            <div
+                              className="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-black text-white"
+                              style={{ backgroundColor: color }}
+                            >
+                              {count}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          className="bg-gray-800 text-gray-100 border max-w-xs"
+                          style={{ borderColor: color }}
+                          sideOffset={5}
+                        >
+                          <div className="font-semibold mb-1" style={{ color }}>
+                            {label}
+                          </div>
+                          <div className="text-xs text-gray-300">
+                            {description}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            Earned <span className="font-black">{count}</span>{' '}
+                            time{count !== 1 ? 's' : ''} in this period
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>

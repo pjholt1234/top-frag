@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\AchievementType;
+use App\Models\Achievement;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\PlayerMatchAimEvent;
@@ -409,6 +411,9 @@ class DashboardService
         // Get player complexion data
         $complexion = $this->getPlayerComplexion($user, $currentMatches);
 
+        // Get achievement counts
+        $achievementCounts = $this->getAchievementCounts($user, $filters);
+
         return [
             'most_improved_stats' => $mostImproved,
             'least_improved_stats' => $leastImproved,
@@ -420,6 +425,7 @@ class DashboardService
                 'value' => $utilityStats['grenade_effectiveness'],
                 'max' => 100,
             ],
+            'achievements' => $achievementCounts,
             'player_card' => [
                 'username' => $user->steam_persona_name ?? $user->name,
                 'avatar' => $user->steam_avatar_full ?? $user->steam_avatar_medium ?? $user->steam_avatar,
@@ -1121,6 +1127,73 @@ class DashboardService
                     'timestamp' => $rank->created_at->timestamp,
                 ];
             })->toArray(),
+        ];
+    }
+
+    /**
+     * Get achievement counts for a user within filtered matches
+     */
+    private function getAchievementCounts(User $user, array $filters): array
+    {
+        if (! $user->steam_id) {
+            return $this->getEmptyAchievementCounts();
+        }
+
+        // Get player
+        $player = Player::where('steam_id', $user->steam_id)->first();
+        if (! $player) {
+            return $this->getEmptyAchievementCounts();
+        }
+
+        // Build query for matches based on filters
+        $query = Achievement::query()
+            ->join('matches', 'achievements.match_id', '=', 'matches.id')
+            ->where('achievements.player_id', $player->id);
+
+        // Apply filters
+        if (! empty($filters['date_from']) && ! empty($filters['date_to'])) {
+            $query->whereBetween('matches.created_at', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        if (! empty($filters['game_type'])) {
+            $query->where('matches.match_type', $filters['game_type']);
+        }
+
+        if (! empty($filters['map'])) {
+            $query->where('matches.map', $filters['map']);
+        }
+
+        // Count achievements by type
+        $counts = $query
+            ->selectRaw('award_name, COUNT(*) as count')
+            ->groupBy('award_name')
+            ->pluck('count', 'award_name')
+            ->toArray();
+
+        return [
+            'fragger' => $counts[AchievementType::FRAGGER->value] ?? 0,
+            'support' => $counts[AchievementType::SUPPORT->value] ?? 0,
+            'opener' => $counts[AchievementType::OPENER->value] ?? 0,
+            'closer' => $counts[AchievementType::CLOSER->value] ?? 0,
+            'top_aimer' => $counts[AchievementType::TOP_AIMER->value] ?? 0,
+            'impact_player' => $counts[AchievementType::IMPACT_PLAYER->value] ?? 0,
+            'difference_maker' => $counts[AchievementType::DIFFERENCE_MAKER->value] ?? 0,
+        ];
+    }
+
+    /**
+     * Get empty achievement counts
+     */
+    private function getEmptyAchievementCounts(): array
+    {
+        return [
+            'fragger' => 0,
+            'support' => 0,
+            'opener' => 0,
+            'closer' => 0,
+            'top_aimer' => 0,
+            'impact_player' => 0,
+            'difference_maker' => 0,
         ];
     }
 }

@@ -17,6 +17,7 @@ import { MatchPlayerStats } from '@/components/match-detail/player-stats';
 import { TopPlayers } from '@/components/match-detail/top-players';
 import { HeadToHead } from '@/components/match-detail/head-to-head';
 import { AimTracking } from '@/components/match-detail/aim-tracking';
+import { MatchAchievementsNotification } from '@/components/match-detail/match-achievements-notification';
 import { getMapMetadata } from '@/config/maps';
 
 interface Scoreboard {
@@ -41,12 +42,17 @@ interface MatchDetails {
   game_mode: string | null;
 }
 
+interface Achievement {
+  award_name: string;
+}
+
 interface Match {
   id: number;
   created_at: string;
   is_completed: boolean;
   match_details: MatchDetails | null;
   player_stats: Scoreboard[] | null;
+  achievements?: Achievement[];
   processing_status: string | null;
   progress_percentage: number | null;
   current_step: string | null;
@@ -329,6 +335,11 @@ const MatchDetail = () => {
               {match.player_stats && match.player_stats.length > 0 ? (
                 <>
                   <TopPlayers matchId={match.id} />
+                  {match.achievements && match.achievements.length > 0 && (
+                    <MatchAchievementsNotification
+                      achievements={match.achievements}
+                    />
+                  )}
                   <Scoreboard
                     players={match.player_stats}
                     variant="expanded"

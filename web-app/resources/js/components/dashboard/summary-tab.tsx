@@ -36,6 +36,16 @@ interface StatImprovement extends StatWithTrend {
   name: string;
 }
 
+interface AchievementCounts {
+  fragger: number;
+  support: number;
+  opener: number;
+  closer: number;
+  top_aimer: number;
+  impact_player: number;
+  difference_maker: number;
+}
+
 interface SummaryData {
   most_improved_stats: StatImprovement[] | null;
   least_improved_stats: StatImprovement[] | null;
@@ -47,6 +57,7 @@ interface SummaryData {
     value: number;
     max: number;
   };
+  achievements: AchievementCounts;
   player_card: PlayerCardData;
 }
 
@@ -245,7 +256,10 @@ export const SummaryTab = ({ filters }: SummaryTabProps) => {
 
         {/* Player Card - Takes 2 columns on large screens */}
         <div className="lg:col-span-2">
-          <PlayerSummaryCard playerCard={data.player_card} />
+          <PlayerSummaryCard
+            playerCard={data.player_card}
+            achievements={data.achievements}
+          />
         </div>
       </div>
     </div>
