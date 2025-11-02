@@ -15,14 +15,14 @@ const (
 
 // Event types for the new endpoint format
 const (
-	EventTypeRound       = "round"
-	EventTypeGunfight    = "gunfight"
-	EventTypeGrenade     = "grenade"
-	EventTypeDamage      = "damage"
-	EventTypePlayerRound = "player-round"
-	EventTypePlayerMatch = "player-match"
-	EventTypeMatch       = "match"
-	EventTypeAim         = "aim"
-	EventTypeAimWeapon   = "aim-weapon"
+	EventTypeRound        = "round"
+	EventTypeGunfight     = "gunfight"
+	EventTypeGrenade      = "grenade"
+	EventTypeDamage       = "damage"
+	EventTypePlayerRound  = "player-round"
+	EventTypePlayerMatch  = "player-match"
+	EventTypeMatch        = "match"
+	EventTypeAim          = "aim"
+	EventTypeAimWeapon    = "aim-weapon"
 	EventTypeAchievements = "achievements"
 )

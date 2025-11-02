@@ -52,10 +52,10 @@ func calculateRoleAchievements(playerMatchEvents []types.PlayerMatchEvent) []typ
 	for _, pme := range playerMatchEvents {
 		score := playerRoleScore{
 			steamID: pme.PlayerSteamID,
-			fragger:  calculateFraggerScore(pme),
-			support:  calculateSupportScore(pme),
-			opener:   calculateOpenerScore(pme),
-			closer:   calculateCloserScore(pme),
+			fragger: calculateFraggerScore(pme),
+			support: calculateSupportScore(pme),
+			opener:  calculateOpenerScore(pme),
+			closer:  calculateCloserScore(pme),
 		}
 		scores = append(scores, score)
 	}
@@ -370,4 +370,3 @@ func max(a, b float64) float64 {
 	}
 	return b
 }
-
