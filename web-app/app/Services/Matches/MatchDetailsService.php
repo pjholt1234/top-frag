@@ -2,6 +2,7 @@
 
 namespace App\Services\Matches;
 
+use App\Models\Achievement;
 use App\Models\GameMatch;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
@@ -66,6 +67,7 @@ class MatchDetailsService
             'is_completed' => true,
             'match_details' => $this->getMatchDetails($user, $match),
             'player_stats' => $this->getScoreBoardStats($match),
+            'achievements' => $this->getUserAchievements($user, $match->id),
             'processing_status' => null,
             'progress_percentage' => null,
             'current_step' => null,
@@ -103,5 +105,22 @@ class MatchDetailsService
         }
 
         return round($kills / $deaths, 2);
+    }
+
+    private function getUserAchievements(User $user, int $matchId): array
+    {
+        if (! $user->player) {
+            return [];
+        }
+
+        $achievements = Achievement::where('match_id', $matchId)
+            ->where('player_id', $user->player->id)
+            ->get();
+
+        return $achievements->map(function (Achievement $achievement) {
+            return [
+                'award_name' => $achievement->award_name->value,
+            ];
+        })->toArray();
     }
 }
