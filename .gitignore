@@ -21,3 +21,4 @@ demo.dem
 /parser-service/logs/service.log
 /parser-service/tmp
 /parser-service/logs/performance
+/bruno/.env

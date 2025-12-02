@@ -1,0 +1,23 @@
+meta {
+  name: Match history
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://open.faceit.com/data/v4/players?nickname=Twistzz
+  body: none
+  auth: bearer
+}
+
+query {
+  nickname: Twistzz
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{process.env.FACEIT_API_KEY}}
+}

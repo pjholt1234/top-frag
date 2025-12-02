@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\FetchAndStoreFaceITProfileAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -18,7 +19,8 @@ use Laravel\Socialite\Facades\Socialite;
 class AuthController extends Controller
 {
     public function __construct(
-        private readonly SteamAPIConnector $steamApiConnector
+        private readonly SteamAPIConnector $steamApiConnector,
+        private readonly FetchAndStoreFaceITProfileAction $fetchAndStoreFaceITProfileAction
     ) {}
 
     /**
@@ -144,7 +146,7 @@ class AuthController extends Controller
     {
         try {
             $steamUser = Socialite::driver('steam')->user();
-            \Log::info('Steam user ID: '.$steamUser->getId());
+            Log::info('Steam user ID: '.$steamUser->getId());
 
             // Check if user already exists with this Steam ID
             $user = User::where('steam_id', $steamUser->getId())->first();
@@ -152,6 +154,7 @@ class AuthController extends Controller
             if ($user) {
                 // User exists, update their Steam profile and log them in
                 $this->fetchAndStoreSteamProfile($user);
+                $this->fetchAndStoreFaceITProfileAction->execute($user);
 
                 $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -161,11 +164,11 @@ class AuthController extends Controller
 
             // Check if this is a Steam account linking request
             $linkHash = request('link');
-            \Log::info('Steam callback - link hash: '.($linkHash ?? 'null'));
+            Log::info('Steam callback - link hash: '.($linkHash ?? 'null'));
 
             if ($linkHash) {
                 $currentUser = User::where('steam_link_hash', $linkHash)->first();
-                \Log::info('Steam linking detected for user: '.($currentUser ? $currentUser->id : 'not found'));
+                Log::info('Steam linking detected for user: '.($currentUser ? $currentUser->id : 'not found'));
 
                 if (! $currentUser) {
                     return redirect('http://localhost:8000/steam-callback?error=user_not_found&message='.urlencode('User not found'));
@@ -178,17 +181,18 @@ class AuthController extends Controller
 
                 // Link Steam account to current user
                 $currentUser->update(['steam_id' => $steamUser->getId()]);
-                \Log::info('Successfully linked Steam ID '.$steamUser->getId().' to user ID '.$currentUser->id);
+                Log::info('Successfully linked Steam ID '.$steamUser->getId().' to user ID '.$currentUser->id);
 
                 // Fetch and store Steam profile data
                 $this->fetchAndStoreSteamProfile($currentUser);
+                $this->fetchAndStoreFaceITProfileAction->execute($currentUser);
 
                 // Redirect to frontend with success
                 return redirect('http://localhost:8000/steam-callback?success=true&message='.urlencode('Steam account linked successfully'));
             }
 
             // Create new user with Steam account
-            \Log::info('Creating new Steam user with ID: '.$steamUser->getId());
+            Log::info('Creating new Steam user with ID: '.$steamUser->getId());
             $user = User::create([
                 'name' => $steamUser->getNickname() ?? 'Steam User',
                 'email' => $steamUser->getEmail(), // Can be null now
@@ -198,13 +202,14 @@ class AuthController extends Controller
 
             // Fetch and store Steam profile data for new user
             $this->fetchAndStoreSteamProfile($user);
+            $this->fetchAndStoreFaceITProfileAction->execute($user);
 
             $token = $user->createToken('auth_token')->plainTextToken;
-            \Log::info('Created new user with ID: '.$user->id.', token generated');
+            Log::info('Created new user with ID: '.$user->id.', token generated');
 
             // Redirect to frontend with token
             $redirectUrl = 'http://localhost:8000/steam-callback?token='.$token.'&success=true&message='.urlencode('Steam account created successfully');
-            \Log::info('Redirecting to: '.$redirectUrl);
+            Log::info('Redirecting to: '.$redirectUrl);
 
             return redirect($redirectUrl);
         } catch (\Exception $e) {

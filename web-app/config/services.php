@@ -53,6 +53,10 @@ return [
         'api_key' => env('VALVE_DEMO_URL_SERVICE_API_KEY'),
     ],
 
+    'faceit' => [
+        'api_key' => env('FACEIT_API_KEY'),
+    ],
+
     'rate_limiting' => [
         'steam_api' => [
             'max_requests' => 100,

@@ -1,0 +1,24 @@
+meta {
+  name: Player Details from steam id
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://open.faceit.com/data/v4/players?game_player_id=76561198081165057&game=cs2
+  body: none
+  auth: bearer
+}
+
+query {
+  game_player_id: 76561198081165057
+  game: cs2
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{process.env.FACEIT_API_KEY}}
+}
