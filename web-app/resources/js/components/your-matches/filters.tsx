@@ -28,9 +28,8 @@ interface MatchesFiltersProps {
 const MATCH_TYPES = [
   { value: 'all', label: 'All types' },
   { value: 'competitive', label: 'Competitive' },
-  { value: 'casual', label: 'Casual' },
-  { value: 'scrim', label: 'Scrim' },
-  { value: 'other', label: 'Other' },
+  { value: 'premier', label: 'Premier' },
+  { value: 'faceit', label: 'FaceIT' },
 ];
 
 const MAPS = [

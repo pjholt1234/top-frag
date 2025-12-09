@@ -107,9 +107,6 @@ const YourMatches = () => {
           params,
         });
 
-        console.log('API Response:', response.data);
-        console.log('All matches:', response.data.data);
-
         // Ensure we have valid data structure
         if (!response.data.data || !Array.isArray(response.data.data)) {
           throw new Error(

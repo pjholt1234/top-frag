@@ -110,7 +110,7 @@ class MatchHistoryService
         }
 
         if (! empty($filters['match_type'])) {
-            $query->where('match_type', $filters['match_type']);
+            $query->where('game_mode', $filters['match_type']);
         }
 
         if (! empty($filters['player_was_participant'])) {
