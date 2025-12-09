@@ -88,6 +88,8 @@ class PlayerCardService
             'player_card' => [
                 'username' => $user?->steam_persona_name ?? $user?->name ?? $player->name,
                 'avatar' => $user?->steam_avatar_full ?? $user?->steam_avatar_medium ?? $user?->steam_avatar ?? null,
+                'steam_id' => $steamId,
+                'faceit_nickname' => $user?->faceit_nickname ?? null,
                 'average_impact' => $matches->avg('average_impact') ?? 0,
                 'average_round_swing' => $matches->avg('match_swing_percent') ?? 0,
                 'average_kd' => $playerStats['average_kd'],
@@ -385,6 +387,8 @@ class PlayerCardService
             'player_card' => [
                 'username' => 'Unknown',
                 'avatar' => null,
+                'steam_id' => null,
+                'faceit_nickname' => null,
                 'average_impact' => 0,
                 'average_round_swing' => 0,
                 'average_kd' => 0,

@@ -42,6 +42,8 @@ interface AchievementCounts {
 interface PlayerCardData {
   username: string;
   avatar: string | null;
+  steam_id: string | null;
+  faceit_nickname: string | null;
   average_impact: number;
   average_round_swing: number;
   average_kd: number;
@@ -152,62 +154,101 @@ export function PlayerSummaryCard({
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center gap-4">
-          {playerCard.avatar && (
-            <img
-              src={playerCard.avatar}
-              alt={`${playerCard.username} profile`}
-              className="w-16 h-16 rounded-full border-2 border-gray-600"
-              onError={e => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          )}
-          <div className="flex-1">
-            <h3 className="text-xl font-bold">{playerCard.username}</h3>
-            {/* Achievement Icons */}
-            {achievements && (
-              <div className="flex items-center gap-2 mt-0 flex-wrap">
-                {achievementData.map(
-                  ({ key, label, description, color, IconComponent }) => {
-                    const count = achievements[key as keyof AchievementCounts];
-                    if (count === 0) return null;
-
-                    return (
-                      <Tooltip key={key}>
-                        <TooltipTrigger asChild>
-                          <div className="relative cursor-pointer group">
-                            <IconComponent size={20} color={color} />
-                            {/* Badge with count */}
-                            <div
-                              className="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-black text-white"
-                              style={{ backgroundColor: color }}
-                            >
-                              {count}
-                            </div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          className="bg-gray-800 text-gray-100 border max-w-xs"
-                          style={{ borderColor: color }}
-                          sideOffset={5}
-                        >
-                          <div className="font-semibold mb-1" style={{ color }}>
-                            {label}
-                          </div>
-                          <div className="text-xs text-gray-300">
-                            {description}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            Earned <span className="font-black">{count}</span>{' '}
-                            time{count !== 1 ? 's' : ''} in this period
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                )}
-              </div>
+          <div className="flex items-center gap-4 flex-1">
+            {playerCard.avatar && (
+              <img
+                src={playerCard.avatar}
+                alt={`${playerCard.username} profile`}
+                className="w-16 h-16 rounded-full border-2 border-gray-600"
+                onError={e => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             )}
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xl font-bold">{playerCard.username}</h3>
+                {/* External Links */}
+                <div className="flex items-center gap-2">
+                  {playerCard.steam_id && (
+                    <a
+                      href={`https://steamcommunity.com/profiles/${playerCard.steam_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80 transition-opacity"
+                    >
+                      <img
+                        src="/images/icons/steam.ico"
+                        alt="Steam Profile"
+                        className="w-5 h-5"
+                      />
+                    </a>
+                  )}
+                  {playerCard.faceit_nickname && (
+                    <a
+                      href={`https://www.faceit.com/en/players/${playerCard.faceit_nickname}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80 transition-opacity"
+                    >
+                      <img
+                        src="/images/icons/faceit.ico"
+                        alt="FaceIT Profile"
+                        className="w-5 h-5"
+                      />
+                    </a>
+                  )}
+                </div>
+              </div>
+              {/* Achievement Icons */}
+              {achievements && (
+                <div className="flex items-center gap-2 mt-0 flex-wrap">
+                  {achievementData.map(
+                    ({ key, label, description, color, IconComponent }) => {
+                      const count =
+                        achievements[key as keyof AchievementCounts];
+                      if (count === 0) return null;
+
+                      return (
+                        <Tooltip key={key}>
+                          <TooltipTrigger asChild>
+                            <div className="relative cursor-pointer group">
+                              <IconComponent size={20} color={color} />
+                              {/* Badge with count */}
+                              <div
+                                className="absolute -bottom-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-black text-white"
+                                style={{ backgroundColor: color }}
+                              >
+                                {count}
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            className="bg-gray-800 text-gray-100 border max-w-xs"
+                            style={{ borderColor: color }}
+                            sideOffset={5}
+                          >
+                            <div
+                              className="font-semibold mb-1"
+                              style={{ color }}
+                            >
+                              {label}
+                            </div>
+                            <div className="text-xs text-gray-300">
+                              {description}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              Earned <span className="font-black">{count}</span>{' '}
+                              time{count !== 1 ? 's' : ''} in this period
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
