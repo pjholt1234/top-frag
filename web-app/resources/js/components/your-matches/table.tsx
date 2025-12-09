@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
+import { truncateText } from '@/lib/utils';
 
 interface Scoreboard {
   player_name: string;
@@ -279,7 +280,10 @@ export function MatchesTable({
 
             const matchId = match.match_details.id || match.id;
             const isExpanded = expandedRows.has(matchId);
-            const allPlayers = match.player_stats || [];
+            const allPlayers = (match.player_stats || []).map(player => ({
+              ...player,
+              player_name: truncateText(player.player_name, 12),
+            }));
 
             return (
               <React.Fragment key={matchId}>

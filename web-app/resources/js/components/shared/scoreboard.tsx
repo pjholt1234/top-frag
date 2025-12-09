@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getAdrColor } from '@/lib/utils';
+import { getAdrColor, truncateText } from '@/lib/utils';
 import { QUALITY_COLORS } from '@/constants/colors';
 import { getRankDisplay } from '@/lib/rank-utils';
 import { usePlayerCard } from '@/hooks/use-player-card';
@@ -326,10 +326,14 @@ export function Scoreboard({
                           }}
                           onMouseLeave={hidePlayerCard}
                         >
-                          {player.player_name || `Player ${index + 1}`}
+                          {player.player_name
+                            ? truncateText(player.player_name, 12)
+                            : `Player ${index + 1}`}
                         </span>
+                      ) : player.player_name ? (
+                        truncateText(player.player_name, 12)
                       ) : (
-                        player.player_name || `Player ${index + 1}`
+                        `Player ${index + 1}`
                       )}
                     </TableCell>
                     <TableCell className="text-sm py-2 px-3 border-0">
@@ -497,10 +501,14 @@ export function Scoreboard({
                           }}
                           onMouseLeave={hidePlayerCard}
                         >
-                          {player.player_name || `Player ${index + 1}`}
+                          {player.player_name
+                            ? truncateText(player.player_name, 12)
+                            : `Player ${index + 1}`}
                         </span>
+                      ) : player.player_name ? (
+                        truncateText(player.player_name, 12)
                       ) : (
-                        player.player_name || `Player ${index + 1}`
+                        `Player ${index + 1}`
                       )}
                     </TableCell>
                     <TableCell className="text-sm py-2 px-3 border-0">
@@ -627,10 +635,10 @@ export function Scoreboard({
                   }}
                   onMouseLeave={hidePlayerCard}
                 >
-                  {player.player_name}
+                  {truncateText(player.player_name, 12)}
                 </span>
               ) : (
-                player.player_name
+                truncateText(player.player_name, 12)
               )}
             </TableCell>
             <TableCell>

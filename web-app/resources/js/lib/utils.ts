@@ -25,6 +25,19 @@ export {
 };
 
 /**
+ * Shortens text to a specified number of characters and appends "..."
+ * @param text - The text to shorten
+ * @param maxLength - The maximum number of characters before truncation
+ * @returns The shortened text with "..." appended if truncated, or the original text if it's shorter than maxLength
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return text.slice(0, maxLength) + '...';
+}
+
+/**
  * Returns the appropriate color class for ADR (Average Damage per Round) values
  * @param adr - The ADR value as an integer
  * @returns Tailwind CSS color class
