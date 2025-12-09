@@ -156,8 +156,14 @@ class MatchControllerTest extends TestCase
 
     public function test_index_with_match_type_filter()
     {
-        $match1 = GameMatch::factory()->create(['match_type' => MatchType::HLTV]);
-        $match2 = GameMatch::factory()->create(['match_type' => MatchType::MATCHMAKING]);
+        $match1 = GameMatch::factory()->create([
+            'match_type' => MatchType::HLTV,
+            'game_mode' => 'hltv',
+        ]);
+        $match2 = GameMatch::factory()->create([
+            'match_type' => MatchType::MATCHMAKING,
+            'game_mode' => 'mm',
+        ]);
 
         foreach ([$match1, $match2] as $match) {
             $match->players()->attach($this->player->id, ['team' => 'A']);
