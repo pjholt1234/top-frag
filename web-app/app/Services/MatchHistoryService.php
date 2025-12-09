@@ -106,7 +106,7 @@ class MatchHistoryService
     private function applyFiltersToQuery($query, array $filters): void
     {
         if (! empty($filters['map'])) {
-            $query->where('map', 'like', '%' . $filters['map'] . '%');
+            $query->where('map', 'like', '%'.$filters['map'].'%');
         }
 
         if (! empty($filters['match_type'])) {
@@ -159,10 +159,10 @@ class MatchHistoryService
 
         if (! empty($filters['date_to'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('matches.start_timestamp', '<=', $filters['date_to'] . ' 23:59:59')
+                $q->where('matches.start_timestamp', '<=', $filters['date_to'].' 23:59:59')
                     ->orWhere(function ($subQ) use ($filters) {
                         $subQ->whereNull('matches.start_timestamp')
-                            ->where('matches.created_at', '<=', $filters['date_to'] . ' 23:59:59');
+                            ->where('matches.created_at', '<=', $filters['date_to'].' 23:59:59');
                     });
             });
         }
@@ -177,7 +177,7 @@ class MatchHistoryService
 
         if (! empty($filters['map'])) {
             $query->whereHas('match', function ($q) use ($filters) {
-                $q->where('map', 'like', '%' . $filters['map'] . '%');
+                $q->where('map', 'like', '%'.$filters['map'].'%');
             });
         }
 
@@ -192,7 +192,7 @@ class MatchHistoryService
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('demo_processing_jobs.created_at', '<=', $filters['date_to'] . ' 23:59:59');
+            $query->where('demo_processing_jobs.created_at', '<=', $filters['date_to'].' 23:59:59');
         }
 
         $jobs = $query->orderBy('demo_processing_jobs.created_at', 'desc')->get();
