@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Controllers\Api;
 
+use App\Actions\FetchAndStoreFaceITProfileAction;
 use App\Http\Controllers\Api\AuthController;
 use App\Models\User;
 use App\Services\SteamAPIConnector;
@@ -19,11 +20,14 @@ class AuthControllerSteamTest extends TestCase
 
     private AuthController $controller;
 
+    private $fetchAndStoreFaceITProfileAction;
+
     protected function setUp(): void
     {
         parent::setUp();
         $steamApiConnector = Mockery::mock(SteamAPIConnector::class);
-        $this->controller = new AuthController($steamApiConnector);
+        $this->fetchAndStoreFaceITProfileAction = Mockery::mock(FetchAndStoreFaceITProfileAction::class);
+        $this->controller = new AuthController($steamApiConnector, $this->fetchAndStoreFaceITProfileAction);
     }
 
     public function test_steam_redirect_returns_redirect_response()
@@ -56,6 +60,10 @@ class AuthControllerSteamTest extends TestCase
         // Create existing user
         $user = User::factory()->create(['steam_id' => '76561198012345678']);
 
+        $this->fetchAndStoreFaceITProfileAction->shouldReceive('execute')
+            ->once()
+            ->with(Mockery::type(User::class));
+
         $response = $this->controller->steamCallback();
 
         $this->assertInstanceOf(\Illuminate\Http\RedirectResponse::class, $response);
@@ -82,6 +90,10 @@ class AuthControllerSteamTest extends TestCase
         $request = Request::create('/api/auth/steam/callback', 'GET', ['link' => 'test-hash']);
         $this->app->instance('request', $request);
 
+        $this->fetchAndStoreFaceITProfileAction->shouldReceive('execute')
+            ->once()
+            ->with(Mockery::type(User::class));
+
         $response = $this->controller->steamCallback();
 
         $this->assertInstanceOf(\Illuminate\Http\RedirectResponse::class, $response);
@@ -100,6 +112,10 @@ class AuthControllerSteamTest extends TestCase
             ->andReturnSelf();
         Socialite::shouldReceive('user')
             ->andReturn($steamUser);
+
+        $this->fetchAndStoreFaceITProfileAction->shouldReceive('execute')
+            ->once()
+            ->with(Mockery::type(User::class));
 
         $response = $this->controller->steamCallback();
 

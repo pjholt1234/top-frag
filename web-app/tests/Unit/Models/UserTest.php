@@ -49,6 +49,8 @@ class UserTest extends TestCase
             'steam_persona_state',
             'steam_community_visibility_state',
             'steam_profile_updated_at',
+            'faceit_player_id',
+            'faceit_nickname',
         ];
         $this->assertEquals($expectedFillable, $user->getFillable());
     }

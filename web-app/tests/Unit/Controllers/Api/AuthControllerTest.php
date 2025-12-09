@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Controllers\Api;
 
+use App\Actions\FetchAndStoreFaceITProfileAction;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -26,7 +27,8 @@ class AuthControllerTest extends TestCase
     {
         parent::setUp();
         $steamApiConnector = Mockery::mock(SteamAPIConnector::class);
-        $this->controller = new AuthController($steamApiConnector);
+        $fetchAndStoreFaceITProfileAction = Mockery::mock(FetchAndStoreFaceITProfileAction::class);
+        $this->controller = new AuthController($steamApiConnector, $fetchAndStoreFaceITProfileAction);
     }
 
     public function test_register_creates_user_with_hashed_password()
