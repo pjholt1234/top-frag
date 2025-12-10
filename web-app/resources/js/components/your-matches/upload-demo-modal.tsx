@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Upload, File, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, File, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface UploadDemoModalProps {
@@ -169,6 +169,15 @@ export function UploadDemoModal({ onUploadSuccess }: UploadDemoModalProps) {
               Select a .dem file (max 1GB)
             </p>
           </div>
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Important:</strong> If uploading a FACEIT or Valve demo,
+              please keep the original filename to ensure match time can be
+              correctly extracted.
+            </AlertDescription>
+          </Alert>
 
           {file && (
             <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">

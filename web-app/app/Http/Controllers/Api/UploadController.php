@@ -23,11 +23,12 @@ class UploadController extends Controller
         try {
             $file = $request->file('demo');
 
+            $originalFileName = $file->getClientOriginalName();
             $fileName = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
             $publicPath = $file->storeAs('demos', $fileName, 'public');
             $fullPath = storage_path("app/public/{$publicPath}");
 
-            ParseDemo::dispatch($fullPath, Auth::user())->onQueue('high');
+            ParseDemo::dispatch($fullPath, Auth::user(), null, $originalFileName)->onQueue('high');
 
             return response()->json([
                 'success' => true,

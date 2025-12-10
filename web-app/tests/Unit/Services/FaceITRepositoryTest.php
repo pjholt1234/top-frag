@@ -375,6 +375,141 @@ class FaceITRepositoryTest extends TestCase
         $this->repository->getPlayerMatchHistory($playerId);
     }
 
+    public function test_get_match_details_returns_match_data(): void
+    {
+        $matchId = '1-25e72cdb-ac23-4237-a95d-701603b58681';
+        $expectedData = [
+            'match_id' => $matchId,
+            'game_id' => 'cs2',
+            'region' => 'EU',
+            'started_at' => 1760394042,
+            'finished_at' => 1760400000,
+            'teams' => [
+                [
+                    'team_id' => 'team1',
+                    'roster' => [],
+                ],
+            ],
+        ];
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("matches/{$matchId}")
+            ->andReturn($expectedData);
+
+        $result = $this->repository->getMatchDetails($matchId);
+
+        $this->assertIsArray($result);
+        $this->assertEquals($expectedData, $result);
+        $this->assertEquals($matchId, $result['match_id']);
+    }
+
+    public function test_get_match_details_throws_exception_when_connector_fails(): void
+    {
+        $matchId = '1-25e72cdb-ac23-4237-a95d-701603b58681';
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("matches/{$matchId}")
+            ->andThrow(FaceITAPIConnectorException::notFound('Match not found'));
+
+        $this->expectException(FaceITAPIConnectorException::class);
+        $this->expectExceptionMessage('Match not found');
+
+        $this->repository->getMatchDetails($matchId);
+    }
+
+    public function test_get_match_stats_returns_match_stats(): void
+    {
+        $matchId = '1-25e72cdb-ac23-4237-a95d-701603b58681';
+        $expectedData = [
+            'rounds' => [
+                [
+                    'round_stats' => [
+                        'Map' => 'de_dust2',
+                        'Score' => '16 / 14',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("matches/{$matchId}/stats")
+            ->andReturn($expectedData);
+
+        $result = $this->repository->getMatchStats($matchId);
+
+        $this->assertIsArray($result);
+        $this->assertEquals($expectedData, $result);
+        $this->assertArrayHasKey('rounds', $result);
+    }
+
+    public function test_get_match_stats_throws_exception_when_connector_fails(): void
+    {
+        $matchId = '1-25e72cdb-ac23-4237-a95d-701603b58681';
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("matches/{$matchId}/stats")
+            ->andThrow(FaceITAPIConnectorException::notFound('Match stats not found'));
+
+        $this->expectException(FaceITAPIConnectorException::class);
+        $this->expectExceptionMessage('Match stats not found');
+
+        $this->repository->getMatchStats($matchId);
+    }
+
+    public function test_get_player_by_faceit_id_returns_player_data(): void
+    {
+        $faceitId = 'd69085ab-a7e3-4959-bad6-d965fed35553';
+        $expectedData = [
+            'player_id' => $faceitId,
+            'nickname' => 'TestPlayer',
+            'games' => [
+                'cs2' => [
+                    'game_player_id' => '76561198081165057',
+                    'faceit_elo' => 2500,
+                    'skill_level' => 8,
+                ],
+            ],
+        ];
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("players/{$faceitId}")
+            ->andReturn($expectedData);
+
+        $result = $this->repository->getPlayerByFaceITID($faceitId);
+
+        $this->assertIsArray($result);
+        $this->assertEquals($expectedData, $result);
+        $this->assertEquals($faceitId, $result['player_id']);
+        $this->assertArrayHasKey('games', $result);
+        $this->assertArrayHasKey('cs2', $result['games']);
+    }
+
+    public function test_get_player_by_faceit_id_throws_exception_when_connector_fails(): void
+    {
+        $faceitId = 'd69085ab-a7e3-4959-bad6-d965fed35553';
+
+        $this->connector
+            ->shouldReceive('get')
+            ->once()
+            ->with("players/{$faceitId}")
+            ->andThrow(FaceITAPIConnectorException::notFound('Player not found'));
+
+        $this->expectException(FaceITAPIConnectorException::class);
+        $this->expectExceptionMessage('Player not found');
+
+        $this->repository->getPlayerByFaceITID($faceitId);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

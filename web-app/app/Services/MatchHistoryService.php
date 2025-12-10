@@ -149,9 +149,9 @@ class MatchHistoryService
 
         if (! empty($filters['date_from'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('matches.start_timestamp', '>=', $filters['date_from'])
+                $q->where('matches.match_start_time', '>=', $filters['date_from'])
                     ->orWhere(function ($subQ) use ($filters) {
-                        $subQ->whereNull('matches.start_timestamp')
+                        $subQ->whereNull('matches.match_start_time')
                             ->where('matches.created_at', '>=', $filters['date_from']);
                     });
             });
@@ -159,9 +159,9 @@ class MatchHistoryService
 
         if (! empty($filters['date_to'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('matches.start_timestamp', '<=', $filters['date_to'].' 23:59:59')
+                $q->where('matches.match_start_time', '<=', $filters['date_to'].' 23:59:59')
                     ->orWhere(function ($subQ) use ($filters) {
-                        $subQ->whereNull('matches.start_timestamp')
+                        $subQ->whereNull('matches.match_start_time')
                             ->where('matches.created_at', '<=', $filters['date_to'].' 23:59:59');
                     });
             });

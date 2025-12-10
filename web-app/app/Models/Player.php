@@ -12,6 +12,7 @@ class Player extends Model
 
     protected $fillable = [
         'steam_id',
+        'faceit_id',
         'name',
         'first_seen_at',
         'last_seen_at',

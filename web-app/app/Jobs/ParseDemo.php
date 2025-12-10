@@ -21,7 +21,8 @@ class ParseDemo implements ShouldQueue
     public function __construct(
         private readonly string $filePath,
         private readonly ?User $user = null,
-        private readonly ?int $matchId = null
+        private readonly ?int $matchId = null,
+        private readonly ?string $originalFileName = null
     ) {
         $this->parserServiceConnector = app(ParserServiceConnector::class);
     }
@@ -55,7 +56,13 @@ class ParseDemo implements ShouldQueue
                 $job = DemoProcessingJob::create([
                     'match_id' => $match->id,
                     'user_id' => $this->user?->id,
+                    'original_file_name' => $this->originalFileName,
                 ]);
+            } else {
+                // Update existing job with original file name if not already set
+                if (empty($job->original_file_name) && $this->originalFileName) {
+                    $job->update(['original_file_name' => $this->originalFileName]);
+                }
             }
 
             $this->parserServiceConnector->checkServiceHealth();

@@ -66,4 +66,43 @@ class FaceITRepository
 
         return $this->connector->get("players/{$playerId}/history", $queryParams);
     }
+
+    /**
+     * Get match details by match ID.
+     *
+     * @param  string  $matchId  The FACEIT match ID
+     * @return array<string, mixed>
+     *
+     * @throws FaceITAPIConnectorException
+     */
+    public function getMatchDetails(string $matchId): array
+    {
+        return $this->connector->get("matches/{$matchId}");
+    }
+
+    /**
+     * Get match statistics by match ID.
+     *
+     * @param  string  $matchId  The FACEIT match ID
+     * @return array<string, mixed>
+     *
+     * @throws FaceITAPIConnectorException
+     */
+    public function getMatchStats(string $matchId): array
+    {
+        return $this->connector->get("matches/{$matchId}/stats");
+    }
+
+    /**
+     * Get player details by FACEIT ID.
+     *
+     * @param  string  $faceitId  The FACEIT player ID
+     * @return array<string, mixed>
+     *
+     * @throws FaceITAPIConnectorException
+     */
+    public function getPlayerByFaceITID(string $faceitId): array
+    {
+        return $this->connector->get("players/{$faceitId}");
+    }
 }

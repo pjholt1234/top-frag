@@ -81,6 +81,30 @@ class DemoParserService
         // If job is completed, warm dashboard cache synchronously
         if ($isCompleted && $job->match_id) {
             app(DashboardService::class)->warmCacheForMatch($job->match_id);
+
+            // Extract match start time from original file name
+            try {
+                $matchTimeExtractor = new \App\Services\MatchTimeExtractor($job);
+
+                $matchStartTime = $matchTimeExtractor->extract();
+
+                if ($matchStartTime && $job->match) {
+                    $job->match->update(['match_start_time' => $matchStartTime]);
+
+                    Log::channel('parser')->info('Match start time extracted and updated', [
+                        'job_id' => $jobId,
+                        'match_id' => $job->match_id,
+                        'match_start_time' => $matchStartTime->toIso8601String(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Don't let match time extraction errors block completion
+                Log::channel('parser')->warning('Failed to extract match start time', [
+                    'job_id' => $jobId,
+                    'match_id' => $job->match_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -103,7 +127,6 @@ class DemoParserService
                 'winning_team_score' => $matchData['winning_team_score'] ?? 0,
                 'losing_team_score' => $matchData['losing_team_score'] ?? 0,
                 'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-                'start_timestamp' => null, // todo: add this
                 'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
                 'playback_ticks' => $matchData['playback_ticks'] ?? 0,
@@ -118,7 +141,6 @@ class DemoParserService
                 'winning_team_score' => $matchData['winning_team_score'] ?? 0,
                 'losing_team_score' => $matchData['losing_team_score'] ?? 0,
                 'match_type' => $this->mapMatchType($matchData['match_type'] ?? 'other'),
-                'start_timestamp' => null, // todo: add this
                 'end_timestamp' => null, // todo: add this
                 'total_rounds' => $matchData['total_rounds'] ?? 0,
                 'playback_ticks' => $matchData['playback_ticks'] ?? 0,

@@ -13,6 +13,7 @@ class DemoProcessingJob extends Model
 
     protected $fillable = [
         'uuid',
+        'original_file_name',
         'match_id',
         'processing_status',
         'progress_percentage',

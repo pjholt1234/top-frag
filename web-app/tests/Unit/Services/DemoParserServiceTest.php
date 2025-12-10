@@ -1223,4 +1223,116 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(18, $job->total_steps);
         $this->assertEquals(1, $job->current_step_num);
     }
+
+    public function test_it_extracts_match_start_time_when_job_completes(): void
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'original_file_name' => '1-25e72cdb-ac23-4237-a95d-701603b58681-1-1.dem',
+        ]);
+        $match = GameMatch::factory()->create([
+            'match_type' => \App\Enums\MatchType::FACEIT,
+            'map' => 'de_dust2',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+        ]);
+        $job->update(['match_id' => $match->id]);
+
+        // Mock FaceITRepository to return valid data
+        $faceitRepository = \Mockery::mock(\App\Services\FaceITRepository::class);
+        $faceitRepository
+            ->shouldReceive('getMatchDetails')
+            ->once()
+            ->andReturn([
+                'started_at' => 1760394042,
+                'teams' => [
+                    [
+                        'roster' => [],
+                    ],
+                ],
+            ]);
+        $faceitRepository
+            ->shouldReceive('getMatchStats')
+            ->once()
+            ->andReturn([
+                'rounds' => [
+                    [
+                        'round_stats' => [
+                            'Map' => 'de_dust2',
+                            'Score' => '16 / 14',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->app->instance(\App\Services\FaceITRepository::class, $faceitRepository);
+
+        $data = [
+            'status' => ProcessingStatus::COMPLETED->value,
+            'progress' => 100,
+            'current_step' => 'Completed',
+        ];
+
+        $this->service->updateProcessingJob($job->uuid, $data, true);
+
+        $match->refresh();
+        $this->assertNotNull($match->match_start_time);
+        $this->assertEquals(1760394042, $match->match_start_time->timestamp);
+    }
+
+    public function test_it_handles_match_time_extraction_failure_gracefully(): void
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'original_file_name' => '1-25e72cdb-ac23-4237-a95d-701603b58681-1-1.dem',
+        ]);
+        $match = GameMatch::factory()->create([
+            'match_type' => \App\Enums\MatchType::FACEIT,
+            'match_start_time' => null, // Ensure it starts as null
+        ]);
+        $job->update(['match_id' => $match->id]);
+
+        // Mock FaceITRepository to throw an exception
+        $faceitRepository = \Mockery::mock(\App\Services\FaceITRepository::class);
+        $faceitRepository
+            ->shouldReceive('getMatchDetails')
+            ->once()
+            ->andThrow(new \Exception('API Error'));
+
+        $this->app->instance(\App\Services\FaceITRepository::class, $faceitRepository);
+
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')
+            ->with('parser')
+            ->andReturnSelf();
+        \Illuminate\Support\Facades\Log::shouldReceive('warning')
+            ->once();
+
+        $data = [
+            'status' => ProcessingStatus::COMPLETED->value,
+            'progress' => 100,
+            'current_step' => 'Completed',
+        ];
+
+        // Should not throw exception
+        $this->service->updateProcessingJob($job->uuid, $data, true);
+
+        $match->refresh();
+        $this->assertNull($match->match_start_time);
+    }
+
+    public function test_it_does_not_extract_match_time_when_no_match(): void
+    {
+        $job = DemoProcessingJob::factory()->create([
+            'original_file_name' => '1-25e72cdb-ac23-4237-a95d-701603b58681-1-1.dem',
+        ]);
+
+        $data = [
+            'status' => ProcessingStatus::COMPLETED->value,
+            'progress' => 100,
+            'current_step' => 'Completed',
+        ];
+
+        // Should not throw exception even without a match
+        $this->service->updateProcessingJob($job->uuid, $data, true);
+
+        $this->assertTrue(true); // Test passes if no exception thrown
+    }
 }

@@ -38,7 +38,7 @@ class PlayerTest extends TestCase
     {
         $player = new Player;
 
-        $expectedFillable = ['steam_id', 'name', 'first_seen_at', 'last_seen_at', 'total_matches'];
+        $expectedFillable = ['steam_id', 'faceit_id', 'name', 'first_seen_at', 'last_seen_at', 'total_matches'];
         $this->assertEquals($expectedFillable, $player->getFillable());
     }
 

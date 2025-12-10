@@ -1,0 +1,19 @@
+meta {
+  name: Match details
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://open.faceit.com/data/v4/matches/1-73c136d8-9da7-49e7-8701-0a3fe9304819
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{process.env.FACEIT_API_KEY}}
+}

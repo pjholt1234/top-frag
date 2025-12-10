@@ -34,7 +34,7 @@ class GameMatchFactory extends Factory
             'winning_team_score' => $this->faker->numberBetween(16, 30),
             'losing_team_score' => $this->faker->numberBetween(0, 15),
             'match_type' => $this->faker->randomElement(MatchType::cases()),
-            'start_timestamp' => $startTime,
+            'match_start_time' => $startTime,
             'end_timestamp' => $endTime,
             'total_rounds' => $this->faker->numberBetween(15, 50),
         ];
