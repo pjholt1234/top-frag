@@ -50,6 +50,7 @@ type EventProcessor struct {
 	playerTickService  *database.PlayerTickService
 	roundTickCache     *RoundTickCache
 	matchID            string
+	isFaceitMatch      bool // Track if this is a FACEIT match to skip first round
 
 	// Aim tracking results storage
 	aimEvents       []types.AimAnalysisResult
@@ -130,7 +131,29 @@ func (ep *EventProcessor) SetMatchID(matchID string) {
 	ep.matchID = matchID
 }
 
+func (ep *EventProcessor) SetIsFaceitMatch(isFaceit bool) {
+	ep.isFaceitMatch = isFaceit
+}
+
+// shouldSkipCurrentRound returns true if we should skip processing events for the current round
+// This is used to skip the first round for FACEIT matches
+func (ep *EventProcessor) shouldSkipCurrentRound() bool {
+	return ep.isFaceitMatch && ep.currentRound == 1
+}
+
 func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
+	// Skip first round for FACEIT matches
+	if ep.isFaceitMatch && ep.currentRound == 0 {
+		// Increment both currentRound and matchState.CurrentRound to keep them in sync
+		// but skip all processing for this round
+		ep.currentRound++
+		if ep.matchState != nil {
+			ep.matchState.CurrentRound++
+		}
+		ep.logger.WithField("round", ep.currentRound).Info("Skipping first round for FACEIT match")
+		return nil
+	}
+
 	if ep.matchHandler == nil {
 		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match handler is nil", nil).
 			WithContext("event", "RoundStart")
@@ -139,6 +162,12 @@ func (ep *EventProcessor) HandleRoundStart(e events.RoundStart) error {
 }
 
 func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
+	// Skip first round for FACEIT matches
+	if ep.isFaceitMatch && ep.currentRound == 1 {
+		ep.logger.WithField("round", ep.currentRound).Info("Skipping first round end for FACEIT match")
+		return nil
+	}
+
 	if ep.matchHandler == nil {
 		return types.NewParseErrorWithSeverity(types.ErrorTypeEventProcessing, types.ErrorSeverityCritical, "match handler is nil", nil).
 			WithContext("event", "RoundEnd")
@@ -226,34 +255,58 @@ func (ep *EventProcessor) HandleRoundEnd(e events.RoundEnd) error {
 }
 
 func (ep *EventProcessor) HandlePlayerKilled(e events.Kill) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.gunfightHandler.HandlePlayerKilled(e)
 }
 
 func (ep *EventProcessor) HandlePlayerHurt(e events.PlayerHurt) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.damageHandler.HandlePlayerHurt(e)
 }
 
 func (ep *EventProcessor) HandleGrenadeProjectileThrow(e events.GrenadeProjectileThrow) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.grenadeHandler.HandleGrenadeProjectileThrow(e)
 }
 
 func (ep *EventProcessor) HandleGrenadeProjectileDestroy(e events.GrenadeProjectileDestroy) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.grenadeHandler.HandleGrenadeProjectileDestroy(e)
 }
 
 func (ep *EventProcessor) HandleFlashExplode(e events.FlashExplode) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.grenadeHandler.HandleFlashExplode(e)
 }
 
 func (ep *EventProcessor) HandlePlayerFlashed(e events.PlayerFlashed) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.grenadeHandler.HandlePlayerFlashed(e)
 }
 
 func (ep *EventProcessor) HandleSmokeStart(e events.SmokeStart) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.grenadeHandler.HandleSmokeStart(e)
 }
 
 func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	if err := ep.matchHandler.HandleWeaponFire(e); err != nil {
 		return err
 	}
@@ -261,14 +314,23 @@ func (ep *EventProcessor) HandleWeaponFire(e events.WeaponFire) error {
 }
 
 func (ep *EventProcessor) HandleBombPlanted(e events.BombPlanted) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.matchHandler.HandleBombPlanted(e)
 }
 
 func (ep *EventProcessor) HandleBombDefused(e events.BombDefused) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.matchHandler.HandleBombDefused(e)
 }
 
 func (ep *EventProcessor) HandleBombExplode(e events.BombExplode) error {
+	if ep.shouldSkipCurrentRound() {
+		return nil
+	}
 	return ep.matchHandler.HandleBombExplode(e)
 }
 
@@ -722,6 +784,12 @@ func (ep *EventProcessor) processAimTrackingForRound() error {
 	}
 
 	// Fallback to direct database query if cache not available
+	// If playerTickService is nil, skip aim tracking processing
+	if ep.playerTickService == nil {
+		ep.logger.WithField("round", ep.matchState.CurrentRound).Debug("Skipping aim tracking - playerTickService is nil")
+		return nil
+	}
+
 	playerTickDataPointers, err := ep.playerTickService.GetPlayerTickDataByRound(
 		context.Background(),
 		ep.matchID,

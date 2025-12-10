@@ -143,6 +143,15 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
 			serverName = m.GetServerName()
+
+			// Detect FACEIT match early from server name
+			if serverName != "" {
+				serverNameUpper := strings.ToUpper(serverName)
+				if strings.Contains(serverNameUpper, "FACEIT.COM") {
+					eventProcessor.SetIsFaceitMatch(true)
+					dp.logger.WithField("server_name", serverName).Info("FACEIT match detected, will skip first round")
+				}
+			}
 		})
 
 		dp.registerEventHandlers(parser, eventProcessor)
@@ -766,6 +775,11 @@ func (dp *DemoParser) detectMatchType(serverName string, parser demoinfocs.Parse
 
 // trackPlayerTickData tracks player positions and aim for each tick
 func (dp *DemoParser) trackPlayerTickData(ctx context.Context, parser demoinfocs.Parser, eventProcessor *EventProcessor) {
+	// Skip tracking tick data during round 1 for FACEIT matches
+	if eventProcessor != nil && eventProcessor.shouldSkipCurrentRound() {
+		return
+	}
+
 	gameState := parser.GameState()
 	if gameState == nil {
 		return
