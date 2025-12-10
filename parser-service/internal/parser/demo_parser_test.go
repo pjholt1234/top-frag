@@ -257,7 +257,7 @@ func TestDemoParser_BuildParsedData(t *testing.T) {
 	eventProcessor.teamAWins = 1 // CT wins 1 round
 	eventProcessor.teamBWins = 2 // T wins 2 rounds
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "de_test", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -326,7 +326,7 @@ func TestDemoParser_BuildParsedData_NoRounds(t *testing.T) {
 	// Create an event processor
 	eventProcessor := NewEventProcessor(matchState, logger, nil, nil)
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "de_test", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -381,7 +381,7 @@ func TestDemoParser_BuildParsedData_TieGame(t *testing.T) {
 	eventProcessor.teamAWins = 1 // CT wins 1 round
 	eventProcessor.teamBWins = 1 // T wins 1 round
 
-	parsedData := parser.buildParsedData(matchState, "de_test", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "de_test", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -462,7 +462,7 @@ func TestDemoParser_BuildParsedData_CS2HalftimeSwitch(t *testing.T) {
 	eventProcessor.teamAWins = 10 // CT wins 10 rounds total
 	eventProcessor.teamBWins = 11 // T wins 11 rounds total
 
-	parsedData := parser.buildParsedData(matchState, "de_ancient", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "de_ancient", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -511,7 +511,7 @@ func TestDemoParser_BuildParsedData_FallbackMapName(t *testing.T) {
 	eventProcessor.teamAWins = 1
 	eventProcessor.teamBWins = 0
 
-	parsedData := parser.buildParsedData(matchState, "", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -717,7 +717,7 @@ func TestDemoParser_BuildParsedData_OvertimeSwitches(t *testing.T) {
 	eventProcessor.teamAWins = 14
 	eventProcessor.teamBWins = 16
 
-	parsedData := parser.buildParsedData(matchState, "de_mirage", 1000, eventProcessor, createMockParser())
+	parsedData := parser.buildParsedData(matchState, "de_mirage", "", 1000, eventProcessor, createMockParser())
 
 	if parsedData == nil {
 		t.Fatal("Expected parsed data to be created, got nil")
@@ -787,5 +787,77 @@ func TestDemoParser_OvertimeSideSwitchingLogic(t *testing.T) {
 	if eventProcessor.teamACurrentSide != "T" || eventProcessor.teamBCurrentSide != "CT" {
 		t.Errorf("Expected switch at round 31 (overtime round 7). Team A: %s, Team B: %s",
 			eventProcessor.teamACurrentSide, eventProcessor.teamBCurrentSide)
+	}
+}
+
+func TestDemoParser_DetectMatchType_ServerName(t *testing.T) {
+	cfg := &config.Config{}
+	logger := logrus.New()
+	parser := setupTestParser(cfg, logger)
+
+	tests := []struct {
+		name       string
+		serverName string
+		expected   string
+	}{
+		{
+			name:       "FACEIT.com server name",
+			serverName: "FACEIT.com Server",
+			expected:   types.MatchTypeFaceit,
+		},
+		{
+			name:       "FACEIT.com lowercase",
+			serverName: "faceit.com server",
+			expected:   types.MatchTypeFaceit,
+		},
+		{
+			name:       "FACEIT.com mixed case",
+			serverName: "FaceIt.CoM Server",
+			expected:   types.MatchTypeFaceit,
+		},
+		{
+			name:       "Valve server name",
+			serverName: "Valve CS:GO Server",
+			expected:   types.MatchTypeValve,
+		},
+		{
+			name:       "Valve lowercase",
+			serverName: "valve server",
+			expected:   types.MatchTypeValve,
+		},
+		{
+			name:       "Valve mixed case",
+			serverName: "VaLvE Server",
+			expected:   types.MatchTypeValve,
+		},
+		{
+			name:       "Unknown server name",
+			serverName: "ESL Server",
+			expected:   types.MatchTypeUnknown,
+		},
+		{
+			name:       "Empty server name",
+			serverName: "",
+			expected:   types.MatchTypeUnknown,
+		},
+		{
+			name:       "Server name with Valve but not FACEIT",
+			serverName: "Valve Community Server",
+			expected:   types.MatchTypeValve,
+		},
+		{
+			name:       "Server name with FACEIT.com takes priority",
+			serverName: "FACEIT.com Valve Server",
+			expected:   types.MatchTypeFaceit,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parser.detectMatchType(tt.serverName, nil)
+			if result != tt.expected {
+				t.Errorf("Expected match type %s for server name '%s', got %s", tt.expected, tt.serverName, result)
+			}
+		})
 	}
 }

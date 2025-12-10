@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"parser-service/internal/config"
@@ -122,6 +123,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	})
 
 	var mapName string
+	var serverName string
 	var demoParser demoinfocs.Parser
 
 	err := demoinfocs.ParseFile(demoPath, func(parser demoinfocs.Parser) error {
@@ -140,6 +142,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 
 		parser.RegisterNetMessageHandler(func(m *msg.CDemoFileHeader) {
 			mapName = m.GetMapName()
+			serverName = m.GetServerName()
 		})
 
 		dp.registerEventHandlers(parser, eventProcessor)
@@ -219,7 +222,7 @@ func (dp *DemoParser) ParseDemoFromFile(ctx context.Context, demoPath string, pr
 	}
 
 	buildStart := time.Now()
-	parsedData := dp.buildParsedData(matchState, mapName, playbackTicks, eventProcessor, demoParser)
+	parsedData := dp.buildParsedData(matchState, mapName, serverName, playbackTicks, eventProcessor, demoParser)
 	buildElapsed := time.Since(buildStart)
 	dp.logger.WithFields(logrus.Fields{
 		"label":       "match_aggregation",
@@ -589,7 +592,7 @@ func (dp *DemoParser) registerEventHandlers(parser demoinfocs.Parser, eventProce
 	})
 }
 
-func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, playbackTicks int, eventProcessor *EventProcessor, demoParser demoinfocs.Parser) *types.ParsedDemoData {
+func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName string, serverName string, playbackTicks int, eventProcessor *EventProcessor, demoParser demoinfocs.Parser) *types.ParsedDemoData {
 	players := make([]types.Player, 0, len(matchState.Players))
 	for _, player := range matchState.Players {
 		players = append(players, *player)
@@ -634,8 +637,8 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 		}
 	}
 
-	// Determine match type based on player ranks
-	matchType := dp.detectMatchType(demoParser)
+	// Determine match type based on server name header
+	matchType := dp.detectMatchType(serverName, demoParser)
 
 	match := types.Match{
 		Map:              mapName,
@@ -689,26 +692,48 @@ func (dp *DemoParser) buildParsedData(matchState *types.MatchState, mapName stri
 	}
 }
 
-// detectMatchType determines the match type based on player ranks
-func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
+// detectMatchType determines the match type based on server name header
+func (dp *DemoParser) detectMatchType(serverName string, parser demoinfocs.Parser) string {
+	// Check server name header for match type
+	if serverName != "" {
+		serverNameUpper := strings.ToUpper(serverName)
+
+		// Check for FACEIT.com first (more specific)
+		if strings.Contains(serverNameUpper, "FACEIT.COM") {
+			dp.logger.WithField("server_name", serverName).Debug("Match type detected as FACEIT from server name")
+			return types.MatchTypeFaceit
+		}
+
+		// Check for Valve
+		if strings.Contains(serverNameUpper, "VALVE") {
+			dp.logger.WithField("server_name", serverName).Debug("Match type detected as Valve from server name")
+			return types.MatchTypeValve
+		}
+
+		// Server name exists but doesn't contain FACEIT.com or Valve
+		dp.logger.WithField("server_name", serverName).Debug("Match type detected as unknown from server name")
+		return types.MatchTypeUnknown
+	}
+
+	// If server name is empty, fall back to parser-based detection
 	if parser == nil {
-		dp.logger.Warn("Parser is nil, defaulting to 'other' match type")
-		return types.MatchTypeOther
+		dp.logger.Warn("Parser is nil and server name is empty, defaulting to 'unknown' match type")
+		return types.MatchTypeUnknown
 	}
 
 	gameState := parser.GameState()
 	if gameState == nil {
-		dp.logger.Warn("Game state is nil, defaulting to 'other' match type")
-		return types.MatchTypeOther
+		dp.logger.Warn("Game state is nil and server name is empty, defaulting to 'unknown' match type")
+		return types.MatchTypeUnknown
 	}
 
 	players := gameState.Participants().All()
 	if len(players) == 0 {
-		dp.logger.Warn("No players found, defaulting to 'other' match type")
-		return types.MatchTypeOther
+		dp.logger.Warn("No players found and server name is empty, defaulting to 'unknown' match type")
+		return types.MatchTypeUnknown
 	}
 
-	// Check if any player has a valid rank (not unranked)
+	// Check if any player has a valid rank (not unranked) as fallback
 	hasValidRank := false
 	rankTypeCounts := make(map[int]int)
 
@@ -722,24 +747,21 @@ func (dp *DemoParser) detectMatchType(parser demoinfocs.Parser) string {
 			if rank > 0 && rankType > 0 {
 				hasValidRank = true
 			}
-
-			// Match type detection - player rank analysis
 		}
 	}
 
 	dp.logger.WithFields(logrus.Fields{
 		"rank_type_counts": rankTypeCounts,
 		"has_valid_rank":   hasValidRank,
-	})
-	// Match type detection analysis
+	}).Debug("Falling back to rank-based match type detection")
 
-	// If any player has a valid rank, it's a Valve match
+	// If any player has a valid rank, it's likely a Valve match
 	if hasValidRank {
 		return types.MatchTypeValve
 	}
 
-	// No valid ranks found, default to other
-	return types.MatchTypeOther
+	// No valid ranks found and no server name, default to unknown
+	return types.MatchTypeUnknown
 }
 
 // trackPlayerTickData tracks player positions and aim for each tick

@@ -514,6 +514,7 @@ const (
 	MatchTypeFaceit   = "faceit"
 	MatchTypeESPortal = "esportal"
 	MatchTypeOther    = "other"
+	MatchTypeUnknown  = "unknown"
 )
 
 // Weapon categories for aim tracking
