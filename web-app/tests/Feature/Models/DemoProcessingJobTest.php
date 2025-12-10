@@ -53,6 +53,7 @@ class DemoProcessingJobTest extends TestCase
 
         $expectedFillable = [
             'uuid',
+            'original_file_name',
             'match_id',
             'processing_status',
             'progress_percentage',

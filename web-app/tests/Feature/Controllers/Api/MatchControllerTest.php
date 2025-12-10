@@ -521,8 +521,8 @@ class MatchControllerTest extends TestCase
 
     public function test_index_handles_date_filters()
     {
-        $match1 = GameMatch::factory()->create(['start_timestamp' => now()->subDays(5)]);
-        $match2 = GameMatch::factory()->create(['start_timestamp' => now()->subDays(1)]);
+        $match1 = GameMatch::factory()->create(['match_start_time' => now()->subDays(5)]);
+        $match2 = GameMatch::factory()->create(['match_start_time' => now()->subDays(1)]);
 
         foreach ([$match1, $match2] as $match) {
             $match->players()->attach($this->player->id, ['team' => 'A']);

@@ -27,7 +27,7 @@ class GameMatchTest extends TestCase
             'winning_team_score' => 16,
             'losing_team_score' => 14,
             'match_type' => MatchType::MATCHMAKING,
-            'start_timestamp' => '2023-01-01 12:00:00',
+            'match_start_time' => '2023-01-01 12:00:00',
             'end_timestamp' => '2023-01-01 13:30:00',
             'total_rounds' => 30,
         ]);
@@ -53,8 +53,8 @@ class GameMatchTest extends TestCase
             'winning_team_score',
             'losing_team_score',
             'match_type',
-            'start_timestamp',
             'end_timestamp',
+            'match_start_time',
             'total_rounds',
             'playback_ticks',
             'uploaded_by',
@@ -68,13 +68,13 @@ class GameMatchTest extends TestCase
     {
         $match = GameMatch::factory()->create([
             'match_type' => MatchType::MATCHMAKING,
-            'start_timestamp' => '2023-01-01 12:00:00',
+            'match_start_time' => '2023-01-01 12:00:00',
             'end_timestamp' => '2023-01-01 13:30:00',
             'total_rounds' => 30,
         ]);
 
         $this->assertInstanceOf(MatchType::class, $match->match_type);
-        $this->assertInstanceOf(\Carbon\Carbon::class, $match->start_timestamp);
+        $this->assertInstanceOf(\Carbon\Carbon::class, $match->match_start_time);
         $this->assertInstanceOf(\Carbon\Carbon::class, $match->end_timestamp);
         $this->assertIsInt($match->total_rounds);
     }

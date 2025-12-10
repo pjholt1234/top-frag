@@ -169,7 +169,7 @@ class DemoParserControllerTest extends TestCase
                 'winning_team_score' => 16,
                 'losing_team_score' => 14,
                 'match_type' => 'mm',
-                'start_timestamp' => '2025-08-10T01:00:00Z',
+                'match_start_time' => '2025-08-10T01:00:00Z',
                 'end_timestamp' => '2025-08-10T02:00:00Z',
                 'total_rounds' => 30,
             ],
