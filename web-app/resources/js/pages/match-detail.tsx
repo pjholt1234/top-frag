@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -421,7 +421,29 @@ const MatchDetail = () => {
               </p>
               {match.error_message && (
                 <p className="text-sm text-red-400 mt-2">
-                  {match.error_message}
+                  {(() => {
+                    const errorMsg = match.error_message;
+                    const linkMatch = errorMsg.match(
+                      /<a href='([^']+)'>([^<]+)<\/a>/
+                    );
+                    if (linkMatch) {
+                      const [fullMatch, href, linkText] = linkMatch;
+                      const parts = errorMsg.split(fullMatch);
+                      return (
+                        <>
+                          {parts[0]}
+                          <Link
+                            to={href}
+                            className="underline hover:text-red-300"
+                          >
+                            {linkText}
+                          </Link>
+                          {parts[1]}
+                        </>
+                      );
+                    }
+                    return errorMsg;
+                  })()}
                 </p>
               )}
             </CardContent>

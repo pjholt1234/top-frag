@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Scoreboard } from '@/components/shared/scoreboard';
@@ -247,6 +248,33 @@ export function MatchesTable({
                         </Badge>
                       )}
                     </div>
+                    {match.error_message && (
+                      <div className="mt-2 text-xs text-red-400">
+                        {(() => {
+                          const errorMsg = match.error_message;
+                          const linkMatch = errorMsg.match(
+                            /<a href='([^']+)'>([^<]+)<\/a>/
+                          );
+                          if (linkMatch) {
+                            const [fullMatch, href, linkText] = linkMatch;
+                            const parts = errorMsg.split(fullMatch);
+                            return (
+                              <>
+                                {parts[0]}
+                                <Link
+                                  to={href}
+                                  className="underline hover:text-red-300"
+                                >
+                                  {linkText}
+                                </Link>
+                                {parts[1]}
+                              </>
+                            );
+                          }
+                          return errorMsg;
+                        })()}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <span className="text-muted-foreground">

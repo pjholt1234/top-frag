@@ -16,6 +16,7 @@ use App\Models\Player;
 use App\Models\PlayerRoundEvent;
 use App\Services\DemoParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class DemoParserServiceTest extends TestCase
@@ -1334,5 +1335,173 @@ class DemoParserServiceTest extends TestCase
         $this->service->updateProcessingJob($job->uuid, $data, true);
 
         $this->assertTrue(true); // Test passes if no exception thrown
+    }
+
+    public function test_it_detects_duplicate_demo_when_duplicates_not_allowed()
+    {
+        // Disable duplicate demos (production-like behavior)
+        $originalConfig = config('services.parser.allow_duplicate_demos');
+        config(['services.parser.allow_duplicate_demos' => false]);
+
+        $job = DemoProcessingJob::factory()->create();
+
+        $matchData = [
+            'map' => 'de_dust2',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+            'match_type' => 'mm',
+            'total_rounds' => 30,
+            'playback_ticks' => 1000,
+        ];
+
+        $playersData = [
+            [
+                'steam_id' => 'steam_123',
+                'name' => 'Player1',
+                'team' => 'A',
+            ],
+            [
+                'steam_id' => 'steam_456',
+                'name' => 'Player2',
+                'team' => 'B',
+            ],
+        ];
+
+        // Create first match
+        $this->service->createMatchWithPlayers($job->uuid, $matchData, $playersData);
+
+        $job->refresh();
+        $firstMatch = $job->match;
+        $this->assertNotNull($firstMatch);
+        $this->assertNotNull($firstMatch->match_hash);
+
+        // Create a second job with the same match data (duplicate)
+        $duplicateJob = DemoProcessingJob::factory()->create();
+
+        // Mock Log to verify logging
+        Log::shouldReceive('info')
+            ->once()
+            ->with('Duplicate demo detected and job cancelled', \Mockery::type('array'));
+
+        $this->service->createMatchWithPlayers($duplicateJob->uuid, $matchData, $playersData);
+
+        $duplicateJob->refresh();
+
+        // Verify job was cancelled
+        $this->assertEquals(ProcessingStatus::CANCELLED, $duplicateJob->processing_status);
+        $this->assertNotNull($duplicateJob->completed_at);
+        $this->assertEquals(0, $duplicateJob->progress_percentage);
+        $this->assertEquals('Duplicate detected', $duplicateJob->current_step);
+        $this->assertStringContainsString('/matches/'.$firstMatch->id, $duplicateJob->error_message);
+        $this->assertStringContainsString('already been processed', $duplicateJob->error_message);
+
+        // Verify no new match was created for the duplicate job
+        $this->assertNull($duplicateJob->match);
+
+        // Verify only one match exists
+        $this->assertEquals(1, GameMatch::where('match_hash', $firstMatch->match_hash)->count());
+
+        // Restore original config
+        config(['services.parser.allow_duplicate_demos' => $originalConfig]);
+    }
+
+    public function test_it_skips_duplicate_detection_when_duplicates_allowed()
+    {
+        // Enable duplicate demos (local-like behavior)
+        $originalConfig = config('services.parser.allow_duplicate_demos');
+        config(['services.parser.allow_duplicate_demos' => true]);
+
+        $job = DemoProcessingJob::factory()->create();
+
+        $matchData = [
+            'map' => 'de_dust2',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+            'match_type' => 'mm',
+            'total_rounds' => 30,
+            'playback_ticks' => 1000,
+        ];
+
+        $playersData = [
+            [
+                'steam_id' => 'steam_123',
+                'name' => 'Player1',
+                'team' => 'A',
+            ],
+        ];
+
+        // Create first match
+        $this->service->createMatchWithPlayers($job->uuid, $matchData, $playersData);
+
+        $job->refresh();
+        $firstMatch = $job->match;
+        $this->assertNotNull($firstMatch);
+        $this->assertNull($firstMatch->match_hash); // Hash should be null when duplicates allowed
+
+        // Create a second job with the same match data
+        $secondJob = DemoProcessingJob::factory()->create();
+
+        // Should not log duplicate detection
+        Log::shouldReceive('info')
+            ->with('Duplicate demo detected and job cancelled', \Mockery::any())
+            ->never();
+
+        $this->service->createMatchWithPlayers($secondJob->uuid, $matchData, $playersData);
+
+        $secondJob->refresh();
+
+        // Verify second job was NOT cancelled
+        $this->assertNotEquals(ProcessingStatus::CANCELLED, $secondJob->processing_status);
+
+        // Verify a second match was created (duplicate detection skipped)
+        $this->assertNotNull($secondJob->match);
+        $this->assertEquals(2, GameMatch::count());
+
+        // Restore original config
+        config(['services.parser.allow_duplicate_demos' => $originalConfig]);
+    }
+
+    public function test_it_allows_updating_existing_match_without_triggering_duplicate_detection()
+    {
+        // Disable duplicate demos to enable hash generation
+        $originalConfig = config('services.parser.allow_duplicate_demos');
+        config(['services.parser.allow_duplicate_demos' => false]);
+
+        $job = DemoProcessingJob::factory()->create();
+        $existingMatch = GameMatch::factory()->create([
+            'match_hash' => 'existing_hash_123',
+        ]);
+        $job->update(['match_id' => $existingMatch->id]);
+
+        $matchData = [
+            'map' => 'de_dust2',
+            'winning_team' => 'A',
+            'winning_team_score' => 16,
+            'losing_team_score' => 14,
+            'match_type' => 'mm',
+            'total_rounds' => 30,
+            'playback_ticks' => 1000,
+        ];
+
+        // Should not log duplicate detection when updating existing match
+        Log::shouldReceive('info')
+            ->with('Duplicate demo detected and job cancelled', \Mockery::any())
+            ->never();
+
+        $this->service->createMatchWithPlayers($job->uuid, $matchData);
+
+        $job->refresh();
+
+        // Verify job was NOT cancelled
+        $this->assertNotEquals(ProcessingStatus::CANCELLED, $job->processing_status);
+
+        // Verify match was updated
+        $existingMatch->refresh();
+        $this->assertNotNull($existingMatch->match_hash);
+
+        // Restore original config
+        config(['services.parser.allow_duplicate_demos' => $originalConfig]);
     }
 }

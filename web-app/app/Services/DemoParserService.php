@@ -117,6 +117,11 @@ class DemoParserService
 
         $matchHash = $this->generateMatchHash($matchData, $playersData);
 
+        // Check for duplicates (only in non-local environments where hash is generated)
+        if ($this->handleDuplicateIfExists($job, $matchHash, $jobId)) {
+            return; // Prevent match creation/update
+        }
+
         $match = $job->match;
 
         if (! $match) {
@@ -246,9 +251,56 @@ class DemoParserService
         ]);
     }
 
+    /**
+     * Check for duplicate matches and cancel the job if a duplicate is found.
+     * Respects the allow_duplicate_demos config setting.
+     *
+     * @return bool Returns true if duplicate was found and job was cancelled, false otherwise
+     */
+    private function handleDuplicateIfExists(DemoProcessingJob $job, ?string $matchHash, string $jobId): bool
+    {
+        // Skip duplicate detection if allowed by config
+        if (config('services.parser.allow_duplicate_demos', false)) {
+            return false;
+        }
+
+        // Only check for duplicates when hash is generated
+        if ($matchHash === null) {
+            return false;
+        }
+
+        $existingMatch = GameMatch::where('match_hash', $matchHash)
+            ->where('id', '!=', $job->match_id) // Exclude current match if updating
+            ->first();
+
+        if (! $existingMatch) {
+            return false;
+        }
+
+        // Cancel the job and provide user feedback
+        $job->update([
+            'processing_status' => ProcessingStatus::CANCELLED->value,
+            'error_message' => "This match has already been uploaded by another user, you can find it <a href='/matches/{$existingMatch->id}'>here</a>",
+            'completed_at' => now(),
+            'progress_percentage' => 0,
+            'current_step' => 'Duplicate detected',
+        ]);
+
+        $this->clearJobCache($jobId);
+
+        Log::info('Duplicate demo detected and job cancelled', [
+            'job_id' => $jobId,
+            'match_hash' => $matchHash,
+            'existing_match_id' => $existingMatch->id,
+        ]);
+
+        return true;
+    }
+
     private function generateMatchHash(array $matchData, ?array $playersData = null): ?string
     {
-        if (app()->environment('local')) {
+        // Generate hash unless duplicates are explicitly allowed (in which case hash is not needed)
+        if (config('services.parser.allow_duplicate_demos', false)) {
             return null;
         }
 
