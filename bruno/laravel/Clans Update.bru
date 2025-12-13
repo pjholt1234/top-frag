@@ -1,0 +1,43 @@
+meta {
+  name: Clans Update
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+body:json {
+  {
+    "name": "Updated Clan Name",
+    "tag": "UCN"
+  }
+}
+
+docs {
+  summary: Update clan
+  description: |
+    Update clan information. Only the clan owner can update the clan.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    
+    Body Parameters:
+    - name: Clan name (optional)
+    - tag: Clan tag (optional, max 10 characters)
+    
+    Returns:
+    - message: Success message
+    - data: Updated clan object
+}
+

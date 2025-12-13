@@ -8,6 +8,7 @@ use App\Services\Infrastructure\MatchCacheManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -96,6 +97,12 @@ class GameMatch extends Model
     public function playerMatchEvents(): HasMany
     {
         return $this->hasMany(PlayerMatchEvent::class, 'match_id');
+    }
+
+    public function clans(): BelongsToMany
+    {
+        return $this->belongsToMany(Clan::class, 'clan_matches', 'match_id', 'clan_id')
+            ->withTimestamps();
     }
 
     public function playerWasParticipant(Player $player): bool

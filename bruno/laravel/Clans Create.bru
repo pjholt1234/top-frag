@@ -1,0 +1,41 @@
+meta {
+  name: Clans Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{laravel_base_url}}/api/clans
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+body:json {
+  {
+    "name": "My Clan",
+    "tag": "MC"
+  }
+}
+
+docs {
+  summary: Create a new clan
+  description: |
+    Create a new clan with the authenticated user as the owner.
+    The owner is automatically added as the first member.
+    Requires Bearer token authentication.
+    
+    Body Parameters:
+    - name: Clan name (required)
+    - tag: Clan tag (optional, max 10 characters)
+    
+    Returns:
+    - message: Success message
+    - data: Created clan object with owner and members
+}
+

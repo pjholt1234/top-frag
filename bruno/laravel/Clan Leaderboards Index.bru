@@ -1,0 +1,38 @@
+meta {
+  name: Clan Leaderboards Index
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}/leaderboards?period=week
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get all leaderboards
+  description: |
+    Get all leaderboard types for a clan for a specific period.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    
+    Query Parameters:
+    - period: 'week' or 'month' (default: 'week')
+    - start_date: Custom start date (optional, format: YYYY-MM-DD)
+    - end_date: Custom end date (optional, format: YYYY-MM-DD)
+    - type: Specific leaderboard type (optional: aim, impact, round_swing, fragger, support, opener, closer)
+    
+    Returns:
+    - data: Object with leaderboard types as keys, each containing an array of ranked users
+    - start_date: Period start date
+    - end_date: Period end date
+}
+

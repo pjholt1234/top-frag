@@ -1,0 +1,36 @@
+meta {
+  name: Clan Members Remove
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}/members/{{user_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Remove clan member
+  description: |
+    Remove a member from the clan. Only the clan owner can remove members.
+    The clan owner cannot be removed.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    - user_id: The user ID to remove
+    
+    Returns:
+    - message: Success message
+    
+    Errors:
+    - 400: Cannot remove clan owner
+    - 403: User is not the clan owner
+}
+

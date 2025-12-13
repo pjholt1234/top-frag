@@ -1,0 +1,31 @@
+meta {
+  name: Clans Delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Delete clan
+  description: |
+    Delete a clan. Only the clan owner can delete the clan.
+    This will also delete all associated members, matches, and leaderboards.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    
+    Returns:
+    - message: Success message
+}
+

@@ -106,6 +106,18 @@ class DemoParserService
                     'error' => $e->getMessage(),
                 ]);
             }
+
+            // Process clan matches
+            try {
+                \App\Jobs\ProcessClanMatch::dispatch($job->match_id);
+            } catch (\Exception $e) {
+                // Don't let clan match processing errors block completion
+                Log::warning('Failed to dispatch ProcessClanMatch job', [
+                    'job_id' => $jobId,
+                    'match_id' => $job->match_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -93,6 +94,27 @@ class User extends Authenticatable
     public function uploadedGames(): HasMany
     {
         return $this->hasMany(GameMatch::class, 'uploaded_by');
+    }
+
+    public function ownedClans(): HasMany
+    {
+        return $this->hasMany(Clan::class, 'owned_by');
+    }
+
+    public function clanMemberships(): HasMany
+    {
+        return $this->hasMany(ClanMember::class);
+    }
+
+    public function clans(): BelongsToMany
+    {
+        return $this->belongsToMany(Clan::class, 'clan_members', 'user_id', 'clan_id')
+            ->withTimestamps();
+    }
+
+    public function clanLeaderboards(): HasMany
+    {
+        return $this->hasMany(ClanLeaderboard::class);
     }
 
     /**

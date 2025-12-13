@@ -1,0 +1,41 @@
+meta {
+  name: Clans Join
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{laravel_base_url}}/api/clans/join
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+body:json {
+  {
+    "invite_link": "00000000-0000-0000-0000-000000000000"
+  }
+}
+
+docs {
+  summary: Join clan via invite link
+  description: |
+    Join a clan using an invite link. The invite link is a UUID that can be shared.
+    Requires Bearer token authentication.
+    
+    Body Parameters:
+    - invite_link: The UUID invite link (required)
+    
+    Returns:
+    - message: Success message
+    - data: Clan object with owner and members
+    
+    Errors:
+    - 400: Invalid invite link or user is already a member
+}
+

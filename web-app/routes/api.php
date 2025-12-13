@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\AimController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClanController;
+use App\Http\Controllers\Api\ClanLeaderboardController;
+use App\Http\Controllers\Api\ClanMatchController;
+use App\Http\Controllers\Api\ClanMemberController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DemoParserController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
@@ -112,6 +116,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/grenade-favourites/check', [GrenadeFavouriteController::class, 'check']);
     Route::get('/matches/{matchId}/grenade-favourites', [GrenadeFavouriteController::class, 'getMatchFavourites']);
     Route::delete('/grenade-favourites/{id}', [GrenadeFavouriteController::class, 'delete']);
+
+    // Clan routes
+    Route::get('/clans', [ClanController::class, 'index']);
+    Route::post('/clans', [ClanController::class, 'store']);
+    Route::post('/clans/join', [ClanController::class, 'join']);
+    Route::get('/clans/{clan}', [ClanController::class, 'show']);
+    Route::put('/clans/{clan}', [ClanController::class, 'update']);
+    Route::delete('/clans/{clan}', [ClanController::class, 'destroy']);
+    Route::post('/clans/{clan}/regenerate-invite-link', [ClanController::class, 'regenerateInviteLink']);
+    Route::post('/clans/{clan}/leave', [ClanController::class, 'leave']);
+
+    // Clan member routes
+    Route::get('/clans/{clan}/members', [ClanMemberController::class, 'index']);
+    Route::delete('/clans/{clan}/members/{user}', [ClanMemberController::class, 'destroy']);
+
+    // Clan leaderboard routes
+    Route::get('/clans/{clan}/leaderboards', [ClanLeaderboardController::class, 'index']);
+    Route::get('/clans/{clan}/leaderboards/{type}', [ClanLeaderboardController::class, 'show']);
+
+    // Clan match routes
+    Route::get('/clans/{clan}/matches', [ClanMatchController::class, 'index']);
 });
 
 Route::middleware('api.key')->group(function () {

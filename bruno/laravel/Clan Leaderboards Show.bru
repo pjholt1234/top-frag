@@ -1,0 +1,39 @@
+meta {
+  name: Clan Leaderboards Show
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}/leaderboards/aim?period=week
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Get specific leaderboard
+  description: |
+    Get a specific leaderboard type for a clan.
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    - type: Leaderboard type (aim, impact, round_swing, fragger, support, opener, closer)
+    
+    Query Parameters:
+    - period: 'week' or 'month' (default: 'week')
+    - start_date: Custom start date (optional, format: YYYY-MM-DD)
+    - end_date: Custom end date (optional, format: YYYY-MM-DD)
+    
+    Returns:
+    - data: Array of leaderboard entries with user, position, and value
+    - type: Leaderboard type
+    - start_date: Period start date
+    - end_date: Period end date
+}
+

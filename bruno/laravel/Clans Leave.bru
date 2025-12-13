@@ -1,0 +1,33 @@
+meta {
+  name: Clans Leave
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{laravel_base_url}}/api/clans/{{clan_id}}/leave
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: Leave clan
+  description: |
+    Leave a clan. The clan owner cannot leave the clan (must delete or transfer ownership instead).
+    Requires Bearer token authentication.
+    
+    URL Parameters:
+    - clan_id: The unique clan identifier
+    
+    Returns:
+    - message: Success message
+    
+    Errors:
+    - 400: User is the clan owner (cannot leave)
+}
+

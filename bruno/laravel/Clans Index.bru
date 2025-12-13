@@ -1,0 +1,27 @@
+meta {
+  name: Clans Index
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{laravel_base_url}}/api/clans
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+  Authorization: Bearer {{auth_token}}
+}
+
+docs {
+  summary: List user's clans
+  description: |
+    Get all clans that the authenticated user is a member of.
+    Requires Bearer token authentication.
+    
+    Returns:
+    - data: Array of clan objects with owner, members, and basic information
+}
+
