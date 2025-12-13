@@ -21,6 +21,8 @@ import AimPage from '@/pages/aim';
 import UtilityPage from '@/pages/utility';
 import MapStatsPage from '@/pages/map-stats';
 import RanksPage from '@/pages/ranks';
+import MyClans from '@/pages/my-clans';
+import ClanDetail from '@/pages/clan-detail';
 import { Toaster } from '@/components/ui/sonner';
 import { PlayerCardModal } from '@/components/player-card-modal';
 
@@ -67,6 +69,12 @@ const App: React.FC = () => {
                 <Route path="utility" element={<UtilityPage />} />
                 <Route path="map-stats" element={<MapStatsPage />} />
                 <Route path="ranks" element={<RanksPage />} />
+                <Route path="clans" element={<MyClans />} />
+                <Route path="clans/:id/:tab" element={<ClanDetail />} />
+                <Route
+                  path="clans/:id"
+                  element={<Navigate to="overview" replace />}
+                />
                 <Route
                   path="matches/:id/:tab/:playerId?"
                   element={<MatchDetail />}

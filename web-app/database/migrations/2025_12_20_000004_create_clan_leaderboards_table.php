@@ -23,8 +23,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
-            $table->index(['clan_id', 'leaderboard_type', 'start_date', 'end_date']);
-            $table->index(['clan_id', 'user_id', 'leaderboard_type', 'start_date', 'end_date']);
+            $table->index(['clan_id', 'leaderboard_type', 'start_date', 'end_date'], 'clan_lb_clan_type_dates_idx');
+            $table->index(['clan_id', 'user_id', 'leaderboard_type', 'start_date', 'end_date'], 'clan_lb_clan_user_type_dates_idx');
             $table->index('start_date');
             $table->index('end_date');
         });

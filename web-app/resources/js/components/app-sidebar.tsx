@@ -9,6 +9,7 @@ import {
   IconBomb,
   IconMap,
   IconTrophy,
+  IconUsers,
 } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -60,6 +61,11 @@ const data = {
       title: 'Grenade Library',
       url: '/grenade-library',
       icon: IconBook,
+    },
+    {
+      title: 'Clans',
+      url: '/clans',
+      icon: IconUsers,
     },
   ],
   navSecondary: [],
