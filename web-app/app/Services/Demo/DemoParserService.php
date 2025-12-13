@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Demo;
 
 use App\Enums\MatchEventType;
 use App\Enums\MatchType;
@@ -22,6 +22,7 @@ use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRank;
 use App\Models\PlayerRoundEvent;
 use App\Models\RoundEvent;
+use App\Services\Analytics\DashboardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -84,7 +85,7 @@ class DemoParserService
 
             // Extract match start time from original file name
             try {
-                $matchTimeExtractor = new \App\Services\MatchTimeExtractor($job);
+                $matchTimeExtractor = new \App\Services\Demo\MatchTimeExtractor($job);
 
                 $matchStartTime = $matchTimeExtractor->extract();
 
@@ -261,6 +262,11 @@ class DemoParserService
     {
         // Skip duplicate detection if allowed by config
         if (config('services.parser.allow_duplicate_demos', false)) {
+            return false;
+        }
+
+        // Skip duplicate detection when updating an existing match
+        if ($job->match_id !== null) {
             return false;
         }
 
@@ -726,7 +732,7 @@ class DemoParserService
     private function invalidatePlayerCardCache(array $playerMatchEvents): void
     {
         try {
-            $playerCardService = app(\App\Services\PlayerCardService::class);
+            $playerCardService = app(\App\Services\Player\PlayerCardService::class);
             $steamIds = array_unique(array_column($playerMatchEvents, 'player_steam_id'));
 
             foreach ($steamIds as $steamId) {

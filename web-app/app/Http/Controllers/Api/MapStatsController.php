@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\MapStatsService;
+use App\Services\Analytics\MapStatsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -8,7 +8,7 @@ use App\Models\PlayerMatchAimEvent;
 use App\Models\PlayerMatchEvent;
 use App\Models\PlayerRank;
 use App\Models\User;
-use App\Services\DashboardService;
+use App\Services\Analytics\DashboardService;
 use App\Services\Matches\PlayerComplexionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;

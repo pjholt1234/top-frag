@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Controllers\Api;
 
-use App\Services\ParserServiceConnector;
-use App\Services\SteamAPIConnector;
+use App\Services\Integrations\Parser\ParserServiceConnector;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Tests\TestCase;
 
 class HealthControllerTest extends TestCase

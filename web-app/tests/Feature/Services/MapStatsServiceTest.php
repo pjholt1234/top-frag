@@ -6,7 +6,7 @@ use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\MapStatsService;
+use App\Services\Analytics\MapStatsService;
 use App\Services\Matches\PlayerComplexionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;

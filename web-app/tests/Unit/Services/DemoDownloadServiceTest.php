@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services;
 
-use App\Services\DemoDownloadService;
-use App\Services\RateLimiterService;
+use App\Services\Demo\DemoDownloadService;
+use App\Services\Infrastructure\RateLimiterService;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 

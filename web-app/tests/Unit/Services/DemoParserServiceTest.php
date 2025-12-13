@@ -14,7 +14,7 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\Player;
 use App\Models\PlayerRoundEvent;
-use App\Services\DemoParserService;
+use App\Services\Demo\DemoParserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
@@ -1239,7 +1239,7 @@ class DemoParserServiceTest extends TestCase
         $job->update(['match_id' => $match->id]);
 
         // Mock FaceITRepository to return valid data
-        $faceitRepository = \Mockery::mock(\App\Services\FaceITRepository::class);
+        $faceitRepository = \Mockery::mock(\App\Services\Integrations\FaceIT\FaceITRepository::class);
         $faceitRepository
             ->shouldReceive('getMatchDetails')
             ->once()
@@ -1265,7 +1265,7 @@ class DemoParserServiceTest extends TestCase
                 ],
             ]);
 
-        $this->app->instance(\App\Services\FaceITRepository::class, $faceitRepository);
+        $this->app->instance(\App\Services\Integrations\FaceIT\FaceITRepository::class, $faceitRepository);
 
         $data = [
             'status' => ProcessingStatus::COMPLETED->value,
@@ -1292,13 +1292,13 @@ class DemoParserServiceTest extends TestCase
         $job->update(['match_id' => $match->id]);
 
         // Mock FaceITRepository to throw an exception
-        $faceitRepository = \Mockery::mock(\App\Services\FaceITRepository::class);
+        $faceitRepository = \Mockery::mock(\App\Services\Integrations\FaceIT\FaceITRepository::class);
         $faceitRepository
             ->shouldReceive('getMatchDetails')
             ->once()
             ->andThrow(new \Exception('API Error'));
 
-        $this->app->instance(\App\Services\FaceITRepository::class, $faceitRepository);
+        $this->app->instance(\App\Services\Integrations\FaceIT\FaceITRepository::class, $faceitRepository);
 
         \Illuminate\Support\Facades\Log::shouldReceive('channel')
             ->with('parser')
@@ -1394,7 +1394,7 @@ class DemoParserServiceTest extends TestCase
         $this->assertEquals(0, $duplicateJob->progress_percentage);
         $this->assertEquals('Duplicate detected', $duplicateJob->current_step);
         $this->assertStringContainsString('/matches/'.$firstMatch->id, $duplicateJob->error_message);
-        $this->assertStringContainsString('already been processed', $duplicateJob->error_message);
+        $this->assertStringContainsString('already been uploaded', $duplicateJob->error_message);
 
         // Verify no new match was created for the duplicate job
         $this->assertNull($duplicateJob->match);

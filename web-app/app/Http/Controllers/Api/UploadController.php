@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UploadDemoRequest;
 use App\Http\Resources\InProgressJobsResource;
 use App\Jobs\ParseDemo;
-use App\Services\ParserServiceConnector;
+use App\Services\Integrations\Parser\ParserServiceConnector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

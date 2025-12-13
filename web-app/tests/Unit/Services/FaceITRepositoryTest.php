@@ -3,8 +3,8 @@
 namespace Tests\Unit\Services;
 
 use App\Exceptions\FaceITAPIConnectorException;
-use App\Services\FaceITAPIConnector;
-use App\Services\FaceITRepository;
+use App\Services\Integrations\FaceIT\FaceITAPIConnector;
+use App\Services\Integrations\FaceIT\FaceITRepository;
 use Mockery;
 use Tests\TestCase;
 

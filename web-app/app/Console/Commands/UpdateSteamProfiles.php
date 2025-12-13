@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
-use App\Services\SteamAPIConnector;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 

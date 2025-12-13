@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Exceptions\FaceITAPIConnectorException;
-use App\Services\FaceITAPIConnector;
+use App\Services\Integrations\FaceIT\FaceITAPIConnector;
 use Exception;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;

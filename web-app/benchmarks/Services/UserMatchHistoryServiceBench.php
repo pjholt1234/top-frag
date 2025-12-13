@@ -11,7 +11,7 @@ use App\Models\GrenadeEvent;
 use App\Models\GunfightEvent;
 use App\Models\Player;
 use App\Models\User;
-use App\Services\MatchHistoryService;
+use App\Services\Matches\MatchHistoryService;
 use PhpBench\Benchmark\Metadata\Annotations\AfterMethods;
 use PhpBench\Benchmark\Metadata\Annotations\Assert;
 use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;

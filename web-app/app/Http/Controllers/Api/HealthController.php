@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\ParserServiceConnector;
-use App\Services\SteamAPIConnector;
+use App\Services\Integrations\Parser\ParserServiceConnector;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Illuminate\Http\Request;
 
 class HealthController extends Controller

@@ -12,9 +12,9 @@ use App\Observers\DemoProcessingJobObserver;
 use App\Observers\GrenadeEventObserver;
 use App\Observers\GunfightEventObserver;
 use App\Observers\UserObserver;
-use App\Services\DemoParserService;
-use App\Services\MatchHistoryService;
-use App\Services\ParserServiceConnector;
+use App\Services\Demo\DemoParserService;
+use App\Services\Integrations\Parser\ParserServiceConnector;
+use App\Services\Matches\MatchHistoryService;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Socialite\Contracts\Factory;
 

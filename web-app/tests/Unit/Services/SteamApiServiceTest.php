@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services;
 
-use App\Services\RateLimiterService;
-use App\Services\SteamAPIConnector;
+use App\Services\Infrastructure\RateLimiterService;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 

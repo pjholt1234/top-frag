@@ -6,7 +6,7 @@ use App\Models\GameMatch;
 use App\Models\PlayerMatchAimEvent;
 use App\Models\PlayerMatchAimWeaponEvent;
 use App\Models\User;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 
 class AimTrackingService
 {

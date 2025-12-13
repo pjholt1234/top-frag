@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Player;
 
 use App\Models\Player;
 use App\Models\PlayerRank;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 
 class RanksService
 {
-    private const CACHE_TTL = 900; // 15 minutes
+    private const int CACHE_TTL = 900; // 15 minutes
 
     /**
      * Get rank stats with filters

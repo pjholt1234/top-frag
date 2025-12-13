@@ -4,7 +4,7 @@ namespace App\Services\MatchTimeExtraction;
 
 use App\Models\Player;
 use App\Models\PlayerRank;
-use App\Services\FaceITRepository;
+use App\Services\Integrations\FaceIT\FaceITRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 

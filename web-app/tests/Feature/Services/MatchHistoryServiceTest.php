@@ -3,14 +3,13 @@
 namespace Tests\Feature\Services;
 
 use App\Enums\MatchType;
-use App\Enums\Team;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
 use App\Models\GunfightEvent;
 use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\MatchHistoryService;
+use App\Services\Matches\MatchHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;

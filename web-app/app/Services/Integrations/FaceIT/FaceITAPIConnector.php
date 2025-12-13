@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Integrations\FaceIT;
 
 use App\Exceptions\FaceITAPIConnectorException;
 use Exception;

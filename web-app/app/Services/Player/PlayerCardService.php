@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Player;
 
 use App\Enums\AchievementType;
 use App\Models\Achievement;

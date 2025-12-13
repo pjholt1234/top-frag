@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ParseDemo;
-use App\Services\ParserServiceConnector;
+use App\Services\Integrations\Parser\ParserServiceConnector;
 use Illuminate\Console\Command;
 
 class TestParserFlowCommand extends Command

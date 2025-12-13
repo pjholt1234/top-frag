@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Services;
 
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;

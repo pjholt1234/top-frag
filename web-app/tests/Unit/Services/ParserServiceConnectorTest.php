@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Exceptions\ParserServiceConnectorException;
-use App\Services\ParserServiceConnector;
+use App\Services\Integrations\Parser\ParserServiceConnector;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;

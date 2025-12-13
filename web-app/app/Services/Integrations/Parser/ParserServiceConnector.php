@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Integrations\Parser;
 
 use App\Exceptions\ParserServiceConnectorException;
 use Exception;

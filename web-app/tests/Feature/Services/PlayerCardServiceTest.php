@@ -9,7 +9,7 @@ use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
 use App\Services\Matches\PlayerComplexionService;
-use App\Services\PlayerCardService;
+use App\Services\Player\PlayerCardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Analytics;
 
 use App\Models\PlayerMatchAimEvent;
 use App\Models\User;

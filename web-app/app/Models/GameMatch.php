@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Enums\MatchType;
 use App\Enums\ProcessingStatus;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

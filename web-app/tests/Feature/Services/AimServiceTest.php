@@ -7,7 +7,7 @@ use App\Models\Player;
 use App\Models\PlayerMatchAimEvent;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\AimService;
+use App\Services\Analytics\AimService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

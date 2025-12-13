@@ -5,7 +5,7 @@ namespace App\Services\Matches;
 use App\Models\GameMatch;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 
 class PlayerStatsService
 {

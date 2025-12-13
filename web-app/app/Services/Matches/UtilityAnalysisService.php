@@ -6,7 +6,7 @@ use App\Enums\GrenadeType;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\User;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 use Illuminate\Support\Collection;
 
 class UtilityAnalysisService

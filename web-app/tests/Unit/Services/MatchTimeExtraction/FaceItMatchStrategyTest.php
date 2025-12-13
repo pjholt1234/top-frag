@@ -6,7 +6,7 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\Player;
 use App\Models\PlayerRank;
-use App\Services\FaceITRepository;
+use App\Services\Integrations\FaceIT\FaceITRepository;
 use App\Services\MatchTimeExtraction\FaceItMatchStrategy;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Demo;
 
 use App\Enums\MatchType;
 use App\Models\DemoProcessingJob;
+use App\Services\Integrations\FaceIT\FaceITRepository;
 use App\Services\MatchTimeExtraction\FaceItMatchStrategy;
 use App\Services\MatchTimeExtraction\MatchTimeStrategy;
 use Carbon\Carbon;

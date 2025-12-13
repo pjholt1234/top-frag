@@ -3,7 +3,7 @@
 namespace App\Services\Matches;
 
 use App\Models\PlayerMatchEvent;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 
 class PlayerComplexionService
 {

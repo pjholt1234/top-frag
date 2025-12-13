@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
-use App\Services\SteamAPIConnector;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;

@@ -5,7 +5,7 @@ namespace Tests\Feature\Services;
 use App\Models\Player;
 use App\Models\PlayerRank;
 use App\Models\User;
-use App\Services\RanksService;
+use App\Services\Player\RanksService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

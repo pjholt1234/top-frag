@@ -8,7 +8,7 @@ use App\Enums\MatchEventType;
 use App\Enums\ProcessingStatus;
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
-use App\Services\DemoParserService;
+use App\Services\Demo\DemoParserService;
 use Database\Factories\DataFactories\DamageEventDataFactory;
 use Database\Factories\DataFactories\GrenadeEventDataFactory;
 use Database\Factories\DataFactories\GunfightEventDataFactory;

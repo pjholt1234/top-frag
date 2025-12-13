@@ -5,7 +5,7 @@ namespace App\Actions;
 use App\Models\Player;
 use App\Models\PlayerRank;
 use App\Models\User;
-use App\Services\FaceITRepository;
+use App\Services\Integrations\FaceIT\FaceITRepository;
 use Illuminate\Support\Facades\Log;
 
 class FetchAndStoreFaceITProfileAction

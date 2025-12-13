@@ -3,9 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\User;
-use App\Services\DemoDownloadService;
-use App\Services\ParserServiceConnector;
-use App\Services\SteamAPIConnector;
+use App\Services\Demo\DemoDownloadService;
+use App\Services\Integrations\Parser\ParserServiceConnector;
+use App\Services\Integrations\Steam\SteamAPIConnector;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;

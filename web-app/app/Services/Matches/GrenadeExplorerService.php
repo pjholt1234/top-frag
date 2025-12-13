@@ -8,7 +8,7 @@ use App\Enums\PlayerSide;
 use App\Models\GameMatch;
 use App\Models\GrenadeEvent;
 use App\Models\Player;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 
 class GrenadeExplorerService
 {

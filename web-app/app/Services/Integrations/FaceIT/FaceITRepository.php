@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Integrations\FaceIT;
 
 use App\Exceptions\FaceITAPIConnectorException;
 
 class FaceITRepository
 {
     public function __construct(
-        private readonly FaceITAPIConnector $connector
+        private FaceITAPIConnector $connector
     ) {}
 
     /**

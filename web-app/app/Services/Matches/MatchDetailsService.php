@@ -6,7 +6,7 @@ use App\Models\Achievement;
 use App\Models\GameMatch;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\MatchCacheManager;
+use App\Services\Infrastructure\MatchCacheManager;
 
 class MatchDetailsService
 {

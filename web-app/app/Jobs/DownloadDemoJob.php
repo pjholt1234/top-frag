@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\DemoProcessingJob;
 use App\Models\GameMatch;
-use App\Services\DemoDownloadService;
+use App\Services\Demo\DemoDownloadService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;

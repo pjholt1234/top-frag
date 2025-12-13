@@ -7,7 +7,7 @@ use App\Exceptions\DemoParserMatchNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompletionCallbackRequest;
 use App\Http\Requests\ProgressCallbackRequest;
-use App\Services\DemoParserService;
+use App\Services\Demo\DemoParserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;

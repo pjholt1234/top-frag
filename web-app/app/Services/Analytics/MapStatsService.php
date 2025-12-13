@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Analytics;
 
 use App\Models\GameMatch;
 use App\Models\Player;

@@ -6,7 +6,7 @@ use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\PlayerMatchEvent;
 use App\Models\User;
-use App\Services\UtilityService;
+use App\Services\Analytics\UtilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

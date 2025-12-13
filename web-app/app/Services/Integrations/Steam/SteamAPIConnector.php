@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Integrations\Steam;
 
+use App\Services\Infrastructure\RateLimiterService;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Matches;
 
 use App\Enums\ProcessingStatus;
 use App\Exceptions\PlayerNotFound;
 use App\Models\GameMatch;
 use App\Models\Player;
 use App\Models\User;
-use App\Services\Matches\MatchDetailsService;
 use Illuminate\Contracts\Database\Query\Builder;
 
 class MatchHistoryService

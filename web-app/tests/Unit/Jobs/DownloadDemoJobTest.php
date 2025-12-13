@@ -4,7 +4,7 @@ namespace Tests\Unit\Jobs;
 
 use App\Jobs\DownloadDemoJob;
 use App\Models\GameMatch;
-use App\Services\DemoDownloadService;
+use App\Services\Demo\DemoDownloadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
