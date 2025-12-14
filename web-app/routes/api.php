@@ -126,6 +126,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/clans/{clan}', [ClanController::class, 'destroy']);
     Route::post('/clans/{clan}/regenerate-invite-link', [ClanController::class, 'regenerateInviteLink']);
     Route::post('/clans/{clan}/leave', [ClanController::class, 'leave']);
+    Route::post('/clans/{clan}/transfer-ownership/{user}', [ClanController::class, 'transferOwnership']);
 
     // Clan member routes
     Route::get('/clans/{clan}/members', [ClanMemberController::class, 'index']);

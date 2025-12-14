@@ -7,6 +7,7 @@ use App\Http\Requests\JoinClanRequest;
 use App\Http\Requests\StoreClanRequest;
 use App\Http\Requests\UpdateClanRequest;
 use App\Models\Clan;
+use App\Models\User;
 use App\Services\Clans\ClanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -106,11 +107,24 @@ class ClanController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $clan->delete();
+        try {
+            $this->clanService->delete($clan);
 
-        return response()->json([
-            'message' => 'Clan deleted successfully',
-        ]);
+            return response()->json([
+                'message' => 'Clan deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting clan', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'clan_id' => $clan->id,
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete clan',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function regenerateInviteLink(Clan $clan): JsonResponse
@@ -188,6 +202,42 @@ class ClanController extends Controller
             return response()->json([
                 'message' => $e->getMessage(),
                 'error' => 'leave_failed',
+            ], 400);
+        }
+    }
+
+    public function transferOwnership(Clan $clan, User $user): JsonResponse
+    {
+        $currentUser = request()->user();
+
+        if (! $currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $clan->refresh();
+
+        if (! $clan->isOwner($currentUser)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $this->clanService->transferOwnership($clan, $user);
+
+            return response()->json([
+                'message' => 'Ownership transferred successfully',
+                'data' => $clan->load(['owner', 'members.user']),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error transferring ownership', [
+                'error' => $e->getMessage(),
+                'user_id' => $currentUser->id,
+                'clan_id' => $clan->id,
+                'new_owner_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => 'transfer_failed',
             ], 400);
         }
     }

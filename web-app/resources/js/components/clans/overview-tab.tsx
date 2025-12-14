@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IconCopy, IconCheck } from '@tabler/icons-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { IconCopy, IconCheck, IconTrash } from '@tabler/icons-react';
 import { GaugeChart } from '@/components/charts/gauge-chart';
 import { MembersList } from './members-list';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Clan {
   id: number;
@@ -34,10 +46,15 @@ interface WinrateData {
 }
 
 export function OverviewTab({ clanId, clan }: OverviewTabProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [inviteLink, setInviteLink] = useState(clan.invite_link);
   const [copied, setCopied] = useState(false);
   const [winrate, setWinrate] = useState<WinrateData | null>(null);
   const [loadingWinrate, setLoadingWinrate] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmationText, setConfirmationText] = useState('');
 
   useEffect(() => {
     const fetchWinrate = async () => {
@@ -115,6 +132,35 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
     }
   };
 
+  const handleDeleteClick = () => {
+    setConfirmationText('');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteClan = async () => {
+    const requiredText = `DELETE ${clan.name.toUpperCase()}`;
+
+    if (confirmationText !== requiredText) {
+      toast.error('Confirmation text did not match. Clan was not deleted.');
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await api.delete(`/clans/${clanId}`, { requireAuth: true });
+      toast.success('Clan deleted successfully');
+      setDeleteDialogOpen(false);
+      navigate('/clans');
+    } catch (err: any) {
+      console.error('Error deleting clan:', err);
+      toast.error(err.message || err.data?.message || 'Failed to delete clan');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isOwner = user && clan.owner.id === user.id;
+
   return (
     <div className="space-y-6">
       {/* Invite Section */}
@@ -158,6 +204,91 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
         </CardContent>
       </Card>
 
+      {/* Danger Zone - Delete Clan */}
+      {isOwner && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Once you delete a clan, there is no going back. This will
+                permanently delete the clan, all clan members, matches, and
+                leaderboards.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+                className="flex items-center gap-2"
+              >
+                <IconTrash className="h-4 w-4" />
+                Delete Clan
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete Clan</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this clan? This action cannot be
+              undone.
+              <br />
+              <br />
+              All clan members, matches, and leaderboards will be permanently
+              deleted.
+              <br />
+              <br />
+              <strong>
+                Type{' '}
+                <code className="bg-muted px-1 py-0.5 rounded">
+                  DELETE {clan.name.toUpperCase()}
+                </code>{' '}
+                to confirm:
+              </strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="confirmation-input">Confirmation</Label>
+            <Input
+              id="confirmation-input"
+              value={confirmationText}
+              onChange={e => setConfirmationText(e.target.value)}
+              placeholder={`DELETE ${clan.name.toUpperCase()}`}
+              disabled={isDeleting}
+              className="font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteClan}
+              disabled={
+                isDeleting ||
+                confirmationText !== `DELETE ${clan.name.toUpperCase()}`
+              }
+              className="flex items-center gap-2"
+            >
+              <IconTrash className="h-4 w-4" />
+              {isDeleting ? 'Deleting...' : 'Delete Clan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Winrate Gauge */}
@@ -196,7 +327,7 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
             <CardTitle>Clan Members</CardTitle>
           </CardHeader>
           <CardContent>
-            <MembersList clanId={clanId} />
+            <MembersList clanId={clanId} clanOwnerId={clan.owner.id} />
           </CardContent>
         </Card>
       </div>

@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -10,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { IconArrowLeftRight } from '@tabler/icons-react';
+import { toast } from 'sonner';
 
 interface ClanMember {
   id: number;
@@ -36,12 +48,17 @@ interface MembersResponse {
 
 interface MembersListProps {
   clanId: number;
+  clanOwnerId?: number;
 }
 
-export function MembersList({ clanId }: MembersListProps) {
+export function MembersList({ clanId, clanOwnerId }: MembersListProps) {
+  const { user } = useAuth();
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<ClanMember | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -65,6 +82,44 @@ export function MembersList({ clanId }: MembersListProps) {
 
     fetchMembers();
   }, [clanId]);
+
+  const handleTransferClick = (member: ClanMember) => {
+    setSelectedMember(member);
+    setTransferDialogOpen(true);
+  };
+
+  const handleTransferOwnership = async () => {
+    if (!selectedMember) return;
+
+    try {
+      setIsTransferring(true);
+      await api.post(
+        `/clans/${clanId}/transfer-ownership/${selectedMember.id}`,
+        {},
+        { requireAuth: true }
+      );
+      toast.success('Ownership transferred successfully');
+      setTransferDialogOpen(false);
+      setSelectedMember(null);
+      // Refresh members list
+      const response = await api.get<MembersResponse>(
+        `/clans/${clanId}/members`,
+        {
+          requireAuth: true,
+        }
+      );
+      setMembers(response.data.data || []);
+    } catch (err: any) {
+      console.error('Error transferring ownership:', err);
+      toast.error(
+        err.message || err.data?.message || 'Failed to transfer ownership'
+      );
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
+  const isOwner = user && clanOwnerId && user.id === clanOwnerId;
 
   if (loading) {
     return (
@@ -99,6 +154,7 @@ export function MembersList({ clanId }: MembersListProps) {
             <TableHead>FaceIT</TableHead>
             <TableHead>Premier</TableHead>
             <TableHead>Role</TableHead>
+            {isOwner && <TableHead>Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -161,10 +217,64 @@ export function MembersList({ clanId }: MembersListProps) {
                   <Badge variant="secondary">Member</Badge>
                 )}
               </TableCell>
+              {isOwner && (
+                <TableCell>
+                  {!member.is_owner && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTransferClick(member)}
+                      className="flex items-center gap-2"
+                    >
+                      <IconArrowLeftRight className="h-4 w-4" />
+                      Transfer
+                    </Button>
+                  )}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      {/* Transfer Ownership Confirmation Dialog */}
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Ownership</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to transfer ownership of this clan to{' '}
+              <strong>
+                {selectedMember?.steam_persona_name || selectedMember?.name}
+              </strong>
+              ?
+              <br />
+              <br />
+              Once ownership is transferred, you will become a regular member
+              and will no longer have owner privileges. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTransferDialogOpen(false)}
+              disabled={isTransferring}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleTransferOwnership}
+              disabled={isTransferring}
+              className="flex items-center gap-2"
+            >
+              <IconArrowLeftRight className="h-4 w-4" />
+              {isTransferring ? 'Transferring...' : 'Transfer Ownership'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

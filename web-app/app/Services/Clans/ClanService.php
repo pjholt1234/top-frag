@@ -124,4 +124,34 @@ class ClanService
                 'updated_at' => now(),
             ]);
     }
+
+    public function delete(Clan $clan): void
+    {
+        DB::transaction(function () use ($clan) {
+            // Delete clan - cascading deletes will handle:
+            // - clan_members (via foreign key cascade)
+            // - clan_matches (via foreign key cascade)
+            // - clan_leaderboards (via foreign key cascade)
+            $clan->delete();
+        });
+    }
+
+    public function transferOwnership(Clan $clan, User $newOwner): void
+    {
+        DB::transaction(function () use ($clan, $newOwner) {
+            // Verify new owner is a member of the clan
+            if (! $clan->isMember($newOwner)) {
+                throw new \Exception('New owner must be a member of the clan');
+            }
+
+            // Verify new owner is not already the owner
+            if ($clan->isOwner($newOwner)) {
+                throw new \Exception('User is already the owner of this clan');
+            }
+
+            // Transfer ownership
+            $clan->owned_by = $newOwner->id;
+            $clan->save();
+        });
+    }
 }
