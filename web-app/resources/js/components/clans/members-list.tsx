@@ -116,7 +116,7 @@ export function MembersList({ clanId }: MembersListProps) {
                       alt={member.steam_persona_name || member.name}
                     />
                     <AvatarFallback>
-                      {(member.steam_persona_name || member.name)
+                      {(member.steam_persona_name || member.name || '?')
                         .charAt(0)
                         .toUpperCase()}
                     </AvatarFallback>

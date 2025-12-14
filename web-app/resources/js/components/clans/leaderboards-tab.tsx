@@ -170,17 +170,17 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
         {/* Filters */}
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-wrap items-end gap-4">
               <div className="space-y-2">
                 <Label>Leaderboard Type</Label>
                 <Select
                   value={leaderboardType}
                   onValueChange={setLeaderboardType}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     {LEADERBOARD_TYPES.map(type => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -203,10 +203,10 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
                     }
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     <SelectItem value="week">This Week</SelectItem>
                     <SelectItem value="month">This Month</SelectItem>
                     <SelectItem value="custom">Custom Range</SelectItem>
@@ -235,7 +235,12 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
 
+        {/* Leaderboard Table */}
+        <Card>
+          <CardContent className="pt-6 space-y-4">
             {/* Period Navigation */}
             <div className="flex items-center gap-2">
               {period === 'week' ? (
@@ -284,12 +289,7 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
                 </>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Leaderboard Table */}
-        <Card>
-          <CardContent className="pt-6">
             {error ? (
               <div className="text-center text-destructive text-sm py-4">
                 {error}

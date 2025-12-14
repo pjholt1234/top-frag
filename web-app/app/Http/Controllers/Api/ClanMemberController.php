@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ClanMemberResource;
 use App\Models\Clan;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -11,8 +12,15 @@ class ClanMemberController extends Controller
 {
     public function index(Clan $clan): JsonResponse
     {
+        $members = $clan->members()->with(['user.player.playerRanks' => function ($query) {
+            $query->whereIn('rank_type', ['faceit', 'premier'])
+                ->orderBy('created_at', 'desc');
+        }])->get();
+
         return response()->json([
-            'data' => $clan->members()->with('user')->get(),
+            'data' => $members->map(function ($member) use ($clan) {
+                return (new ClanMemberResource($member, $clan))->toArray(request());
+            })->values(),
         ]);
     }
 

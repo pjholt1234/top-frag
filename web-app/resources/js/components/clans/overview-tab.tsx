@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconCopy, IconCheck } from '@tabler/icons-react';
 import { GaugeChart } from '@/components/charts/gauge-chart';
 import { MembersList } from './members-list';
-import { InvitePlayerSearch } from './invite-player-search';
 import { toast } from 'sonner';
 
 interface Clan {
@@ -156,7 +155,6 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
               Regenerate
             </Button>
           </div>
-          <InvitePlayerSearch inviteLink={inviteLink} />
         </CardContent>
       </Card>
 

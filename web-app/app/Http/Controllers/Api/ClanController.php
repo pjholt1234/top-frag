@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreClanRequest;
+use App\Http\Requests\UpdateClanRequest;
 use App\Models\Clan;
 use App\Services\Clans\ClanService;
 use Illuminate\Http\JsonResponse;
@@ -32,13 +34,8 @@ class ClanController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreClanRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'tag' => 'nullable|string|max:10',
-        ]);
-
         $user = $request->user();
 
         if (! $user) {
@@ -72,13 +69,8 @@ class ClanController extends Controller
         ]);
     }
 
-    public function update(Request $request, Clan $clan): JsonResponse
+    public function update(UpdateClanRequest $request, Clan $clan): JsonResponse
     {
-        $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'tag' => 'nullable|string|max:10',
-        ]);
-
         $user = $request->user();
 
         if (! $user) {

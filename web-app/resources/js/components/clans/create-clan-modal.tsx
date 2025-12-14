@@ -55,8 +55,25 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
       return;
     }
 
-    if (tag && tag.length > 10) {
-      setError('Clan tag must be 10 characters or less');
+    if (!tag.trim()) {
+      setError('Clan tag is required');
+      return;
+    }
+
+    if (tag.length > 4) {
+      setError('Clan tag must be 4 characters or less');
+      return;
+    }
+
+    // Validate alphanumeric for name
+    if (name && !/^[a-zA-Z0-9]+$/.test(name.trim())) {
+      setError('Clan name must contain only letters and numbers');
+      return;
+    }
+
+    // Validate alphanumeric for tag
+    if (tag && !/^[a-zA-Z0-9]+$/.test(tag.trim())) {
+      setError('Clan tag must contain only letters and numbers');
       return;
     }
 
@@ -67,7 +84,7 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
         '/clans',
         {
           name: name.trim(),
-          tag: tag.trim() || undefined,
+          tag: tag.trim(),
         },
         {
           requireAuth: true,
@@ -106,7 +123,10 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button>
+        <Button
+          size="sm"
+          className="border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground border-custom-orange text-white"
+        >
           <IconPlus className="h-4 w-4 mr-2" />
           Create Clan
         </Button>
@@ -121,7 +141,7 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 px-4">
             <div className="space-y-2">
               <Label htmlFor="clan-name">Clan Name *</Label>
               <Input
@@ -130,8 +150,12 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
                 placeholder="Enter clan name"
                 value={name}
                 onChange={e => {
-                  setName(e.target.value);
-                  setError(null);
+                  const value = e.target.value;
+                  // Only allow alphanumeric characters
+                  if (value === '' || /^[a-zA-Z0-9]*$/.test(value)) {
+                    setName(value);
+                    setError(null);
+                  }
                 }}
                 disabled={isCreating}
                 required
@@ -139,7 +163,7 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clan-tag">Clan Tag (Optional)</Label>
+              <Label htmlFor="clan-tag">Clan Tag *</Label>
               <Input
                 id="clan-tag"
                 type="text"
@@ -147,16 +171,21 @@ export function CreateClanModal({ onSuccess }: CreateClanModalProps) {
                 value={tag}
                 onChange={e => {
                   const value = e.target.value.toUpperCase();
-                  if (value.length <= 10) {
+                  // Only allow alphanumeric characters and max 4 characters
+                  if (
+                    (value === '' || /^[a-zA-Z0-9]*$/.test(value)) &&
+                    value.length <= 4
+                  ) {
                     setTag(value);
                     setError(null);
                   }
                 }}
                 disabled={isCreating}
-                maxLength={10}
+                maxLength={4}
+                required
               />
               <p className="text-xs text-muted-foreground">
-                Maximum 10 characters
+                Maximum 4 characters, letters and numbers only
               </p>
             </div>
 
