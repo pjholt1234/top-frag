@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\JoinClanRequest;
 use App\Http\Requests\StoreClanRequest;
 use App\Http\Requests\UpdateClanRequest;
 use App\Models\Clan;
@@ -134,12 +135,8 @@ class ClanController extends Controller
         ]);
     }
 
-    public function join(Request $request): JsonResponse
+    public function join(JoinClanRequest $request): JsonResponse
     {
-        $request->validate([
-            'invite_link' => 'required|string',
-        ]);
-
         $user = $request->user();
 
         if (! $user) {

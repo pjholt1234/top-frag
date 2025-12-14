@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\FetchAndStoreFaceITProfileAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangeEmailRequest;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\ChangeUsernameRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
@@ -282,13 +285,8 @@ class AuthController extends Controller
     /**
      * Change user password
      */
-    public function changePassword(Request $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'current_password' => 'required|string',
-            'new_password' => 'required|string|min:8|confirmed',
-        ]);
-
         $user = $request->user();
 
         if (! Hash::check($request->current_password, $user->password)) {
@@ -310,12 +308,8 @@ class AuthController extends Controller
     /**
      * Change user username
      */
-    public function changeUsername(Request $request): JsonResponse
+    public function changeUsername(ChangeUsernameRequest $request): JsonResponse
     {
-        $request->validate([
-            'new_username' => 'required|string|min:2|max:50|unique:users,name',
-        ]);
-
         $user = $request->user();
 
         if ($user->name === $request->new_username) {
@@ -338,12 +332,8 @@ class AuthController extends Controller
     /**
      * Change user email
      */
-    public function changeEmail(Request $request): JsonResponse
+    public function changeEmail(ChangeEmailRequest $request): JsonResponse
     {
-        $request->validate([
-            'new_email' => 'required|email|unique:users,email',
-        ]);
-
         $user = $request->user();
 
         if ($user->email === $request->new_email) {
