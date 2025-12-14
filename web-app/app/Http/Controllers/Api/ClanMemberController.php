@@ -11,12 +11,8 @@ class ClanMemberController extends Controller
 {
     public function index(Clan $clan): JsonResponse
     {
-        $members = ClanMember::where('clan_id', $clan->id)
-            ->with('user')
-            ->get();
-
         return response()->json([
-            'data' => $members,
+            'data' => $clan->members()->with('user')->get(),
         ]);
     }
 
@@ -28,14 +24,13 @@ class ClanMemberController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // Refresh clan to ensure we have the latest data
         $clan->refresh();
 
-        if (! $clan->isOwner($currentUser)) {
+        if ((int) $clan->owned_by !== (int) $currentUser->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        if ($clan->isOwner($user)) {
+        if ((int) $clan->owned_by === (int) $user->id) {
             return response()->json([
                 'message' => 'Cannot remove clan owner',
                 'error' => 'cannot_remove_owner',

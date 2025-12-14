@@ -24,7 +24,6 @@ class Clan extends Model
         'invite_link' => 'string',
     ];
 
-    // Relationships
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owned_by');

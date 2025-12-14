@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Configure CORS for API routes
         $middleware->group('api', [
             \Illuminate\Http\Middleware\HandleCors::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

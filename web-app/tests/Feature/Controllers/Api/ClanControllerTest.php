@@ -134,7 +134,6 @@ class ClanControllerTest extends TestCase
         $response->assertStatus(200);
 
         $responseData = $response->json('data');
-        $this->assertArrayHasKey('id', $responseData);
         $this->assertArrayHasKey('name', $responseData);
         $this->assertEquals($clan->id, $responseData['id']);
         $this->assertEquals($clan->name, $responseData['name']);
