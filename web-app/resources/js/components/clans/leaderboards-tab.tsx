@@ -72,7 +72,8 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
         }
 
         const response = await api.get<{
-          data: LeaderboardData;
+          data: LeaderboardData | LeaderboardEntry[];
+          type?: string;
           start_date: string;
           end_date: string;
         }>(`/clans/${clanId}/leaderboards`, {
@@ -81,7 +82,14 @@ export function LeaderboardsTab({ clanId }: LeaderboardsTabProps) {
         });
 
         const data = response.data.data;
-        if (data && data[leaderboardType]) {
+        // When type is provided, data is an array. Otherwise, it's an object with type keys.
+        if (Array.isArray(data)) {
+          setLeaderboardData(data);
+        } else if (
+          data &&
+          typeof data === 'object' &&
+          leaderboardType in data
+        ) {
           setLeaderboardData(data[leaderboardType]);
         } else {
           setLeaderboardData([]);

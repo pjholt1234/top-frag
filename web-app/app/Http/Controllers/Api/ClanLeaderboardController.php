@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\LeaderboardType;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ClanLeaderboardResource;
 use App\Models\Clan;
 use App\Services\Clans\ClanLeaderboardService;
 use Carbon\Carbon;
@@ -41,7 +42,7 @@ class ClanLeaderboardController extends Controller
             $leaderboard = $this->leaderboardService->getLeaderboard($clan, $type, $start, $end);
 
             return response()->json([
-                'data' => $leaderboard,
+                'data' => ClanLeaderboardResource::collection($leaderboard),
                 'type' => $type,
                 'start_date' => $start->format('Y-m-d'),
                 'end_date' => $end->format('Y-m-d'),
@@ -51,12 +52,13 @@ class ClanLeaderboardController extends Controller
         // Get all leaderboard types
         $leaderboards = [];
         foreach (LeaderboardType::cases() as $leaderboardType) {
-            $leaderboards[$leaderboardType->value] = $this->leaderboardService->getLeaderboard(
+            $leaderboard = $this->leaderboardService->getLeaderboard(
                 $clan,
                 $leaderboardType->value,
                 $start,
                 $end
             );
+            $leaderboards[$leaderboardType->value] = ClanLeaderboardResource::collection($leaderboard);
         }
 
         return response()->json([
@@ -88,7 +90,7 @@ class ClanLeaderboardController extends Controller
         $leaderboard = $this->leaderboardService->getLeaderboard($clan, $type, $start, $end);
 
         return response()->json([
-            'data' => $leaderboard,
+            'data' => ClanLeaderboardResource::collection($leaderboard),
             'type' => (string) $type,
             'start_date' => $start->format('Y-m-d'),
             'end_date' => $end->format('Y-m-d'),

@@ -32,7 +32,7 @@ class ClanControllerTest extends TestCase
         Sanctum::actingAs($this->user);
 
         $response = $this->postJson('/api/clans', [
-            'name' => 'Test Clan',
+            'name' => 'TestClan',
             'tag' => 'TC',
         ]);
 
@@ -50,13 +50,13 @@ class ClanControllerTest extends TestCase
             ->assertJson([
                 'message' => 'Clan created successfully',
                 'data' => [
-                    'name' => 'Test Clan',
+                    'name' => 'TestClan',
                     'tag' => 'TC',
                 ],
             ]);
 
         $this->assertDatabaseHas('clans', [
-            'name' => 'Test Clan',
+            'name' => 'TestClan',
             'tag' => 'TC',
             'owned_by' => $this->user->id,
         ]);
@@ -67,25 +67,23 @@ class ClanControllerTest extends TestCase
         ]);
     }
 
-    public function test_user_can_create_clan_without_tag()
+    public function test_user_cannot_create_clan_without_tag()
     {
         Sanctum::actingAs($this->user);
 
         $response = $this->postJson('/api/clans', [
-            'name' => 'Test Clan',
+            'name' => 'TestClan',
         ]);
 
-        $response->assertStatus(201);
-        $this->assertDatabaseHas('clans', [
-            'name' => 'Test Clan',
-            'tag' => null,
-        ]);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['tag']);
     }
 
     public function test_user_cannot_create_clan_without_authentication()
     {
         $response = $this->postJson('/api/clans', [
-            'name' => 'Test Clan',
+            'name' => 'TestClan',
+            'tag' => 'TC',
         ]);
 
         $response->assertStatus(401);
@@ -153,21 +151,21 @@ class ClanControllerTest extends TestCase
         ]);
 
         $response = $this->putJson("/api/clans/{$clan->id}", [
-            'name' => 'Updated Clan Name',
+            'name' => 'UpdatedClanName',
             'tag' => 'UCN',
         ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'name' => 'Updated Clan Name',
+                    'name' => 'UpdatedClanName',
                     'tag' => 'UCN',
                 ],
             ]);
 
         $this->assertDatabaseHas('clans', [
             'id' => $clan->id,
-            'name' => 'Updated Clan Name',
+            'name' => 'UpdatedClanName',
             'tag' => 'UCN',
         ]);
     }
@@ -180,7 +178,8 @@ class ClanControllerTest extends TestCase
         $clan = Clan::factory()->create(['owned_by' => $otherUser->id]);
 
         $response = $this->putJson("/api/clans/{$clan->id}", [
-            'name' => 'Updated Clan Name',
+            'name' => 'UpdatedClanName',
+            'tag' => 'UCN',
         ]);
 
         $response->assertStatus(403);

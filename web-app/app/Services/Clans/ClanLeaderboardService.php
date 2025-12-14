@@ -20,10 +20,9 @@ class ClanLeaderboardService
 
     public function calculateLeaderboard(Clan $clan, string $type, Carbon $startDate, Carbon $endDate): void
     {
-        // Get all clan matches in the period
+        // Get all clan matches in the period using created_at date
         $matches = $clan->matches()
-            ->whereBetween('match_start_time', [$startDate, $endDate])
-            ->orWhereBetween('end_timestamp', [$startDate, $endDate])
+            ->whereBetween('matches.created_at', [$startDate, $endDate])
             ->get();
 
         if ($matches->isEmpty()) {
@@ -92,8 +91,7 @@ class ClanLeaderboardService
 
         if ($matchIds === null) {
             $matches = $clan->matches()
-                ->whereBetween('match_start_time', [$startDate, $endDate])
-                ->orWhereBetween('end_timestamp', [$startDate, $endDate])
+                ->whereBetween('matches.created_at', [$startDate, $endDate])
                 ->get();
             $matchIds = $matches->pluck('id');
         }

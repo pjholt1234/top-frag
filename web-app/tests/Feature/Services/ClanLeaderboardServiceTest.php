@@ -51,7 +51,7 @@ class ClanLeaderboardServiceTest extends TestCase
         $player2 = Player::factory()->create(['steam_id' => '76561198022222222']);
 
         $match = GameMatch::factory()->create([
-            'match_start_time' => Carbon::now()->subDays(3),
+            'created_at' => Carbon::now()->subDays(3),
         ]);
         $this->clan->matches()->attach($match->id);
 
@@ -91,7 +91,7 @@ class ClanLeaderboardServiceTest extends TestCase
         $player2 = Player::factory()->create(['steam_id' => '76561198022222222']);
 
         $match = GameMatch::factory()->create([
-            'match_start_time' => Carbon::now()->subDays(3),
+            'created_at' => Carbon::now()->subDays(3),
         ]);
         $this->clan->matches()->attach($match->id);
 
@@ -129,7 +129,7 @@ class ClanLeaderboardServiceTest extends TestCase
         $player1 = Player::factory()->create(['steam_id' => '76561198011111111']);
 
         $match = GameMatch::factory()->create([
-            'match_start_time' => Carbon::now()->subDays(3),
+            'created_at' => Carbon::now()->subDays(3),
         ]);
         $this->clan->matches()->attach($match->id);
 

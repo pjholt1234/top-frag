@@ -64,7 +64,15 @@ class ClanLeaderboardControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    'aim',
+                    'aim' => [
+                        '*' => [
+                            'position',
+                            'user_id',
+                            'user_name',
+                            'user_avatar',
+                            'value',
+                        ],
+                    ],
                     'impact',
                     'round_swing',
                     'fragger',
@@ -98,9 +106,10 @@ class ClanLeaderboardControllerTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id',
-                        'user_id',
                         'position',
+                        'user_id',
+                        'user_name',
+                        'user_avatar',
                         'value',
                     ],
                 ],
@@ -133,5 +142,50 @@ class ClanLeaderboardControllerTest extends TestCase
             ->assertJson([
                 'type' => 'fragger',
             ]);
+    }
+
+    public function test_user_can_get_leaderboard_with_type_query_parameter()
+    {
+        Sanctum::actingAs($this->user);
+
+        $startDate = Carbon::now()->subDays(7)->format('Y-m-d');
+        $endDate = Carbon::now()->format('Y-m-d');
+
+        ClanLeaderboard::factory()->create([
+            'clan_id' => $this->clan->id,
+            'user_id' => $this->user->id,
+            'leaderboard_type' => LeaderboardType::IMPACT->value,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'position' => 1,
+            'value' => 60.10,
+        ]);
+
+        $response = $this->getJson("/api/clans/{$this->clan->id}/leaderboards?type=impact&period=week");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'position',
+                        'user_id',
+                        'user_name',
+                        'user_avatar',
+                        'value',
+                    ],
+                ],
+                'type',
+                'start_date',
+                'end_date',
+            ])
+            ->assertJson([
+                'type' => 'impact',
+            ]);
+
+        // Verify data is an array (not an object)
+        $data = $response->json('data');
+        $this->assertIsArray($data);
+        $this->assertCount(1, $data);
+        $this->assertEquals(60.10, $data[0]['value']);
     }
 }
