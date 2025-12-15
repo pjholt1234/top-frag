@@ -64,4 +64,3 @@ func main() {
 
 	fmt.Println("\nAll migrations completed!")
 }
-
