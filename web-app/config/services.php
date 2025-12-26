@@ -49,6 +49,12 @@ return [
         'max_sharecodes_per_run' => env('STEAM_MAX_SHARECODES_PER_RUN', 50),
     ],
 
+    'discord' => [
+        'client_id' => env('DISCORD_CLIENT_ID'),
+        'client_secret' => env('DISCORD_CLIENT_SECRET'),
+        'redirect' => env('DISCORD_REDIRECT_URI'),
+    ],
+
     'valve_demo_url_service' => [
         'base_url' => env('VALVE_DEMO_URL_SERVICE_BASE_URL', 'http://localhost:3001'),
         'api_key' => env('VALVE_DEMO_URL_SERVICE_API_KEY'),

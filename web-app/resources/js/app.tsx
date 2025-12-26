@@ -15,6 +15,7 @@ import MatchDetail from '@/pages/match-detail';
 import LoginPage from '@/pages/login';
 import RegisterPage from '@/pages/register';
 import { SteamCallbackPage } from '@/pages/steam-callback';
+import { DiscordCallbackPage } from '@/pages/discord-callback';
 import { OnboardingPage } from '@/pages/onboarding';
 import AccountSettingsPage from '@/pages/account-settings';
 import AimPage from '@/pages/aim';
@@ -51,6 +52,10 @@ const App: React.FC = () => {
                 }
               />
               <Route path="/steam-callback" element={<SteamCallbackPage />} />
+              <Route
+                path="/discord-callback"
+                element={<DiscordCallbackPage />}
+              />
               <Route path="/onboarding" element={<OnboardingPage />} />
 
               {/* Protected routes - only accessible when authenticated */}

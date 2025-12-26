@@ -16,6 +16,12 @@ class UserObserver
             $user->steam_link_hash = hash('sha256', $user->id.config('app.key').time().uniqid());
             $user->saveQuietly(); // Use saveQuietly to avoid triggering observers again
         }
+
+        // Generate a unique Discord link hash for the new user
+        if (! $user->discord_link_hash) {
+            $user->discord_link_hash = hash('sha256', $user->id.config('app.key').time().uniqid());
+            $user->saveQuietly(); // Use saveQuietly to avoid triggering observers again
+        }
     }
 
     /**

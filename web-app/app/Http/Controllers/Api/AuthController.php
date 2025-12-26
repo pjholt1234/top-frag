@@ -162,7 +162,7 @@ class AuthController extends Controller
                 $token = $user->createToken('auth_token')->plainTextToken;
 
                 // Redirect to frontend with token
-                return redirect('http://localhost:8000/steam-callback?token='.$token.'&success=true&message='.urlencode('Steam login successful'));
+                return redirect(config('app.frontend_url').'/steam-callback?token='.$token.'&success=true&message='.urlencode('Steam login successful'));
             }
 
             // Check if this is a Steam account linking request
@@ -174,12 +174,12 @@ class AuthController extends Controller
                 Log::info('Steam linking detected for user: '.($currentUser ? $currentUser->id : 'not found'));
 
                 if (! $currentUser) {
-                    return redirect('http://localhost:8000/steam-callback?error=user_not_found&message='.urlencode('User not found'));
+                    return redirect(config('app.frontend_url').'/steam-callback?error=user_not_found&message='.urlencode('User not found'));
                 }
 
                 // Check if another user already has this Steam ID
                 if (User::where('steam_id', $steamUser->getId())->exists()) {
-                    return redirect('http://localhost:8000/steam-callback?error=steam_already_linked&message='.urlencode('This Steam account is already linked to another user'));
+                    return redirect(config('app.frontend_url').'/steam-callback?error=steam_already_linked&message='.urlencode('This Steam account is already linked to another user'));
                 }
 
                 // Link Steam account to current user
@@ -191,7 +191,7 @@ class AuthController extends Controller
                 $this->fetchAndStoreFaceITProfileAction->execute($currentUser);
 
                 // Redirect to frontend with success
-                return redirect('http://localhost:8000/steam-callback?success=true&message='.urlencode('Steam account linked successfully'));
+                return redirect(config('app.frontend_url').'/steam-callback?success=true&message='.urlencode('Steam account linked successfully'));
             }
 
             // Create new user with Steam account
@@ -211,12 +211,12 @@ class AuthController extends Controller
             Log::info('Created new user with ID: '.$user->id.', token generated');
 
             // Redirect to frontend with token
-            $redirectUrl = 'http://localhost:8000/steam-callback?token='.$token.'&success=true&message='.urlencode('Steam account created successfully');
+            $redirectUrl = config('app.frontend_url').'/steam-callback?token='.$token.'&success=true&message='.urlencode('Steam account created successfully');
             Log::info('Redirecting to: '.$redirectUrl);
 
             return redirect($redirectUrl);
         } catch (\Exception $e) {
-            return redirect('http://localhost:8000/steam-callback?error=authentication_failed&message='.urlencode('Steam authentication failed: '.$e->getMessage()));
+            return redirect(config('app.frontend_url').'/steam-callback?error=authentication_failed&message='.urlencode('Steam authentication failed: '.$e->getMessage()));
         }
     }
 
@@ -279,6 +279,158 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Steam account unlinked successfully',
+        ]);
+    }
+
+    /**
+     * Redirect to Discord for authentication
+     */
+    public function discordRedirect(): \Symfony\Component\HttpFoundation\RedirectResponse
+    {
+        // Check if Discord is configured
+        if (! config('services.discord.client_id') || ! config('services.discord.client_secret')) {
+            return redirect(config('app.frontend_url').'/discord-callback?error=discord_not_configured&message='.urlencode('Discord OAuth is not configured. Please set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET in your environment.'));
+        }
+
+        return Socialite::driver('discord')->redirect();
+    }
+
+    /**
+     * Handle Discord authentication callback
+     */
+    public function discordCallback(): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            $discordUser = Socialite::driver('discord')->user();
+            Log::info('Discord user ID: '.$discordUser->getId());
+
+            // Check if this is a Discord account linking request (stored in session)
+            $linkHash = session('discord_link_hash');
+            Log::info('Discord callback - link hash: '.($linkHash ?? 'null'));
+
+            if ($linkHash) {
+                // Clear the link hash from session after use
+                session()->forget('discord_link_hash');
+                $currentUser = User::where('discord_link_hash', $linkHash)->first();
+                Log::info('Discord linking detected for user: '.($currentUser ? $currentUser->id : 'not found'));
+
+                if (! $currentUser) {
+                    return redirect(config('app.frontend_url').'/discord-callback?error=user_not_found&message='.urlencode('User not found'));
+                }
+
+                // Check if another user already has this Discord ID
+                if (User::where('discord_id', $discordUser->getId())->exists()) {
+                    return redirect(config('app.frontend_url').'/discord-callback?error=discord_already_linked&message='.urlencode('This Discord account is already linked to another user'));
+                }
+
+                // Link Discord account to current user
+                $currentUser->update(['discord_id' => $discordUser->getId()]);
+                Log::info('Successfully linked Discord ID '.$discordUser->getId().' to user ID '.$currentUser->id);
+
+                // Redirect to frontend with success
+                return redirect(config('app.frontend_url').'/discord-callback?success=true&message='.urlencode('Discord account linked successfully'));
+            }
+
+            // Check if user already exists with this Discord ID
+            $user = User::where('discord_id', $discordUser->getId())->first();
+
+            if ($user) {
+                // User exists, log them in
+                $token = $user->createToken('auth_token')->plainTextToken;
+
+                // Redirect to frontend with token
+                return redirect(config('app.frontend_url').'/discord-callback?token='.$token.'&success=true&message='.urlencode('Discord login successful'));
+            }
+
+            // Create new user with Discord account
+            Log::info('Creating new Discord user with ID: '.$discordUser->getId());
+            $user = User::create([
+                'name' => $discordUser->getName() ?? $discordUser->getNickname() ?? 'Discord User',
+                'email' => $discordUser->getEmail(), // Can be null
+                'discord_id' => $discordUser->getId(),
+                'password' => Hash::make(uniqid()), // Random password since they won't use it
+            ]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+            Log::info('Created new user with ID: '.$user->id.', token generated');
+
+            // Redirect to frontend with token
+            $redirectUrl = config('app.frontend_url').'/discord-callback?token='.$token.'&success=true&message='.urlencode('Discord account created successfully');
+            Log::info('Redirecting to: '.$redirectUrl);
+
+            return redirect($redirectUrl);
+        } catch (\Exception $e) {
+            return redirect(config('app.frontend_url').'/discord-callback?error=authentication_failed&message='.urlencode('Discord authentication failed: '.$e->getMessage()));
+        }
+    }
+
+    /**
+     * Link Discord account to authenticated user
+     */
+    public function linkDiscord(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        if ($user->discord_id) {
+            return response()->json([
+                'message' => 'User already has a Discord account linked',
+                'error' => 'discord_already_linked',
+            ], 409);
+        }
+
+        // Check if Discord is configured
+        if (! config('services.discord.client_id') || ! config('services.discord.client_secret')) {
+            return response()->json([
+                'message' => 'Discord OAuth is not configured. Please set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET in your environment.',
+                'error' => 'discord_not_configured',
+            ], 500);
+        }
+
+        // Generate a secure hash for this user
+        $linkHash = $user->getDiscordLinkHash();
+
+        // Store the link hash in the session (Discord doesn't allow query params in redirect URI)
+        session(['discord_link_hash' => $linkHash]);
+
+        // Use the base Discord redirect (without query parameters)
+        $redirectUrl = Socialite::driver('discord')->redirect()->getTargetUrl();
+
+        return response()->json([
+            'message' => 'Redirect to Discord for account linking',
+            'discord_redirect_url' => $redirectUrl,
+        ]);
+    }
+
+    /**
+     * Unlink Discord account from authenticated user
+     */
+    public function unlinkDiscord(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        if (! $user->discord_id) {
+            return response()->json([
+                'message' => 'No Discord account linked to this user',
+                'error' => 'no_discord_linked',
+            ], 400);
+        }
+
+        $user->update(['discord_id' => null]);
+
+        return response()->json([
+            'message' => 'Discord account unlinked successfully',
         ]);
     }
 

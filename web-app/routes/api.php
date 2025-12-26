@@ -57,12 +57,35 @@ Route::get('/auth/steam/redirect', [AuthController::class, 'steamRedirect']);
 Route::get('/auth/steam/callback', [AuthController::class, 'steamCallback']);
 Route::get('/auth/steam/link-callback', [AuthController::class, 'steamLinkCallback']);
 
+// Discord authentication routes (need sessions for OAuth state)
+Route::middleware([
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+])->group(function () {
+    Route::get('/auth/discord/redirect', [AuthController::class, 'discordRedirect']);
+    Route::get('/auth/discord/callback', [AuthController::class, 'discordCallback']);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/steam/link', [AuthController::class, 'linkSteam']);
     Route::post('/auth/steam/unlink', [AuthController::class, 'unlinkSteam']);
+    Route::post('/auth/discord/unlink', [AuthController::class, 'unlinkDiscord']);
+});
+
+// Discord link route needs sessions for Socialite
+Route::middleware([
+    'auth:sanctum',
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+])->group(function () {
+    Route::post('/auth/discord/link', [AuthController::class, 'linkDiscord']);
+});
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/change-username', [AuthController::class, 'changeUsername']);
     Route::post('/auth/change-email', [AuthController::class, 'changeEmail']);

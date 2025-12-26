@@ -36,6 +36,8 @@ class UserTest extends TestCase
             'password',
             'steam_id',
             'steam_link_hash',
+            'discord_id',
+            'discord_link_hash',
             'steam_sharecode',
             'steam_game_auth_code',
             'steam_sharecode_added_at',

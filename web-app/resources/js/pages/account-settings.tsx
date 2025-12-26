@@ -23,7 +23,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react';
-import { IconBrandSteam } from '@tabler/icons-react';
+import { IconBrandSteam, IconBrandDiscord } from '@tabler/icons-react';
 import { useSteamSharecode } from '@/hooks/use-steam-sharecode';
 
 const AccountSettingsPage: React.FC = () => {
@@ -35,6 +35,8 @@ const AccountSettingsPage: React.FC = () => {
     changeEmail,
     linkSteamAccount,
     unlinkSteamAccount,
+    linkDiscordAccount,
+    unlinkDiscordAccount,
   } = useAuth();
 
   const {
@@ -84,6 +86,11 @@ const AccountSettingsPage: React.FC = () => {
   const [steamError, setSteamError] = useState('');
   const [steamSuccess, setSteamSuccess] = useState('');
   const [steamLoading, setSteamLoading] = useState(false);
+
+  // Discord linking state
+  const [discordError, setDiscordError] = useState('');
+  const [discordSuccess, setDiscordSuccess] = useState('');
+  const [discordLoading, setDiscordLoading] = useState(false);
 
   // Steam sharecode state
   const [sharecodeData, setSharecodeData] = useState({
@@ -257,6 +264,44 @@ const AccountSettingsPage: React.FC = () => {
     }
   };
 
+  const handleDiscordLink = async () => {
+    setDiscordError('');
+    setDiscordSuccess('');
+    setDiscordLoading(true);
+
+    try {
+      await linkDiscordAccount();
+      setDiscordSuccess('Redirecting to Discord for account linking...');
+    } catch (err: any) {
+      setDiscordError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to link Discord account'
+      );
+    } finally {
+      setDiscordLoading(false);
+    }
+  };
+
+  const handleDiscordUnlink = async () => {
+    setDiscordError('');
+    setDiscordSuccess('');
+    setDiscordLoading(true);
+
+    try {
+      await unlinkDiscordAccount();
+      setDiscordSuccess('Discord account unlinked successfully');
+    } catch (err: any) {
+      setDiscordError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to unlink Discord account'
+      );
+    } finally {
+      setDiscordLoading(false);
+    }
+  };
+
   const handleSharecodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSharecodeError('');
@@ -368,6 +413,12 @@ const AccountSettingsPage: React.FC = () => {
       title: 'Steam Account',
       description: 'Link or unlink your Steam account',
       icon: IconBrandSteam,
+    },
+    {
+      id: 'discord',
+      title: 'Discord Account',
+      description: 'Link or unlink your Discord account',
+      icon: IconBrandDiscord,
     },
     {
       id: 'sharecode',
@@ -788,6 +839,82 @@ const AccountSettingsPage: React.FC = () => {
                           View detailed statistics and performance metrics
                         </li>
                         <li>Sync your gaming profile across platforms</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Discord Account Section */}
+          {activeSection === 'discord' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <IconBrandDiscord className="h-5 w-5" />
+                  <span>Discord Account</span>
+                </CardTitle>
+                <CardDescription>
+                  Link or unlink your Discord account for enhanced features
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {discordError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{discordError}</AlertDescription>
+                    </Alert>
+                  )}
+                  {discordSuccess && (
+                    <Alert>
+                      <AlertDescription>{discordSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <IconBrandDiscord className="h-8 w-8 text-indigo-600" />
+                        <div>
+                          <p className="font-medium">Discord Account</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {user?.discord_id
+                              ? `Linked (ID: ${user.discord_id})`
+                              : 'Not linked'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {user?.discord_id ? (
+                          <Button
+                            variant="destructive"
+                            onClick={handleDiscordUnlink}
+                            disabled={discordLoading}
+                          >
+                            {discordLoading ? 'Unlinking...' : 'Unlink Account'}
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handleDiscordLink}
+                            disabled={discordLoading}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                          >
+                            {discordLoading ? 'Linking...' : 'Link Account'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <p>Linking your Discord account allows you to:</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>
+                          Connect with other players in Discord communities
+                        </li>
+                        <li>Receive notifications and updates via Discord</li>
+                        <li>Sync your profile across platforms</li>
                       </ul>
                     </div>
                   </div>

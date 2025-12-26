@@ -17,6 +17,7 @@ interface User {
   steam_avatar_medium?: string;
   steam_avatar_full?: string;
   steam_persona_name?: string;
+  discord_id?: string;
 }
 
 interface AuthContextType {
@@ -33,6 +34,8 @@ interface AuthContextType {
   loginWithSteam: () => void;
   linkSteamAccount: () => Promise<void>;
   unlinkSteamAccount: () => Promise<void>;
+  linkDiscordAccount: () => Promise<void>;
+  unlinkDiscordAccount: () => Promise<void>;
   changePassword: (
     currentPassword: string,
     newPassword: string,
@@ -198,6 +201,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const linkDiscordAccount = async () => {
+    setLoading(true);
+    try {
+      const response = await api.post(
+        '/auth/discord/link',
+        {},
+        { requireAuth: true }
+      );
+
+      if (response.data.discord_redirect_url) {
+        // Redirect to Discord for account linking
+        window.location.href = response.data.discord_redirect_url;
+      }
+    } catch (error) {
+      console.error('Discord linking error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unlinkDiscordAccount = async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/discord/unlink', {}, { requireAuth: true });
+      // Refresh user data to reflect the change
+      await fetchUser();
+    } catch (error) {
+      console.error('Discord unlinking error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string,
@@ -278,6 +316,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loginWithSteam,
     linkSteamAccount,
     unlinkSteamAccount,
+    linkDiscordAccount,
+    unlinkDiscordAccount,
     changePassword,
     changeUsername,
     changeEmail,

@@ -60,5 +60,12 @@ class AppServiceProvider extends ServiceProvider
 
             return $socialite->buildProvider(\SocialiteProviders\Steam\Provider::class, $config);
         });
+
+        // Register Discord provider with Socialite
+        $socialite->extend('discord', function ($app) use ($socialite) {
+            $config = $app['config']['services.discord'];
+
+            return $socialite->buildProvider(\SocialiteProviders\Discord\Provider::class, $config);
+        });
     }
 }

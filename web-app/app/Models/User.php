@@ -27,6 +27,8 @@ class User extends Authenticatable
         'password',
         'steam_id',
         'steam_link_hash',
+        'discord_id',
+        'discord_link_hash',
         'steam_sharecode',
         'steam_game_auth_code',
         'steam_sharecode_added_at',
@@ -129,6 +131,20 @@ class User extends Authenticatable
         }
 
         return $this->steam_link_hash;
+    }
+
+    /**
+     * Get the Discord link hash for this user
+     */
+    public function getDiscordLinkHash(): string
+    {
+        // The observer should have already created this, but just in case
+        if (! $this->discord_link_hash) {
+            $this->discord_link_hash = hash('sha256', $this->id.config('app.key').time().uniqid());
+            $this->save();
+        }
+
+        return $this->discord_link_hash;
     }
 
     /**
