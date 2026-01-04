@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconCopy, IconCheck, IconTrash } from '@tabler/icons-react';
+import { IconCopy, IconCheck, IconTrash, IconUnlink } from '@tabler/icons-react';
 import { GaugeChart } from '@/components/charts/gauge-chart';
 import { MembersList } from './members-list';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ interface Clan {
   name: string;
   tag: string | null;
   invite_link: string;
+  discord_guild_id: string | null;
   owner: {
     id: number;
     name: string;
@@ -55,6 +56,8 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
+  const [isUnlinking, setIsUnlinking] = useState(false);
+  const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchWinrate = async () => {
@@ -159,6 +162,22 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
     }
   };
 
+  const handleUnlinkDiscord = async () => {
+    try {
+      setIsUnlinking(true);
+      await api.post(`/clans/${clanId}/unlink-discord`, {}, { requireAuth: true });
+      toast.success('Clan unlinked from Discord server successfully');
+      setUnlinkDialogOpen(false);
+      // Refresh the clan data
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error unlinking clan from Discord:', err);
+      toast.error(err.message || err.data?.message || 'Failed to unlink clan from Discord');
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
+
   const isOwner = user && clan.owner.id === user.id;
 
   return (
@@ -204,6 +223,32 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
         </CardContent>
       </Card>
 
+      {/* Discord Integration */}
+      {isOwner && clan.discord_guild_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Discord Integration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                This clan is linked to a Discord server. You can unlink it to
+                remove the connection.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setUnlinkDialogOpen(true)}
+                disabled={isUnlinking}
+                className="flex items-center gap-2"
+              >
+                <IconUnlink className="h-4 w-4" />
+                Unlink from Discord Server
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Danger Zone - Delete Clan */}
       {isOwner && (
         <Card className="border-destructive">
@@ -230,6 +275,43 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Unlink Discord Confirmation Dialog */}
+      <Dialog open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unlink from Discord Server</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unlink this clan from the Discord
+              server? This will remove the connection between your clan and the
+              Discord server.
+              <br />
+              <br />
+              You can link it to a different Discord server later using the{' '}
+              <code className="bg-muted px-1 py-0.5 rounded">/setup</code>{' '}
+              command in Discord.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUnlinkDialogOpen(false)}
+              disabled={isUnlinking}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleUnlinkDiscord}
+              disabled={isUnlinking}
+              className="flex items-center gap-2"
+            >
+              <IconUnlink className="h-4 w-4" />
+              {isUnlinking ? 'Unlinking...' : 'Unlink from Discord'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

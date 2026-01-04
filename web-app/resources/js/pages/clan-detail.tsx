@@ -24,6 +24,7 @@ interface Clan {
   name: string;
   tag: string | null;
   invite_link: string;
+  discord_guild_id: string | null;
   owner: {
     id: number;
     name: string;

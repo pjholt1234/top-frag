@@ -18,6 +18,8 @@ class Clan extends Model
         'invite_link',
         'name',
         'tag',
+        'discord_guild_id',
+        'discord_channel_id',
     ];
 
     protected $casts = [
@@ -68,5 +70,15 @@ class Clan extends Model
     public function isMember(User $user): bool
     {
         return $this->members()->where('user_id', $user->id)->exists();
+    }
+
+    public static function findByDiscordGuildId(string $guildId): ?self
+    {
+        return self::where('discord_guild_id', $guildId)->first();
+    }
+
+    public function isLinkedToDiscord(): bool
+    {
+        return $this->discord_guild_id !== null;
     }
 }

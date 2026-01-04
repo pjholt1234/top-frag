@@ -53,6 +53,9 @@ return [
         'client_id' => env('DISCORD_CLIENT_ID'),
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
         'redirect' => env('DISCORD_REDIRECT_URI'),
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'public_key' => env('DISCORD_PUBLIC_KEY'),
+        'application_id' => env('DISCORD_APPLICATION_ID'),
     ],
 
     'valve_demo_url_service' => [

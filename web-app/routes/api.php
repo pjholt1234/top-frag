@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ClanMatchController;
 use App\Http\Controllers\Api\ClanMemberController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DemoParserController;
+use App\Http\Controllers\Api\DiscordWebhookController;
 use App\Http\Controllers\Api\GrenadeFavouriteController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MapStatsController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\RanksController;
 use App\Http\Controllers\Api\SteamSharecodeController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\UtilityController;
+use App\Http\Middleware\VerifyDiscordSignature;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +32,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/health', [HealthController::class, 'check']);
+
+// Discord webhook route (public, but signature verified)
+Route::post('/discord/webhook', [DiscordWebhookController::class, 'handle'])
+    ->middleware(VerifyDiscordSignature::class);
 
 // Test utility analysis directly
 Route::get('/test-utility/{matchId}', function ($matchId) {
@@ -150,6 +156,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/clans/{clan}/regenerate-invite-link', [ClanController::class, 'regenerateInviteLink']);
     Route::post('/clans/{clan}/leave', [ClanController::class, 'leave']);
     Route::post('/clans/{clan}/transfer-ownership/{user}', [ClanController::class, 'transferOwnership']);
+    Route::post('/clans/{clan}/unlink-discord', [ClanController::class, 'unlinkDiscord']);
 
     // Clan member routes
     Route::get('/clans/{clan}/members', [ClanMemberController::class, 'index']);

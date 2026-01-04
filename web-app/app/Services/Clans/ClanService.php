@@ -53,6 +53,28 @@ class ClanService
         return $clan;
     }
 
+    /**
+     * Add a user to a clan directly (used for Discord auto-add)
+     *
+     * @param  Clan  $clan
+     * @param  User  $user
+     * @return void
+     */
+    public function addMember(Clan $clan, User $user): void
+    {
+        if ($clan->isMember($user)) {
+            return; // Already a member, silently skip
+        }
+
+        ClanMember::create([
+            'clan_id' => $clan->id,
+            'user_id' => $user->id,
+        ]);
+
+        // Check for new matches with the new member
+        $this->findMatchesForClan($clan);
+    }
+
     public function leave(User $user, Clan $clan): void
     {
         if ($clan->isOwner($user)) {
@@ -151,6 +173,94 @@ class ClanService
 
             // Transfer ownership
             $clan->owned_by = $newOwner->id;
+            $clan->save();
+        });
+    }
+
+    /**
+     * Create a new clan from Discord guild installation
+     *
+     * @param  User  $owner
+     * @param  string  $guildId
+     * @param  string  $guildName
+     * @param  string|null  $tag
+     * @return Clan
+     */
+    public function createFromDiscordGuild(User $owner, string $guildId, string $guildName, ?string $tag = null): Clan
+    {
+        return DB::transaction(function () use ($owner, $guildId, $guildName, $tag) {
+            $clan = Clan::create([
+                'owned_by' => $owner->id,
+                'invite_link' => (string) Str::uuid(),
+                'name' => $guildName,
+                'tag' => $tag,
+                'discord_guild_id' => $guildId,
+            ]);
+
+            // Add owner as first member
+            ClanMember::create([
+                'clan_id' => $clan->id,
+                'user_id' => $owner->id,
+            ]);
+
+            // Find initial matches for the clan
+            $this->findMatchesForClan($clan);
+
+            return $clan;
+        });
+    }
+
+    /**
+     * Link an existing clan to a Discord guild
+     *
+     * @param  Clan  $clan
+     * @param  string  $guildId
+     * @param  User  $installer
+     * @return Clan
+     */
+    public function linkToDiscordGuild(Clan $clan, string $guildId, User $installer): Clan
+    {
+        return DB::transaction(function () use ($clan, $guildId, $installer) {
+            // Validate that clan doesn't already have a discord_guild_id
+            if ($clan->discord_guild_id !== null) {
+                throw new \Exception('This clan is already linked to a Discord server');
+            }
+
+            // Validate that installer is the owner of the clan
+            if (! $clan->isOwner($installer)) {
+                throw new \Exception('You must be the owner of the clan to link it to Discord');
+            }
+
+            // Update clan with discord_guild_id
+            $clan->discord_guild_id = $guildId;
+            $clan->save();
+
+            return $clan;
+        });
+    }
+
+    /**
+     * Unlink clan from Discord server
+     *
+     * @param  Clan  $clan
+     * @param  User  $user
+     * @return void
+     */
+    public function unlinkFromDiscord(Clan $clan, User $user): void
+    {
+        DB::transaction(function () use ($clan, $user) {
+            // Verify user is the owner
+            if (! $clan->isOwner($user)) {
+                throw new \Exception('Only the clan owner can unlink from Discord.');
+            }
+
+            // Verify clan is linked to Discord
+            if (! $clan->isLinkedToDiscord()) {
+                throw new \Exception('This clan is not linked to a Discord server.');
+            }
+
+            // Unlink from Discord
+            $clan->discord_guild_id = null;
             $clan->save();
         });
     }

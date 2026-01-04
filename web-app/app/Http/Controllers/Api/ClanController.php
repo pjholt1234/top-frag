@@ -241,4 +241,39 @@ class ClanController extends Controller
             ], 400);
         }
     }
+
+    public function unlinkDiscord(Clan $clan): JsonResponse
+    {
+        $user = request()->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $clan->refresh();
+
+        if (! $clan->isOwner($user)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $this->clanService->unlinkFromDiscord($clan, $user);
+
+            return response()->json([
+                'message' => 'Clan unlinked from Discord server successfully',
+                'data' => $clan->load(['owner', 'members.user']),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error unlinking clan from Discord', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'clan_id' => $clan->id,
+            ]);
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => 'unlink_failed',
+            ], 400);
+        }
+    }
 }
