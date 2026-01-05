@@ -13,7 +13,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconCopy, IconCheck, IconTrash, IconUnlink } from '@tabler/icons-react';
+import {
+  IconCopy,
+  IconCheck,
+  IconTrash,
+  IconUnlink,
+} from '@tabler/icons-react';
 import { GaugeChart } from '@/components/charts/gauge-chart';
 import { MembersList } from './members-list';
 import { toast } from 'sonner';
@@ -165,14 +170,20 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
   const handleUnlinkDiscord = async () => {
     try {
       setIsUnlinking(true);
-      await api.post(`/clans/${clanId}/unlink-discord`, {}, { requireAuth: true });
+      await api.post(
+        `/clans/${clanId}/unlink-discord`,
+        {},
+        { requireAuth: true }
+      );
       toast.success('Clan unlinked from Discord server successfully');
       setUnlinkDialogOpen(false);
       // Refresh the clan data
       window.location.reload();
     } catch (err: any) {
       console.error('Error unlinking clan from Discord:', err);
-      toast.error(err.message || err.data?.message || 'Failed to unlink clan from Discord');
+      toast.error(
+        err.message || err.data?.message || 'Failed to unlink clan from Discord'
+      );
     } finally {
       setIsUnlinking(false);
     }
@@ -282,9 +293,9 @@ export function OverviewTab({ clanId, clan }: OverviewTabProps) {
           <DialogHeader>
             <DialogTitle>Unlink from Discord Server</DialogTitle>
             <DialogDescription>
-              Are you sure you want to unlink this clan from the Discord
-              server? This will remove the connection between your clan and the
-              Discord server.
+              Are you sure you want to unlink this clan from the Discord server?
+              This will remove the connection between your clan and the Discord
+              server.
               <br />
               <br />
               You can link it to a different Discord server later using the{' '}

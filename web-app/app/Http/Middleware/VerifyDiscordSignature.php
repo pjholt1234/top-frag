@@ -50,7 +50,7 @@ class VerifyDiscordSignature
             ]);
         }
 
-        $message = $timestamp . $body;
+        $message = $timestamp.$body;
 
         // Debug logging (remove in production if needed)
         Log::debug('Discord signature verification attempt', [
@@ -73,9 +73,9 @@ class VerifyDiscordSignature
             // Note: Discord may send duplicate requests with different signatures
             // This is normal behavior - the retry will succeed
             Log::warning('Discord signature verification failed (this may be a retry)', [
-                'public_key' => substr($publicKey, 0, 10) . '...',
+                'public_key' => substr($publicKey, 0, 10).'...',
                 'signature' => $signature,
-                'signature_preview' => substr($signature, 0, 10) . '...',
+                'signature_preview' => substr($signature, 0, 10).'...',
                 'timestamp' => $timestamp,
                 'body_hash' => hash('sha256', $body),
                 'message_hash' => hash('sha256', $message),

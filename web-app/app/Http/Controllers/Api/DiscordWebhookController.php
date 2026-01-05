@@ -16,9 +16,6 @@ class DiscordWebhookController extends Controller
 
     /**
      * Handle Discord webhook/interaction requests
-     *
-     * @param  Request  $request
-     * @return JsonResponse
      */
     public function handle(Request $request): JsonResponse
     {
@@ -34,18 +31,21 @@ class DiscordWebhookController extends Controller
         // Handle APPLICATION_COMMAND (slash commands)
         if (isset($payload['type']) && $payload['type'] === 2) {
             $response = $this->discordService->handleInteraction($payload);
+
             return response()->json($response);
         }
 
         // Handle MESSAGE_COMPONENT (select menus, buttons)
         if (isset($payload['type']) && $payload['type'] === 3) {
             $response = $this->discordService->handleInteraction($payload);
+
             return response()->json($response);
         }
 
         // Handle MODAL_SUBMIT (modal form submissions)
         if (isset($payload['type']) && $payload['type'] === 5) {
             $response = $this->discordService->handleInteraction($payload);
+
             return response()->json($response);
         }
 

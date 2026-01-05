@@ -17,7 +17,6 @@ class ClanMatchService
             return collect();
         }
 
-        // Get player IDs for clan members
         $clanMemberPlayerIds = DB::table('players')
             ->whereIn('steam_id', function ($query) use ($clanMemberUserIds) {
                 $query->select('steam_id')
@@ -31,7 +30,6 @@ class ClanMatchService
             return collect();
         }
 
-        // Find matches where 2+ clan members played together on the same team
         $matchIds = DB::table('match_players')
             ->whereIn('player_id', $clanMemberPlayerIds)
             ->select('match_id', 'team')
@@ -49,7 +47,6 @@ class ClanMatchService
             return false;
         }
 
-        // Check if match is already in clan
         if (DB::table('clan_matches')
             ->where('clan_id', $clan->id)
             ->where('match_id', $match->id)
@@ -57,7 +54,6 @@ class ClanMatchService
             return false;
         }
 
-        // Get player IDs for clan members
         $clanMemberUserIds = $clan->members()->pluck('user_id');
 
         if ($clanMemberUserIds->count() < 2) {
@@ -77,7 +73,6 @@ class ClanMatchService
             return false;
         }
 
-        // Check if 2+ clan members played in this match on the same team
         $clanMembersInMatch = DB::table('match_players')
             ->where('match_id', $match->id)
             ->whereIn('player_id', $clanMemberPlayerIds)

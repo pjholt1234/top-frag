@@ -20,7 +20,6 @@ class ClanLeaderboardService
 
     public function calculateLeaderboard(Clan $clan, string $type, Carbon $startDate, Carbon $endDate): void
     {
-        // Get all clan matches in the period using created_at date
         $matches = $clan->matches()
             ->whereBetween('matches.created_at', [$startDate, $endDate])
             ->get();
@@ -32,7 +31,6 @@ class ClanLeaderboardService
         $matchIds = $matches->pluck('id');
         $userValues = [];
 
-        // Get all clan members
         $clanMembers = $clan->members()->with('user')->get();
 
         foreach ($clanMembers as $clanMember) {
@@ -49,10 +47,8 @@ class ClanLeaderboardService
             }
         }
 
-        // Sort by value descending
         arsort($userValues);
 
-        // Store leaderboard entries
         $position = 1;
         foreach ($userValues as $userId => $value) {
             ClanLeaderboard::updateOrCreate(
