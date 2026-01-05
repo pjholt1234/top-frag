@@ -154,6 +154,7 @@ npm run lint             # Check TypeScript code
 - **[Coding Standards](docs/CODING_STANDARDS.md)** - Code style and conventions
 - **[Statistics Guide](docs/STATS_GUIDE.md)** - Comprehensive guide to all statistics and metrics
 - **[Line of Sight Detection](docs/LOS_DETECTION.md)** - Technical guide to LOS detection algorithms and implementation
+- **[Discord Bot Setup](docs/DISCORD_BOT_SETUP.md)** - Complete guide to setting up and configuring the Discord bot for local development and production
 
 ### Additional Resources
 - **[Bruno API Collections](bruno/)** - API testing and documentation data structures
@@ -314,5 +315,5 @@ This is a CS2 demo analysis platform that processes Counter-Strike 2 demo files 
 
 ---
 
-*Last updated: September 26, 2025*
+*Last updated: January 5, 2026*
 *Version: 1.0.0*
