@@ -13,6 +13,7 @@ use App\Services\Discord\Commands\MembersCommand;
 use App\Services\Discord\Commands\SetupCommand;
 use App\Services\Discord\Commands\UnlinkClanCommand;
 use App\Services\Integrations\Discord\DiscordRepository;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class DiscordService
@@ -867,6 +868,106 @@ class DiscordService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Send leaderboard to Discord channel
+     */
+    public function sendLeaderboardToDiscord(Clan $clan, string $leaderboardType, Carbon $startDate, Carbon $endDate): void
+    {
+        if (! $clan->discord_guild_id || ! $clan->discord_channel_id) {
+            Log::info('Clan not configured for Discord notifications', [
+                'clan_id' => $clan->id,
+                'has_guild_id' => ! empty($clan->discord_guild_id),
+                'has_channel_id' => ! empty($clan->discord_channel_id),
+            ]);
+
+            return;
+        }
+
+        $leaderboard = $this->leaderboardService->getLeaderboard($clan, $leaderboardType, $startDate, $endDate);
+
+        if ($leaderboard->isEmpty()) {
+            Log::info('Leaderboard is empty, skipping Discord notification', [
+                'clan_id' => $clan->id,
+                'leaderboard_type' => $leaderboardType,
+            ]);
+
+            return;
+        }
+
+        $typeLabel = ucfirst(str_replace('_', ' ', $leaderboardType));
+        $typeEmoji = $this->getLeaderboardTypeEmoji($leaderboardType);
+        $titlePrefix = $typeEmoji ? "{$typeEmoji} " : '';
+
+        $fields = [];
+        $topEntries = $leaderboard->take(10);
+
+        foreach ($topEntries as $entry) {
+            $user = $entry->user;
+            $userName = $user ? ($user->name ?? $user->steam_persona_name ?? 'Unknown') : 'Unknown';
+            $value = number_format((float) $entry->value, 2);
+
+            $trophyEmote = match ($entry->position) {
+                1 => '🥇',
+                2 => '🥈',
+                3 => '🥉',
+                default => '',
+            };
+
+            $fields[] = [
+                'name' => "{$trophyEmote} #{$entry->position} {$userName}",
+                'value' => $value,
+                'inline' => false,
+            ];
+        }
+
+        $dateRange = $startDate->format('M j').' - '.$endDate->format('M j, Y');
+
+        $embed = [
+            'title' => "{$titlePrefix}Weekly {$typeLabel} Leaderboard",
+            'description' => "Period: {$dateRange}",
+            'fields' => $fields,
+            'footer' => [
+                'text' => $this->sanitizeUtf8($clan->name),
+            ],
+            'color' => 0x5865F2, // Discord blurple color
+        ];
+
+        try {
+            $this->discordRepository->sendMessage($clan->discord_channel_id, [
+                'embeds' => [$embed],
+            ]);
+
+            Log::info('Leaderboard sent to Discord', [
+                'clan_id' => $clan->id,
+                'leaderboard_type' => $leaderboardType,
+                'channel_id' => $clan->discord_channel_id,
+            ]);
+        } catch (DiscordAPIConnectorException $e) {
+            Log::error('Failed to send leaderboard to Discord', [
+                'clan_id' => $clan->id,
+                'leaderboard_type' => $leaderboardType,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get emoji for leaderboard type
+     */
+    public function getLeaderboardTypeEmoji(string $leaderboardType): ?string
+    {
+        return match ($leaderboardType) {
+            'fragger' => '🔫',
+            'support' => '🛡️',
+            'opener' => '⚡',
+            'closer' => '🔒',
+            'aim' => '🎯',
+            'impact' => '💥',
+            'round_swing' => '🔄',
+            default => null,
+        };
     }
 
     /**

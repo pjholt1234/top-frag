@@ -10,12 +10,26 @@ use App\Models\MatchPlayer;
 use App\Models\Player;
 use App\Models\User;
 use App\Services\Clans\ClanMatchService;
+use App\Services\Discord\DiscordService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class ProcessClanMatchTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Mock DiscordService to avoid configuration errors
+        $discordServiceMock = Mockery::mock(DiscordService::class);
+        $discordServiceMock->shouldReceive('sendMatchReportToDiscord')
+            ->zeroOrMoreTimes()
+            ->andReturn(null);
+        $this->app->instance(DiscordService::class, $discordServiceMock);
+    }
 
     public function test_job_adds_match_to_clan_when_multiple_members_played()
     {
@@ -41,7 +55,7 @@ class ProcessClanMatchTest extends TestCase
         ]);
 
         $job = new ProcessClanMatch($match->id);
-        $job->handle(app(ClanMatchService::class));
+        $job->handle(app(ClanMatchService::class), app(DiscordService::class));
 
         $this->assertDatabaseHas('clan_matches', [
             'clan_id' => $clan->id,
@@ -73,11 +87,17 @@ class ProcessClanMatchTest extends TestCase
         ]);
 
         $job = new ProcessClanMatch($match->id);
-        $job->handle(app(ClanMatchService::class));
+        $job->handle(app(ClanMatchService::class), app(DiscordService::class));
 
         $this->assertDatabaseMissing('clan_matches', [
             'clan_id' => $clan->id,
             'match_id' => $match->id,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 }

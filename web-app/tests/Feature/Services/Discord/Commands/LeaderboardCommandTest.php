@@ -49,6 +49,11 @@ class LeaderboardCommandTest extends TestCase
             ->once()
             ->andReturn($leaderboard);
 
+        $this->discordServiceMock->shouldReceive('getLeaderboardTypeEmoji')
+            ->once()
+            ->with(LeaderboardType::AIM->value)
+            ->andReturn('🎯');
+
         $payload = [
             'guild_id' => '987654321',
             'data' => [

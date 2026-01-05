@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\LeaderboardType;
 use App\Models\Clan;
 use App\Services\Clans\ClanLeaderboardService;
+use App\Services\Discord\DiscordService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,14 +17,17 @@ class CalculateClanLeaderboards implements ShouldQueue
 
     private ClanLeaderboardService $leaderboardService;
 
+    private DiscordService $discordService;
+
     public function __construct()
     {
-        // Service will be resolved in handle method
+        // Services will be resolved in handle method
     }
 
     public function handle(): void
     {
         $this->leaderboardService = app(ClanLeaderboardService::class);
+        $this->discordService = app(DiscordService::class);
         Log::info('Starting CalculateClanLeaderboards job');
 
         $clans = Clan::all();
@@ -60,6 +64,13 @@ class CalculateClanLeaderboards implements ShouldQueue
                 try {
                     // Calculate week leaderboard
                     $this->leaderboardService->calculateLeaderboard(
+                        $clan,
+                        $type,
+                        $weekStart,
+                        $weekEnd
+                    );
+
+                    $this->discordService->sendLeaderboardToDiscord(
                         $clan,
                         $type,
                         $weekStart,

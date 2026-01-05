@@ -7,12 +7,26 @@ use App\Models\Clan;
 use App\Models\ClanLeaderboard;
 use App\Models\ClanMember;
 use App\Models\User;
+use App\Services\Discord\DiscordService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class CalculateClanLeaderboardsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Mock DiscordService to avoid configuration errors
+        $discordServiceMock = Mockery::mock(DiscordService::class);
+        $discordServiceMock->shouldReceive('sendLeaderboardToDiscord')
+            ->zeroOrMoreTimes()
+            ->andReturn(null);
+        $this->app->instance(DiscordService::class, $discordServiceMock);
+    }
 
     public function test_job_calculates_leaderboards_for_all_clans()
     {
@@ -49,5 +63,11 @@ class CalculateClanLeaderboardsTest extends TestCase
         $job->handle();
 
         $this->assertTrue(true);
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 }

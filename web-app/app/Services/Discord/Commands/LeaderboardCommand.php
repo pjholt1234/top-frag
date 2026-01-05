@@ -61,6 +61,8 @@ class LeaderboardCommand implements CommandInterface
         }
 
         $typeLabel = ucfirst(str_replace('_', ' ', $leaderboardType));
+        $typeEmoji = $this->discordService->getLeaderboardTypeEmoji($leaderboardType);
+        $titlePrefix = $typeEmoji ? "{$typeEmoji} " : '';
 
         $fields = [];
         $topEntries = $leaderboard->take(10);
@@ -91,7 +93,7 @@ class LeaderboardCommand implements CommandInterface
             'data' => [
                 'embeds' => [
                     [
-                        'title' => "Weekly {$typeLabel} Leaderboard",
+                        'title' => "{$titlePrefix}Weekly {$typeLabel} Leaderboard",
                         'description' => "Period: {$dateRange}",
                         'fields' => $fields,
                         'footer' => [
